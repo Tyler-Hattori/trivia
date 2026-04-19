@@ -125,6 +125,30 @@ function renderQuiz(){
  <button onclick='nextCard()' class='px-4 py-2 border rounded-xl'>Next</button>
  </div>
  <div id='result' class='mt-4'></div>
+ </div>
+
+ <!-- ADD ENTRY PANEL RESTORED -->
+ <div class='bg-white rounded-3xl shadow-lg p-6 border mt-6'>
+ <h3 class='text-xl font-semibold mb-3'>Add Entry + Sync CSV</h3>
+ <div class='grid md:grid-cols-2 gap-3'>
+ <input id='nimage' class='border rounded-xl p-3' placeholder='Image URL'>
+ <input id='ntitle' class='border rounded-xl p-3' placeholder='Title'>
+ <input id='nartist' class='border rounded-xl p-3' placeholder='Artist'>
+ <input id='nyear' class='border rounded-xl p-3' placeholder='Year'>
+ <input id='ngenre' class='border rounded-xl p-3 md:col-span-2' placeholder='Genre'>
+ </div>
+ <button onclick='addEntry()' class='mt-4 px-4 py-2 bg-black text-white rounded-xl'>Commit to GitHub CSV</button>
+ </div>`;
+}</h2>
+ <img id='img' class='w-full max-h-[420px] object-contain bg-zinc-50 rounded-2xl my-5'>
+ <div class='grid md:grid-cols-2 gap-3'>
+ ${active.fields.map(f=>`<input id='${f}' class='border rounded-xl p-3' placeholder='${f}'>`).join('')}
+ </div>
+ <div class='mt-4 flex gap-3'>
+ <button onclick='grade()' class='px-4 py-2 bg-blue-600 text-white rounded-xl'>Submit</button>
+ <button onclick='nextCard()' class='px-4 py-2 border rounded-xl'>Next</button>
+ </div>
+ <div id='result' class='mt-4'></div>
  </div>`;
 }
 
