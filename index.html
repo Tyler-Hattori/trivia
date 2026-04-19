@@ -11,9 +11,23 @@
 <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow p-6">
 <h1 class="text-3xl font-bold mb-2">Art History Trainer</h1>
 <p class="text-zinc-600 mb-4">Random painting quiz with multiple typed answers.</p>
-<div class="mb-4">
-<textarea id="csv" class="w-full h-32 border rounded-xl p-3 text-sm" placeholder="Paste CSV: image,title,artist,year,genre\nhttps://...jpg,Scrovegni Chapel,Giotto,1305,Proto-Renaissance"></textarea>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+<div>
+<label class="text-sm font-semibold">Load/Rebuild Dataset (CSV)</label>
+<textarea id="csv" class="w-full h-32 border rounded-xl p-3 text-sm" placeholder="image,title,artist,year,genre&#10;https://...jpg,Scrovegni Chapel,Giotto,1305,Proto-Renaissance"></textarea>
 <button onclick="loadCSV()" class="mt-2 px-4 py-2 bg-black text-white rounded-xl">Load Dataset</button>
+</div>
+<div>
+<label class="text-sm font-semibold">Add Single Artwork</label>
+<input id="newImage" class="w-full border rounded-xl p-3 mb-2" placeholder="Image URL">
+<input id="newTitle" class="w-full border rounded-xl p-3 mb-2" placeholder="Title">
+<input id="newArtist" class="w-full border rounded-xl p-3 mb-2" placeholder="Artist">
+<div class="grid grid-cols-2 gap-2">
+<input id="newYear" class="border rounded-xl p-3" placeholder="Year">
+<input id="newGenre" class="border rounded-xl p-3" placeholder="Genre">
+</div>
+<button onclick="addEntry()" class="mt-2 px-4 py-2 bg-blue-600 text-white rounded-xl">Add To Existing Dataset</button>
+</div>
 </div>
 <div id="quiz" class="hidden">
 <div class="flex justify-between items-center mb-4"><div id="progress" class="text-sm text-zinc-500"></div><button onclick="nextCard()" class="px-3 py-2 border rounded-xl">Skip</button></div>
@@ -30,14 +44,18 @@
 </div>
 <script>
 let data=[]; let current=null; let seen=0;
+function saveData(){localStorage.setItem('artTrainerData',JSON.stringify(data));}
+function restoreData(){const raw=localStorage.getItem('artTrainerData'); if(raw){try{data=JSON.parse(raw)||[]}catch(e){data=[]}} if(data.length){document.getElementById('quiz').classList.remove('hidden'); nextCard();}}
 function parseCSV(text){return text.trim().split(/\n+/).map(r=>r.split(',').map(x=>x.trim()));}
-function loadCSV(){const rows=parseCSV(document.getElementById('csv').value); data=rows.map(r=>({image:r[0],title:r[1],artist:r[2],year:r[3],genre:r[4]})).filter(x=>x.image); if(data.length){document.getElementById('quiz').classList.remove('hidden'); nextCard();}}
+function loadCSV(){const rows=parseCSV(document.getElementById('csv').value); data=rows.map(r=>({image:r[0],title:r[1],artist:r[2],year:r[3],genre:r[4]})).filter(x=>x.image); saveData(); if(data.length){document.getElementById('quiz').classList.remove('hidden'); nextCard();}}
+function addEntry(){data.push({image:document.getElementById('newImage').value,title:document.getElementById('newTitle').value,artist:document.getElementById('newArtist').value,year:document.getElementById('newYear').value,genre:document.getElementById('newGenre').value}); saveData(); document.getElementById('quiz').classList.remove('hidden'); ['newImage','newTitle','newArtist','newYear','newGenre'].forEach(id=>document.getElementById(id).value=''); if(!current) nextCard();}
 function rand(){return data[Math.floor(Math.random()*data.length)];}
 function nextCard(){current=rand(); seen++; document.getElementById('img').src=current.image; ['title','artist','year','genre'].forEach(id=>document.getElementById(id).value=''); document.getElementById('result').innerHTML=''; document.getElementById('progress').textContent='Card '+seen; document.getElementById('title').focus();}
 function norm(s){return (s||'').toLowerCase().trim();}
 function check(a,b){return norm(a)===norm(b);}
 function grade(){let fields=['title','artist','year','genre']; let html=''; let score=0; fields.forEach(f=>{const user=document.getElementById(f).value; const ok=check(user,current[f]); if(ok) score++; html+=`<div><b>${f}:</b> ${ok?'✓':'✗'} <span class='text-zinc-500'>(Answer: ${current[f]})</span></div>`;}); html=`<div class='font-semibold mb-2'>Score: ${score}/4</div>`+html+`<button onclick='nextCard()' class='mt-3 px-4 py-2 bg-black text-white rounded-xl'>Next Card</button>`; document.getElementById('result').innerHTML=html;}
 window.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault(); if(document.activeElement.tagName==='INPUT') grade();}})
+restoreData();
 </script>
 </body>
 </html>
