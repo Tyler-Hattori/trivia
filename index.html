@@ -19,7 +19,7 @@
 </div>
 
 <script>
-/* ================= CONFIG ================= */
+
 const OWNER='tyler-hattori';
 const REPO='trivia';
 const BRANCH='main';
@@ -31,34 +31,36 @@ const QUIZZES=[
   {key:'music',title:'Music',file:'datasets/music.csv'}
 ];
 
-/* ================= STATE ================= */
 let token=localStorage.getItem('gh_pat')||'';
 let active=null;
 let data=[];
 let queue=[];
 let current=null;
+let submitted=false;
 
 const $=s=>document.querySelector(s);
 
-/* ================= UTIL ================= */
 function toast(msg){alert(msg);}
 function best(k){return Number(localStorage.getItem('score_'+k)||0);}
 function setBest(k,v){if(v>best(k))localStorage.setItem('score_'+k,String(v));}
 
-/* ================= CSV ================= */
 function parseCSV(text){
-  const rows=text.trim().split(/\r?\n+/).filter(Boolean);
-  return rows.map((row,i)=>{
-    const c=row.split(',').map(v=>v.trim());
-    if(i===0 && c[0]?.toLowerCase()==='image') return null;
-    return {
+  const rows=text.split(/\r?\n+/).map(r=>r.trim()).filter(Boolean);
+  const out=[];
+
+  for(let i=0;i<rows.length;i++){
+    const c=rows[i].split(',').map(v=>v.trim());
+    if(i===0 && c[0]?.toLowerCase()==='image') continue;
+    out.push({
       image:c[0]||'',
       title:c[1]||'',
       artist:c[2]||'',
       year:c[3]||'',
       genre:c[4]||''
-    };
-  }).filter(Boolean).filter(r=>r.image);
+    });
+  }
+  console.log('Loaded CSV rows:', out.length);
+  return out;
 }
 
 function csvOut(rows){
@@ -66,7 +68,6 @@ function csvOut(rows){
   return [header,...rows.map(r=>[r.image,r.title,r.artist,r.year,r.genre].join(','))].join('\n');
 }
 
-/* ================= SHUFFLE ================= */
 function shuffle(a){
   for(let i=a.length-1;i>0;i--){
     const j=Math.floor(Math.random()*(i+1));
@@ -78,14 +79,12 @@ function shuffle(a){
 function refillQueue(){queue=shuffle([...data]);}
 function nextItem(){if(!queue.length)refillQueue();return queue.shift();}
 
-/* ================= RENDER ================= */
 function render(){
   const app=$('#app');
   app.innerHTML=active?renderQuiz():renderHome();
   if(active)bindQuiz();
 }
 
-/* ================= HOME ================= */
 function renderHome(){
   return `
     <div class='grid md:grid-cols-3 gap-4'>
@@ -111,13 +110,13 @@ function saveToken(){
   toast('Saved');
 }
 
-/* ================= QUIZ ================= */
 function renderQuiz(){
   return `
-    <button onclick='exit()' class='mb-4 border px-3 py-1 rounded'>← Home</button>
+    <button onclick='exitQuiz()' class='mb-4 border px-3 py-1 rounded'>← Home</button>
 
     <div class='bg-white p-5 rounded-2xl shadow'>
       <div class='text-2xl font-bold mb-3'>${active.title}</div>
+
       <img id='img' class='w-full max-h-[400px] object-contain bg-zinc-50 rounded mb-4'>
 
       <div class='grid grid-cols-2 gap-3'>
@@ -134,14 +133,11 @@ function renderQuiz(){
       <div id='result' class='mt-3'></div>
     </div>
 
-    <!-- ADD ENTRY -->
     <div class='mt-6 bg-white p-5 rounded-2xl shadow'>
       <div class='font-semibold mb-3'>Add Entry</div>
 
-      <!-- image standalone -->
       <input id='nimage' placeholder='image url' class='border p-2 w-full mb-3 rounded'>
 
-      <!-- 2x2 grid for fields -->
       <div class='grid grid-cols-2 gap-3'>
         ${FIELD_SCHEMA.map(f=>`
           <input id='n${f}' placeholder='${f}' class='border p-2 w-full rounded'>
@@ -151,15 +147,15 @@ function renderQuiz(){
       <button id='add' class='mt-4 bg-black text-white px-4 py-2 rounded'>Commit</button>
     </div>
   `;
-}function bindQuiz(){
-  $('#img').src=current.image;
-
-  $('#submit').onclick=grade;
-  $('#next').onclick=next;
-  $('#add').onclick=add;
 }
 
-/* ================= FLOW ================= */
+function bindQuiz(){
+  $('#img').src=current.image;
+  $('#submit').onclick=grade;
+  $('#next').onclick=next;
+  $('#add').onclick=addEntry;
+}
+
 async function start(key){
   active=QUIZZES.find(q=>q.key===key);
   await load();
@@ -168,7 +164,7 @@ async function start(key){
   render();
 }
 
-function exit(){active=null;render();}
+function exitQuiz(){active=null;render();}
 
 async function load(){
   const txt=await fetch(active.file).then(r=>r.text());
@@ -176,27 +172,49 @@ async function load(){
 }
 
 function next(){
+  submitted=false;
   current=nextItem();
   $('#img').src=current.image;
-  FIELD_SCHEMA.forEach(f=>$('#'+f).value='');
+
+  FIELD_SCHEMA.forEach(f=>{
+    const el=$('#'+f);
+    el.value='';
+    el.disabled=false;
+  });
+
   $('#result').innerHTML='';
 }
 
 function grade(){
+  if(submitted) return;
+  submitted=true;
+
   let score=0;
+  let out='';
 
   FIELD_SCHEMA.forEach(f=>{
-    const v=$('#'+f).value.trim().toLowerCase();
+    const input=$('#'+f);
+    const v=input.value.trim().toLowerCase();
     const a=(current[f]||'').toLowerCase();
-    if(v && a && (v===a || v.includes(a) || a.includes(v))) score++;
+
+    const ok=v && a && (v===a || v.includes(a) || a.includes(v));
+
+    if(ok) score++;
+
+    input.disabled=true;
+
+    out+=`<div class='mb-1'>
+      <span class='font-medium'>${f}:</span>
+      <span class='${ok?'text-green-600':'text-red-600'}'>${v || '(empty)'}</span>
+      ${ok?'':`<span class='text-zinc-500 ml-2'>(correct: ${current[f]})</span>`}
+    </div>`;
   });
 
   setBest(active.key,score);
-  $('#result').innerHTML=`Score ${score}/${FIELD_SCHEMA.length}`;
+  $('#result').innerHTML=`<div class='font-bold mb-2'>Score ${score}/${FIELD_SCHEMA.length}</div>`+out;
 }
 
-/* ================= GITHUB ================= */
-async function add(){
+async function addEntry(){
   if(!token) return toast('No token');
 
   const row={image:$('#nimage').value};
@@ -223,6 +241,8 @@ async function add(){
   toast('Saved');
   await load();
   refillQueue();
+  current=nextItem();
+  render();
 }
 
 render();
