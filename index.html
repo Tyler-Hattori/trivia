@@ -37,10 +37,12 @@ function setBest(k,v){ if(v>best(k)) localStorage.setItem(scoreKey(k), String(v)
 function avgAcc(k){ return Number(localStorage.getItem('acc_'+k) || 0); }
 
 function parseCSV(text){
- const rows=text.trim().split(/\r?\n+/);
+ const rows=text.trim().split(/
+?
++/).filter(r=>r.trim().length>0);
  return rows.map((row,i)=>{
-   const c=row.split(',');
-   if(i===0 && c[0] && c[0].trim().toLowerCase()==='image') return null;
+   const c=row.split(',').map(v=>v.trim());
+   if(i===0 && c[0] && c[0].toLowerCase()==='image') return null;
    return {
      image:(c[0]||'').trim(),
      title:(c[1]||'').trim(),
@@ -48,7 +50,7 @@ function parseCSV(text){
      year:(c[3]||'').trim(),
      genre:(c[4]||'').trim()
    };
- }).filter(Boolean).filter(r=>r.image);
+ }).filter(Boolean).filter(r=>r.image && r.image.length>0);
 }
 
 function csvOut(rows){
@@ -59,8 +61,8 @@ function csvOut(rows){
 
 let queue=[];
 function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
-function refillQueue(){queue=shuffle([...data]); console.log('Queue rebuilt', queue.length);} 
-function rand(){ if(!queue.length) refillQueue(); return queue.pop(); }
+function refillQueue(){queue=shuffle([...data]); console.log('Queue rebuilt', queue.length, data.map(x=>x.title));} 
+function rand(){ if(!queue.length) refillQueue(); return queue.shift(); }
 
 function toast(msg){
  const el=$('#toast');
