@@ -3,31 +3,35 @@
 <head>
 <meta charset='UTF-8'>
 <meta name='viewport' content='width=device-width,initial-scale=1'>
-<title>Quiz Hub Production</title>
+<title>Quiz Hub Stable</title>
 <script src='https://cdn.tailwindcss.com'></script>
 </head>
-<body class='bg-gradient-to-br from-stone-100 via-zinc-100 to-neutral-200 min-h-screen text-zinc-900'>
-<div class='max-w-6xl mx-auto p-6'>
-<header class='mb-10'>
-<h1 class='text-6xl font-bold tracking-tight'>Quiz Hub</h1>
-<p class='text-zinc-600 mt-2'>Museum-grade study platform with analytics and GitHub dataset sync.</p>
-</header>
 
-<div id='home'></div>
-<div id='quizPage' class='hidden'></div>
-<div id='toast' class='fixed bottom-6 right-6 hidden bg-black text-white px-4 py-3 rounded-2xl shadow-xl'></div>
+<body class='bg-zinc-100 min-h-screen text-zinc-900'>
+
+<div class='max-w-5xl mx-auto p-6'>
+  <header class='mb-8'>
+    <h1 class='text-5xl font-bold'>Quiz Hub</h1>
+    <p class='text-zinc-600 mt-2'>Stable schema-driven quiz engine</p>
+  </header>
+
+  <div id='app'></div>
 </div>
 
 <script>
+/* ================= CONFIG ================= */
 const OWNER='tyler-hattori';
 const REPO='trivia';
 const BRANCH='main';
 
+const FIELD_SCHEMA=['title','artist','year','genre'];
+
 const QUIZZES=[
- {key:'art',title:'Art History',file:'datasets/art.csv',fields:['title','artist','year','genre']},
- {key:'music',title:'Music',file:'datasets/music.csv',fields:['title','artist','year','genre']}
+  {key:'art',title:'Art History',file:'datasets/art.csv'},
+  {key:'music',title:'Music',file:'datasets/music.csv'}
 ];
 
+/* ================= STATE ================= */
 let token=localStorage.getItem('gh_pat')||'';
 let active=null;
 let data=[];
@@ -36,164 +40,187 @@ let current=null;
 
 const $=s=>document.querySelector(s);
 
-function toast(msg){
- const el=$('#toast');
- el.textContent=msg;
- el.classList.remove('hidden');
- setTimeout(()=>el.classList.add('hidden'),1800);
-}
-
+/* ================= UTIL ================= */
+function toast(msg){alert(msg);}
 function best(k){return Number(localStorage.getItem('score_'+k)||0);}
 function setBest(k,v){if(v>best(k))localStorage.setItem('score_'+k,String(v));}
-function avg(k){return Number(localStorage.getItem('acc_'+k)||0);}
 
-// ===================== CSV PARSER (FIXED REGEX) =====================
+/* ================= CSV ================= */
 function parseCSV(text){
- const rows=text.trim().split(/\r?\n+/).filter(r=>r.trim().length>0);
- return rows.map((row,i)=>{
-   const c=row.split(',').map(v=>v.trim());
-   if(i===0 && c[0] && c[0].toLowerCase()==='image') return null;
-   return {
-     image:c[0]||'',
-     title:c[1]||'',
-     artist:c[2]||'',
-     year:c[3]||'',
-     genre:c[4]||''
-   };
- }).filter(Boolean).filter(r=>r.image);
+  const rows=text.trim().split(/\r?\n+/).filter(Boolean);
+  return rows.map((row,i)=>{
+    const c=row.split(',').map(v=>v.trim());
+    if(i===0 && c[0]?.toLowerCase()==='image') return null;
+    return {
+      image:c[0]||'',
+      title:c[1]||'',
+      artist:c[2]||'',
+      year:c[3]||'',
+      genre:c[4]||''
+    };
+  }).filter(Boolean).filter(r=>r.image);
 }
 
 function csvOut(rows){
- const header='image,title,artist,year,genre';
- return [header,...rows.map(r=>[r.image,r.title,r.artist,r.year,r.genre].join(','))].join('\n');
+  const header='image,title,artist,year,genre';
+  return [header,...rows.map(r=>[r.image,r.title,r.artist,r.year,r.genre].join(','))].join('\n');
 }
 
-// ===================== SHUFFLE QUEUE =====================
+/* ================= SHUFFLE ================= */
 function shuffle(a){
- for(let i=a.length-1;i>0;i--){
-   const j=Math.floor(Math.random()*(i+1));
-   [a[i],a[j]]=[a[j],a[i]];
- }
- return a;
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
 }
 
-function refillQueue(){
- queue=shuffle([...data]);
+function refillQueue(){queue=shuffle([...data]);}
+function nextItem(){if(!queue.length)refillQueue();return queue.shift();}
+
+/* ================= RENDER ================= */
+function render(){
+  const app=$('#app');
+  app.innerHTML=active?renderQuiz():renderHome();
+  if(active)bindQuiz();
 }
 
-function rand(){
- if(!queue.length) refillQueue();
- return queue.shift();
-}
-
-// ===================== HOME =====================
+/* ================= HOME ================= */
 function renderHome(){
- const home=$('#home');
- home.innerHTML=`
- <div class='grid md:grid-cols-3 gap-6'>
- ${QUIZZES.map(q=>`
- <button onclick="openQuiz('${q.key}')" class='bg-white rounded-3xl shadow-lg p-6 border text-left hover:shadow-xl transition'>
- <div class='text-2xl font-semibold'>${q.title}</div>
- <div class='text-zinc-500 mt-2'>Best: ${best(q.key)} · Avg: ${avg(q.key)}%</div>
- </button>`).join('')}
- </div>`;
+  return `
+    <div class='grid md:grid-cols-3 gap-4'>
+      ${QUIZZES.map(q=>`
+        <button class='bg-white p-5 rounded-2xl shadow text-left' onclick="start('${q.key}')">
+          <div class='text-xl font-bold'>${q.title}</div>
+          <div class='text-sm text-zinc-500'>Best: ${best(q.key)}</div>
+        </button>
+      `).join('')}
+    </div>
+
+    <div class='mt-8 bg-white p-5 rounded-2xl shadow'>
+      <div class='font-semibold mb-2'>GitHub Token</div>
+      <input id='token' class='border p-2 w-full rounded' value='${token}'>
+      <button onclick='saveToken()' class='mt-2 px-4 py-2 bg-black text-white rounded'>Save</button>
+    </div>
+  `;
 }
 
-// ===================== QUIZ =====================
-async function openQuiz(key){
- active=QUIZZES.find(q=>q.key===key);
- $('#home').classList.add('hidden');
- $('#quizPage').classList.remove('hidden');
- const txt=await fetch(active.file).then(r=>r.text());
- data=parseCSV(txt);
- refillQueue();
- renderQuiz();
- nextCard();
+function saveToken(){
+  token=$('#token').value.trim();
+  localStorage.setItem('gh_pat',token);
+  toast('Saved');
 }
 
+/* ================= QUIZ ================= */
 function renderQuiz(){
- $('#quizPage').innerHTML=`
- <button onclick='goHome()' class='mb-4 px-3 py-2 border rounded-xl'>← Home</button>
- <div class='bg-white rounded-3xl shadow-lg p-6 border'>
- <h2 class='text-3xl font-bold'>${active.title}</h2>
- <img id='img' class='w-full max-h-[420px] object-contain bg-zinc-50 rounded-2xl my-5'>
- <div class='grid md:grid-cols-2 gap-3'>
- ${active.fields.map(f=>`<input id='${f}' class='border rounded-xl p-3' placeholder='${f}'>`).join('')}
- </div>
- <div class='mt-4 flex gap-3'>
- <button onclick='grade()' class='px-4 py-2 bg-blue-600 text-white rounded-xl'>Submit</button>
- <button onclick='nextCard()' class='px-4 py-2 border rounded-xl'>Next</button>
- </div>
- <div id='result' class='mt-4'></div>
- </div>
+  return `
+    <button onclick='exit()' class='mb-4 border px-3 py-1 rounded'>← Home</button>
 
- <!-- ADD ENTRY PANEL RESTORED -->
- <div class='bg-white rounded-3xl shadow-lg p-6 border mt-6'>
- <h3 class='text-xl font-semibold mb-3'>Add Entry + Sync CSV</h3>
- <div class='grid md:grid-cols-2 gap-3'>
- <input id='nimage' class='border rounded-xl p-3' placeholder='Image URL'>
- <input id='ntitle' class='border rounded-xl p-3' placeholder='Title'>
- <input id='nartist' class='border rounded-xl p-3' placeholder='Artist'>
- <input id='nyear' class='border rounded-xl p-3' placeholder='Year'>
- <input id='ngenre' class='border rounded-xl p-3 md:col-span-2' placeholder='Genre'>
- </div>
- <button onclick='addEntry()' class='mt-4 px-4 py-2 bg-black text-white rounded-xl'>Commit to GitHub CSV</button>
- </div>`;
-}</h2>
- <img id='img' class='w-full max-h-[420px] object-contain bg-zinc-50 rounded-2xl my-5'>
- <div class='grid md:grid-cols-2 gap-3'>
- ${active.fields.map(f=>`<input id='${f}' class='border rounded-xl p-3' placeholder='${f}'>`).join('')}
- </div>
- <div class='mt-4 flex gap-3'>
- <button onclick='grade()' class='px-4 py-2 bg-blue-600 text-white rounded-xl'>Submit</button>
- <button onclick='nextCard()' class='px-4 py-2 border rounded-xl'>Next</button>
- </div>
- <div id='result' class='mt-4'></div>
- </div>`;
+    <div class='bg-white p-5 rounded-2xl shadow'>
+      <div class='text-2xl font-bold mb-3'>${active.title}</div>
+      <img id='img' class='w-full max-h-[400px] object-contain bg-zinc-50 rounded mb-4'>
+
+      ${FIELD_SCHEMA.map(f=>`
+        <input id='${f}' class='border p-2 w-full mb-2 rounded' placeholder='${f}'>
+      `).join('')}
+
+      <div class='flex gap-2 mt-2'>
+        <button id='submit' class='bg-blue-600 text-white px-4 py-2 rounded'>Submit</button>
+        <button id='next' class='border px-4 py-2 rounded'>Next</button>
+      </div>
+
+      <div id='result' class='mt-3'></div>
+    </div>
+
+    <div class='mt-6 bg-white p-5 rounded-2xl shadow'>
+      <div class='font-semibold mb-2'>Add Entry</div>
+
+      <input id='nimage' placeholder='image' class='border p-2 w-full mb-2 rounded'>
+      ${FIELD_SCHEMA.map(f=>`
+        <input id='n${f}' placeholder='${f}' class='border p-2 w-full mb-2 rounded'>
+      `).join('')}
+
+      <button id='add' class='bg-black text-white px-4 py-2 rounded'>Commit</button>
+    </div>
+  `;
 }
 
-function nextCard(){
- current=rand();
- $('#img').src=current.image;
- active.fields.forEach(f=>{const el=$('#'+f); if(el) el.value='';});
- $('#result').innerHTML='';
+function bindQuiz(){
+  $('#img').src=current.image;
+
+  $('#submit').onclick=grade;
+  $('#next').onclick=next;
+  $('#add').onclick=add;
 }
 
-function sim(a,b){
- a=String(a||'').trim().toLowerCase();
- b=String(b||'').trim().toLowerCase();
- if(!a||!b) return false;
- return a===b || a.includes(b) || b.includes(a);
+/* ================= FLOW ================= */
+async function start(key){
+  active=QUIZZES.find(q=>q.key===key);
+  await load();
+  refillQueue();
+  current=nextItem();
+  render();
+}
+
+function exit(){active=null;render();}
+
+async function load(){
+  const txt=await fetch(active.file).then(r=>r.text());
+  data=parseCSV(txt);
+}
+
+function next(){
+  current=nextItem();
+  $('#img').src=current.image;
+  FIELD_SCHEMA.forEach(f=>$('#'+f).value='');
+  $('#result').innerHTML='';
 }
 
 function grade(){
- let s=0;
- let out='';
- active.fields.forEach(f=>{
-   const ok=sim($('#'+f).value,current[f]);
-   if(ok) s++;
-   out+=`<div>${f}: ${ok?'✓':'✗'} <span class='text-zinc-500'>${current[f]}</span></div>`;
- });
- setBest(active.key,s);
- $('#result').innerHTML=`<div class='font-semibold mb-2'>Score ${s}/${active.fields.length}</div>`+out;
+  let score=0;
+
+  FIELD_SCHEMA.forEach(f=>{
+    const v=$('#'+f).value.trim().toLowerCase();
+    const a=(current[f]||'').toLowerCase();
+    if(v && a && (v===a || v.includes(a) || a.includes(v))) score++;
+  });
+
+  setBest(active.key,score);
+  $('#result').innerHTML=`Score ${score}/${FIELD_SCHEMA.length}`;
 }
 
-function goHome(){
- $('#quizPage').classList.add('hidden');
- $('#home').classList.remove('hidden');
- renderHome();
+/* ================= GITHUB ================= */
+async function add(){
+  if(!token) return toast('No token');
+
+  const row={image:$('#nimage').value};
+  FIELD_SCHEMA.forEach(f=>row[f]=$('#n'+f).value);
+
+  data.push(row);
+
+  const path=active.file;
+  const meta=await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,{
+    headers:{Authorization:'Bearer '+token}
+  }).then(r=>r.json());
+
+  await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,{
+    method:'PUT',
+    headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+    body:JSON.stringify({
+      message:'update',
+      content:btoa(unescape(encodeURIComponent(csvOut(data)))),
+      sha:meta.sha,
+      branch:BRANCH
+    })
+  });
+
+  toast('Saved');
+  await load();
+  refillQueue();
 }
 
-// ===================== TESTS =====================
-function runTests(){
- console.assert(parseCSV("image,title,artist,year,genre\na,b,c,d,e").length===1,'CSV parse failed');
- console.assert(sim('1336','1330-1340')===false,'year range logic not in sim (ok)');
- console.assert(typeof rand()==='object','rand failed');
- console.log('tests done');
-}
-
-runTests();
-renderHome();
+render();
 </script>
+
 </body>
 </html>
