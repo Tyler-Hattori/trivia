@@ -59,7 +59,7 @@ function csvOut(rows){
 
 let queue=[];
 function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
-function refillQueue(){queue=shuffle([...data]);}
+function refillQueue(){queue=shuffle([...data]); console.log('Queue rebuilt', queue.length);} 
 function rand(){ if(!queue.length) refillQueue(); return queue.pop(); }
 
 function toast(msg){
@@ -102,7 +102,7 @@ async function openQuiz(key){
  nextCard();
 }
 
-async function loadDataset(){
+async function loadDataset(){ queue=[]; 
  const txt=await fetch(active.file).then(r=>r.text());
  data=parseCSV(txt);
  renderQuizPage();
@@ -147,17 +147,26 @@ function nextCard(){
  $('#result').innerHTML='';
 }
 
-function sim(a,b){
+function yearMatch(input,target){
+ const n=parseInt(String(input).trim(),10);
+ if(Number.isNaN(n)) return false;
+ const m=String(target).match(/(\d{3,4})\D+(\d{3,4})/);
+ if(m){const lo=parseInt(m[1],10), hi=parseInt(m[2],10); return n>=lo && n<=hi;}
+ return String(n)===String(target).trim();
+}
+function sim(a,b,field){
  a=String(a).trim().toLowerCase();
  b=String(b).trim().toLowerCase();
- if(!a || !b) return false; return a===b || (a.length>2 && b.includes(a)) || (b.length>2 && a.includes(b));
+ if(!a || !b) return false;
+ if(field==='year') return yearMatch(a,b);
+ return a===b || (a.length>2 && b.includes(a)) || (b.length>2 && a.includes(b));
 }
 
 function grade(){
  let s=0;
  let out='';
  active.fields.forEach(f=>{
-   const ok=sim($('#'+f).value,current[f]);
+   const ok=sim($('#'+f).value,current[f],f);
    if(ok) s++;
    out+=`<div>${f}: ${ok?'✓':'✗'} <span class='text-zinc-500'>${current[f]}</span></div>`;
  });
