@@ -194,10 +194,26 @@ function grade(){
 
   FIELD_SCHEMA.forEach(f=>{
     const input=$('#'+f);
-    const v=input.value.trim().toLowerCase();
-    const a=(current[f]||'').toLowerCase();
+    const vRaw=input.value.trim();
+    const v=vRaw.toLowerCase();
+    const aRaw=(current[f]||'').toString();
+    const a=aRaw.toLowerCase();
 
-    const ok=v && a && (v===a || v.includes(a) || a.includes(v));
+    let ok=false;
+
+    // year range support (e.g. 1330-1340)
+    if(f==='year' && aRaw.includes('-')){
+      const parts=aRaw.split('-').map(x=>parseInt(x.trim(),10));
+      const num=parseInt(vRaw,10);
+      if(!isNaN(num) && parts.length===2){
+        const lo=parts[0], hi=parts[1];
+        ok = num>=lo && num<=hi;
+      } else {
+        ok=false;
+      }
+    } else {
+      ok = v && a && (v===a || v.includes(a) || a.includes(v));
+    }
 
     if(ok) score++;
 
@@ -205,7 +221,7 @@ function grade(){
 
     out+=`<div class='mb-1'>
       <span class='font-medium'>${f}:</span>
-      <span class='${ok?'text-green-600':'text-red-600'}'>${v || '(empty)'}</span>
+      <span class='${ok?'text-green-600':'text-red-600'}'>${vRaw || '(empty)'}</span>
       ${ok?'':`<span class='text-zinc-500 ml-2'>(correct: ${current[f]})</span>`}
     </div>`;
   });
