@@ -17,8 +17,8 @@
 <div id='toast' class='fixed bottom-6 right-6 hidden bg-black text-white px-4 py-3 rounded-2xl shadow-xl'></div>
 </div>
 <script>
-const OWNER='YOUR_GITHUB_USERNAME';
-const REPO='YOUR_REPO_NAME';
+const OWNER='tyler-hattori';
+const REPO='trivia';
 const BRANCH='main';
 const QUIZZES=[
  {key:'art',title:'Art History',file:'datasets/art.csv',fields:['title','artist','year','genre']},
@@ -57,7 +57,10 @@ function csvOut(rows){
  return [header,...lines].join('\n');
 }
 
-function rand(){ return data[Math.floor(Math.random()*data.length)]; }
+let queue=[];
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
+function refillQueue(){queue=shuffle([...data]);}
+function rand(){ if(!queue.length) refillQueue(); return queue.pop(); }
 
 function toast(msg){
  const el=$('#toast');
@@ -147,7 +150,7 @@ function nextCard(){
 function sim(a,b){
  a=String(a).trim().toLowerCase();
  b=String(b).trim().toLowerCase();
- return a===b || a.includes(b) || b.includes(a);
+ if(!a || !b) return false; return a===b || (a.length>2 && b.includes(a)) || (b.length>2 && a.includes(b));
 }
 
 function grade(){
@@ -171,6 +174,9 @@ function goHome(){
 }
 
 async function addEntry(){
+ try{
+ if(!OWNER || OWNER==='YOUR_GITHUB_USERNAME' || !REPO || REPO==='YOUR_REPO_NAME'){toast('Set OWNER and REPO in config');return;}
+ if(!token){toast('Save PAT token first');return;}
  if(!token){ toast('Save PAT token first'); return; }
  const row={
    image:$('#nimage').value,
@@ -197,6 +203,8 @@ async function addEntry(){
  });
  toast('CSV committed to GitHub');
  await loadDataset();
+ refillQueue();
+ } catch(err){ console.error(err); toast('GitHub sync failed'); }
 }
 
 document.addEventListener('DOMContentLoaded',renderHome);
