@@ -3,14 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Art History Trainer</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<title>Quiz Hub Template</title>script src="https://cdn.tailwindcss.com"></script>
 <style>body{font-family:system-ui,sans-serif} input{outline:none}</style>
 </head>
 <body class="bg-zinc-100 min-h-screen p-6">
 <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow p-6">
-<h1 class="text-3xl font-bold mb-2">Art History Trainer</h1>
-<p class="text-zinc-600 mb-4">Random painting quiz with multiple typed answers.</p>
+<h<h1 class="text-3xl font-bold mb-2">Quiz Hub Template</h1>c<p class="text-zinc-600 mb-4">Choose a quiz from the home page. Each quiz loads a CSV from /datasets/. This file is heavily commented for reuse.</p><div class='mb-4 p-4 bg-zinc-50 rounded-xl text-sm'><b>Template notes:</b><br>• Add quizzes in the QUIZZES array.<br>• Put CSV files in <code>/datasets/</code>.<br>• GitHub Pages cannot directly overwrite repo CSV files without API auth.<br>• Add Entry currently stores locally unless upgraded.</div><div id='home' class='grid grid-cols-1 md:grid-cols-3 gap-3 mb-6'></div>rom /datasets/. This file is heavily commented for reuse.</p>
+<div class='mb-4 p-4 bg-zinc-50 rounded-xl text-sm'>
+<b>Template notes:</b><br>
+• Add new quizzes by editing the QUIZZES array in JavaScript.<br>
+• Place CSV files in <code>/datasets/</code>.<br>
+• Static GitHub Pages cannot directly overwrite CSV files in your repo without using the GitHub API or a backend token service.<br>
+• Current Add Entry button saves locally in browser storage unless you later wire GitHub API writes.
+</div>
+<div id='home' class='grid grid-cols-1 md:grid-cols-3 gap-3 mb-6'></div>
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
 <div>
 <label class="text-sm font-semibold">Load/Rebuild Dataset (CSV)</label>
@@ -31,24 +37,42 @@
 </div>
 <div id="quiz" class="hidden">
 <div class="flex justify-between items-center mb-4"><div id="progress" class="text-sm text-zinc-500"></div><button onclick="nextCard()" class="px-3 py-2 border rounded-xl">Skip</button></div>
-<img id="img" class="w-full max-h-[420px] object-contain rounded-xl bg-zinc-50 mb-4" />
+<img id="img" class="w-full const QUIZZES=[{key:'art',name:'Art History Quiz',file:'datasets/art.csv',fields:['title','artist','year','genre']},{key:'music',name:'Music Quiz',file:'datasets/music.csv',fields:['title','artist','year','genre']},{key:'science',name:'Science Quiz',file:'datasets/science.csv',fields:['title','artist','year','genre']}];
+let activeQuiz=null;
+let data=[]; let current=null; let seen=0;-zinc-50 mb-4" />
 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
 <input id="title" placeholder="Title" class="border rounded-xl p-3" />
 <input id="artist" placeholder="Artist" class="border rounded-xl p-3" />
 <input id="year" placeholder="Year" class="border rounded-xl p-3" />
-<input id="genre" placeholder="Genre" class="border rounded-xl p-3" />
+<input id="genre" pfunction renderHome(){const home=document.getElementById('home');home.innerHTML=QUIZZES.map(q=>`<button class='p-4 rounded-2xl border hover:bg-zinc-50 text-left' onclick="loadQuiz('${q.key}')"><div class='font-semibold'>${q.name}</div><div class='text-xs text-zinc-500'>${q.file}</div></button>`).join('');}
+async function loadQuiz(key){activeQuiz=QUIZZES.find(q=>q.key===key); if(!activeQuiz) return; const txt=await fetch(activeQuiz.file).then(r=>r.text()); document.getElementById('csv').value=txt; loadCSV();}
+function parseCSV" class="border rounded-xl p-3" />
 </div>
 <button onclick="grade()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-xl">Submit</button>
 <div id="result" class="mt-4 text-sm"></div>
 </div>
 </div>
 <script>
+// ==============================
+// CONFIGURATION TEMPLATE
+// Add more quiz pages here.
+// name = button label
+// file = CSV path inside /datasets/
+// fields = prompts shown to user
+// ==============================
+const QUIZZES = [
+ {key:'art', name:'Art History Quiz', file:'datasets/art.csv', fields:['title','artist','year','genre']},
+ {key:'music', name:'Music Quiz', file:'datasets/music.csv', fields:['title','artist','year','genre']},
+ {key:'science', name:'Science Quiz', file:'datasets/science.csv', fields:['title','artist','year','genre']}
+];
+let activeQuiz=null;
 let data=[]; let current=null; let seen=0;
 function saveData(){localStorage.setItem('artTrainerData',JSON.stringify(data));}
 function restoreData(){const raw=localStorage.getItem('artTrainerData'); if(raw){try{data=JSON.parse(raw)||[]}catch(e){data=[]}} if(data.length){document.getElementById('quiz').classList.remove('hidden'); nextCard();}}
-function parseCSV(text){return text.trim().split(/\n+/).map(r=>r.split(',').map(x=>x.trim()));}
+function renderHome(){const home=document.getElementById('home');home.innerHTML=QUIZZES.map(q=>`<button class='p-4 rounded-2xl border hover:bg-zinc-50 text-left' onclick="loadQuiz('${q.key}')"><div class='font-semibold'>${q.name}</div><div class='text-xs text-zinc-500'>${q.file}</div></button>`).join('');}
+async function loadQuiz(key){activeQuiz=QUIZZES.find(q=>q.key===key); if(!activeQuiz) return; const txt=await fetch(activeQuiz.file).then(r=>r.text()); document.getElementById('csv'(text){return text.trim().split(/\n+/).map(r=>r.split(',').map(x=>x.trim()));}
 function loadCSV(){const rows=parseCSV(document.getElementById('csv').value); data=rows.map(r=>({image:r[0],title:r[1],artist:r[2],year:r[3],genre:r[4]})).filter(x=>x.image); saveData(); if(data.length){document.getElementById('quiz').classList.remove('hidden'); nextCard();}}
-function addEntry(){data.push({image:document.getElementById('newImage').value,title:document.getElementById('newTitle').value,artist:document.getElementById('newArtist').value,year:document.getElementById('newYear').value,genre:document.getElementById('newGenre').value}); saveData(); document.getElementById('quiz').classList.remove('hidden'); ['newImage','newTitle','newArtist','newYear','newGenre'].forEach(id=>document.getElementById(id).value=''); if(!current) nextCard();}
+function addEntry(){data.push({imrenderHome(); restoreData();etElementById('newImage').value,title:document.getElementById('newTitle').value,artist:document.getElementById('newArtist').value,year:document.getElementById('newYear').value,genre:document.getElementById('newGenre').value}); saveData(); document.getElementById('quiz').classList.remove('hidden'); ['newImage','newTitle','newArtist','newYear','newGenre'].forEach(id=>document.getElementById(id).value=''); if(!current) nextCard();}
 function rand(){return data[Math.floor(Math.random()*data.length)];}
 function nextCard(){current=rand(); seen++; document.getElementById('img').src=current.image; ['title','artist','year','genre'].forEach(id=>document.getElementById(id).value=''); document.getElementById('result').innerHTML=''; document.getElementById('progress').textContent='Card '+seen; document.getElementById('title').focus();}
 function norm(s){return (s||'').toLowerCase().trim();}
