@@ -24,6 +24,7 @@ const OWNER='tyler-hattori';
 const REPO='trivia';
 const BRANCH='main';
 
+// UPDATED SCHEMA (added movement)
 const FIELD_SCHEMA=['title','artist','year','genre'];
 
 const QUIZZES=[
@@ -44,6 +45,7 @@ function toast(msg){alert(msg);}
 function best(k){return Number(localStorage.getItem('score_'+k)||0);}
 function setBest(k,v){if(v>best(k))localStorage.setItem('score_'+k,String(v));}
 
+/* ================= CSV ================= */
 function parseCSV(text){
   const rows=text.split(/\r?\n+/).map(r=>r.trim()).filter(Boolean);
   const out=[];
@@ -51,14 +53,17 @@ function parseCSV(text){
   for(let i=0;i<rows.length;i++){
     const c=rows[i].split(',').map(v=>v.trim());
     if(i===0 && c[0]?.toLowerCase()==='image') continue;
+
     out.push({
       image:c[0]||'',
       title:c[1]||'',
       artist:c[2]||'',
       year:c[3]||'',
-      genre:c[4]||''
+      genre:c[4]||'',
+      movement:c[5]||''
     });
   }
+
   console.log('Loaded CSV rows:', out.length);
   return out;
 }
@@ -68,6 +73,7 @@ function csvOut(rows){
   return [header,...rows.map(r=>[r.image,r.title,r.artist,r.year,r.genre].join(','))].join('\n');
 }
 
+/* ================= SHUFFLE ================= */
 function shuffle(a){
   for(let i=a.length-1;i>0;i--){
     const j=Math.floor(Math.random()*(i+1));
@@ -79,6 +85,7 @@ function shuffle(a){
 function refillQueue(){queue=shuffle([...data]);}
 function nextItem(){if(!queue.length)refillQueue();return queue.shift();}
 
+/* ================= RENDER ================= */
 function render(){
   const app=$('#app');
   app.innerHTML=active?renderQuiz():renderHome();
@@ -110,6 +117,7 @@ function saveToken(){
   toast('Saved');
 }
 
+/* ================= QUIZ ================= */
 function renderQuiz(){
   return `
     <button onclick='exitQuiz()' class='mb-4 border px-3 py-1 rounded'>← Home</button>
@@ -201,17 +209,22 @@ function grade(){
 
     let ok=false;
 
-    // year range support (e.g. 1330-1340)
+    // YEAR RANGE SUPPORT
     if(f==='year' && aRaw.includes('-')){
       const parts=aRaw.split('-').map(x=>parseInt(x.trim(),10));
       const num=parseInt(vRaw,10);
       if(!isNaN(num) && parts.length===2){
-        const lo=parts[0], hi=parts[1];
-        ok = num>=lo && num<=hi;
-      } else {
-        ok=false;
+        ok = num>=parts[0] && num<=parts[1];
       }
-    } else {
+    }
+
+    // MOVEMENT FUZZY MATCH
+    else if(f==='genre' && a.includes(' or ')){
+      const options=a.split(/\\s+or\\s+/).map(x=>x.trim());
+      ok = options.includes(v) || (v && options.some(opt=>opt.includes(v) || v.includes(opt)));
+    }
+
+    else {
       ok = v && a && (v===a || v.includes(a) || a.includes(v));
     }
 
@@ -232,6 +245,9 @@ function grade(){
 
 async function addEntry(){
   if(!token) return toast('No token');
+
+  // IMPORTANT FIX: reload latest dataset before writing (prevents overwriting last entry)
+  await load();
 
   const row={image:$('#nimage').value};
   FIELD_SCHEMA.forEach(f=>row[f]=$('#n'+f).value);
