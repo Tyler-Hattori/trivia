@@ -198,7 +198,10 @@ async function start(key){
 function exitQuiz(){active=null;render();}
 
 async function load(){
-  const txt=await fetch(active.file).then(r=>r.text());
+  const txt = await fetch(active.file + '?t=' + Date.now(), {
+    cache:'no-store'
+  }).then(r=>r.text());
+
   data=parseCSV(txt);
 }
 
@@ -270,7 +273,14 @@ async function addEntry(){
   if(!token) return toast('No token');
 
   // IMPORTANT FIX: reload latest dataset before writing (prevents overwriting last entry)
-  await load();
+  const path=active.file;
+
+  const meta=await fetch(
+  `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,{
+  headers:{Authorization:'Bearer '+token}
+  }).then(r=>r.json());
+  
+  data=parseCSV(atob(meta.content.replace(/\n/g,'')));
 
   const row={image:$('#nimage').value};
   FIELD_SCHEMA.forEach(f=>row[f]=$('#n'+f).value);
