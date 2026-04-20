@@ -73,8 +73,19 @@ function parseCSV(text){
 }
 
 function csvOut(rows){
-  const header='image,title,artist,year,movement';
-  return [header,...rows.map(r=>[r.image,r.title,r.artist,r.year,r.movement].join(','))].join('\n');
+  const header = 'image,title,artist,year,movement';
+
+  const body = rows.map(r =>
+    [
+      r.image || '',
+      r.title || '',
+      r.artist || '',
+      r.year || '',
+      r.movement || ''
+    ].join(',')
+  );
+
+  return header + '\n' + body.join('\n') + '\n';
 }
 
 /* ================= SHUFFLE ================= */
