@@ -47,24 +47,28 @@ function setBest(k,v){if(v>best(k))localStorage.setItem('score_'+k,String(v));}
 
 /* ================= CSV ================= */
 function parseCSV(text){
-  const rows=text.split(/\r?\n+/).map(r=>r.trim()).filter(Boolean);
-  const out=[];
+  const lines = text
+    .replace(/\r/g, '')
+    .split('\n')
+    .filter(line => line.trim() !== '');
 
-  for(let i=0;i<rows.length;i++){
-    const c=rows[i].split(',').map(v=>v.trim());
-    if(i===0 && c[0]?.toLowerCase()==='image') continue;
+  const out = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const cols = lines[i].split(',').map(v => v.trim());
+
+    // skip header
+    if (i === 0 && cols[0].toLowerCase() === 'image') continue;
 
     out.push({
-      image:c[0]||'',
-      title:c[1]||'',
-      artist:c[2]||'',
-      year:c[3]||'',
-      movement:c[4]||'',
-      movement:c[5]||''
+      image: cols[0] || '',
+      title: cols[1] || '',
+      artist: cols[2] || '',
+      year: cols[3] || '',
+      genre: cols[4] || ''
     });
   }
 
-  console.log('Loaded CSV rows:', out.length);
   return out;
 }
 
