@@ -72,16 +72,24 @@ function parseCSV(text){
   return out;
 }
 
+function esc(v){
+  v = String(v ?? '');
+  if (/[",\n]/.test(v)) {
+    return '"' + v.replace(/"/g,'""') + '"';
+  }
+  return v;
+}
+
 function csvOut(rows){
   const header = 'image,title,artist,year,movement';
 
   const body = rows.map(r =>
     [
-      r.image || '',
-      r.title || '',
-      r.artist || '',
-      r.year || '',
-      r.movement || ''
+      esc(r.image),
+      esc(r.title),
+      esc(r.artist),
+      esc(r.year),
+      esc(r.movement)
     ].join(',')
   );
 
