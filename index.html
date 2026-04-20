@@ -54,11 +54,47 @@ function parseCSV(text){
 
   const out = [];
 
-  for (let i = 0; i < lines.length; i++) {
-    const cols = lines[i].split(',').map(v => v.trim());
+  function splitCSVRow(line){
+    const cols = [];
+    let cur = '';
+    let inQuotes = false;
 
-    // skip header
-    if (i === 0 && cols[0].toLowerCase() === 'image') continue;
+    for(let i = 0; i < line.length; i++){
+      const ch = line[i];
+
+      if(ch === '"'){
+        // Escaped quote inside quoted field
+        if(inQuotes && line[i + 1] === '"'){
+          cur += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      }
+      else if(ch === ',' && !inQuotes){
+        cols.push(cur.trim());
+        cur = '';
+      }
+      else{
+        cur += ch;
+      }
+    }
+
+    cols.push(cur.trim());
+    return cols;
+  }
+
+  for(let i = 0; i < lines.length; i++){
+    const cols = splitCSVRow(lines[i]);
+
+    // Skip header row
+    if(
+      i === 0 &&
+      cols[0] &&
+      cols[0].toLowerCase() === 'image'
+    ){
+      continue;
+    }
 
     out.push({
       image: cols[0] || '',
