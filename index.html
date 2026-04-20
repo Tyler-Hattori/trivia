@@ -296,8 +296,8 @@ function grade(){
 
     out+=`<div class='mb-1'>
       <span class='font-medium'>${f}:</span>
-      <span class='${ok?'text-green-600':'text-red-600'}'>${current[f] || '(empty)'}</span>
-      ${ok?'':`<span class='text-zinc-500 ml-2'>(correct: ${current[f]})</span>`}
+      <span class='${ok?'text-green-600':'text-red-600'}'>${vRaw || '(empty)'}</span>
+      ${`<span class='text-zinc-500 ml-2'>(correct: ${current[f]})</span>`}
     </div>`;
   });
 
