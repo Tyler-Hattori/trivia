@@ -65,7 +65,7 @@ function parseCSV(text){
       title: cols[1] || '',
       artist: cols[2] || '',
       year: cols[3] || '',
-      genre: cols[4] || ''
+      movement: cols[4] || ''
     });
   }
 
@@ -224,7 +224,7 @@ function grade(){
 
     // MOVEMENT FUZZY MATCH
     else if(f==='movement' && a.includes(' or ')){
-      const options=a.split(/\\s+or\\s+/).map(x=>x.trim());
+      const options=a.split(/\s+or\s+/).map(x=>x.trim());
       ok = options.includes(v) || (v && options.some(opt=>opt.includes(v) || v.includes(opt)));
     }
 
