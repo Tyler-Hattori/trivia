@@ -24,8 +24,8 @@ const OWNER='tyler-hattori';
 const REPO='trivia';
 const BRANCH='main';
 
-// UPDATED SCHEMA (added movement)
-const FIELD_SCHEMA=['title','artist','year','genre'];
+// UPDATED SCHEMA
+const FIELD_SCHEMA=['title','artist','year','movement'];
 
 const QUIZZES=[
   {key:'art',title:'Art History',file:'datasets/art.csv'},
@@ -59,7 +59,7 @@ function parseCSV(text){
       title:c[1]||'',
       artist:c[2]||'',
       year:c[3]||'',
-      genre:c[4]||'',
+      movement:c[4]||'',
       movement:c[5]||''
     });
   }
@@ -69,8 +69,8 @@ function parseCSV(text){
 }
 
 function csvOut(rows){
-  const header='image,title,artist,year,genre';
-  return [header,...rows.map(r=>[r.image,r.title,r.artist,r.year,r.genre].join(','))].join('\n');
+  const header='image,title,artist,year,movement';
+  return [header,...rows.map(r=>[r.image,r.title,r.artist,r.year,r.movement].join(','))].join('\n');
 }
 
 /* ================= SHUFFLE ================= */
@@ -219,7 +219,7 @@ function grade(){
     }
 
     // MOVEMENT FUZZY MATCH
-    else if(f==='genre' && a.includes(' or ')){
+    else if(f==='movement' && a.includes(' or ')){
       const options=a.split(/\\s+or\\s+/).map(x=>x.trim());
       ok = options.includes(v) || (v && options.some(opt=>opt.includes(v) || v.includes(opt)));
     }
