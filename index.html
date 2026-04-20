@@ -272,41 +272,52 @@ function grade(){
 async function addEntry(){
   if(!token) return toast('No token');
 
-  // IMPORTANT FIX: reload latest dataset before writing (prevents overwriting last entry)
-  const path=active.file;
+  const path = active.file;
 
-  const meta=await fetch(
-  `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,{
-  headers:{Authorization:'Bearer '+token}
-  }).then(r=>r.json());
-  
-  data=parseCSV(atob(meta.content.replace(/\n/g,'')));
+  // Read latest repo file directly from GitHub API
+  const meta = await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,
+    {
+      headers:{ Authorization:'Bearer ' + token }
+    }
+  ).then(r => r.json());
 
-  const row={image:$('#nimage').value};
-  FIELD_SCHEMA.forEach(f=>row[f]=$('#n'+f).value);
+  const latestCsv = atob(meta.content.replace(/\n/g,''));
+  data = parseCSV(latestCsv);
 
-  data.push(row);
+  // Build new row
+  const row = { image: $('#nimage').value.trim() };
 
-  const path=active.file;
-  const meta=await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,{
-    headers:{Authorization:'Bearer '+token}
-  }).then(r=>r.json());
-
-  await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,{
-    method:'PUT',
-    headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
-    body:JSON.stringify({
-      message:'update',
-      content:btoa(unescape(encodeURIComponent(csvOut(data)))),
-      sha:meta.sha,
-      branch:BRANCH
-    })
+  FIELD_SCHEMA.forEach(f=>{
+    row[f] = $('#n'+f).value.trim();
   });
 
+  // Append
+  data.push(row);
+
+  // Write updated file
+  await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,
+    {
+      method:'PUT',
+      headers:{
+        Authorization:'Bearer ' + token,
+        'Content-Type':'application/json'
+      },
+      body: JSON.stringify({
+        message:'update dataset',
+        content:btoa(unescape(encodeURIComponent(csvOut(data)))),
+        sha: meta.sha,
+        branch: BRANCH
+      })
+    }
+  );
+
   toast('Saved');
+
   await load();
   refillQueue();
-  current=nextItem();
+  current = nextItem();
   render();
 }
 
