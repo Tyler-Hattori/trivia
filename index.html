@@ -1,30 +1,28 @@
 <!DOCTYPE html>
-<html lang='en'>
+<html lang="en">
 <head>
-<meta charset='UTF-8'>
-<meta name='viewport' content='width=device-width,initial-scale=1'>
-<title>Quiz Hub Stable</title>
-<script src='https://cdn.tailwindcss.com'></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Quiz Hub Pro</title>
+<script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class='bg-zinc-100 min-h-screen text-zinc-900'>
+<body class="bg-zinc-100 min-h-screen text-zinc-900">
 
-<div class='max-w-5xl mx-auto p-6'>
-  <header class='mb-8'>
-    <h1 class='text-5xl font-bold'>Quiz Hub</h1>
-    <p class='text-zinc-600 mt-2'>Stable schema-driven quiz engine</p>
-  </header>
+<div class="max-w-6xl mx-auto p-6">
+  <header id="siteHeader" class="mb-8"></header>
 
-  <div id='app'></div>
+  <div id="app"></div>
 </div>
 
 <script>
-
+/* =========================================================
+   CORE APP
+========================================================= */
 const OWNER='tyler-hattori';
 const REPO='trivia';
 const BRANCH='main';
 
-// UPDATED SCHEMA
 const FIELD_SCHEMA=['title','artist','year','movement'];
 
 const QUIZZES=[
@@ -35,48 +33,156 @@ const QUIZZES=[
 let token=localStorage.getItem('gh_pat')||'';
 let active=null;
 let data=[];
+let filtered=[];
 let queue=[];
 let current=null;
 let submitted=false;
 
+let streak=0;
+let bestStreak=0;
+let answered=0;
+let perfect=0;
+
+let totalFieldsAttempted = 0;   // non-year only
+let totalFieldsCorrect = 0;     // non-year only
+
+let yearErrors = [];
+
+let bestAcc = 0;
+let bestRmse = Infinity;
+
+let activeFilters=new Set();
+
 const $=s=>document.querySelector(s);
 
-function toast(msg){alert(msg);}
-function best(k){return Number(localStorage.getItem('score_'+k)||0);}
-function setBest(k,v){if(v>best(k))localStorage.setItem('score_'+k,String(v));}
+function toast(msg){ alert(msg); }
 
-/* ================= CSV ================= */
+function best(k){
+  return Number(localStorage.getItem('score_'+k)||0);
+}
+
+function setBest(k,v){
+  if(v>best(k)) localStorage.setItem('score_'+k,String(v));
+}
+
+function loadBestStreak(){
+  bestStreak = Number(
+    localStorage.getItem(
+      bestKey('bestStreak')
+    ) || 0
+  );
+}
+
+function saveBestStreak(){
+  localStorage.setItem(
+    bestKey('bestStreak'),
+    bestStreak
+  );
+}
+
+/* =====================================================
+   PERSISTENT QUIZ SETTINGS
+===================================================== */
+window.QUIZ_SETTINGS = window.QUIZ_SETTINGS || {
+  count: 0,
+  order: 'random',
+  fields: [...FIELD_SCHEMA]
+};
+
+window.ACTIVE_FIELDS = window.ACTIVE_FIELDS || [...FIELD_SCHEMA];
+
+/* =====================================================
+   STATS BAR ONLY INSIDE QUIZ
+===================================================== */
+function updateStats(){
+
+  if(!active){
+    $('#statsBar').innerHTML = `<div class="bg-white border border-zinc-200 rounded-2xl px-4 py-3 shadow-sm text-right inline-block">`
+    return;
+  }
+
+  const total =
+    QUIZ_SETTINGS.count > 0
+      ? QUIZ_SETTINGS.count
+      : data.length;
+
+  const done = answered;
+
+  const acc =
+    totalFieldsAttempted
+      ? Math.round(
+          100 *
+          totalFieldsCorrect /
+          totalFieldsAttempted
+        )
+      : 0;
+
+  const rmse = calcRMSE(yearErrors);
+
+  $('#statsBar').innerHTML = `
+    <div class="text-right leading-snug tracking-tight">
+
+      <div class="text-sm font-semibold text-zinc-800">
+        ${active.title}
+        <span class="text-zinc-400 font-normal">·</span>
+        ${total} Paintings
+        <span class="text-zinc-400 font-normal">·</span>
+        ${done}/${total} Done
+      </div>
+
+      <div class="text-sm text-zinc-700 mt-0.5">
+        <span class="font-medium">Acc</span> ${acc}%
+        <span class="text-zinc-400">·</span>
+        <span class="font-medium">Year</span> ±${rmse.toFixed(1)}y
+        <span class="text-zinc-400">·</span>
+        <span class="font-medium">Streak</span> ${streak}
+      </div>
+
+      <div class="text-xs text-zinc-500 mt-0.5">
+        Best ${bestAcc}%
+        <span class="text-zinc-400">·</span>
+        Best ±${
+          isFinite(bestRmse)
+            ? bestRmse.toFixed(1)
+            : '--'
+        }y
+        <span class="text-zinc-400">·</span>
+        Best Streak ${bestStreak}
+      </div>
+
+    </div>
+  `;
+}
+
+/* =========================================================
+   CSV
+========================================================= */
 function parseCSV(text){
-  const lines = text
-    .replace(/\r/g, '')
-    .split('\n')
-    .filter(line => line.trim() !== '');
-
-  const out = [];
+  const lines=text.replace(/\r/g,'').split('\n').filter(x=>x.trim());
+  const out=[];
 
   function splitCSVRow(line){
-    const cols = [];
-    let cur = '';
-    let inQuotes = false;
+    const cols=[];
+    let cur='';
+    let inQuotes=false;
 
-    for(let i = 0; i < line.length; i++){
-      const ch = line[i];
+    for(let i=0;i<line.length;i++){
+      const ch=line[i];
 
       if(ch === '"'){
-        // Escaped quote inside quoted field
-        if(inQuotes && line[i + 1] === '"'){
-          cur += '"';
+        if(inQuotes && line[i+1] === '"'){
+          cur+='"';
           i++;
-        } else {
-          inQuotes = !inQuotes;
+        }else{
+          inQuotes=!inQuotes;
         }
       }
-      else if(ch === ',' && !inQuotes){
+      else if(ch===',' && !inQuotes){
         cols.push(cur.trim());
-        cur = '';
+        cur='';
       }
       else{
-        cur += ch;
+        cur+=ch;
       }
     }
 
@@ -84,24 +190,17 @@ function parseCSV(text){
     return cols;
   }
 
-  for(let i = 0; i < lines.length; i++){
-    const cols = splitCSVRow(lines[i]);
+  for(let i=0;i<lines.length;i++){
+    const cols=splitCSVRow(lines[i]);
 
-    // Skip header row
-    if(
-      i === 0 &&
-      cols[0] &&
-      cols[0].toLowerCase() === 'image'
-    ){
-      continue;
-    }
+    if(i===0 && cols[0].toLowerCase()==='image') continue;
 
     out.push({
-      image: cols[0] || '',
-      title: cols[1] || '',
-      artist: cols[2] || '',
-      year: cols[3] || '',
-      movement: cols[4] || ''
+      image:cols[0]||'',
+      title:cols[1]||'',
+      artist:cols[2]||'',
+      year:cols[3]||'',
+      movement:cols[4]||''
     });
   }
 
@@ -109,17 +208,17 @@ function parseCSV(text){
 }
 
 function esc(v){
-  v = String(v ?? '');
-  if (/[",\n]/.test(v)) {
+  v=String(v??'');
+  if(/[",\n]/.test(v)){
     return '"' + v.replace(/"/g,'""') + '"';
   }
   return v;
 }
 
 function csvOut(rows){
-  const header = 'image,title,artist,year,movement';
+  const header='image,title,artist,year,movement';
 
-  const body = rows.map(r =>
+  const body=rows.map(r=>
     [
       esc(r.image),
       esc(r.title),
@@ -132,7 +231,9 @@ function csvOut(rows){
   return header + '\n' + body.join('\n') + '\n';
 }
 
-/* ================= SHUFFLE ================= */
+/* =========================================================
+   HELPERS
+========================================================= */
 function shuffle(a){
   for(let i=a.length-1;i>0;i--){
     const j=Math.floor(Math.random()*(i+1));
@@ -141,210 +242,1308 @@ function shuffle(a){
   return a;
 }
 
-function refillQueue(){queue=shuffle([...data]);}
-function nextItem(){if(!queue.length)refillQueue();return queue.shift();}
+function yearNumSafe(v){
+  const m=String(v||'').match(/\d{3,4}/);
+  return m ? parseInt(m[0],10) : 0;
+}
 
-/* ================= RENDER ================= */
+function yearValue(v){
+
+  v = String(v || '');
+
+  if(v.includes('-')){
+    const p = v.split('-').map(Number);
+    if(p.length === 2) return (p[0] + p[1]) / 2;
+  }
+
+  return yearNumSafe(v);
+}
+
+function nextItem(){
+  if(!queue || queue.length === 0){
+    return null;
+  }
+  return queue.shift();
+}
+
+function calcRMSE(arr){
+  if(!arr.length) return 0;
+
+  const mse =
+    arr.reduce((sum,v)=>sum + v*v,0) / arr.length;
+
+  return Math.sqrt(mse);
+}
+
+function currentQuizSizeKey(){
+
+  const count = QUIZ_SETTINGS.count;
+
+  if(count === 0) return 'all';
+
+  return String(count);
+}
+
+function bestKey(name){
+  return `${active.key}_${currentQuizSizeKey()}_${name}`;
+}
+
+function loadBestStats(){
+  loadBestStreak();
+
+  bestAcc = Number(
+    localStorage.getItem(bestKey('bestAcc')) || 0
+  );
+
+  const savedRmse =
+    localStorage.getItem(bestKey('bestRmse'));
+
+  bestRmse =
+    savedRmse === null
+      ? Infinity
+      : Number(savedRmse);
+}
+
+function saveBestStats(){
+
+  localStorage.setItem(
+    bestKey('bestAcc'),
+    bestAcc
+  );
+
+  if(isFinite(bestRmse)){
+    localStorage.setItem(
+      bestKey('bestRmse'),
+      bestRmse
+    );
+  }
+}
+
+/* =========================================================
+   RENDER
+========================================================= */
+function renderHeader(){
+
+  const el = $('#siteHeader');
+
+  if(!active){
+
+    el.innerHTML = `
+      <div>
+        <h1 class="text-5xl font-bold">Quiz Hub</h1>
+        <p class="text-zinc-600 mt-2">
+          Stable schema-driven quiz engine
+        </p>
+      </div>
+    `;
+
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="flex items-start justify-between gap-6">
+
+      <div class="flex items-center gap-4 min-w-0">
+
+        <button
+          onclick="exitQuiz()"
+          class="border px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-50 shadow-sm shrink-0">
+          ← Home
+        </button>
+
+        <div class="min-w-0">
+          <div class="text-3xl font-bold truncate">
+            ${active.title}
+          </div>
+
+          <div class="text-sm text-zinc-500">
+            Quiz in progress
+          </div>
+        </div>
+
+      </div>
+
+      <div
+        id="statsBar"
+        class="bg-white/80 backdrop-blur px-4 py-2 rounded-2xl shadow-sm border border-zinc-200 min-w-[340px]">
+      </div>
+
+    </div>
+  `;
+}
+
 function render(){
-  const app=$('#app');
-  app.innerHTML=active?renderQuiz():renderHome();
-  if(active)bindQuiz();
+
+  renderHeader();
+
+  const app = $('#app');
+  app.innerHTML = active ? renderQuiz() : renderHome();
+
+  if(active){
+    bindQuiz();
+  }
+
+  updateStats();
 }
 
 function renderHome(){
   return `
-    <div class='grid md:grid-cols-3 gap-4'>
+    <div class="grid md:grid-cols-2 gap-4">
       ${QUIZZES.map(q=>`
-        <button class='bg-white p-5 rounded-2xl shadow text-left' onclick="start('${q.key}')">
-          <div class='text-xl font-bold'>${q.title}</div>
-          <div class='text-sm text-zinc-500'>Best: ${best(q.key)}</div>
+        <button
+          class="bg-white p-5 rounded-2xl shadow text-left hover:shadow-lg transition"
+          onclick="start('${q.key}')">
+          <div class="text-xl font-bold">${q.title}</div>
+          <div class="text-sm text-zinc-500">Best: ${best(q.key)}</div>
         </button>
       `).join('')}
     </div>
 
-    <div class='mt-8 bg-white p-5 rounded-2xl shadow'>
-      <div class='font-semibold mb-2'>GitHub Token</div>
-      <input id='token' class='border p-2 w-full rounded' value='${token}'>
-      <button onclick='saveToken()' class='mt-2 px-4 py-2 bg-black text-white rounded'>Save</button>
+    <div class="mt-8 bg-white p-5 rounded-2xl shadow">
+      <div class="font-semibold mb-2">GitHub Token</div>
+      <input id="token" class="border p-2 w-full rounded" value="${token}">
+      <button onclick="saveToken()"
+        class="mt-2 px-4 py-2 bg-black text-white rounded">
+        Save
+      </button>
     </div>
   `;
 }
 
-function saveToken(){
-  token=$('#token').value.trim();
-  localStorage.setItem('gh_pat',token);
-  toast('Saved');
-}
-
-/* ================= QUIZ ================= */
 function renderQuiz(){
+
   return `
-    <button onclick='exitQuiz()' class='mb-4 border px-3 py-1 rounded'>← Home</button>
 
-    <div class='bg-white p-5 rounded-2xl shadow'>
-      <div class='text-2xl font-bold mb-3'>${active.title}</div>
+    <div class='grid lg:grid-cols-[280px_1fr] gap-6'>
 
-      <img id='img' class='w-full max-h-[400px] object-contain bg-zinc-50 rounded mb-4'>
+      <!-- LEFT SIDEBAR -->
+      <div class='space-y-6'>
 
-      <div class='grid grid-cols-2 gap-3'>
-        ${FIELD_SCHEMA.map(f=>`
-          <input id='${f}' class='border p-2 w-full rounded' placeholder='${f}'>
-        `).join('')}
+        <!-- QUIZ SETTINGS -->
+        <div class='bg-white p-5 rounded-2xl shadow'>
+          <div class='font-semibold text-lg mb-4'>Quiz Settings</div>
+
+          <div class='space-y-4'>
+
+            <div>
+              <label class='block text-sm font-medium mb-1'>
+                Number of Paintings
+              </label>
+
+              <select id='quizCount'
+                class='border rounded w-full p-2'>
+                <option value='10'>10</option>
+                <option value='25'>25</option>
+                <option value='50'>50</option>
+                <option value='100'>100</option>
+                <option value='0' selected>All Available</option>
+              </select>
+            </div>
+
+            <div>
+              <label class='block text-sm font-medium mb-1'>
+                Fields to Quiz
+              </label>
+
+              <div class='space-y-2 text-sm'>
+
+                ${FIELD_SCHEMA.map(f=>`
+                  <label class='flex items-center gap-2'>
+                    <input
+                      type='checkbox'
+                      class='fieldOpt'
+                      value='${f}'
+                      checked>
+                    <span class='capitalize'>${f}</span>
+                  </label>
+                `).join('')}
+
+              </div>
+            </div>
+
+            <div>
+              <label class='block text-sm font-medium mb-1'>
+                Order
+              </label>
+
+              <select id='quizOrder'
+                class='border rounded w-full p-2'>
+                <option value='random'>Random</option>
+                <option value='chronological'>Chronological</option>
+              </select>
+            </div>
+
+            <button onclick='applyQuizSettings()'
+              class='w-full bg-black text-white rounded px-4 py-2 hover:bg-zinc-800'>
+              Apply Settings
+            </button>
+
+            <button onclick='restartQuiz()'
+              class='w-full border rounded px-4 py-2 hover:bg-zinc-50'>
+              Start Over
+            </button>
+
+          </div>
+        </div>
+
+        <!-- TIMELINE -->
+        ${
+          active.key==='art'
+          ? `
+          <div class='bg-white p-5 rounded-2xl shadow'>
+            <div class='font-semibold mb-3'>Explore</div>
+
+            <button onclick='openTimeline()'
+              class='w-full bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700'>
+              Open Timeline
+            </button>
+          </div>
+          `
+          : ''
+        }
+
       </div>
 
-      <div class='flex gap-2 mt-2'>
-        <button id='submit' class='bg-blue-600 text-white px-4 py-2 rounded'>Submit</button>
-        <button id='next' class='border px-4 py-2 rounded'>Next</button>
+      <!-- MAIN QUIZ PANEL -->
+      <div>
+
+        <div class='bg-white p-5 rounded-2xl shadow'>
+
+          <img id='img'
+            class='w-full max-h-[420px] object-contain bg-zinc-50 rounded mb-4'>
+
+          <div id='quizFields'
+            class='grid grid-cols-2 gap-3'>
+            ${FIELD_SCHEMA.map(f=>`
+              <input id='${f}'
+                class='border p-2 w-full rounded'
+                placeholder='${f}'>
+            `).join('')}
+          </div>
+
+          <div class='flex gap-2 mt-3'>
+            <button id='submit'
+              class='bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700'>
+              Submit
+            </button>
+
+            <button id='next'
+              class='border px-4 py-2 rounded hover:bg-zinc-50'>
+              Next
+            </button>
+          </div>
+
+          <div id='result' class='mt-4'></div>
+        </div>
+
+        <!-- ADD ENTRY -->
+        <div class='mt-6 bg-white p-5 rounded-2xl shadow'>
+          <div class='font-semibold mb-3'>Add Entry</div>
+
+          <input id='nimage'
+            placeholder='image url'
+            class='border p-2 w-full mb-3 rounded'>
+
+          <div class='grid grid-cols-2 gap-3'>
+            ${FIELD_SCHEMA.map(f=>`
+              <input id='n${f}'
+                placeholder='${f}'
+                class='border p-2 w-full rounded'>
+            `).join('')}
+          </div>
+
+          <button id='add'
+            class='mt-4 bg-black text-white px-4 py-2 rounded hover:bg-zinc-800'>
+            Commit
+          </button>
+        </div>
+
       </div>
-
-      <div id='result' class='mt-3'></div>
-    </div>
-
-    <div class='mt-6 bg-white p-5 rounded-2xl shadow'>
-      <div class='font-semibold mb-3'>Add Entry</div>
-
-      <input id='nimage' placeholder='image url' class='border p-2 w-full mb-3 rounded'>
-
-      <div class='grid grid-cols-2 gap-3'>
-        ${FIELD_SCHEMA.map(f=>`
-          <input id='n${f}' placeholder='${f}' class='border p-2 w-full rounded'>
-        `).join('')}
-      </div>
-
-      <button id='add' class='mt-4 bg-black text-white px-4 py-2 rounded'>Commit</button>
     </div>
   `;
 }
 
+/* =====================================================
+   BIND QUIZ UI AFTER RENDER
+===================================================== */
 function bindQuiz(){
-  $('#img').src=current.image;
-  $('#submit').onclick=grade;
-  $('#next').onclick=next;
-  $('#add').onclick=addEntry;
+
+  if(current){
+    $('#img').src = current.image;
+  }
+
+  $('#submit').onclick = () => {
+    grade();
+
+    const nextBtn = $('#next');
+    nextBtn.disabled = false;
+    nextBtn.classList.remove(
+      'opacity-40',
+      'cursor-not-allowed'
+    );
+  };
+
+  $('#next').onclick = next;
+  $('#add').onclick = addEntry;
+
+  /* next locked initially */
+  $('#next').disabled = true;
+  $('#next').classList.add(
+    'opacity-40',
+    'cursor-not-allowed'
+  );
+
+  $('#quizCount').value =
+    String(QUIZ_SETTINGS.count);
+
+  $('#quizOrder').value =
+    QUIZ_SETTINGS.order;
+
+  document
+    .querySelectorAll('.fieldOpt')
+    .forEach(box=>{
+      box.checked =
+        QUIZ_SETTINGS.fields.includes(
+          box.value
+        );
+    });
+
+  FIELD_SCHEMA.forEach(f=>{
+
+    const el = $('#'+f);
+
+    const enabled =
+      ACTIVE_FIELDS.includes(f);
+
+    el.disabled = !enabled;
+
+    el.classList.toggle(
+      'bg-zinc-100',
+      !enabled
+    );
+
+    el.classList.toggle(
+      'text-zinc-400',
+      !enabled
+    );
+  });
 }
 
+/* =========================================================
+   FLOW
+========================================================= */
 async function start(key){
-  active=QUIZZES.find(q=>q.key===key);
+
+  active = QUIZZES.find(q => q.key === key);
   await load();
-  refillQueue();
-  current=nextItem();
+
+  streak = 0;
+  answered = 0;
+
+  totalFieldsAttempted = 0;
+  totalFieldsCorrect = 0;
+
+  yearErrors = [];
+
+  loadBestStats();
+
+  /* build first queue using saved settings WITHOUT touching DOM */
+  buildQueueFromSettings();
+
   render();
 }
 
-function exitQuiz(){active=null;render();}
+function exitQuiz(){
+  active=null;
+  render();
+}
 
 async function load(){
-  const txt = await fetch(active.file + '?t=' + Date.now(), {
+  const txt=await fetch(active.file+'?t='+Date.now(),{
     cache:'no-store'
   }).then(r=>r.text());
 
   data=parseCSV(txt);
 }
 
+function buildQueueFromSettings(){
+
+  const settings = window.QUIZ_SETTINGS || {
+    count:0,
+    order:'random',
+    fields:[...FIELD_SCHEMA]
+  };
+
+  ACTIVE_FIELDS = [...settings.fields];
+
+  let rows = [...data];
+  shuffle(rows);
+
+  if(settings.count > 0){
+    rows = rows.slice(0, settings.count);
+  }
+
+  if(settings.order === 'chronological'){
+    rows.sort((a,b)=>yearValue(a.year)-yearValue(b.year));
+  }
+
+  queue = rows;
+  current = queue.shift() || null;
+  submitted = false;
+}
+
+
+/* =====================================================
+   NEXT QUESTION
+===================================================== */
 function next(){
-  submitted=false;
-  current=nextItem();
-  $('#img').src=current.image;
+
+  if(!submitted) return;
+
+  current = nextItem();
+
+  if(!current){
+    showQuizFinished();
+    return;
+  }
+
+  submitted = false;
+
+  $('#img').src = current.image;
 
   FIELD_SCHEMA.forEach(f=>{
-    const el=$('#'+f);
-    el.value='';
-    el.disabled=false;
+
+    const el = $('#'+f);
+
+    el.value = '';
+
+    const enabled =
+      ACTIVE_FIELDS.includes(f);
+
+    el.disabled = !enabled;
+
+    el.classList.toggle(
+      'bg-zinc-100',
+      !enabled
+    );
+
+    el.classList.toggle(
+      'text-zinc-400',
+      !enabled
+    );
   });
 
   $('#result').innerHTML='';
+
+  const rem = $('#remainingCount');
+  if(rem){
+    rem.textContent =
+      queue.length + 1;
+  }
+
+  const nextBtn = $('#next');
+  nextBtn.disabled = true;
+  nextBtn.classList.add(
+    'opacity-40',
+    'cursor-not-allowed'
+  );
 }
 
+/* =====================================================
+   APPLY SETTINGS (kept between restarts)
+===================================================== */
+function applyQuizSettings(){
+
+  /* if page not rendered yet */
+  if(!$('#quizCount')){
+    buildQueueFromSettings();
+    render();
+    return;
+  }
+
+  const count = Number($('#quizCount').value);
+  const order = $('#quizOrder').value;
+
+  const checked = [...document.querySelectorAll('.fieldOpt:checked')]
+    .map(el => el.value);
+
+  if(!checked.length){
+    toast('Select at least one field');
+    return;
+  }
+
+  QUIZ_SETTINGS = {
+    count,
+    order,
+    fields:[...checked]
+  };
+
+  loadBestStats();
+
+  buildQueueFromSettings();
+
+  render();
+}
+
+/* =====================================================
+   START OVER = SAME SETTINGS
+===================================================== */
+function restartQuiz(){
+
+  streak = 0;
+  answered = 0;
+
+  totalFieldsAttempted = 0;
+  totalFieldsCorrect = 0;
+
+  yearErrors = [];
+
+  loadBestStats();
+
+  buildQueueFromSettings();
+  render();
+}
+
+/* =====================================================
+   QUIZ COMPLETE SCREEN
+===================================================== */
+function showQuizFinished(){
+
+  const acc = totalFieldsAttempted
+    ? Math.round(
+        100 * totalFieldsCorrect /
+        totalFieldsAttempted
+      )
+    : 0;
+
+  $('#app').innerHTML = `
+    <div class='max-w-2xl mx-auto'>
+      <div class='bg-white rounded-2xl shadow p-8 text-center'>
+
+        <div class='text-4xl font-bold mb-3'>
+          Quiz Complete
+        </div>
+
+        <div class='text-zinc-500 mb-8'>
+          Nice run.
+        </div>
+
+        <div class='grid grid-cols-4 gap-4 mb-8'>
+
+          <div class='border rounded-xl p-4'>
+            <div class='text-sm text-zinc-500'>Answered</div>
+            <div class='text-2xl font-bold'>${answered}</div>
+          </div>
+
+          <div class='border rounded-xl p-4'>
+            <div class='text-sm text-zinc-500'>Perfect</div>
+            <div class='text-2xl font-bold'>${perfect}</div>
+          </div>
+
+          <div class='border rounded-xl p-4'>
+            <div class='text-sm text-zinc-500'>Accuracy</div>
+            <div class='text-2xl font-bold'>${acc}%</div>
+          </div>
+
+          <div class='border rounded-xl p-4'>
+            <div class='text-sm text-zinc-500'>Best</div>
+            <div class='text-2xl font-bold'>${bestStreak}</div>
+          </div>
+
+        </div>
+
+        <div class='flex gap-3 justify-center'>
+          <button onclick='restartQuiz()'
+            class='bg-blue-600 text-white px-5 py-3 rounded-xl'>
+            Play Again
+          </button>
+
+          <button onclick='exitQuiz()'
+            class='border px-5 py-3 rounded-xl'>
+            Home
+          </button>
+        </div>
+
+      </div>
+    </div>
+  `;
+
+  updateStats();
+}
+
+/* =========================================================
+   GRADE
+========================================================= */
 function grade(){
+
   if(submitted) return;
-  submitted=true;
+  submitted = true;
 
-  let score=0;
-  let out='';
+  const fields = ACTIVE_FIELDS || FIELD_SCHEMA;
 
-  FIELD_SCHEMA.forEach(f=>{
-    const input=$('#'+f);
-    const vRaw=input.value.trim();
-    const v=vRaw.toLowerCase();
-    const aRaw=(current[f]||'').toString();
-    const a=aRaw.toLowerCase();
+  let score = 0;
+  let nonYearTotal = 0;
+  let nonYearCorrect = 0;
+  let out = '';
 
-    let ok=false;
+  fields.forEach(f=>{
 
-    // YEAR RANGE SUPPORT
+    const input = $('#'+f);
+    const vRaw = input.value.trim();
+    const v = vRaw.toLowerCase();
+
+    const aRaw = (current[f] || '').toString();
+    const a = aRaw.toLowerCase();
+
+    let ok = false;
+
     if(f==='year' && aRaw.includes('-')){
-      const parts=aRaw.split('-').map(x=>parseInt(x.trim(),10));
-      const num=parseInt(vRaw,10);
-      if(!isNaN(num) && parts.length===2){
-        ok = num>=parts[0] && num<=parts[1];
+
+      const p = aRaw.split('-').map(x=>parseInt(x.trim(),10));
+      const n = parseInt(vRaw,10);
+
+      if(!isNaN(n) && p.length===2){
+        ok = n>=p[0] && n<=p[1];
       }
-    }
 
-    // MOVEMENT FUZZY MATCH
-    else if(f==='movement' && a.includes(' or ')){
-      const options=a.split(/\s+or\s+/).map(x=>x.trim());
-      ok = options.includes(v) || (v && options.some(opt=>opt.includes(v) || v.includes(opt)));
-    }
+    } else if(f==='movement' && a.includes(' or ')) {
 
-    else {
-      ok = v && a && (v===a || v.includes(a) || a.includes(v));
+      const opts = a.split(/\s+or\s+/).map(x=>x.trim());
+      ok = opts.includes(v);
+
+    } else {
+
+      ok = v && a && (
+        v===a ||
+        v.includes(a) ||
+        a.includes(v)
+      );
     }
 
     if(ok) score++;
 
-    input.disabled=true;
+    if(f !== 'year'){
+      nonYearTotal++;
 
-    out+=`<div class='mb-1'>
-      <span class='font-medium'>${f}:</span>
-      <span class='${ok?'text-green-600':'text-red-600'}'>${vRaw || '(empty)'}</span>
-      ${`<span class='text-zinc-500 ml-2'>(correct: ${current[f]})</span>`}
-    </div>`;
+      if(ok){
+        nonYearCorrect++;
+      }
+    }
+
+    if(f === 'year'){
+      const actual = yearValue(aRaw);
+      const guess = parseInt(vRaw,10);
+
+      if(!isNaN(guess) && actual){
+        yearErrors.push(guess - actual);
+      }
+    }
+
+    input.disabled = true;
+
+    out += `
+      <div class='mb-1'>
+        <span class='font-medium'>${f}:</span>
+        <span class='${ok ? 'text-green-600':'text-red-600'}'>
+          ${vRaw || '(empty)'}
+        </span>
+        <span class='text-zinc-500 ml-2'>
+          (correct: ${current[f]})
+        </span>
+      </div>
+    `;
   });
 
-  setBest(active.key,score);
-  $('#result').innerHTML=`<div class='font-bold mb-2'>Score ${score}/${FIELD_SCHEMA.length}</div>`+out;
+  answered++;
+  totalFieldsAttempted += nonYearTotal;
+  totalFieldsCorrect += nonYearCorrect;
+
+  const acc =
+    totalFieldsAttempted
+      ? Math.round(
+          100 *
+          totalFieldsCorrect /
+          totalFieldsAttempted
+        )
+      : 0;
+
+  const rmse = calcRMSE(yearErrors);
+
+  if(acc > bestAcc){
+    bestAcc = acc;
+  }
+
+  if(yearErrors.length && rmse < bestRmse){
+    bestRmse = rmse;
+  }
+
+  saveBestStats();
+
+  if(score === fields.length){
+    perfect++;
+    streak++;
+    if(streak > bestStreak){
+      bestStreak = streak;
+      saveBestStreak();
+    }
+  } else {
+    streak = 0;
+  }
+
+  $('#result').innerHTML =
+    "<div class='font-bold mb-2'>Score " +
+    score + "/" + fields.length +
+    "</div>" + out;
+
+  updateStats();
 }
 
+/* =========================================================
+   TIMELINE
+========================================================= */
+const TIMELINE_PAD = 100;
+const PX_PER_YEAR = 12;
+const CARD_W = 170;
+const CARD_H = 150;
+const LANE_H = 165;
+
+/* 80 colors */
+const PALETTE_80 = [
+"#e11d48","#f97316","#f59e0b","#eab308","#84cc16","#22c55e","#10b981","#14b8a6",
+"#06b6d4","#0ea5e9","#3b82f6","#6366f1","#8b5cf6","#a855f7","#d946ef","#ec4899",
+"#f43f5e","#fb7185","#fca5a5","#fdba74","#fde047","#bef264","#86efac","#5eead4",
+"#67e8f9","#93c5fd","#a5b4fc","#c4b5fd","#d8b4fe","#f0abfc","#f9a8d4","#fecdd3",
+"#991b1b","#9a3412","#92400e","#854d0e","#365314","#14532d","#064e3b","#134e4a",
+"#0c4a6e","#1e3a8a","#312e81","#4c1d95","#581c87","#701a75","#831843","#881337",
+"#b91c1c","#c2410c","#d97706","#ca8a04","#65a30d","#16a34a","#059669","#0d9488",
+"#0284c7","#2563eb","#4338ca","#6d28d9","#7e22ce","#a21caf","#be185d","#e11d48",
+"#1f2937","#374151","#4b5563","#6b7280","#9ca3af","#d1d5db","#e5e7eb","#f3f4f6"
+];
+
+const movementMap = new Map();
+let movementColorIndex=0;
+
+function getColor(tag){
+  if(!movementMap.has(tag)){
+    movementMap.set(
+      tag,
+      PALETTE_80[movementColorIndex % PALETTE_80.length]
+    );
+    movementColorIndex++;
+  }
+  return movementMap.get(tag);
+}
+
+function parseMovements(v){
+  if(!v) return [];
+
+  return v
+    .replace(/\(.*?\)/g,'')
+    .split('/')
+    .map(s=>s.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function xPos(year,minYear){
+  return TIMELINE_PAD + (yearNumSafe(year)-minYear)*PX_PER_YEAR;
+}
+
+function buildMovementAnchors(rows){
+  const firstSeen=new Map();
+
+  rows.forEach(r=>{
+    const y=yearNumSafe(r.year);
+
+    parseMovements(r.movement).forEach(m=>{
+      if(!firstSeen.has(m) || y<firstSeen.get(m)){
+        firstSeen.set(m,y);
+      }
+    });
+  });
+
+  return [...firstSeen.entries()]
+    .map(([movement,year])=>({movement,year}))
+    .sort((a,b)=>a.year-b.year);
+}
+
+function openTimeline(){
+
+  const allRows=[...data].filter(r=>r.year);
+
+  if(!allRows.length){
+    toast("No dated works found");
+    return;
+  }
+
+  const win=window.open("","timeline");
+
+  win.document.write(`
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Timeline</title>
+</head>
+<body style="margin:0;background:white;font-family:Arial,sans-serif;"></body>
+</html>
+  `);
+  win.document.close();
+
+  const doc=win.document;
+  const body=doc.body;
+
+  /* =======================================================
+     STATE
+  ======================================================= */
+  const selected = new Set();
+
+  let zoom = 12;
+  const ZMIN = 4;
+  const ZMAX = 40;
+
+  const LEFT_PAD = 100;
+  const CARD_W = 170;
+  const LANE_H = 184;
+  const HEADER_H = 54;
+
+  const LABEL_ROW_H = 26;
+  const LABEL_TOP_PAD = 8;
+  const LABEL_BOTTOM_PAD = 10;
+
+  const minYear=Math.min(...allRows.map(r=>yearNumSafe(r.year)));
+  const maxYear=Math.max(...allRows.map(r=>yearNumSafe(r.year)));
+
+  function xPos(year){
+    return LEFT_PAD + (yearNumSafe(year)-minYear)*zoom;
+  }
+
+  function widthNow(){
+    return LEFT_PAD + (maxYear-minYear+1)*zoom + LEFT_PAD;
+  }
+
+  function tagsOf(str){
+    return parseMovements(str)
+      .map(s=>s.replace(/\//g,'').trim())
+      .filter(Boolean);
+  }
+
+  /* =======================================================
+     COLORS
+  ======================================================= */
+  const palette=[
+    "#1d4ed8","#2563eb","#15803d","#16a34a","#b91c1c","#dc2626",
+    "#c2410c","#ea580c","#a16207","#ca8a04","#7c3aed","#6d28d9",
+    "#be185d","#db2777","#0f766e","#0d9488","#0369a1","#0284c7",
+    "#4338ca","#4f46e5","#374151","#1f2937"
+  ];
+
+  const colorMap=new Map();
+  let cIdx=0;
+
+  function getColor(m){
+    if(!colorMap.has(m)){
+      colorMap.set(m,palette[cIdx % palette.length]);
+      cIdx++;
+    }
+    return colorMap.get(m);
+  }
+
+  function rowIncluded(r){
+    if(selected.size===0) return true;
+    return tagsOf(r.movement).some(t=>selected.has(t));
+  }
+
+  /* =======================================================
+     LABEL LAYOUT (dynamic height)
+  ======================================================= */
+  function buildLabels(){
+
+    const firstSeen=new Map();
+
+    allRows.forEach(r=>{
+      const y=yearNumSafe(r.year);
+      tagsOf(r.movement).forEach(t=>{
+        if(!firstSeen.has(t) || y<firstSeen.get(t)){
+          firstSeen.set(t,y);
+        }
+      });
+    });
+
+    const anchors=[...firstSeen.entries()]
+      .map(([movement,year])=>({movement,year}))
+      .sort((a,b)=>a.year-b.year);
+
+    const lanes=[];
+
+    const items = anchors.map(a=>{
+
+      const x=xPos(a.year);
+      const est=Math.max(72,a.movement.length*7+24);
+
+      let lane=0;
+
+      while(true){
+        if(!lanes[lane]) lanes[lane]=[];
+
+        const clash=lanes[lane].some(o =>
+          Math.abs(o.x-x) < ((o.w+est)/2 + 8)
+        );
+
+        if(!clash){
+          lanes[lane].push({x,w:est});
+          break;
+        }
+
+        lane++;
+      }
+
+      return {
+        ...a,
+        x,
+        lane
+      };
+    });
+
+    const laneCount = Math.max(1, lanes.length);
+
+    const LABEL_H =
+      LABEL_TOP_PAD +
+      laneCount * LABEL_ROW_H +
+      LABEL_BOTTOM_PAD;
+
+    const html = items.map(a=>{
+
+      const active=selected.has(a.movement);
+
+      return `
+        <div data-move="${a.movement}" style="
+          position:absolute;
+          left:${a.x}px;
+          top:${LABEL_TOP_PAD + a.lane*LABEL_ROW_H}px;
+          transform:translateX(-50%);
+          white-space:nowrap;
+          padding:3px 8px;
+          border-radius:999px;
+          font-size:12px;
+          font-weight:700;
+          cursor:pointer;
+          user-select:none;
+          color:${active?'white':getColor(a.movement)};
+          background:${active?getColor(a.movement):'white'};
+          border:1px solid ${getColor(a.movement)};
+          box-shadow:0 1px 4px rgba(0,0,0,.08);
+        ">${a.movement}</div>
+      `;
+    }).join("");
+
+    return { LABEL_H, html };
+  }
+
+  /* =======================================================
+     RETILE VISIBLE CARDS ONLY
+  ======================================================= */
+  function packVisible(rows){
+
+    const lanes=[];
+
+    return rows.map(r=>{
+
+      const x=xPos(r.year);
+
+      let lane=0;
+
+      while(true){
+        if(!lanes[lane]) lanes[lane]=[];
+
+        const clash=lanes[lane].some(px =>
+          Math.abs(px-x) < CARD_W+18
+        );
+
+        if(!clash){
+          lanes[lane].push(x);
+          break;
+        }
+
+        lane++;
+      }
+
+      return {...r,x,lane};
+    });
+  }
+
+  /* =======================================================
+     RENDER
+  ======================================================= */
+  function render(keepCenter=true){
+
+    const oldScroller = body.querySelector("#scrollWrap");
+    const prevX = oldScroller ? oldScroller.scrollLeft : 0;
+    const prevY = oldScroller ? oldScroller.scrollTop : 0;
+    const prevW = oldScroller ? oldScroller.clientWidth : 0;
+    const oldSW = oldScroller ? oldScroller.scrollWidth : 1;
+
+    const { LABEL_H, html:labels } = buildLabels();
+
+    const visibleRows = allRows
+      .filter(rowIncluded)
+      .sort((a,b)=>yearNumSafe(a.year)-yearNumSafe(b.year));
+
+    const positioned = packVisible(visibleRows);
+
+    const laneCount =
+      positioned.length
+        ? Math.max(...positioned.map(r=>r.lane))+1
+        : 1;
+
+    const totalHeight =
+      LABEL_H +
+      laneCount * LANE_H +
+      140;
+
+    /* ticks */
+    let ticks="";
+    const tickLineTop = LABEL_H + 18;
+
+    for(let y=minYear;y<=maxYear;y+=25){
+
+      const x=xPos(y);
+
+      ticks += `
+        <div style="
+          position:absolute;
+          left:${x}px;
+          top:${LABEL_H + 2}px;
+          transform:translateX(-50%);
+          font-size:11px;
+          color:#64748b;
+          z-index:2;
+        ">${y}</div>
+
+        <div style="
+          position:absolute;
+          left:${x}px;
+          top:${tickLineTop}px;
+          width:1px;
+          height:${totalHeight-tickLineTop}px;
+          background:#edf2f7;
+          z-index:1;
+        "></div>
+      `;
+    }
+
+    /* cards */
+    const cards = positioned.map(r=>{
+
+      const top = LABEL_H + 34 + r.lane*LANE_H;
+
+      const strip = tagsOf(r.movement).map(t=>`
+        <div style="flex:1;background:${getColor(t)};"></div>
+      `).join("");
+
+      return `
+        <div style="
+          position:absolute;
+          left:${r.x}px;
+          top:${top}px;
+          width:${CARD_W}px;
+          transform:translateX(-50%);
+          z-index:10;
+        ">
+          <div style="
+            background:white;
+            border-radius:14px;
+            overflow:hidden;
+            border:1px solid #e5e7eb;
+            box-shadow:0 6px 14px rgba(0,0,0,.08);
+          ">
+            <div style="height:8px;display:flex;">
+              ${strip}
+            </div>
+
+            <img src="${r.image}" style="
+              width:100%;
+              height:104px;
+              object-fit:contain;
+              background:#f8fafc;
+            ">
+
+            <div style="padding:8px">
+              <div style="font-size:12px;font-weight:700;">
+                ${r.title}
+              </div>
+              <div style="font-size:11px;color:#64748b;">
+                ${r.artist}
+              </div>
+              <div style="font-size:10px;color:#94a3b8;">
+                ${r.year}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    body.innerHTML=`
+      <div style="
+        position:sticky;
+        top:0;
+        z-index:60;
+        height:${HEADER_H}px;
+        background:white;
+        border-bottom:1px solid #e5e7eb;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        padding:0 16px;
+      ">
+        <div style="font-size:20px;font-weight:800;">
+          Art Timeline
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button id="zoomOut" style="
+            border:1px solid #d1d5db;
+            background:white;
+            border-radius:8px;
+            padding:4px 10px;
+            cursor:pointer;
+          ">−</button>
+
+          <div style="
+            font-size:12px;
+            color:#475569;
+            min-width:58px;
+            text-align:center;
+          ">${zoom.toFixed(1)} px/yr</div>
+
+          <button id="zoomIn" style="
+            border:1px solid #d1d5db;
+            background:white;
+            border-radius:8px;
+            padding:4px 10px;
+            cursor:pointer;
+          ">+</button>
+        </div>
+      </div>
+
+      <div id="scrollWrap" style="
+        height:calc(100vh - ${HEADER_H}px);
+        overflow:auto;
+      ">
+        <div style="
+          position:relative;
+          width:${widthNow()}px;
+          height:${totalHeight}px;
+          background:white;
+        ">
+
+          <div style="
+            position:sticky;
+            top:0;
+            z-index:40;
+            height:${LABEL_H}px;
+            background:rgba(255,255,255,.97);
+            border-bottom:1px solid #e5e7eb;
+          ">
+            <div style="
+              position:relative;
+              width:${widthNow()}px;
+              height:${LABEL_H}px;
+            ">
+              ${labels}
+            </div>
+          </div>
+
+          ${ticks}
+          ${cards}
+
+        </div>
+      </div>
+    `;
+
+    const scroller = body.querySelector("#scrollWrap");
+
+    if(oldScroller && keepCenter){
+      const centerRatio = (prevX + prevW/2) / oldSW;
+      const newX =
+        centerRatio * scroller.scrollWidth -
+        scroller.clientWidth/2;
+
+      scroller.scrollLeft=Math.max(0,newX);
+      scroller.scrollTop=prevY;
+    }else{
+      scroller.scrollLeft=prevX;
+      scroller.scrollTop=prevY;
+    }
+
+    /* movement clicks */
+    body.querySelectorAll("[data-move]").forEach(el=>{
+      el.onclick=()=>{
+        const m=el.dataset.move;
+        if(selected.has(m)) selected.delete(m);
+        else selected.add(m);
+        render(false);
+      };
+    });
+
+    /* zoom */
+    body.querySelector("#zoomIn").onclick=()=>{
+      zoom=Math.min(ZMAX,zoom*1.25);
+      render(true);
+    };
+
+    body.querySelector("#zoomOut").onclick=()=>{
+      zoom=Math.max(ZMIN,zoom/1.25);
+      render(true);
+    };
+  }
+
+  render(false);
+}
+
+/* =========================================================
+   ADD ENTRY
+========================================================= */
 async function addEntry(){
   if(!token) return toast('No token');
 
-  const path = active.file;
+  const path=active.file;
 
-  // Read latest repo file directly from GitHub API
-  const meta = await fetch(
+  const meta=await fetch(
     `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,
     {
-      headers:{ Authorization:'Bearer ' + token }
+      headers:{Authorization:'Bearer '+token}
     }
-  ).then(r => r.json());
+  ).then(r=>r.json());
 
-  const latestCsv = atob(meta.content.replace(/\n/g,''));
-  data = parseCSV(latestCsv);
+  const latestCsv=atob(meta.content.replace(/\n/g,''));
+  data=parseCSV(latestCsv);
 
-  // Build new row
-  const row = { image: $('#nimage').value.trim() };
+  const row={image:$('#nimage').value.trim()};
 
   FIELD_SCHEMA.forEach(f=>{
-    row[f] = $('#n'+f).value.trim();
+    row[f]=$('#n'+f).value.trim();
   });
 
-  // Append
   data.push(row);
 
-  // Write updated file
   await fetch(
     `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,
     {
       method:'PUT',
       headers:{
-        Authorization:'Bearer ' + token,
+        Authorization:'Bearer '+token,
         'Content-Type':'application/json'
       },
-      body: JSON.stringify({
+      body:JSON.stringify({
         message:'update dataset',
-        content:btoa(unescape(encodeURIComponent(csvOut(data)))),
-        sha: meta.sha,
-        branch: BRANCH
+        content:btoa(
+          unescape(
+            encodeURIComponent(csvOut(data))
+          )
+        ),
+        sha:meta.sha,
+        branch:BRANCH
       })
     }
   );
@@ -352,9 +1551,7 @@ async function addEntry(){
   toast('Saved');
 
   await load();
-  refillQueue();
-  current = nextItem();
-  render();
+  applyQuizSettings();
 }
 
 render();
