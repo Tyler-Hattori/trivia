@@ -321,61 +321,6 @@ function saveBestStats(){
 
 /* =========================================================
    RENDER
-========================================================= */
-function renderHeader(){
-
-  const el = $('#siteHeader');
-
-  if(!active){
-
-    el.innerHTML = `
-      <div>
-        <h1 class="text-5xl font-bold">Quiz Hub</h1>
-        <p class="text-zinc-600 mt-2">
-          Stable schema-driven quiz engine
-        </p>
-      </div>
-    `;
-
-    return;
-  }
-
-  el.innerHTML = `
-    <div class="flex items-start justify-between gap-6">
-
-      <div class="flex items-center gap-4 min-w-0">
-
-        <button
-          onclick="exitQuiz()"
-          class="border px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-50 shadow-sm shrink-0">
-          ← Home
-        </button>
-
-        <div class="min-w-0">
-          <div class="text-3xl font-bold truncate">
-            ${active.title}
-          </div>
-
-          <div class="text-sm text-zinc-500">
-            Quiz in progress
-          </div>
-        </div>
-
-      </div>
-
-      <div
-        id="statsBar"
-        class="bg-white/80 backdrop-blur px-4 py-2 rounded-2xl shadow-sm border border-zinc-200 min-w-[340px]">
-      </div>
-
-    </div>
-  `;
-}
-
-function render(){
-
-  renderHeader();
-
   const app = $('#app');
   app.innerHTML = active ? renderQuiz() : renderHome();
 
@@ -565,49 +510,6 @@ function renderQuiz(){
 
 /* =====================================================
    BIND QUIZ UI AFTER RENDER
-===================================================== */
-function bindQuiz(){
-
-  if(current){
-    $('#img').src = current.image;
-  }
-
-  $('#submit').onclick = () => {
-    grade();
-
-    const nextBtn = $('#next');
-    nextBtn.disabled = false;
-    nextBtn.classList.remove(
-      'opacity-40',
-      'cursor-not-allowed'
-    );
-  };
-
-  $('#next').onclick = next;
-  $('#add').onclick = addEntry;
-
-  /* next locked initially */
-  $('#next').disabled = true;
-  $('#next').classList.add(
-    'opacity-40',
-    'cursor-not-allowed'
-  );
-
-  $('#quizCount').value =
-    String(QUIZ_SETTINGS.count);
-
-  $('#quizOrder').value =
-    QUIZ_SETTINGS.order;
-
-  document
-    .querySelectorAll('.fieldOpt')
-    .forEach(box=>{
-      box.checked =
-        QUIZ_SETTINGS.fields.includes(
-          box.value
-        );
-    });
-
   FIELD_SCHEMA.forEach(f=>{
 
     const el = $('#'+f);
@@ -751,126 +653,6 @@ function next(){
 
 /* =====================================================
    APPLY SETTINGS (kept between restarts)
-===================================================== */
-function applyQuizSettings(){
-
-  /* if page not rendered yet */
-  if(!$('#quizCount')){
-    buildQueueFromSettings();
-    render();
-    return;
-  }
-
-  const count = Number($('#quizCount').value);
-  const order = $('#quizOrder').value;
-
-  const checked = [...document.querySelectorAll('.fieldOpt:checked')]
-    .map(el => el.value);
-
-  if(!checked.length){
-    toast('Select at least one field');
-    return;
-  }
-
-  QUIZ_SETTINGS = {
-    count,
-    order,
-    fields:[...checked]
-  };
-
-  loadBestStats();
-
-  buildQueueFromSettings();
-
-  render();
-}
-
-/* =====================================================
-   START OVER = SAME SETTINGS
-===================================================== */
-function restartQuiz(){
-
-  streak = 0;
-  answered = 0;
-
-  totalFieldsAttempted = 0;
-  totalFieldsCorrect = 0;
-
-  yearErrors = [];
-
-  loadBestStats();
-
-  buildQueueFromSettings();
-  render();
-}
-
-/* =====================================================
-   QUIZ COMPLETE SCREEN
-===================================================== */
-function showQuizFinished(){
-
-  const acc = totalFieldsAttempted
-    ? Math.round(
-        100 * totalFieldsCorrect /
-        totalFieldsAttempted
-      )
-    : 0;
-
-  $('#app').innerHTML = `
-    <div class='max-w-2xl mx-auto'>
-      <div class='bg-white rounded-2xl shadow p-8 text-center'>
-
-        <div class='text-4xl font-bold mb-3'>
-          Quiz Complete
-        </div>
-
-        <div class='text-zinc-500 mb-8'>
-          Nice run.
-        </div>
-
-        <div class='grid grid-cols-4 gap-4 mb-8'>
-
-          <div class='border rounded-xl p-4'>
-            <div class='text-sm text-zinc-500'>Answered</div>
-            <div class='text-2xl font-bold'>${answered}</div>
-          </div>
-
-          <div class='border rounded-xl p-4'>
-            <div class='text-sm text-zinc-500'>Perfect</div>
-            <div class='text-2xl font-bold'>${perfect}</div>
-          </div>
-
-          <div class='border rounded-xl p-4'>
-            <div class='text-sm text-zinc-500'>Accuracy</div>
-            <div class='text-2xl font-bold'>${acc}%</div>
-          </div>
-
-          <div class='border rounded-xl p-4'>
-            <div class='text-sm text-zinc-500'>Best</div>
-            <div class='text-2xl font-bold'>${bestStreak}</div>
-          </div>
-
-        </div>
-
-        <div class='flex gap-3 justify-center'>
-          <button onclick='restartQuiz()'
-            class='bg-blue-600 text-white px-5 py-3 rounded-xl'>
-            Play Again
-          </button>
-
-          <button onclick='exitQuiz()'
-            class='border px-5 py-3 rounded-xl'>
-            Home
-          </button>
-        </div>
-
-      </div>
-    </div>
-  `;
-
-  updateStats();
-}
-
 /* =========================================================
    GRADE
 ========================================================= */
@@ -928,7 +710,6 @@ function grade(){
       if(ok){
         nonYearCorrect++;
       }
-    }
 
     if(f === 'year'){
       const actual = yearValue(aRaw);
@@ -1000,57 +781,6 @@ function grade(){
 
 /* =========================================================
    TIMELINE
-========================================================= */
-const TIMELINE_PAD = 100;
-const PX_PER_YEAR = 12;
-const CARD_W = 170;
-const CARD_H = 150;
-const LANE_H = 165;
-
-/* 80 colors */
-const PALETTE_80 = [
-"#e11d48","#f97316","#f59e0b","#eab308","#84cc16","#22c55e","#10b981","#14b8a6",
-"#06b6d4","#0ea5e9","#3b82f6","#6366f1","#8b5cf6","#a855f7","#d946ef","#ec4899",
-"#f43f5e","#fb7185","#fca5a5","#fdba74","#fde047","#bef264","#86efac","#5eead4",
-"#67e8f9","#93c5fd","#a5b4fc","#c4b5fd","#d8b4fe","#f0abfc","#f9a8d4","#fecdd3",
-"#991b1b","#9a3412","#92400e","#854d0e","#365314","#14532d","#064e3b","#134e4a",
-"#0c4a6e","#1e3a8a","#312e81","#4c1d95","#581c87","#701a75","#831843","#881337",
-"#b91c1c","#c2410c","#d97706","#ca8a04","#65a30d","#16a34a","#059669","#0d9488",
-"#0284c7","#2563eb","#4338ca","#6d28d9","#7e22ce","#a21caf","#be185d","#e11d48",
-"#1f2937","#374151","#4b5563","#6b7280","#9ca3af","#d1d5db","#e5e7eb","#f3f4f6"
-];
-
-const movementMap = new Map();
-let movementColorIndex=0;
-
-function getColor(tag){
-  if(!movementMap.has(tag)){
-    movementMap.set(
-      tag,
-      PALETTE_80[movementColorIndex % PALETTE_80.length]
-    );
-    movementColorIndex++;
-  }
-  return movementMap.get(tag);
-}
-
-function parseMovements(v){
-  if(!v) return [];
-
-  return v
-    .replace(/\(.*?\)/g,'')
-    .split('/')
-    .map(s=>s.trim().toLowerCase())
-    .filter(Boolean);
-}
-
-function xPos(year,minYear){
-  return TIMELINE_PAD + (yearNumSafe(year)-minYear)*PX_PER_YEAR;
-}
-
-function buildMovementAnchors(rows){
-  const firstSeen=new Map();
-
   rows.forEach(r=>{
     const y=yearNumSafe(r.year);
 
