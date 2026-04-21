@@ -10,13 +10,7 @@
 <body class="bg-zinc-100 min-h-screen text-zinc-900">
 
 <div class="max-w-6xl mx-auto p-6">
-  <header class="mb-8 flex flex-wrap items-end justify-between gap-4">
-    <div>
-      <h1 class="text-5xl font-bold">Quiz Hub</h1>
-      <p class="text-zinc-600 mt-2">Stable schema-driven quiz engine</p>
-    </div>
-    <div id="statsBar" class="text-sm text-zinc-600"></div>
-  </header>
+  <header id="siteHeader" class="mb-8"></header>
 
   <div id="app"></div>
 </div>
@@ -45,12 +39,17 @@ let current=null;
 let submitted=false;
 
 let streak=0;
-let bestStreak=Number(localStorage.getItem('best_streak')||0);
+let bestStreak=0;
 let answered=0;
 let perfect=0;
 
-let totalFieldsAttempted = 0;
-let totalFieldsCorrect = 0;
+let totalFieldsAttempted = 0;   // non-year only
+let totalFieldsCorrect = 0;     // non-year only
+
+let yearErrors = [];
+
+let bestAcc = 0;
+let bestRmse = Infinity;
 
 let activeFilters=new Set();
 
@@ -64,6 +63,21 @@ function best(k){
 
 function setBest(k,v){
   if(v>best(k)) localStorage.setItem('score_'+k,String(v));
+}
+
+function loadBestStreak(){
+  bestStreak = Number(
+    localStorage.getItem(
+      bestKey('bestStreak')
+    ) || 0
+  );
+}
+
+function saveBestStreak(){
+  localStorage.setItem(
+    bestKey('bestStreak'),
+    bestStreak
+  );
 }
 
 /* =====================================================
@@ -83,21 +97,61 @@ window.ACTIVE_FIELDS = window.ACTIVE_FIELDS || [...FIELD_SCHEMA];
 function updateStats(){
 
   if(!active){
-    $('#statsBar').textContent='';
+    $('#statsBar').innerHTML = `<div class="bg-white border border-zinc-200 rounded-2xl px-4 py-3 shadow-sm text-right inline-block">`
     return;
   }
 
-  const acc = totalFieldsAttempted
-    ? Math.round(
-        100 * totalFieldsCorrect /
-        totalFieldsAttempted
-      )
-    : 0;
+  const total =
+    QUIZ_SETTINGS.count > 0
+      ? QUIZ_SETTINGS.count
+      : data.length;
 
-  $('#statsBar').textContent =
-    'Streak ' + streak +
-    ' · Best ' + bestStreak +
-    ' · Accuracy ' + acc + '%';
+  const done = answered;
+
+  const acc =
+    totalFieldsAttempted
+      ? Math.round(
+          100 *
+          totalFieldsCorrect /
+          totalFieldsAttempted
+        )
+      : 0;
+
+  const rmse = calcRMSE(yearErrors);
+
+  $('#statsBar').innerHTML = `
+    <div class="text-right leading-snug tracking-tight">
+
+      <div class="text-sm font-semibold text-zinc-800">
+        ${active.title}
+        <span class="text-zinc-400 font-normal">·</span>
+        ${total} Paintings
+        <span class="text-zinc-400 font-normal">·</span>
+        ${done}/${total} Done
+      </div>
+
+      <div class="text-sm text-zinc-700 mt-0.5">
+        <span class="font-medium">Acc</span> ${acc}%
+        <span class="text-zinc-400">·</span>
+        <span class="font-medium">Year</span> ±${rmse.toFixed(1)}y
+        <span class="text-zinc-400">·</span>
+        <span class="font-medium">Streak</span> ${streak}
+      </div>
+
+      <div class="text-xs text-zinc-500 mt-0.5">
+        Best ${bestAcc}%
+        <span class="text-zinc-400">·</span>
+        Best ±${
+          isFinite(bestRmse)
+            ? bestRmse.toFixed(1)
+            : '--'
+        }y
+        <span class="text-zinc-400">·</span>
+        Best Streak ${bestStreak}
+      </div>
+
+    </div>
+  `;
 }
 
 /* =========================================================
@@ -212,10 +266,115 @@ function nextItem(){
   return queue.shift();
 }
 
+function calcRMSE(arr){
+  if(!arr.length) return 0;
+
+  const mse =
+    arr.reduce((sum,v)=>sum + v*v,0) / arr.length;
+
+  return Math.sqrt(mse);
+}
+
+function currentQuizSizeKey(){
+
+  const count = QUIZ_SETTINGS.count;
+
+  if(count === 0) return 'all';
+
+  return String(count);
+}
+
+function bestKey(name){
+  return `${active.key}_${currentQuizSizeKey()}_${name}`;
+}
+
+function loadBestStats(){
+  loadBestStreak();
+
+  bestAcc = Number(
+    localStorage.getItem(bestKey('bestAcc')) || 0
+  );
+
+  const savedRmse =
+    localStorage.getItem(bestKey('bestRmse'));
+
+  bestRmse =
+    savedRmse === null
+      ? Infinity
+      : Number(savedRmse);
+}
+
+function saveBestStats(){
+
+  localStorage.setItem(
+    bestKey('bestAcc'),
+    bestAcc
+  );
+
+  if(isFinite(bestRmse)){
+    localStorage.setItem(
+      bestKey('bestRmse'),
+      bestRmse
+    );
+  }
+}
+
 /* =========================================================
    RENDER
 ========================================================= */
+function renderHeader(){
+
+  const el = $('#siteHeader');
+
+  if(!active){
+
+    el.innerHTML = `
+      <div>
+        <h1 class="text-5xl font-bold">Quiz Hub</h1>
+        <p class="text-zinc-600 mt-2">
+          Stable schema-driven quiz engine
+        </p>
+      </div>
+    `;
+
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="flex items-start justify-between gap-6">
+
+      <div class="flex items-center gap-4 min-w-0">
+
+        <button
+          onclick="exitQuiz()"
+          class="border px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-50 shadow-sm shrink-0">
+          ← Home
+        </button>
+
+        <div class="min-w-0">
+          <div class="text-3xl font-bold truncate">
+            ${active.title}
+          </div>
+
+          <div class="text-sm text-zinc-500">
+            Quiz in progress
+          </div>
+        </div>
+
+      </div>
+
+      <div
+        id="statsBar"
+        class="bg-white/80 backdrop-blur px-4 py-2 rounded-2xl shadow-sm border border-zinc-200 min-w-[340px]">
+      </div>
+
+    </div>
+  `;
+}
+
 function render(){
+
+  renderHeader();
 
   const app = $('#app');
   app.innerHTML = active ? renderQuiz() : renderHome();
@@ -254,10 +413,6 @@ function renderHome(){
 function renderQuiz(){
 
   return `
-    <button onclick='exitQuiz()'
-      class='mb-4 border px-3 py-1 rounded hover:bg-zinc-50'>
-      ← Home
-    </button>
 
     <div class='grid lg:grid-cols-[280px_1fr] gap-6'>
 
@@ -353,16 +508,6 @@ function renderQuiz(){
       <div>
 
         <div class='bg-white p-5 rounded-2xl shadow'>
-          <div class='flex justify-between items-center mb-3'>
-            <div class='text-2xl font-bold'>
-              ${active.title}
-            </div>
-
-            <div class='text-sm text-zinc-500'>
-              Remaining:
-              <span id='remainingCount'>${queue.length + (current ? 1 : 0)}</span>
-            </div>
-          </div>
 
           <img id='img'
             class='w-full max-h-[420px] object-contain bg-zinc-50 rounded mb-4'>
@@ -494,9 +639,13 @@ async function start(key){
 
   streak = 0;
   answered = 0;
-  perfect = 0;
+
   totalFieldsAttempted = 0;
   totalFieldsCorrect = 0;
+
+  yearErrors = [];
+
+  loadBestStats();
 
   /* build first queue using saved settings WITHOUT touching DOM */
   buildQueueFromSettings();
@@ -629,6 +778,8 @@ function applyQuizSettings(){
     fields:[...checked]
   };
 
+  loadBestStats();
+
   buildQueueFromSettings();
 
   render();
@@ -641,9 +792,13 @@ function restartQuiz(){
 
   streak = 0;
   answered = 0;
-  perfect = 0;
+
   totalFieldsAttempted = 0;
   totalFieldsCorrect = 0;
+
+  yearErrors = [];
+
+  loadBestStats();
 
   buildQueueFromSettings();
   render();
@@ -727,6 +882,8 @@ function grade(){
   const fields = ACTIVE_FIELDS || FIELD_SCHEMA;
 
   let score = 0;
+  let nonYearTotal = 0;
+  let nonYearCorrect = 0;
   let out = '';
 
   fields.forEach(f=>{
@@ -765,6 +922,23 @@ function grade(){
 
     if(ok) score++;
 
+    if(f !== 'year'){
+      nonYearTotal++;
+
+      if(ok){
+        nonYearCorrect++;
+      }
+    }
+
+    if(f === 'year'){
+      const actual = yearValue(aRaw);
+      const guess = parseInt(vRaw,10);
+
+      if(!isNaN(guess) && actual){
+        yearErrors.push(guess - actual);
+      }
+    }
+
     input.disabled = true;
 
     out += `
@@ -781,15 +955,36 @@ function grade(){
   });
 
   answered++;
-  totalFieldsAttempted += fields.length;
-  totalFieldsCorrect += score;
+  totalFieldsAttempted += nonYearTotal;
+  totalFieldsCorrect += nonYearCorrect;
+
+  const acc =
+    totalFieldsAttempted
+      ? Math.round(
+          100 *
+          totalFieldsCorrect /
+          totalFieldsAttempted
+        )
+      : 0;
+
+  const rmse = calcRMSE(yearErrors);
+
+  if(acc > bestAcc){
+    bestAcc = acc;
+  }
+
+  if(yearErrors.length && rmse < bestRmse){
+    bestRmse = rmse;
+  }
+
+  saveBestStats();
 
   if(score === fields.length){
     perfect++;
     streak++;
     if(streak > bestStreak){
       bestStreak = streak;
-      localStorage.setItem('best_streak', bestStreak);
+      saveBestStreak();
     }
   } else {
     streak = 0;
