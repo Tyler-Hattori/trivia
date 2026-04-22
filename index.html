@@ -776,6 +776,14 @@ function next(){
     );
   });
 
+  requestAnimationFrame(() => {
+    const title = $('#title');
+    if (title && !title.disabled) {
+      title.focus();
+      title.select?.();
+    }
+  });
+
   $('#result').innerHTML='';
 
   const rem = $('#remainingCount');
