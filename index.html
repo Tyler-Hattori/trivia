@@ -407,6 +407,11 @@ function render(){
   }
 
   updateStats();
+
+  if (active) {
+    const addBtn = $('#add');
+    if (addBtn) addBtn.onclick = addEntry;
+  }
 }
 
 function renderHome(){
