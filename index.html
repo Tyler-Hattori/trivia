@@ -51,6 +51,8 @@ let yearErrors = [];
 let bestAcc = 0;
 let bestRmse = Infinity;
 
+let fieldStats = {};
+
 let activeFilters=new Set();
 
 const $=s=>document.querySelector(s);
@@ -96,17 +98,14 @@ window.ACTIVE_FIELDS = window.ACTIVE_FIELDS || [...FIELD_SCHEMA];
 ===================================================== */
 function updateStats(){
 
-  if(!active){
-    $('#statsBar').innerHTML = `<div class="bg-white border border-zinc-200 rounded-2xl px-4 py-3 shadow-sm text-right inline-block">`
-    return;
-  }
+  if(!active || !$('#statsBar')) return;
 
   const total =
     QUIZ_SETTINGS.count > 0
       ? QUIZ_SETTINGS.count
       : data.length;
 
-  const done = answered;
+  const remaining = total - answered;
 
   const acc =
     totalFieldsAttempted
@@ -120,17 +119,9 @@ function updateStats(){
   const rmse = calcRMSE(yearErrors);
 
   $('#statsBar').innerHTML = `
-    <div class="text-right leading-snug tracking-tight">
+    <div class="inline-block text-right leading-snug tracking-tight whitespace-nowrap">
 
-      <div class="text-sm font-semibold text-zinc-800">
-        ${active.title}
-        <span class="text-zinc-400 font-normal">·</span>
-        ${total} Paintings
-        <span class="text-zinc-400 font-normal">·</span>
-        ${done}/${total} Done
-      </div>
-
-      <div class="text-sm text-zinc-700 mt-0.5">
+      <div class="text-sm text-zinc-700">
         <span class="font-medium">Acc</span> ${acc}%
         <span class="text-zinc-400">·</span>
         <span class="font-medium">Year</span> ±${rmse.toFixed(1)}y
@@ -152,6 +143,9 @@ function updateStats(){
 
     </div>
   `;
+
+  const rem = $('#remainingCount');
+  if(rem) rem.textContent = remaining;
 }
 
 /* =========================================================
@@ -289,34 +283,48 @@ function bestKey(name){
 }
 
 function loadBestStats(){
+
   loadBestStreak();
 
   bestAcc = Number(
-    localStorage.getItem(bestKey('bestAcc')) || 0
+    localStorage.getItem(
+      bestKey('bestAcc')
+    ) || 0
   );
 
-  const savedRmse =
-    localStorage.getItem(bestKey('bestRmse'));
+  const val =
+    localStorage.getItem(
+      bestKey('bestRmse')
+    );
 
   bestRmse =
-    savedRmse === null
+    val === null
       ? Infinity
-      : Number(savedRmse);
+      : Number(val);
 }
 
 function saveBestStats(){
 
   localStorage.setItem(
     bestKey('bestAcc'),
-    bestAcc
+    String(bestAcc)
   );
 
   if(isFinite(bestRmse)){
     localStorage.setItem(
       bestKey('bestRmse'),
-      bestRmse
+      String(bestRmse)
     );
   }
+}
+
+function thumbUrl(url){
+
+  if(url.includes('upload.wikimedia.org')){
+    return url + '?width=320';
+  }
+
+  return url;
 }
 
 /* =========================================================
@@ -365,7 +373,7 @@ function renderHeader(){
 
       <div
         id="statsBar"
-        class="bg-white/80 backdrop-blur px-4 py-2 rounded-2xl shadow-sm border border-zinc-200 min-w-[340px]">
+        class="bg-white/90 backdrop-blur px-4 py-2 rounded-2xl shadow-sm border border-zinc-200 w-fit shrink-0">
       </div>
 
     </div>
@@ -508,7 +516,10 @@ function renderQuiz(){
       <div>
 
         <div class='bg-white p-5 rounded-2xl shadow'>
-
+          <div class="text-sm text-zinc-500 mb-2 font-medium">
+            Remaining: <span id="remainingCount">0</span>
+          </div>
+          
           <img id='img'
             class='w-full max-h-[420px] object-contain bg-zinc-50 rounded mb-4'>
 
@@ -642,6 +653,15 @@ async function start(key){
 
   totalFieldsAttempted = 0;
   totalFieldsCorrect = 0;
+
+  fieldStats = {};
+
+  FIELD_SCHEMA.forEach(f=>{
+    fieldStats[f] = {
+      attempts:0,
+      correct:0
+    };
+  });
 
   yearErrors = [];
 
@@ -798,6 +818,15 @@ function restartQuiz(){
 
   yearErrors = [];
 
+  fieldStats = {};
+
+  FIELD_SCHEMA.forEach(f=>{
+    fieldStats[f] = {
+      attempts:0,
+      correct:0
+    };
+  });
+
   loadBestStats();
 
   buildQueueFromSettings();
@@ -809,12 +838,69 @@ function restartQuiz(){
 ===================================================== */
 function showQuizFinished(){
 
-  const acc = totalFieldsAttempted
-    ? Math.round(
-        100 * totalFieldsCorrect /
-        totalFieldsAttempted
-      )
-    : 0;
+  const acc =
+    totalFieldsAttempted
+      ? Math.round(
+          100 *
+          totalFieldsCorrect /
+          totalFieldsAttempted
+        )
+      : 0;
+
+  const rmse = calcRMSE(yearErrors);
+
+  let newBest = false;
+
+  if(acc > bestAcc){
+    bestAcc = acc;
+    newBest = true;
+  }
+
+  if(yearErrors.length && rmse < bestRmse){
+    bestRmse = rmse;
+    newBest = true;
+  }
+
+  if(streak > bestStreak){
+    bestStreak = streak;
+    newBest = true;
+  }
+
+  if(newBest){
+    saveBestStats();
+    saveBestStreak();
+  }
+
+  const fieldRows = FIELD_SCHEMA.map(f=>{
+
+    if(f === 'year'){
+      return `
+        <div class='border rounded-xl p-4'>
+          <div class='text-sm text-zinc-500'>Year RMSE</div>
+          <div class='text-2xl font-bold'>
+            ±${rmse.toFixed(1)}y
+          </div>
+        </div>
+      `;
+    }
+
+    const s = fieldStats[f];
+
+    const pct = s.attempts
+      ? Math.round(100 * s.correct / s.attempts)
+      : 0;
+
+    return `
+      <div class='border rounded-xl p-4'>
+        <div class='text-sm text-zinc-500 capitalize'>
+          ${f}
+        </div>
+        <div class='text-2xl font-bold'>
+          ${pct}%
+        </div>
+      </div>
+    `;
+  }).join('');
 
   $('#app').innerHTML = `
     <div class='max-w-2xl mx-auto'>
@@ -828,28 +914,8 @@ function showQuizFinished(){
           Nice run.
         </div>
 
-        <div class='grid grid-cols-4 gap-4 mb-8'>
-
-          <div class='border rounded-xl p-4'>
-            <div class='text-sm text-zinc-500'>Answered</div>
-            <div class='text-2xl font-bold'>${answered}</div>
-          </div>
-
-          <div class='border rounded-xl p-4'>
-            <div class='text-sm text-zinc-500'>Perfect</div>
-            <div class='text-2xl font-bold'>${perfect}</div>
-          </div>
-
-          <div class='border rounded-xl p-4'>
-            <div class='text-sm text-zinc-500'>Accuracy</div>
-            <div class='text-2xl font-bold'>${acc}%</div>
-          </div>
-
-          <div class='border rounded-xl p-4'>
-            <div class='text-sm text-zinc-500'>Best</div>
-            <div class='text-2xl font-bold'>${bestStreak}</div>
-          </div>
-
+        <div class='grid grid-cols-2 md:grid-cols-4 gap-4 mb-8'>
+          ${fieldRows}
         </div>
 
         <div class='flex gap-3 justify-center'>
@@ -930,6 +996,12 @@ function grade(){
       }
     }
 
+    fieldStats[f].attempts++;
+
+    if(ok){
+      fieldStats[f].correct++;
+    }
+
     if(f === 'year'){
       const actual = yearValue(aRaw);
       const guess = parseInt(vRaw,10);
@@ -969,22 +1041,11 @@ function grade(){
 
   const rmse = calcRMSE(yearErrors);
 
-  if(acc > bestAcc){
-    bestAcc = acc;
-  }
-
-  if(yearErrors.length && rmse < bestRmse){
-    bestRmse = rmse;
-  }
-
-  saveBestStats();
-
   if(score === fields.length){
     perfect++;
     streak++;
     if(streak > bestStreak){
       bestStreak = streak;
-      saveBestStreak();
     }
   } else {
     streak = 0;
@@ -1091,6 +1152,48 @@ function openTimeline(){
 
   const doc=win.document;
   const body=doc.body;
+
+  function openLightbox(src){
+    const overlay = doc.createElement('div');
+
+    function esc(e){
+      if(e.key === 'Escape'){
+        overlay.remove();
+        doc.removeEventListener('keydown', esc);
+      }
+    }
+
+    doc.addEventListener('keydown', esc);
+
+    overlay.style.cssText = `
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.88);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:9999;
+      cursor:pointer;
+      padding:32px;
+    `;
+
+    overlay.innerHTML = `
+      <img
+        src="${src}"
+        style="
+          max-width:95vw;
+          max-height:95vh;
+          object-fit:contain;
+          border-radius:10px;
+          box-shadow:0 20px 60px rgba(0,0,0,.45);
+          background:white;
+        ">
+    `;
+
+    overlay.onclick = () => overlay.remove();
+
+    doc.body.appendChild(overlay);
+  }
 
   /* =======================================================
      STATE
@@ -1341,8 +1444,11 @@ function openTimeline(){
       `).join("");
 
       return `
-        <div style="
+        <div
+        data-full="${r.image}"
+        style="
           position:absolute;
+          cursor:pointer;
           left:${r.x}px;
           top:${top}px;
           width:${CARD_W}px;
@@ -1360,7 +1466,7 @@ function openTimeline(){
               ${strip}
             </div>
 
-            <img src="${r.image}" style="
+            <img src="${thumbUrl(r.image)}" loading="lazy" decoding="async" style="
               width:100%;
               height:104px;
               object-fit:contain;
@@ -1483,6 +1589,13 @@ function openTimeline(){
         if(selected.has(m)) selected.delete(m);
         else selected.add(m);
         render(false);
+      };
+    });
+
+    body.querySelectorAll('[data-full]').forEach(el=>{
+      el.onclick = (e)=>{
+        e.stopPropagation();
+        openLightbox(el.dataset.full);
       };
     });
 
