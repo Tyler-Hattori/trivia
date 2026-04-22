@@ -327,6 +327,24 @@ function thumbUrl(url){
   return url;
 }
 
+function commitBestIfNeeded({ acc, rmse }) {
+  let improved = false;
+
+  if (acc > bestAcc) {
+    bestAcc = acc;
+    improved = true;
+  }
+
+  if (rmse < bestRmse) {
+    bestRmse = rmse;
+    improved = true;
+  }
+
+  if (improved) {
+    saveBestStats();
+  }
+}
+
 /* =========================================================
    RENDER
 ========================================================= */
@@ -854,27 +872,7 @@ function showQuizFinished(){
 
   const rmse = calcRMSE(yearErrors);
 
-  let newBest = false;
-
-  if(acc > bestAcc){
-    bestAcc = acc;
-    newBest = true;
-  }
-
-  if(yearErrors.length && rmse < bestRmse){
-    bestRmse = rmse;
-    newBest = true;
-  }
-
-  if(streak > bestStreak){
-    bestStreak = streak;
-    newBest = true;
-  }
-
-  if(newBest){
-    saveBestStats();
-    saveBestStreak();
-  }
+  commitBestIfNeeded({ acc, rmse, streak });
 
   const fieldRows = FIELD_SCHEMA.map(f=>{
 
