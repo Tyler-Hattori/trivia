@@ -356,7 +356,7 @@ function renderHeader(){
     el.innerHTML = `
       <div class="mb-10">
         <h1 class="text-6xl font-bold tracking-tight">
-          Trivia
+          Trivia Hub
         </h1>
         <p class="text-zinc-500 text-lg mt-2">
           boredom and curiosity
@@ -422,7 +422,7 @@ function renderHome(){
           class="bg-white p-7 rounded-3xl shadow-sm border border-zinc-200 text-left hover:shadow-lg transition"
           onclick="start('${q.key}')">
           <div class="text-xl font-bold">${q.title}</div>
-          <div class="text-lg font-semibold text-zinc-500 mb-3">Best: ${best(q.key)}</div>
+          <div class="text-lg font-semibold text-zinc-500 mb-3">${QUIZ_SETTINGS.count} entries</div>
         </button>
       `).join('')}
     </div>
