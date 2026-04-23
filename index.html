@@ -26,8 +26,8 @@ const BRANCH='main';
 const FIELD_SCHEMA=['title','artist','year','movement'];
 
 const QUIZZES=[
-  {key:'art',title:'Art History',file:'datasets/art.csv'},
-  {key:'music',title:'TBD',file:'datasets/music.csv'}
+  {key:'art',title:'Art History',file:'datasets/art.csv', count:0 },
+  {key:'music',title:'TBD',file:'datasets/music.csv', count:0 },
 ];
 
 let token=localStorage.getItem('gh_pat')||'';
@@ -228,6 +228,18 @@ function csvOut(rows){
 /* =========================================================
    HELPERS
 ========================================================= */
+async function loadQuizCounts() {
+  for (const q of QUIZZES) {
+    const txt = await fetch(q.file + '?t=' + Date.now(), {
+      cache:'no-store'
+    }).then(r => r.text());
+
+    q.count = parseCSV(txt).length;
+  }
+
+  render();
+}
+  
 function shuffle(a){
   for(let i=a.length-1;i>0;i--){
     const j=Math.floor(Math.random()*(i+1));
@@ -417,34 +429,14 @@ function render(){
 function renderHome(){
   return `
     <div class="grid md:grid-cols-2 gap-4">
-      ${QUIZZES.map(q=>{
-          const count = q.count || 0;
-          const acc = Number(localStorage.getItem(`${q.key}_all_bestAcc`) || 0);
-          const rmseRaw = localStorage.getItem(`${q.key}_all_bestRmse`);
-          const rmse =
-            rmseRaw === null
-              ? '--'
-              : Number(rmseRaw).toFixed(1);
-          return `
-            <button
-              class="bg-white p-7 rounded-3xl shadow-sm border border-zinc-200 text-left hover:shadow-lg transition"
-              onclick="start('${q.key}')">
-        
-              <div class="text-xl font-bold">
-                ${q.title}
-              </div>
-        
-              <div class="text-lg font-semibold text-zinc-500 mt-2">
-                ${count} entries
-              </div>
-        
-              <div class="text-sm text-zinc-400 mt-1">
-                Best ${acc}% · ±${rmse}y
-              </div>
-        
-            </button>
-          `;
-        }).join('')}
+      ${QUIZZES.map(q=>`
+        <button
+          class="bg-white p-7 rounded-3xl shadow-sm border border-zinc-200 text-left hover:shadow-lg transition"
+          onclick="start('${q.key}')">
+          <div class="text-xl font-bold">${q.title}</div>
+          <div class="text-lg font-semibold text-zinc-500 mb-3">${q.count || '...'} entries</div>
+        </button>
+      `).join('')}
     </div>
 
     <div class="mt-8 bg-white p-7 rounded-3xl shadow-sm border border-zinc-200">
@@ -1727,6 +1719,7 @@ async function addEntry(){
 }
 
 render();
+loadQuizCounts();
 </script>
 
 </body>
