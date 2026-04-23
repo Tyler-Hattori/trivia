@@ -27,7 +27,7 @@ const FIELD_SCHEMA=['title','artist','year','movement'];
 
 const QUIZZES=[
   {key:'art',title:'Art History',file:'datasets/art.csv'},
-  {key:'music',title:'Music',file:'datasets/music.csv'}
+  {key:'music',title:'TBD',file:'datasets/music.csv'}
 ];
 
 let token=localStorage.getItem('gh_pat')||'';
@@ -356,10 +356,10 @@ function renderHeader(){
     el.innerHTML = `
       <div class="mb-10">
         <h1 class="text-6xl font-bold tracking-tight">
-          Quiz Hub
+          Trivia
         </h1>
         <p class="text-zinc-500 text-lg mt-2">
-          Stable schema-driven quiz engine
+          boredom and curiosity
         </p>
       </div>
     `;
