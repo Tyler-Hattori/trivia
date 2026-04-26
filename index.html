@@ -228,6 +228,50 @@ function csvOut(rows){
 /* =========================================================
    HELPERS
 ========================================================= */
+function openQuizLightbox(src){
+
+  if(!src) return;
+
+  const overlay = document.createElement('div');
+
+  function close(){
+    document.removeEventListener('keydown', esc);
+    overlay.remove();
+  }
+
+  function esc(e){
+    if(e.key === 'Escape') close();
+  }
+
+  document.addEventListener('keydown', esc);
+
+  overlay.style.cssText = `
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.88);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:9999;
+    cursor:pointer;
+    padding:24px;
+  `;
+
+  overlay.innerHTML = `
+    <img src="${src}" style="
+      max-width:96vw;
+      max-height:96vh;
+      object-fit:contain;
+      border-radius:12px;
+      background:white;
+    ">
+  `;
+
+  overlay.onclick = close;
+
+  document.body.appendChild(overlay);
+}
+  
 async function loadQuizCounts() {
   for (const q of QUIZZES) {
     const txt = await fetch(q.file + '?t=' + Date.now(), {
@@ -552,7 +596,7 @@ function renderQuiz(){
           </div>
 
           <img id='img'
-            class='w-full flex-1 min-h-0 object-contain bg-zinc-50 rounded-xl mb-3'>
+            class='w-full flex-1 min-h-0 object-contain bg-zinc-50 rounded-xl mb-3 cursor-zoom-in'>
 
           <div id='result' class='mb-5'></div>
 
@@ -614,6 +658,7 @@ function bindQuiz(){
   if(current){
     $('#img').src = current.image;
   }
+  $('#img').onclick = () => openQuizLightbox(current?.image);
 
   $('#submit').onclick = () => grade();
   $('#next').onclick = next;
