@@ -1775,12 +1775,12 @@ function openTimeline(){
 
     /* zoom */
     body.querySelector("#zoomIn").onclick=()=>{
-      zoom=Math.min(ZMAX,zoom*1.25);
+      zoom=Math.min(ZMAX,zoom+5);
       render(true);
     };
 
     body.querySelector("#zoomOut").onclick=()=>{
-      zoom=Math.max(ZMIN,zoom/1.25);
+      zoom=Math.max(ZMIN,zoom-5);
       render(true);
     };
   }
