@@ -1266,22 +1266,25 @@ function openTimeline(){
   const doc=win.document;
   const body=doc.body;
 
-  function openLightbox(src){
+  function openLightbox(row){
+  
     const overlay = doc.createElement('div');
-
-    function esc(e){
-      if(e.key === 'Escape'){
-        overlay.remove();
-        doc.removeEventListener('keydown', esc);
-      }
+  
+    function close(){
+      overlay.remove();
+      doc.removeEventListener('keydown', esc);
     }
-
+  
+    function esc(e){
+      if(e.key === 'Escape') close();
+    }
+  
     doc.addEventListener('keydown', esc);
-
+  
     overlay.style.cssText = `
       position:fixed;
       inset:0;
-      background:rgba(0,0,0,.88);
+      background:rgba(0,0,0,.9);
       display:flex;
       align-items:center;
       justify-content:center;
@@ -1289,22 +1292,59 @@ function openTimeline(){
       cursor:pointer;
       padding:32px;
     `;
-
+  
     overlay.innerHTML = `
-      <img
-        src="${src}"
-        style="
-          max-width:95vw;
-          max-height:95vh;
-          object-fit:contain;
-          border-radius:10px;
-          box-shadow:0 20px 60px rgba(0,0,0,.45);
-          background:white;
+      <div style="
+        max-width:95vw;
+        max-height:95vh;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap:14px;
+      ">
+        <img
+          src="${row.image}"
+          style="
+            max-width:95vw;
+            max-height:78vh;
+            object-fit:contain;
+            border-radius:12px;
+            background:white;
+            box-shadow:0 20px 60px rgba(0,0,0,.45);
+          ">
+  
+        <div style="
+          text-align:center;
+          color:white;
+          line-height:1.35;
         ">
+          <div style="
+            font-size:26px;
+            font-weight:800;
+            font-style:italic;
+          ">
+            ${row.title}
+          </div>
+  
+          <div style="
+            font-size:18px;
+            opacity:.92;
+          ">
+            ${row.artist}
+          </div>
+  
+          <div style="
+            font-size:16px;
+            opacity:.75;
+          ">
+            ${row.year}
+          </div>
+        </div>
+      </div>
     `;
-
-    overlay.onclick = () => overlay.remove();
-
+  
+    overlay.onclick = close;
+  
     doc.body.appendChild(overlay);
   }
 
@@ -1549,7 +1589,7 @@ function openTimeline(){
     }
 
     /* cards */
-    const cards = positioned.map(r=>{
+    const cards = positioned.map((r,i)=>{
 
       const top = LABEL_H + 34 + r.lane*LANE_H;
 
@@ -1562,6 +1602,7 @@ function openTimeline(){
       return `
         <div
         data-full="${r.image}"
+        data-idx="${i}"
         style="
           position:absolute;
           cursor:pointer;
@@ -1726,7 +1767,9 @@ function openTimeline(){
     body.querySelectorAll('[data-full]').forEach(el=>{
       el.onclick = (e)=>{
         e.stopPropagation();
-        openLightbox(el.dataset.full);
+        openLightbox(
+          positioned[Number(el.dataset.idx)]
+        );
       };
     });
 
