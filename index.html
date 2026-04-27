@@ -829,6 +829,7 @@ function next(){
 
   $('#submit').classList.remove('hidden');
   $('#next').classList.add('hidden');
+  $('#next').disabled = true;
 
   $('#img').src = current.image;
 
@@ -869,13 +870,6 @@ function next(){
     rem.textContent =
       queue.length + 1;
   }
-
-  const nextBtn = $('#next');
-  nextBtn.disabled = true;
-  nextBtn.classList.add(
-    'opacity-40',
-    'cursor-not-allowed'
-  );
 }
 
 /* =====================================================
