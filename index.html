@@ -1353,9 +1353,9 @@ function openTimeline(){
   ======================================================= */
   const selected = new Set();
 
-  let zoom = 12;
-  const ZMIN = 4;
-  const ZMAX = 80;
+  let zoom = 50;
+  const ZMIN = 10;
+  const ZMAX = 100;
 
   const LEFT_PAD = 100;
   const CARD_W = 170;
@@ -1366,8 +1366,8 @@ function openTimeline(){
   const LABEL_TOP_PAD = 8;
   const LABEL_BOTTOM_PAD = 10;
 
-  const minYear=Math.min(...allRows.map(r=>yearNumSafe(r.year)));
-  const maxYear=Math.max(...allRows.map(r=>yearNumSafe(r.year)));
+  const minYear=1300;//Math.min(...allRows.map(r=>yearNumSafe(r.year)));
+  const maxYear=1980;//Math.max(...allRows.map(r=>yearNumSafe(r.year)));
 
   function xPos(year){
     return LEFT_PAD + (yearNumSafe(year)-minYear)*zoom;
@@ -1561,7 +1561,7 @@ function openTimeline(){
     let ticks="";
     const tickLineTop = LABEL_H + 18;
 
-    for(let y=minYear;y<=maxYear;y+=25){
+    for(let y=minYear;y<=maxYear;y+=10){
 
       const x=xPos(y);
 
@@ -1652,7 +1652,7 @@ function openTimeline(){
               ">
                 ${r.artist}
               </div>
-              <div style="font-size:10px;color:#94a3b8;">
+              <div style="font-size:10px;color:#94a3b8;overflow:hidden;">
                 ${r.year}
               </div>
             </div>
