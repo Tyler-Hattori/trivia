@@ -1164,39 +1164,8 @@ function grade(){
 /* =========================================================
    TIMELINE
 ========================================================= */
-const TIMELINE_PAD = 100;
-const PX_PER_YEAR = 12;
 const MIN_CARD_W = 10;
 const MAX_CARD_W = 320;
-const IMG_H = 104;
-const LANE_H = 165;
-
-/* 80 colors */
-const PALETTE_80 = [
-"#e11d48","#f97316","#f59e0b","#eab308","#84cc16","#22c55e","#10b981","#14b8a6",
-"#06b6d4","#0ea5e9","#3b82f6","#6366f1","#8b5cf6","#a855f7","#d946ef","#ec4899",
-"#f43f5e","#fb7185","#fca5a5","#fdba74","#fde047","#bef264","#86efac","#5eead4",
-"#67e8f9","#93c5fd","#a5b4fc","#c4b5fd","#d8b4fe","#f0abfc","#f9a8d4","#fecdd3",
-"#991b1b","#9a3412","#92400e","#854d0e","#365314","#14532d","#064e3b","#134e4a",
-"#0c4a6e","#1e3a8a","#312e81","#4c1d95","#581c87","#701a75","#831843","#881337",
-"#b91c1c","#c2410c","#d97706","#ca8a04","#65a30d","#16a34a","#059669","#0d9488",
-"#0284c7","#2563eb","#4338ca","#6d28d9","#7e22ce","#a21caf","#be185d","#e11d48",
-"#1f2937","#374151","#4b5563","#6b7280","#9ca3af","#d1d5db","#e5e7eb","#f3f4f6"
-];
-
-const movementMap = new Map();
-let movementColorIndex=0;
-
-function getColor(tag){
-  if(!movementMap.has(tag)){
-    movementMap.set(
-      tag,
-      PALETTE_80[movementColorIndex % PALETTE_80.length]
-    );
-    movementColorIndex++;
-  }
-  return movementMap.get(tag);
-}
 
 function parseMovements(v){
   if(!v) return [];
@@ -1206,28 +1175,6 @@ function parseMovements(v){
     .split('/')
     .map(s=>s.trim().toLowerCase())
     .filter(Boolean);
-}
-
-function xPos(year,minYear){
-  return TIMELINE_PAD + (yearNumSafe(year)-minYear)*PX_PER_YEAR;
-}
-
-function buildMovementAnchors(rows){
-  const firstSeen=new Map();
-
-  rows.forEach(r=>{
-    const y=yearNumSafe(r.year);
-
-    parseMovements(r.movement).forEach(m=>{
-      if(!firstSeen.has(m) || y<firstSeen.get(m)){
-        firstSeen.set(m,y);
-      }
-    });
-  });
-
-  return [...firstSeen.entries()]
-    .map(([movement,year])=>({movement,year}))
-    .sort((a,b)=>a.year-b.year);
 }
 
 function openTimeline(){
@@ -1365,7 +1312,7 @@ function openTimeline(){
   const ZMIN = 10;
   const ZMAX = 100;
 
-  const LEFT_PAD = 100;
+  const LEFT_PAD = 50;
   const CARD_W = 170;
   const LANE_H = 184;
   const HEADER_H = 54;
