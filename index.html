@@ -1239,11 +1239,22 @@ function openTimeline(){
     return;
   }
 
+  render(false);   // instant open
+
+  let pending = allRows.length;
+  
   allRows.forEach(r => {
     const img = new Image();
   
     img.onload = () => {
       r.imgRatio = img.naturalWidth / img.naturalHeight;
+      pending--;
+      if (pending === 0) render(false);
+    };
+  
+    img.onerror = () => {
+      pending--;
+      if (pending === 0) render(false);
     };
   
     img.src = r.image;
@@ -1652,7 +1663,12 @@ function openTimeline(){
               ">
                 ${r.artist}
               </div>
-              <div style="font-size:10px;color:#94a3b8;overflow:hidden;">
+              <div style="
+                font-size:10px;
+                color:#94a3b8;
+                white-space:nowrap;
+                overflow:hidden;
+              ">
                 ${r.year}
               </div>
             </div>
