@@ -1166,6 +1166,7 @@ function grade(){
 ========================================================= */
 const MIN_CARD_W = 10;
 const MAX_CARD_W = 320;
+const IMG_H = 104;
 
 function parseMovements(v){
   if(!v) return [];
@@ -1468,7 +1469,7 @@ function openTimeline(){
 
         const w = estimateCardWidth(r);
         const clash = lanes[lane].some(o =>
-          Math.abs(o.x - x) < ((o.w + w)/2 + 18)
+          Math.abs(o.x - x) < ((o.w + w)/2 + 8)
         );
 
         if(!clash){
