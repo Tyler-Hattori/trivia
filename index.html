@@ -1469,7 +1469,7 @@ function openTimeline(){
 
         const w = estimateCardWidth(r);
         const clash = lanes[lane].some(o =>
-          Math.abs(o.x - x) < ((o.w + w)/2 + 8)
+          Math.abs(o.x - x) < ((o.w + w)/2 + 2)
         );
 
         if(!clash){
