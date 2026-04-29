@@ -1775,6 +1775,7 @@ async function addEntry(){
   });
 
   data.push(row);
+  data.sort((a, b) => yearValue(a.year) - yearValue(b.year));
 
   await fetch(
     `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,
