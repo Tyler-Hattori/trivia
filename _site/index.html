@@ -7,9 +7,9 @@
 <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-zinc-100 min-h-screen text-zinc-900">
+<body class="bg-zinc-100 min-h-screen text-zinc-900 antialiased">
 
-<div class="max-w-6xl mx-auto p-6">
+<div class="max-w-[1500px] mx-auto px-6 py-4">
   <header id="siteHeader" class="mb-8"></header>
 
   <div id="app"></div>
@@ -50,6 +50,8 @@ let yearErrors = [];
 
 let bestAcc = 0;
 let bestRmse = Infinity;
+
+let fieldStats = {};
 
 let activeFilters=new Set();
 
@@ -96,17 +98,14 @@ window.ACTIVE_FIELDS = window.ACTIVE_FIELDS || [...FIELD_SCHEMA];
 ===================================================== */
 function updateStats(){
 
-  if(!active){
-    $('#statsBar').innerHTML = `<div class="bg-white border border-zinc-200 rounded-2xl px-4 py-3 shadow-sm text-right inline-block">`
-    return;
-  }
+  if(!active || !$('#statsBar')) return;
 
   const total =
     QUIZ_SETTINGS.count > 0
       ? QUIZ_SETTINGS.count
       : data.length;
 
-  const done = answered;
+  const remaining = total - answered;
 
   const acc =
     totalFieldsAttempted
@@ -120,17 +119,9 @@ function updateStats(){
   const rmse = calcRMSE(yearErrors);
 
   $('#statsBar').innerHTML = `
-    <div class="text-right leading-snug tracking-tight">
+    <div class="inline-block text-right leading-snug tracking-tight whitespace-nowrap">
 
-      <div class="text-sm font-semibold text-zinc-800">
-        ${active.title}
-        <span class="text-zinc-400 font-normal">·</span>
-        ${total} Paintings
-        <span class="text-zinc-400 font-normal">·</span>
-        ${done}/${total} Done
-      </div>
-
-      <div class="text-sm text-zinc-700 mt-0.5">
+      <div class="text-sm text-zinc-700">
         <span class="font-medium">Acc</span> ${acc}%
         <span class="text-zinc-400">·</span>
         <span class="font-medium">Year</span> ±${rmse.toFixed(1)}y
@@ -152,6 +143,9 @@ function updateStats(){
 
     </div>
   `;
+
+  const rem = $('#remainingCount');
+  if(rem) rem.textContent = remaining;
 }
 
 /* =========================================================
@@ -289,33 +283,65 @@ function bestKey(name){
 }
 
 function loadBestStats(){
+
   loadBestStreak();
 
   bestAcc = Number(
-    localStorage.getItem(bestKey('bestAcc')) || 0
+    localStorage.getItem(
+      bestKey('bestAcc')
+    ) || 0
   );
 
-  const savedRmse =
-    localStorage.getItem(bestKey('bestRmse'));
+  const val =
+    localStorage.getItem(
+      bestKey('bestRmse')
+    );
 
   bestRmse =
-    savedRmse === null
+    val === null
       ? Infinity
-      : Number(savedRmse);
+      : Number(val);
 }
 
 function saveBestStats(){
 
   localStorage.setItem(
     bestKey('bestAcc'),
-    bestAcc
+    String(bestAcc)
   );
 
   if(isFinite(bestRmse)){
     localStorage.setItem(
       bestKey('bestRmse'),
-      bestRmse
+      String(bestRmse)
     );
+  }
+}
+
+function thumbUrl(url){
+
+  if(url.includes('upload.wikimedia.org')){
+    return url + '?width=320';
+  }
+
+  return url;
+}
+
+function commitBestIfNeeded({ acc, rmse }) {
+  let improved = false;
+
+  if (acc > bestAcc) {
+    bestAcc = acc;
+    improved = true;
+  }
+
+  if (rmse < bestRmse) {
+    bestRmse = rmse;
+    improved = true;
+  }
+
+  if (improved) {
+    saveBestStats();
   }
 }
 
@@ -327,37 +353,34 @@ function renderHeader(){
   const el = $('#siteHeader');
 
   if(!active){
-
     el.innerHTML = `
-      <div>
-        <h1 class="text-5xl font-bold">Quiz Hub</h1>
-        <p class="text-zinc-600 mt-2">
+      <div class="mb-10">
+        <h1 class="text-6xl font-bold tracking-tight">
+          Quiz Hub
+        </h1>
+        <p class="text-zinc-500 text-lg mt-2">
           Stable schema-driven quiz engine
         </p>
       </div>
     `;
-
     return;
   }
 
   el.innerHTML = `
-    <div class="flex items-start justify-between gap-6">
+    <div class="flex items-start justify-between gap-10 mb-4">
 
-      <div class="flex items-center gap-4 min-w-0">
+      <div class="flex items-start gap-5">
 
         <button
           onclick="exitQuiz()"
-          class="border px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-50 shadow-sm shrink-0">
+          class="mt-1 border border-zinc-200 bg-white hover:bg-zinc-50
+                 px-4 py-2 rounded-2xl shadow-sm text-lg">
           ← Home
         </button>
 
-        <div class="min-w-0">
-          <div class="text-3xl font-bold truncate">
+        <div>
+          <div class="text-6xl font-bold tracking-tight leading-none">
             ${active.title}
-          </div>
-
-          <div class="text-sm text-zinc-500">
-            Quiz in progress
           </div>
         </div>
 
@@ -365,7 +388,7 @@ function renderHeader(){
 
       <div
         id="statsBar"
-        class="bg-white/80 backdrop-blur px-4 py-2 rounded-2xl shadow-sm border border-zinc-200 min-w-[340px]">
+        class="bg-white px-5 py-4 rounded-2xl shadow-sm border border-zinc-200 w-fit shrink-0">
       </div>
 
     </div>
@@ -384,6 +407,11 @@ function render(){
   }
 
   updateStats();
+
+  if (active) {
+    const addBtn = $('#add');
+    if (addBtn) addBtn.onclick = addEntry;
+  }
 }
 
 function renderHome(){
@@ -391,15 +419,15 @@ function renderHome(){
     <div class="grid md:grid-cols-2 gap-4">
       ${QUIZZES.map(q=>`
         <button
-          class="bg-white p-5 rounded-2xl shadow text-left hover:shadow-lg transition"
+          class="bg-white p-7 rounded-3xl shadow-sm border border-zinc-200 text-left hover:shadow-lg transition"
           onclick="start('${q.key}')">
           <div class="text-xl font-bold">${q.title}</div>
-          <div class="text-sm text-zinc-500">Best: ${best(q.key)}</div>
+          <div class="text-lg font-semibold text-zinc-500 mb-3">Best: ${best(q.key)}</div>
         </button>
       `).join('')}
     </div>
 
-    <div class="mt-8 bg-white p-5 rounded-2xl shadow">
+    <div class="mt-8 bg-white p-7 rounded-3xl shadow-sm border border-zinc-200">
       <div class="font-semibold mb-2">GitHub Token</div>
       <input id="token" class="border p-2 w-full rounded" value="${token}">
       <button onclick="saveToken()"
@@ -414,13 +442,13 @@ function renderQuiz(){
 
   return `
 
-    <div class='grid lg:grid-cols-[280px_1fr] gap-6'>
+    <div class='grid xl:grid-cols-[320px_1fr] gap-8 items-start'>
 
       <!-- LEFT SIDEBAR -->
       <div class='space-y-6'>
 
         <!-- QUIZ SETTINGS -->
-        <div class='bg-white p-5 rounded-2xl shadow'>
+        <div class='bg-white p-5 rounded-2xl shadow-sm border border-zinc-200'>
           <div class='font-semibold text-lg mb-4'>Quiz Settings</div>
 
           <div class='space-y-4'>
@@ -490,7 +518,7 @@ function renderQuiz(){
         ${
           active.key==='art'
           ? `
-          <div class='bg-white p-5 rounded-2xl shadow'>
+          <div class='bg-white p-5 rounded-2xl shadow-sm border border-zinc-200'>
             <div class='font-semibold mb-3'>Explore</div>
 
             <button onclick='openTimeline()'
@@ -506,54 +534,57 @@ function renderQuiz(){
 
       <!-- MAIN QUIZ PANEL -->
       <div>
-
-        <div class='bg-white p-5 rounded-2xl shadow'>
+        <div class='bg-white p-5 rounded-2xl shadow-sm border border-zinc-200 h-[calc(100vh-200px)] flex flex-col'>
+          <div class="text-lg font-semibold text-zinc-500 mb-3 mb-2 font-medium">
+            Remaining: <span id="remainingCount">0</span>
+          </div>
 
           <img id='img'
-            class='w-full max-h-[420px] object-contain bg-zinc-50 rounded mb-4'>
+            class='w-full flex-1 min-h-0 object-contain bg-zinc-50 rounded-xl mb-3'>
+
+          <div id='result' class='mb-5'></div>
 
           <div id='quizFields'
-            class='grid grid-cols-2 gap-3'>
+            class='grid md:grid-cols-2 gap-4'>
             ${FIELD_SCHEMA.map(f=>`
               <input id='${f}'
-                class='border p-2 w-full rounded'
+                class='border border-zinc-200 bg-white px-4 py-3 w-full rounded-2xl text-lg focus:outline-none focus:ring-2 focus:ring-zinc-300'
                 placeholder='${f}'>
             `).join('')}
           </div>
 
-          <div class='flex gap-2 mt-3'>
+          <div class='flex gap-2 mt-2'>
             <button id='submit'
-              class='bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700'>
+              class='bg-blue-600 text-white px-5 py-2 rounded-xl hover:bg-blue-700 font-medium'>
               Submit
             </button>
 
             <button id='next'
-              class='border px-4 py-2 rounded hover:bg-zinc-50'>
-              Next
+              class='hidden border px-5 py-2 rounded-xl hover:bg-zinc-50 font-medium ml-auto'>
+              Next →
             </button>
           </div>
 
-          <div id='result' class='mt-4'></div>
         </div>
 
         <!-- ADD ENTRY -->
-        <div class='mt-6 bg-white p-5 rounded-2xl shadow'>
+        <div class='mt-6 bg-white p-5 rounded-2xl shadow-sm border border-zinc-200'>
           <div class='font-semibold mb-3'>Add Entry</div>
 
           <input id='nimage'
             placeholder='image url'
-            class='border p-2 w-full mb-3 rounded'>
+            class='border border-zinc-200 bg-white px-4 py-3 w-full rounded-xl text-lg mb-3 focus:outline-none focus:ring-2 focus:ring-zinc-300'>
 
-          <div class='grid grid-cols-2 gap-3'>
+          <div class='grid md:grid-cols-2 gap-3'>
             ${FIELD_SCHEMA.map(f=>`
               <input id='n${f}'
                 placeholder='${f}'
-                class='border p-2 w-full rounded'>
+                class='border border-zinc-200 bg-white px-4 py-3 w-full rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-zinc-300'>
             `).join('')}
           </div>
 
           <button id='add'
-            class='mt-4 bg-black text-white px-4 py-2 rounded hover:bg-zinc-800'>
+            class='mt-4 w-full bg-black text-white px-4 py-3 rounded-xl hover:bg-zinc-800 font-medium'>
             Commit
           </button>
         </div>
@@ -572,26 +603,15 @@ function bindQuiz(){
     $('#img').src = current.image;
   }
 
-  $('#submit').onclick = () => {
-    grade();
-
-    const nextBtn = $('#next');
-    nextBtn.disabled = false;
-    nextBtn.classList.remove(
-      'opacity-40',
-      'cursor-not-allowed'
-    );
-  };
-
+  $('#submit').onclick = () => grade();
   $('#next').onclick = next;
-  $('#add').onclick = addEntry;
 
-  /* next locked initially */
-  $('#next').disabled = true;
-  $('#next').classList.add(
-    'opacity-40',
-    'cursor-not-allowed'
-  );
+  const nextBtn = $('#next');
+
+  nextBtn.classList.add('hidden');
+  nextBtn.disabled = false;
+  nextBtn.style.pointerEvents = 'auto';
+  nextBtn.blur();
 
   $('#quizCount').value =
     String(QUIZ_SETTINGS.count);
@@ -627,6 +647,18 @@ function bindQuiz(){
       !enabled
     );
   });
+
+  document.onkeydown = (e) => {
+    if(e.key !== 'Enter') return;
+
+    if(submitted){
+      e.preventDefault();
+      next();
+    } else {
+      e.preventDefault();
+      grade();
+    }
+  };
 }
 
 /* =========================================================
@@ -642,6 +674,15 @@ async function start(key){
 
   totalFieldsAttempted = 0;
   totalFieldsCorrect = 0;
+
+  fieldStats = {};
+
+  FIELD_SCHEMA.forEach(f=>{
+    fieldStats[f] = {
+      attempts:0,
+      correct:0
+    };
+  });
 
   yearErrors = [];
 
@@ -709,6 +750,13 @@ function next(){
 
   submitted = false;
 
+  document
+    .getElementById('quizFields')
+    .classList.remove('hidden');
+
+  $('#submit').classList.remove('hidden');
+  $('#next').classList.add('hidden');
+
   $('#img').src = current.image;
 
   FIELD_SCHEMA.forEach(f=>{
@@ -731,6 +779,14 @@ function next(){
       'text-zinc-400',
       !enabled
     );
+  });
+
+  requestAnimationFrame(() => {
+    const title = $('#title');
+    if (title && !title.disabled) {
+      title.focus();
+      title.select?.();
+    }
   });
 
   $('#result').innerHTML='';
@@ -798,6 +854,15 @@ function restartQuiz(){
 
   yearErrors = [];
 
+  fieldStats = {};
+
+  FIELD_SCHEMA.forEach(f=>{
+    fieldStats[f] = {
+      attempts:0,
+      correct:0
+    };
+  });
+
   loadBestStats();
 
   buildQueueFromSettings();
@@ -809,12 +874,49 @@ function restartQuiz(){
 ===================================================== */
 function showQuizFinished(){
 
-  const acc = totalFieldsAttempted
-    ? Math.round(
-        100 * totalFieldsCorrect /
-        totalFieldsAttempted
-      )
-    : 0;
+  const acc =
+    totalFieldsAttempted
+      ? Math.round(
+          100 *
+          totalFieldsCorrect /
+          totalFieldsAttempted
+        )
+      : 0;
+
+  const rmse = calcRMSE(yearErrors);
+
+  commitBestIfNeeded({ acc, rmse, streak });
+
+  const fieldRows = FIELD_SCHEMA.map(f=>{
+
+    if(f === 'year'){
+      return `
+        <div class='border rounded-xl p-4'>
+          <div class='text-lg font-semibold text-zinc-500 mb-3'>Year RMSE</div>
+          <div class='text-2xl font-bold'>
+            ±${rmse.toFixed(1)}y
+          </div>
+        </div>
+      `;
+    }
+
+    const s = fieldStats[f];
+
+    const pct = s.attempts
+      ? Math.round(100 * s.correct / s.attempts)
+      : 0;
+
+    return `
+      <div class='border rounded-xl p-4'>
+        <div class='text-lg font-semibold text-zinc-500 mb-3 capitalize'>
+          ${f}
+        </div>
+        <div class='text-2xl font-bold'>
+          ${pct}%
+        </div>
+      </div>
+    `;
+  }).join('');
 
   $('#app').innerHTML = `
     <div class='max-w-2xl mx-auto'>
@@ -828,28 +930,8 @@ function showQuizFinished(){
           Nice run.
         </div>
 
-        <div class='grid grid-cols-4 gap-4 mb-8'>
-
-          <div class='border rounded-xl p-4'>
-            <div class='text-sm text-zinc-500'>Answered</div>
-            <div class='text-2xl font-bold'>${answered}</div>
-          </div>
-
-          <div class='border rounded-xl p-4'>
-            <div class='text-sm text-zinc-500'>Perfect</div>
-            <div class='text-2xl font-bold'>${perfect}</div>
-          </div>
-
-          <div class='border rounded-xl p-4'>
-            <div class='text-sm text-zinc-500'>Accuracy</div>
-            <div class='text-2xl font-bold'>${acc}%</div>
-          </div>
-
-          <div class='border rounded-xl p-4'>
-            <div class='text-sm text-zinc-500'>Best</div>
-            <div class='text-2xl font-bold'>${bestStreak}</div>
-          </div>
-
+        <div class='grid grid-cols-2 md:grid-cols-4 gap-2 mb-8'>
+          ${fieldRows}
         </div>
 
         <div class='flex gap-3 justify-center'>
@@ -930,6 +1012,12 @@ function grade(){
       }
     }
 
+    fieldStats[f].attempts++;
+
+    if(ok){
+      fieldStats[f].correct++;
+    }
+
     if(f === 'year'){
       const actual = yearValue(aRaw);
       const guess = parseInt(vRaw,10);
@@ -969,31 +1057,43 @@ function grade(){
 
   const rmse = calcRMSE(yearErrors);
 
-  if(acc > bestAcc){
-    bestAcc = acc;
-  }
-
-  if(yearErrors.length && rmse < bestRmse){
-    bestRmse = rmse;
-  }
-
-  saveBestStats();
-
   if(score === fields.length){
     perfect++;
     streak++;
     if(streak > bestStreak){
       bestStreak = streak;
-      saveBestStreak();
     }
   } else {
     streak = 0;
   }
 
   $('#result').innerHTML =
-    "<div class='font-bold mb-2'>Score " +
+    "<div class='bg-zinc-50 border border-zinc-200 rounded-2xl p-4'>" +
+    "<div class='font-bold text-lg mb-3'>Score " +
     score + "/" + fields.length +
-    "</div>" + out;
+    "</div>" +
+    out +
+    "</div>";
+
+  document
+    .getElementById('quizFields')
+    .classList.add('hidden');
+
+  $('#submit').classList.add('hidden');
+
+  const nextBtn = $('#next');
+
+  /* fully reset button state */
+  nextBtn.classList.remove('hidden');
+  nextBtn.disabled = false;
+  nextBtn.style.pointerEvents = 'auto';
+  nextBtn.style.opacity = '1';
+
+  /* rebind click every submit */
+  nextBtn.onclick = next;
+
+  /* focus for Enter key flow */
+  nextBtn.focus();
 
   updateStats();
 }
@@ -1091,6 +1191,48 @@ function openTimeline(){
 
   const doc=win.document;
   const body=doc.body;
+
+  function openLightbox(src){
+    const overlay = doc.createElement('div');
+
+    function esc(e){
+      if(e.key === 'Escape'){
+        overlay.remove();
+        doc.removeEventListener('keydown', esc);
+      }
+    }
+
+    doc.addEventListener('keydown', esc);
+
+    overlay.style.cssText = `
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.88);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:9999;
+      cursor:pointer;
+      padding:32px;
+    `;
+
+    overlay.innerHTML = `
+      <img
+        src="${src}"
+        style="
+          max-width:95vw;
+          max-height:95vh;
+          object-fit:contain;
+          border-radius:10px;
+          box-shadow:0 20px 60px rgba(0,0,0,.45);
+          background:white;
+        ">
+    `;
+
+    overlay.onclick = () => overlay.remove();
+
+    doc.body.appendChild(overlay);
+  }
 
   /* =======================================================
      STATE
@@ -1341,8 +1483,11 @@ function openTimeline(){
       `).join("");
 
       return `
-        <div style="
+        <div
+        data-full="${r.image}"
+        style="
           position:absolute;
+          cursor:pointer;
           left:${r.x}px;
           top:${top}px;
           width:${CARD_W}px;
@@ -1360,7 +1505,7 @@ function openTimeline(){
               ${strip}
             </div>
 
-            <img src="${r.image}" style="
+            <img src="${thumbUrl(r.image)}" loading="lazy" decoding="async" style="
               width:100%;
               height:104px;
               object-fit:contain;
@@ -1483,6 +1628,13 @@ function openTimeline(){
         if(selected.has(m)) selected.delete(m);
         else selected.add(m);
         render(false);
+      };
+    });
+
+    body.querySelectorAll('[data-full]').forEach(el=>{
+      el.onclick = (e)=>{
+        e.stopPropagation();
+        openLightbox(el.dataset.full);
       };
     });
 
