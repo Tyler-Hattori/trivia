@@ -1,4 +1,4 @@
-import { toast, $ } from '../utils/helpers.js';
+import { toast, $, yearValue } from '../utils/helpers.js';
 import { applyQuizSettings } from '../features/quiz_engine.js';
 import { state } from '../core/state.js';
 import { render } from '../app/render.js';
