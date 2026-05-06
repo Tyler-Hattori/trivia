@@ -2,6 +2,7 @@ import { render } from './render.js';
 import { loadQuizCounts } from '../data/github.js';
 import * as quiz from '../features/quiz_engine.js';
 import { openTimeline } from '../features/timeline_engine.js';
+import { state } from '../core/state.js';
 
 window.start = quiz.start;
 window.exitQuiz = quiz.exitQuiz;
