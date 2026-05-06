@@ -4,16 +4,16 @@ import * as quiz from '../features/quiz_engine.js';
 import { openTimeline } from '../features/timeline_engine.js';
 import { state } from '../core/state.js';
 
-window.start = quiz.start;
-window.exitQuiz = quiz.exitQuiz;
-window.applyQuizSettings = quiz.applyQuizSettings;
-window.restartQuiz = quiz.restartQuiz;
-window.openTimeline = openTimeline;
 window.saveToken = () => {
   const val = document.getElementById('token').value;
   localStorage.setItem('gh_pat', val);
   state.token = val;
 };
+window.start = quiz.start;
+window.exitQuiz = quiz.exitQuiz;
+window.applyQuizSettings = quiz.applyQuizSettings;
+window.restartQuiz = quiz.restartQuiz;
+window.openTimeline = openTimeline;
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('INIT LOADED');
