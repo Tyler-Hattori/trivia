@@ -1,0 +1,8 @@
+datasets/*
+_site/*
+Gemfile
+Gemfile.lock
+node_modules/*
+.DS_Store
+*.log
+*.csv
