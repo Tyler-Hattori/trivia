@@ -8,7 +8,7 @@ export const DATASETS=[
   {
     key:'art',
     title:'Art History',
-    file:'/datasets/art.csv',
+    file:'./datasets/art.csv',
     count:0,
     schema: {type: 'image', fields: FIELD_SCHEMA},
     timeline: {type: 'point'}
@@ -16,7 +16,7 @@ export const DATASETS=[
   {
     key:'music',
     title:'TBD',
-    file:'/datasets/music.csv',
+    file:'./datasets/music.csv',
     count:0,
     schema: {type: 'image', fields: FIELD_SCHEMA},
     timeline: {type: 'point'}
