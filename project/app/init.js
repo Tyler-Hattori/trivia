@@ -8,6 +8,11 @@ window.exitQuiz = quiz.exitQuiz;
 window.applyQuizSettings = quiz.applyQuizSettings;
 window.restartQuiz = quiz.restartQuiz;
 window.openTimeline = openTimeline;
+window.saveToken = () => {
+  const val = document.getElementById('token').value;
+  localStorage.setItem('gh_pat', val);
+  state.token = val;
+};
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('INIT LOADED');
