@@ -27,6 +27,9 @@ export async function loadQuizCounts() {
 
 export async function addEntry(){
   if(!state.token) return toast('No token');
+  
+  console.log('LOCALSTORAGE', localStorage.getItem('gh_pat'));
+  console.log('STATE TOKEN', state.token);
 
   const path=state.active.file;
 
