@@ -2,7 +2,47 @@ import { state } from '../core/state.js';
 
 export const $ = s => document.querySelector(s);
 
-export function toast(msg){ alert(msg); }
+export function toast(msg){
+  const el = document.createElement('div');
+
+  el.className = `
+    fixed
+    top-6
+    right-6
+    z-[9999]
+    bg-white
+    border
+    border-zinc-200
+    shadow-xl
+    rounded-2xl
+    px-5
+    py-3
+    text-sm
+    font-medium
+    text-zinc-800
+    transition-all
+    duration-300
+    opacity-0
+    translate-y-2
+  `;
+
+  el.textContent = msg;
+
+  document.body.appendChild(el);
+
+  requestAnimationFrame(() => {
+    el.classList.remove('opacity-0', 'translate-y-2');
+  });
+
+  setTimeout(() => {
+    el.classList.add('opacity-0', 'translate-y-2');
+
+    setTimeout(() => {
+      el.remove();
+    }, 300);
+
+  }, 1800);
+}
 
 export function shuffle(a){
   for(let i=a.length-1;i>0;i--){
