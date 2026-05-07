@@ -3,45 +3,62 @@ import { state } from '../core/state.js';
 export const $ = s => document.querySelector(s);
 
 export function toast(msg){
-  const el = document.createElement('div');
 
-  el.className = `
+  const overlay = document.createElement('div');
+
+  overlay.className = `
     fixed
-    top-6
-    right-6
+    inset-0
     z-[9999]
+    bg-black/30
+    backdrop-blur-sm
+    flex
+    items-center
+    justify-center
+    opacity-0
+    transition-opacity
+    duration-200
+  `;
+
+  const modal = document.createElement('div');
+
+  modal.className = `
     bg-white
     border
     border-zinc-200
-    shadow-xl
-    rounded-2xl
-    px-5
-    py-3
-    text-sm
-    font-medium
+    shadow-2xl
+    rounded-3xl
+    px-8
+    py-6
+    text-lg
+    font-semibold
     text-zinc-800
-    transition-all
-    duration-300
-    opacity-0
-    translate-y-2
+    scale-95
+    transition-transform
+    duration-200
   `;
 
-  el.textContent = msg;
+  modal.textContent = msg;
 
-  document.body.appendChild(el);
+  overlay.appendChild(modal);
+
+  document.body.appendChild(overlay);
 
   requestAnimationFrame(() => {
-    el.classList.remove('opacity-0', 'translate-y-2');
+    overlay.classList.remove('opacity-0');
+    modal.classList.remove('scale-95');
   });
 
   setTimeout(() => {
-    el.classList.add('opacity-0', 'translate-y-2');
+
+    overlay.classList.add('opacity-0');
+    modal.classList.add('scale-95');
 
     setTimeout(() => {
-      el.remove();
-    }, 300);
+      overlay.remove();
+    }, 200);
 
-  }, 1800);
+  }, 1200);
 }
 
 export function shuffle(a){
