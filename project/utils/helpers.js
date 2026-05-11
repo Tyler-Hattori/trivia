@@ -2,7 +2,64 @@ import { state } from '../core/state.js';
 
 export const $ = s => document.querySelector(s);
 
-export function toast(msg){ alert(msg); }
+export function toast(msg){
+
+  const overlay = document.createElement('div');
+
+  overlay.className = `
+    fixed
+    inset-0
+    z-[9999]
+    bg-black/30
+    backdrop-blur-sm
+    flex
+    items-center
+    justify-center
+    opacity-0
+    transition-opacity
+    duration-200
+  `;
+
+  const modal = document.createElement('div');
+
+  modal.className = `
+    bg-white
+    border
+    border-zinc-200
+    shadow-2xl
+    rounded-3xl
+    px-8
+    py-6
+    text-lg
+    font-semibold
+    text-zinc-800
+    scale-95
+    transition-transform
+    duration-200
+  `;
+
+  modal.textContent = msg;
+
+  overlay.appendChild(modal);
+
+  document.body.appendChild(overlay);
+
+  requestAnimationFrame(() => {
+    overlay.classList.remove('opacity-0');
+    modal.classList.remove('scale-95');
+  });
+
+  setTimeout(() => {
+
+    overlay.classList.add('opacity-0');
+    modal.classList.add('scale-95');
+
+    setTimeout(() => {
+      overlay.remove();
+    }, 200);
+
+  }, 1200);
+}
 
 export function shuffle(a){
   for(let i=a.length-1;i>0;i--){

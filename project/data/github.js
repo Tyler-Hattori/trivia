@@ -1,4 +1,4 @@
-import { toast, $ } from '../utils/helpers.js';
+import { toast, $, yearValue } from '../utils/helpers.js';
 import { applyQuizSettings } from '../features/quiz_engine.js';
 import { state } from '../core/state.js';
 import { render } from '../app/render.js';
@@ -27,6 +27,9 @@ export async function loadQuizCounts() {
 
 export async function addEntry(){
   if(!state.token) return toast('No token');
+  
+  console.log('LOCALSTORAGE', localStorage.getItem('gh_pat'));
+  console.log('STATE TOKEN', state.token);
 
   const path=state.active.file;
 

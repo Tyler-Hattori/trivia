@@ -154,7 +154,7 @@ export function applyQuizSettings(){
   restartQuiz();
 }
 
-function restartQuiz(){
+export function restartQuiz(){
   state.streak = 0;
   state.answered = 0;
 

@@ -2,7 +2,13 @@ import { render } from './render.js';
 import { loadQuizCounts } from '../data/github.js';
 import * as quiz from '../features/quiz_engine.js';
 import { openTimeline } from '../features/timeline_engine.js';
+import { state } from '../core/state.js';
 
+window.saveToken = () => {
+  const val = document.getElementById('token').value;
+  localStorage.setItem('gh_pat', val);
+  state.token = val;
+};
 window.start = quiz.start;
 window.exitQuiz = quiz.exitQuiz;
 window.applyQuizSettings = quiz.applyQuizSettings;
