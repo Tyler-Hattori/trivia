@@ -107,3 +107,40 @@ export function thumbUrl(url){
 
   return url;
 }
+
+export function parseYears(v){
+  const [start,end] = v.split('-').map(Number);
+  return { start, end };
+}
+
+export function normalizeRow(row, dataset){
+
+  if(dataset.key === 'art'){
+    return {
+      type: 'point',
+      start: yearValue(row.year),
+      label: row.title,
+      image: row.image,
+      meta: row.artist,
+      dataset: dataset.key
+    };
+  }
+
+  if(dataset.key === 'people'){
+    const { start, end } = parseYears(row.years);
+
+    if(!start || !end) return null;
+
+    return {
+      type: 'range',
+      start,
+      end,
+      label: row.name,
+      image: row.image,
+      meta: row.occupation,
+      dataset: dataset.key
+    };
+  }
+
+  return null;
+}

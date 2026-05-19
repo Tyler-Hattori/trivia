@@ -23,5 +23,12 @@ export function renderHome(){
         Save
       </button>
     </div>
+
+    <div class="mt-8 bg-white p-7 rounded-3xl shadow-sm border border-zinc-200">
+        <button onclick="openGlobalTimeline()">
+          Explore All Timelines
+        </button>
+    </div>
+
   `;
 }

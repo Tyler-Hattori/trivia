@@ -1,6 +1,9 @@
-export function parseCSV(text){
-  const lines=text.replace(/\r/g,'').split('\n').filter(x=>x.trim());
-  const out=[];
+export function parseCSV(text, fields){
+  const lines = text.replace(/\r/g,'')
+    .split('\n')
+    .filter(x => x.trim());
+
+  const out = [];
 
   function splitCSVRow(line){
     const cols=[];
@@ -14,16 +17,16 @@ export function parseCSV(text){
         if(inQuotes && line[i+1] === '"'){
           cur+='"';
           i++;
-        }else{
-          inQuotes=!inQuotes;
+        } else {
+          inQuotes = !inQuotes;
         }
       }
-      else if(ch===',' && !inQuotes){
+      else if(ch === ',' && !inQuotes){
         cols.push(cur.trim());
         cur='';
       }
       else{
-        cur+=ch;
+        cur += ch;
       }
     }
 
@@ -32,17 +35,20 @@ export function parseCSV(text){
   }
 
   for(let i=0;i<lines.length;i++){
-    const cols=splitCSVRow(lines[i]);
+    const cols = splitCSVRow(lines[i]);
 
-    if(i===0 && cols[0].toLowerCase()==='image') continue;
+    // skip header
+    if(i === 0) continue;
 
-    out.push({
-      image:cols[0]||'',
-      title:cols[1]||'',
-      artist:cols[2]||'',
-      year:cols[3]||'',
-      movement:cols[4]||''
+    const row = {
+      image: cols[0] || ''
+    };
+
+    fields.forEach((f, idx) => {
+      row[f] = cols[idx + 1] || '';
     });
+
+    out.push(row);
   }
 
   return out;

@@ -2,24 +2,28 @@ export const OWNER='tyler-hattori';
 export const REPO='trivia';
 export const BRANCH='main';
 
-export const FIELD_SCHEMA=['title','artist','year','movement'];
-
 export const DATASETS=[
   {
     key:'art',
     title:'Art History',
     file:'datasets/art.csv',
     count:0,
-    schema: {type: 'image', fields: FIELD_SCHEMA},
+    schema: {
+      type: 'image',
+      fields: ['title','artist','year','movement']
+    },
     timeline: {type: 'point'}
   },
   {
-    key:'music',
-    title:'TBD',
-    file:'datasets/music.csv',
+    key:'people',
+    title:'Historical Figures',
+    file:'datasets/people.csv',
     count:0,
-    schema: {type: 'image', fields: FIELD_SCHEMA},
-    timeline: {type: 'point'}
+    schema: {
+      type: 'image',
+      fields: ['name','years','occupation','country']
+    },
+    timeline: {type: 'lifespan'}
   }
 ];
 

@@ -1,12 +1,9 @@
-import { FIELD_SCHEMA } from './settings.js';
-
 export const state = {
     QUIZ_SETTINGS: window.QUIZ_SETTINGS || {
       count: 0,
       order: 'random',
-      fields: [...FIELD_SCHEMA]
     },
-    ACTIVE_FIELDS: window.ACTIVE_FIELDS || [...FIELD_SCHEMA],
+    ACTIVE_FIELDS: [],
     token: localStorage.getItem('gh_pat') || '',
     active: null,
     data: [],
@@ -23,5 +20,6 @@ export const state = {
     bestAcc: 0,
     bestRmse: Infinity,
     fieldStats: {},
-    activeFilters: new Set()
+    activeFilters: new Set(),
+    filtersOpen: false
 };

@@ -1,4 +1,3 @@
-import { FIELD_SCHEMA } from "../core/settings.js";
 import { state } from "../core/state.js";
 import { $ } from '../utils/helpers.js';
 
@@ -38,7 +37,7 @@ export function renderQuiz(){
 
               <div class='space-y-2 text-sm'>
 
-                ${FIELD_SCHEMA.map(f=>`
+                ${state.active.schema.fields.map(f=>`
                   <label class='flex items-center gap-2'>
                     <input
                       type='checkbox'
@@ -109,11 +108,24 @@ export function renderQuiz(){
 
           <div id='quizFields'
             class='grid md:grid-cols-2 gap-4'>
-            ${FIELD_SCHEMA.map(f=>`
-              <input id='${f}'
-                class='border border-zinc-200 bg-white px-4 py-3 w-full rounded-2xl text-lg focus:outline-none focus:ring-2 focus:ring-zinc-300'
-                placeholder='${f}'>
-            `).join('')}
+            ${state.active.schema.fields.map(f=> {
+              const active = state.ACTIVE_FIELDS.includes(f);
+              const value = state.current ? state.current[f] : '';
+
+              if (active) {
+                return `
+                  <input id='${f}'
+                    class='border border-zinc-200 bg-white px-4 py-3 w-full rounded-2xl text-lg'
+                    placeholder='${f}'>
+                `;
+              } else {
+                return `
+                  <div class="px-4 py-3 bg-zinc-50 border border-dashed rounded-2xl text-zinc-500">
+                    ${value}
+                  </div>
+                `;
+              }
+            }).join('')}
           </div>
 
           <div class='flex gap-2 mt-2'>
@@ -139,7 +151,7 @@ export function renderQuiz(){
             class='border border-zinc-200 bg-white px-4 py-3 w-full rounded-xl text-lg mb-3 focus:outline-none focus:ring-2 focus:ring-zinc-300'>
 
           <div class='grid md:grid-cols-2 gap-3'>
-            ${FIELD_SCHEMA.map(f=>`
+            ${state.active.schema.fields.map(f=>`
               <input id='n${f}'
                 placeholder='${f}'
                 class='border border-zinc-200 bg-white px-4 py-3 w-full rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-zinc-300'>
