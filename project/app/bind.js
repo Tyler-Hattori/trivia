@@ -1,4 +1,3 @@
-import { FIELD_SCHEMA } from '../core/settings.js';
 import { grade, next } from '../features/quiz_engine.js';
 import { state } from '../core/state.js';
 import { $ } from '../utils/helpers.js';
@@ -72,30 +71,10 @@ export function bindQuiz(){
     .querySelectorAll('.fieldOpt')
     .forEach(box=>{
       box.checked =
-        state.QUIZ_SETTINGS.fields.includes(
+        state.ACTIVE_FIELDS.includes(
           box.value
         );
     });
-
-  FIELD_SCHEMA.forEach(f=>{
-
-    const el = $('#'+f);
-
-    const enabled =
-      state.ACTIVE_FIELDS.includes(f);
-
-    el.disabled = !enabled;
-
-    el.classList.toggle(
-      'bg-zinc-100',
-      !enabled
-    );
-
-    el.classList.toggle(
-      'text-zinc-400',
-      !enabled
-    );
-  });
 
   document.onkeydown = (e) => {
     if(e.key !== 'Enter') return;

@@ -2,7 +2,7 @@ import { render } from '../app/render.js';
 import { updateStats } from '../ui/stats.js';
 import { toast, $, nextItem, calcRMSE, yearValue, shuffle } from '../utils/helpers.js';
 import { loadBestStats, commitBestIfNeeded } from '../ui/stats.js';
-import { DATASETS, FIELD_SCHEMA } from '../core/settings.js';
+import { DATASETS } from '../core/settings.js';
 import { state } from '../core/state.js';
 import { load } from '../data/github.js';
 
@@ -18,7 +18,16 @@ export async function start(key){
 
   state.fieldStats = {};
 
-  FIELD_SCHEMA.forEach(f=>{
+  const fields = state.active.schema.fields;
+
+  state.QUIZ_SETTINGS = {
+    count: 0,
+    order: 'random'
+  };
+
+  state.ACTIVE_FIELDS = [...fields];
+
+  fields.forEach(f=>{
     state.fieldStats[f] = {
       attempts:0,
       correct:0
@@ -43,11 +52,10 @@ export function exitQuiz(){
 function buildQueueFromSettings(){
   const settings = state.QUIZ_SETTINGS || {
     count:0,
-    order:'random',
-    fields:[...FIELD_SCHEMA]
+    order:'random'
   };
 
-  state.ACTIVE_FIELDS = [...settings.fields];
+  state.ACTIVE_FIELDS = state.ACTIVE_FIELDS || ['default','default','default','default'];
 
   let rows = [...state.data];
   shuffle(rows);
@@ -85,30 +93,6 @@ export function next(){
   $('#next').classList.add('hidden');
   $('#next').disabled = true;
 
-  $('#img').src = state.current.image;
-
-  FIELD_SCHEMA.forEach(f=>{
-
-    const el = $('#'+f);
-
-    el.value = '';
-
-    const enabled =
-      state.ACTIVE_FIELDS.includes(f);
-
-    el.disabled = !enabled;
-
-    el.classList.toggle(
-      'bg-zinc-100',
-      !enabled
-    );
-
-    el.classList.toggle(
-      'text-zinc-400',
-      !enabled
-    );
-  });
-
   requestAnimationFrame(() => {
     const title = $('#title');
     if (title && !title.disabled) {
@@ -124,6 +108,8 @@ export function next(){
     rem.textContent =
       state.queue.length + 1;
   }
+
+  render();
 }
 
 export function applyQuizSettings(){
@@ -151,10 +137,12 @@ export function applyQuizSettings(){
     fields:[...checked]
   };
 
+  state.ACTIVE_FIELDS = [...checked];
+
   restartQuiz();
 }
 
-function restartQuiz(){
+export function restartQuiz(){
   state.streak = 0;
   state.answered = 0;
 
@@ -165,7 +153,8 @@ function restartQuiz(){
 
   state.fieldStats = {};
 
-  FIELD_SCHEMA.forEach(f=>{
+  const fields = state.active.schema.fields;
+  fields.forEach(f=>{
     state.fieldStats[f] = {
       attempts:0,
       correct:0
@@ -192,7 +181,7 @@ function showQuizFinished(){
 
   commitBestIfNeeded({ acc, rmse });
 
-  const fieldRows = FIELD_SCHEMA.map(f=>{
+  const fieldRows = state.active.schema.fields.map(f=>{
 
     if(f === 'year'){
       return `
@@ -263,7 +252,7 @@ export function grade(){
   if(state.submitted) return;
   state.submitted = true;
 
-  const fields = state.ACTIVE_FIELDS || FIELD_SCHEMA;
+  const fields = state.active.schema.fields;
 
   let score = 0;
   let nonYearTotal = 0;
@@ -271,8 +260,11 @@ export function grade(){
   let out = '';
 
   fields.forEach(f=>{
-
     const input = $('#'+f);
+
+    const enabled = state.ACTIVE_FIELDS.includes(f);
+    if(!enabled) return;
+
     const vRaw = input.value.trim();
     const v = vRaw.toLowerCase();
 

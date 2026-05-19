@@ -11,9 +11,10 @@ export function parseMovements(v){
 }
 
 export function estimateCardWidth(r){
-  const ratio =
-    Number(r.imgRatio || 1.35); // fallback landscape-ish
+  const seed = r.label?.length || 10; // deterministic per row
+  const pseudo = 1 + ((seed * 9301 + 49297) % 233280) / 233280; // 1 → 2
 
+  const ratio = r.imgRatio || (0.8 + pseudo * 0.8); // ~0.8 → 2.4
   let w = TIMELINE_SETTINGS.IMG_H * ratio;
 
   // reserve text readability

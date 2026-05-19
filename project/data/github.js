@@ -1,8 +1,8 @@
-import { toast, $ } from '../utils/helpers.js';
+import { toast, $, yearValue } from '../utils/helpers.js';
 import { applyQuizSettings } from '../features/quiz_engine.js';
 import { state } from '../core/state.js';
 import { render } from '../app/render.js';
-import { DATASETS, FIELD_SCHEMA, OWNER, REPO, BRANCH } from '../core/settings.js';
+import { DATASETS, OWNER, REPO, BRANCH } from '../core/settings.js';
 import { parseCSV, csvOut } from './csv.js';
 
 export async function load(){
@@ -10,7 +10,7 @@ export async function load(){
     cache:'no-store'
   }).then(r=>r.text());
 
-  state.data = parseCSV(txt);
+  state.data = parseCSV(txt, state.active.schema.fields);
 }
 
 export async function loadQuizCounts() {
@@ -19,7 +19,7 @@ export async function loadQuizCounts() {
       cache:'no-store'
     }).then(r => r.text());
 
-    q.count = parseCSV(txt).length;
+    q.count = parseCSV(txt, q.schema.fields).length;
   }
 
   render();
@@ -27,6 +27,9 @@ export async function loadQuizCounts() {
 
 export async function addEntry(){
   if(!state.token) return toast('No token');
+  
+  console.log('LOCALSTORAGE', localStorage.getItem('gh_pat'));
+  console.log('STATE TOKEN', state.token);
 
   const path=state.active.file;
 
@@ -38,11 +41,12 @@ export async function addEntry(){
   ).then(r=>r.json());
 
   const latestCsv=atob(meta.content.replace(/\n/g,''));
-  state.data = parseCSV(latestCsv);
+  state.data = parseCSV(latestCsv, state.active.schema.fields);
 
   const row={image:$('#nimage').value.trim()};
 
-  FIELD_SCHEMA.forEach(f=>{
+  const fields = state.active.schema.fields;
+  fields.forEach(f=>{
     row[f]=$('#n'+f).value.trim();
   });
 
