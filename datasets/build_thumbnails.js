@@ -62,32 +62,48 @@ async function throttle() {
   lastRequest = Date.now();
 }
 
-async function fetchWithRetry(url, attempts = 0) {
+async function fetchWithRetry(url, attempts = 2) {
   for (let i = 0; i < attempts; i++) {
     try {
       const res = await fetch(url, {
         headers: {
-          "User-Agent": "Mozilla/5.0",
           "Accept": "image/*,*/*;q=0.8"
         }
       });
 
       if (res.ok) return res;
 
-      // retry on transient errors
       if ([429, 500, 502, 503, 504].includes(res.status)) {
-        const delay = Math.pow(2, i) * 400 + Math.random() * 300;
-        await new Promise(r => setTimeout(r, delay));
-        console.warn(`Retrying (${i + 1}/${attempts}) after ${res.status}`);
-        continue;
+        if (i < attempts - 1) {
+          const delay =
+            Math.pow(2, i) * 400 +
+            Math.random() * 300;
+
+          console.warn(
+            `Retrying (${i + 1}/${attempts}) after ${res.status}`
+          );
+
+          await new Promise(r => setTimeout(r, delay));
+          continue;
+        }
       }
 
       console.warn(`✗ ${res.status} ${url}`);
       return null;
 
-    } catch {
-      const delay = Math.pow(2, i) * 400 + Math.random() * 300;
-      await new Promise(r => setTimeout(r, delay));
+    } catch (err) {
+
+      if (i < attempts - 1) {
+        const delay =
+          Math.pow(2, i) * 400 +
+          Math.random() * 300;
+
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+
+      console.warn(`✗ fetch failed ${url}`, err);
+      return null;
     }
   }
 
