@@ -58,7 +58,7 @@ export async function openTimeline(rows = null, dataset = null){
   let cIdx=0;
 
   try {
-    const res = await fetch(`/thumbnails/meta.json`);
+    const res = await fetch(`./thumbnails/meta.json`);
     META = await res.json();
   } catch (e) {
     console.warn("meta.json failed, continuing without thumbnails");
@@ -96,7 +96,7 @@ export async function openTimeline(rows = null, dataset = null){
 
   function resolveImage(r) {
     const filename = buildNameFromRow(r.raw || r);
-    const thumbPath = `thumbnails/${filename}`;
+    const thumbPath = `./thumbnails/${filename}`;
     console.log(filename)
 
     if (META[filename]) {
