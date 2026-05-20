@@ -97,7 +97,6 @@ export async function openTimeline(rows = null, dataset = null){
   function resolveImage(r) {
     const filename = buildNameFromRow(r.raw || r);
     const thumbPath = `./thumbnails/${filename}`;
-    console.log(filename)
 
     if (META[filename]) {
       return {
