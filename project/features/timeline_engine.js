@@ -58,7 +58,7 @@ export async function openTimeline(rows = null, dataset = null){
   let cIdx=0;
 
   try {
-    const res = await fetch(`thumbnails/meta.json`);
+    const res = await fetch(`/thumbnails/meta.json`);
     META = await res.json();
   } catch (e) {
     console.warn("meta.json failed, continuing without thumbnails");
