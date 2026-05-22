@@ -16,12 +16,12 @@ export const DATASETS=[
   },
   {
     key:'people',
-    title:'Historical Figures',
-    file:'datasets/people.csv',
+    title:'World Leaders',
+    file:'datasets/leaders.csv',
     count:0,
     schema: {
       type: 'image',
-      fields: ['name','years','occupation','country']
+      fields: ['name','years','house/party','country']
     },
     timeline: {type: 'lifespan'}
   }
