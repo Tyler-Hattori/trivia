@@ -15,7 +15,7 @@ export const DATASETS=[
     timeline: {type: 'point'}
   },
   {
-    key:'people',
+    key:'leaders',
     title:'World Leaders',
     file:'datasets/leaders.csv',
     count:0,
@@ -23,7 +23,7 @@ export const DATASETS=[
       type: 'image',
       fields: ['name','years','house/party','country']
     },
-    timeline: {type: 'lifespan'}
+    timeline: {type: 'span'}
   }
 ];
 
