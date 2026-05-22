@@ -7,7 +7,7 @@ import { openTimeline } from './timeline_engine.js';
 import { parseMovements } from '../utils/layout.js';
 
 function normalizeCSVRow(r, dataset) {
-  if (dataset.key === "people") {
+  if (dataset.key === "leaders") {
     const { start, end } = parseYears(r.years || "");
 
     return {
