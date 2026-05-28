@@ -1,10 +1,16 @@
 import { toast, $ } from '../utils/helpers.js';
-import { parseMovements } from '../utils/layout.js';
 import { estimateCardWidth } from '../utils/layout.js';
 import { yearNumSafe } from '../utils/helpers.js';
 import { state } from '../core/state.js';
 
-export async function openTimeline(rows = null, dataset = null){
+export async function openTimeline({
+    rows = null,
+    title = null,
+
+    minYear = null,
+    maxYear = null
+  } = {}){
+
   const win = window.open("", "timeline");
 
   win.document.write(`
@@ -25,7 +31,7 @@ export async function openTimeline(rows = null, dataset = null){
   let META = {};
   let allRows = [];
 
-  const selected = new Set();
+  const selected = new Map();
 
   let renderCount = 0;
 
@@ -38,14 +44,26 @@ export async function openTimeline(rows = null, dataset = null){
   const LANE_H = 184;
   const HEADER_H = 54;
 
+  const SPAN_CARD_H = 92;
+  const RAIL_H = 14;
+  const RAIL_GAP = 6;
+  const RAIL_STEP = RAIL_H + RAIL_GAP;
+  const SPAN_Y_CENTER_OFFSET = 46;
+  const SPAN_CARD_W = 220;
+
   const LABEL_ROW_H = 26;
   const LABEL_TOP_PAD = 8;
   const LABEL_BOTTOM_PAD = 10;
-
-  const minYear = 1300;
-  const maxYear = 1980;
   
   let filtersOpen = false;
+  let activeFilterKey = null;
+  let paintingsEnabled = true;
+  let leadersEnabled = true;
+
+  const timelineConfig =
+    state.active?.timeline ||
+    state.timeline ||
+    {};
 
   const palette = [
     "#D7263D", "#0072CE", "#2E8B57", "#FF8C00", "#6A0DAD", "#008B8B",
@@ -75,33 +93,24 @@ export async function openTimeline(rows = null, dataset = null){
   }
 
   function buildNameFromRow(r) {
-    const primary =
-      r.meta?.primary ||
-      r.artist ||
-      r.occupation ||
-      '';
-
-    const title =
-      r.title ||
-      r.name ||
-      '';
-
+    const subtitle = r.subtitle || '';
+    const title = r.title || '';
     const year =
       r.year ??
       r.start ??
       '';
 
-    return `${slugify(primary)}_${slugify(title)}_${year}.jpg`;
+    return `${slugify(subtitle)}_${slugify(title)}_${year}.jpg`;
   }
 
   function resolveImage(r) {
-    const filename = buildNameFromRow(r.raw || r);
+    const filename = buildNameFromRow(r);
     const thumbPath = `./thumbnails/${filename}`;
 
     if (META[filename]) {
       return {
         src: thumbPath,
-        ratio: META[filename],
+        ratio: Number(META[filename]),
         hasMeta: true,
         filename
       };
@@ -128,54 +137,126 @@ export async function openTimeline(rows = null, dataset = null){
     `).join('');
   }
 
+  function normalizeFilters(filters = {}) {
+    const out = {};
+
+    for(const key in filters){
+
+      const raw = filters[key];
+
+      if(Array.isArray(raw)){
+
+        out[key] = raw.flatMap(v =>
+          String(v)
+            .split('/')
+            .map(s => s.trim())
+            .filter(Boolean)
+        );
+
+      } else {
+
+        out[key] = String(raw || '')
+          .split('\\')
+          .map(s => s.trim())
+          .filter(Boolean);
+      }
+    }
+
+    return out;
+  }
+
   function start(rows = null) {
     const base = rows ?? state.data;
 
-    allRows = base.map(r => {
+    const defs = timelineConfig.filterable || [];
+
+    activeFilterKey =
+      defs.length
+        ? `${defs[0].dataset || 'global'}:${defs[0].key}`
+        : null;
+
+    /* -----------------------------------
+      dynamic year bounds
+    ----------------------------------- */
+
+    const years = [];
+
+    base.forEach(r => {
+      if(r.type === 'point'){
+
+        const y = Number(r.year);
+
+        if(Number.isFinite(y))
+          years.push(y);
+      }
+
+      else if(r.type === 'span'){
+        const s = Number(r.start);
+        const e = Number(r.end);
+
+        if(Number.isFinite(s))
+          years.push(s);
+
+        if(Number.isFinite(e))
+          years.push(e);
+      }
+    });
+
+    if(years.length){
+      minYear =
+        Math.floor(Math.min(...years) / 10) * 10;
+
+      maxYear =
+        Math.ceil(Math.max(...years) / 10) * 10;
+    }
+
+    /* optional padding */
+    minYear -= 0;
+    maxYear += 0;
+
+    allRows = base.map((r, idx) => {
+
+      const normalizedFilters =
+        normalizeFilters(r.filters);
+
       const resolved = resolveImage(r);
 
+      const ratio =
+        Number.isFinite(r.imgRatio)
+          ? r.imgRatio
+          : Number.isFinite(resolved.ratio)
+            ? resolved.ratio
+            : 1.2;
+      
+      const initialKey = activeFilterKey?.split(':')[1];
+
       return {
-        type: r.type || 'point',
+        ...r,
 
-        year: yearNumSafe(r.year),
-        start: yearNumSafe(r.start),
-        end: yearNumSafe(r.end),
+        dataset: r.dataset || 'global',
 
-        label: r.title || r.label || "",
+        __id: idx,
+
         image: resolved.src,
+        imgRatio: ratio,
+        _metaRatio: ratio,
 
-        imgRatio:
-          Number.isFinite(r.imgRatio)
-            ? r.imgRatio
-            : (resolved.ratio ?? 1.2),
+        filters: normalizedFilters,
+
+        displayYear:
+          r.years ||
+          r.year ||
+          (r.start && r.end
+            ? `${r.start}-${r.end}`
+            : ''),
 
         _needsMeta:
           !Number.isFinite(r.imgRatio) &&
           !Number.isFinite(resolved.ratio),
 
-        meta: {
-          primary:
-            r.meta?.primary ||
-            r.artist ||
-            '',
-
-          secondary:
-            r.meta?.secondary ||
-            r.movement ||
-            '',
-
-          tags: (
-            r.meta?.tags?.length
-              ? r.meta.tags
-              : parseMovements(
-                  r.movement ||
-                  r.raw?.movement ||
-                  ''
-                )
-          ).filter(Boolean)
-        },
-
-        raw: r
+        tags:
+          normalizedFilters[initialKey] ||
+          ['uncategorized']
       };
     });
 
@@ -211,50 +292,110 @@ export async function openTimeline(rows = null, dataset = null){
   
     overlay.innerHTML = `
       <div style="
-        max-width:95vw;
-        max-height:95vh;
+        width:min(1100px, 95vw);
+        max-height:92vh;
+
         display:flex;
-        flex-direction:column;
-        align-items:center;
-        gap:14px;
+        gap:24px;
+
+        background:#111827;
+        border-radius:18px;
+
+        overflow:hidden;
+
+        box-shadow:
+          0 20px 60px rgba(0,0,0,.45);
       ">
-        <img
-          src="${row.raw.image}"
-          style="
-            max-width:95vw;
-            max-height:78vh;
-            object-fit:contain;
-            border-radius:12px;
-            background:white;
-            box-shadow:0 20px 60px rgba(0,0,0,.45);
-          ">
-  
+
+        <!-- image side -->
         <div style="
-          text-align:center;
-          color:white;
-          line-height:1.35;
+          flex:0 0 52%;
+          background:black;
+
+          display:flex;
+          align-items:center;
+          justify-content:center;
+
+          min-height:0;
         ">
+          <img
+            src="${row.raw.image}"
+            style="
+              width:100%;
+              height:100%;
+              object-fit:contain;
+            ">
+        </div>
+
+        <!-- text side -->
+        <div style="
+          flex:1;
+          min-width:0;
+
+          display:flex;
+          flex-direction:column;
+
+          padding:28px 28px 24px 0;
+
+          overflow:hidden;
+        ">
+
           <div style="
-            font-size:26px;
-            font-weight:800;
-            font-style:italic;
+            flex:0 0 auto;
           ">
-            ${row.label}
+
+            <div style="
+              font-size:32px;
+              font-weight:800;
+              line-height:1.1;
+              color:white;
+              margin-bottom:10px;
+            ">
+              ${row.label}
+            </div>
+
+            <div style="
+              font-size:18px;
+              color:#d1d5db;
+              margin-bottom:6px;
+            ">
+              ${row.subtitle || ''}
+            </div>
+
+            <div style="
+              font-size:15px;
+              color:#9ca3af;
+              margin-bottom:18px;
+            ">
+              ${row.misc || ''}
+            </div>
+
+            <div style="
+              font-size:14px;
+              font-weight:700;
+              color:#93c5fd;
+              letter-spacing:.04em;
+              margin-bottom:22px;
+            ">
+              ${row.displayYear || row.year}
+            </div>
           </div>
-  
+
+          <!-- scrollable text -->
           <div style="
-            font-size:18px;
-            opacity:.92;
-          ">
-            ${row.meta.primary || ''}
-          </div>
-  
-          <div style="
+            flex:1 1 auto;
+            overflow-y:auto;
+
+            padding-right:10px;
+
             font-size:16px;
-            opacity:.75;
-          ">
-            ${row.year || (row.start + '-' + row.end)}
-          </div>
+            line-height:1.75;
+
+            color:#e5e7eb;
+
+            text-align:left;
+          ">${(row.excerpt || '').replace(/\\n/g, '<br>')}</div>
+
         </div>
       </div>
     `;
@@ -269,64 +410,148 @@ export async function openTimeline(rows = null, dataset = null){
 
   function getX(r){
     if(r.type === 'point') return xPos(r.year);
-    if(r.type === 'range') return xPos((r.start + r.end)/2);
+    if(r.type === 'span') return xPos((r.start + r.end)/2);
   }
 
   function widthNow(){
     return LEFT_PAD + (maxYear-minYear+1)*zoom + LEFT_PAD;
   }
 
-  function getColor(m){
-    if(!colorMap.has(m)){
-      colorMap.set(m,palette[cIdx % palette.length]);
+  function currentFilterKey(){
+    return activeFilterKey?.split(':')[1];
+  }
+
+  function getColor(value){
+    const key = `${activeFilterKey}:${value}`;
+
+    if(!colorMap.has(key)){
+      colorMap.set(
+        key,
+        palette[cIdx % palette.length]
+      );
       cIdx++;
     }
-    return colorMap.get(m);
+
+    return colorMap.get(key);
   }
 
   function rowIncluded(r){
-    if(selected.size===0) return true;
-    return (r.meta?.tags || []).some(t=>selected.has(t));
+    if (!paintingsEnabled && r.dataset === 'art') { return false; }
+    if (!leadersEnabled && r.dataset === 'leaders') { return false; }
+
+    for (const [compoundKey, set] of selected.entries()) {
+      const [dataset, key] = compoundKey.split(':');
+
+      if(!set?.size) continue;
+
+      const rowDataset =
+        r.dataset || 'global'; // MUST exist in normalized row
+
+      if(dataset !== 'global' && dataset !== rowDataset)
+        continue;
+
+      const vals = r.filters?.[key] || [];
+
+      const hit = vals.some(v => set.has(v));
+
+      if(!hit) return false;
+    }
+
+    return true;
   }
 
   /* =======================================================
      LABEL LAYOUT (dynamic height)
   ======================================================= */
   function buildLabels(){
-    const firstSeen=new Map();
-    allRows.forEach(r=>{
-      const yRaw = r.type === 'point' ? r.year : (r.start + r.end) / 2;
-      const y = Number.isFinite(yRaw) ? yRaw : 0;
-      
-      (r.meta?.tags || []).forEach(t=>{
-        if(!firstSeen.has(t) || y<firstSeen.get(t)){
-          firstSeen.set(t,y);
+    const defs =
+      timelineConfig.filterable || [];
+
+    const def =
+      defs.find(d =>
+        `${d.dataset || 'global'}:${d.key}` === activeFilterKey
+      );
+
+    if(!def){
+      return {
+        LABEL_H: 0,
+        html: ''
+      };
+    }
+
+    const firstSeen = new Map();
+
+    allRows.forEach(r => {
+      const activeDataset =
+        def.dataset || 'global';
+
+      const rowDataset =
+        r.dataset || 'global';
+
+      if (
+        activeDataset !== 'global' &&
+        rowDataset !== activeDataset
+      ){
+        return;
+      }
+
+      const vals =
+        r.filters?.[def.key] || [];
+
+      const yRaw =
+        r.type === 'point'
+          ? r.year
+          : (r.start + r.end) / 2;
+
+      vals.forEach(v => {
+
+        if(
+          !firstSeen.has(v) ||
+          yRaw < firstSeen.get(v)
+        ){
+          firstSeen.set(v, yRaw);
         }
       });
     });
 
-    const anchors=[...firstSeen.entries()]
-      .map(([movement,year])=>({movement,year}))
-      .sort((a,b)=>a.year-b.year);
+    const anchors =
+      [...firstSeen.entries()]
+        .map(([value, year]) => ({
+          value,
+          year
+        }))
+        .sort((a,b)=>a.year-b.year);
 
-    const lanes=[];
+    const lanes = [];
 
-    const items = anchors.map(a=>{
+    const items = anchors.map(a => {
 
       const x = xPos(a.year);
-      const est=Math.max(72,a.movement.length*7+24);
 
-      let lane=0;
-
-      while(true){
-        if(!lanes[lane]) lanes[lane]=[];
-
-        const clash=lanes[lane].some(o =>
-          Math.abs(o.x-x) < ((o.w+est)/2 + 8)
+      const est =
+        Math.max(
+          72,
+          a.value.length * 7 + 24
         );
 
+      let lane = 0;
+
+      while(true){
+
+        if(!lanes[lane])
+          lanes[lane] = [];
+
+        const clash =
+          lanes[lane].some(o =>
+            Math.abs(o.x - x)
+              < ((o.w + est)/2 + 8)
+          );
+
         if(!clash){
-          lanes[lane].push({x,w:est});
+          lanes[lane].push({
+            x,
+            w: est
+          });
           break;
         }
 
@@ -340,86 +565,256 @@ export async function openTimeline(rows = null, dataset = null){
       };
     });
 
-    const laneCount = Math.max(1, lanes.length);
+    const laneCount =
+      Math.max(1, lanes.length);
 
     const LABEL_H =
       LABEL_TOP_PAD +
       laneCount * LABEL_ROW_H +
       LABEL_BOTTOM_PAD;
 
-    const html = items.map(a=>{
+    const html = items.map(a => {
 
-      const active=selected.has(a.movement);
+      const compoundKey =
+        `${def.dataset || 'global'}:${def.key}`;
+
+      const active =
+        selected.get(compoundKey)?.has(a.value);
 
       return `
-        <div data-move="${a.movement}" style="
-          position:absolute;
-          left:${a.x}px;
-          top:${LABEL_TOP_PAD + a.lane*LABEL_ROW_H}px;
-          transform:translateX(-50%);
-          white-space:nowrap;
-          padding:3px 8px;
-          border-radius:999px;
-          font-size:12px;
-          font-weight:700;
-          cursor:pointer;
-          user-select:none;
-          color:${active?'white':getColor(a.movement)};
-          background:${active?getColor(a.movement):'white'};
-          border:1px solid ${getColor(a.movement)};
-          box-shadow:0 1px 4px rgba(0,0,0,.08);
-        ">${a.movement}</div>
-      `;
-    }).join("");
+        <div
+          data-filter-key="${def.key}"
+          data-filter-value="${a.value}"
+          data-dataset="${def.dataset || 'global'}"
 
-    return { LABEL_H, html };
+          style="
+            position:absolute;
+            left:${a.x}px;
+            top:${LABEL_TOP_PAD + a.lane * LABEL_ROW_H}px;
+
+            transform:translateX(-50%);
+
+            white-space:nowrap;
+
+            padding:3px 8px;
+
+            border-radius:999px;
+
+            font-size:12px;
+            font-weight:700;
+
+            cursor:pointer;
+            user-select:none;
+
+            color:
+              ${active
+                ? 'white'
+                : getColor(a.value)};
+
+            background:
+              ${active
+                ? getColor(a.value)
+                : 'white'};
+
+            border:
+              1px solid ${getColor(a.value)};
+
+            box-shadow:
+              0 1px 4px rgba(0,0,0,.08);
+          "
+        >
+          ${a.value}
+        </div>
+      `;
+    }).join('');
+
+    return {
+      LABEL_H,
+      html
+    };
   }
 
   /* =======================================================
      RETILE VISIBLE CARDS ONLY
   ======================================================= */
-  function packVisible(rows){
+  function packVisible(rows, contentTop){
+    const cardLanes = [];
+    const railLanes = [];
 
-    const lanes=[];
+    return rows.map(r => {
 
-    return rows.map(r=>{
+      if (r.type === 'span') {
+        const railLeft = xPos(r.start);
+        const railRight = xPos(r.end);
+        const centerX = (railLeft + railRight) / 2;
+
+        const cardLeft = centerX - SPAN_CARD_W / 2;
+        const cardRight = centerX + SPAN_CARD_W / 2;
+
+        let railLane = 0;
+
+        while (true) {
+
+          const cardTop =
+            contentTop +
+            railLane * RAIL_STEP +
+            SPAN_Y_CENTER_OFFSET -
+            SPAN_CARD_H / 2;
+
+          const cardBottom = cardTop + SPAN_CARD_H;
+
+          const railClash =
+            (railLanes[railLane] || []).some(o => {
+
+              const horizontal =
+                !(railRight < o.left || railLeft > o.right);
+
+              return horizontal;
+            });
+
+          const spanCardClash =
+            cardLanes.some(lane =>
+              (lane || []).some(o => {
+
+                const horizontal =
+                  !(cardRight < o.left || cardLeft > o.right);
+
+                const vertical =
+                  !(cardBottom < o.top || cardTop > o.bottom);
+
+                return horizontal && vertical;
+              })
+            );
+
+          if (!railClash && !spanCardClash) {
+
+            if (!railLanes[railLane])
+              railLanes[railLane] = [];
+
+            railLanes[railLane].push({
+              left: railLeft,
+              right: railRight,
+              top: cardTop,
+              bottom: cardBottom
+            });
+
+            break;
+          }
+
+          railLane++;
+        }
+
+        let cardLane = 0;
+
+        while (true) {
+
+          const cardTop =
+            contentTop +
+            railLane * RAIL_STEP +
+            SPAN_Y_CENTER_OFFSET -
+            SPAN_CARD_H / 2;
+
+          const cardBottom = cardTop + SPAN_CARD_H;
+
+          if (!cardLanes[cardLane])
+            cardLanes[cardLane] = [];
+
+          const clash = cardLanes[cardLane].some(o =>
+            !(cardRight < o.left || cardLeft > o.right)
+          );
+
+          if (!clash) {
+
+            cardLanes[cardLane].push({
+              left: cardLeft,
+              right: cardRight,
+              top: cardTop,
+              bottom: cardBottom
+            });
+
+            break;
+          }
+
+          cardLane++;
+        }
+
+        return Object.assign(r, {
+          x: centerX,
+          railLane,
+          cardLane,
+          railLeft,
+          railRight,
+          cardLeft,
+          cardRight
+        });
+      }
+
+      /* =====================================
+        point cards
+      ===================================== */
 
       const x = getX(r);
 
-      let lane=0;
+      let w = estimateCardWidth(r);
+
+      if(!Number.isFinite(w))
+        w = 140;
+
+      const left = x - w/2;
+      const right = x + w/2;
+
+      let cardLane = 0;
 
       while(true){
-        if(!lanes[lane]) lanes[lane]=[];
 
-        const w = estimateCardWidth(r);
-        if (!Number.isFinite(w)) w = 140;
-        const clash = lanes[lane].some(o =>
-          Math.abs(o.x - x) < ((o.w + w)/2 + 2)
-        );
+        if(!cardLanes[cardLane])
+          cardLanes[cardLane] = [];
+
+        const top =
+          contentTop +
+          cardLane * LANE_H;
+
+        const bottom =
+          top + LANE_H;
+
+        const clash = cardLanes[cardLane].some(o => {
+
+          const horizontal =
+            !(right < o.left || left > o.right);
+
+          const vertical =
+            !(bottom < o.top || top > o.bottom);
+
+          return horizontal && vertical;
+        });
 
         if(!clash){
-          lanes[lane].push({x,w});
+          const top =
+            contentTop +
+            cardLane * LANE_H;
+
+          const bottom =
+            top + LANE_H;
+
+          cardLanes[cardLane].push({
+            left,
+            right,
+            top,
+            bottom
+          });
+
           break;
         }
 
-        lane++;
+        cardLane++;
       }
 
-      return Object.assign(r, { x, lane });
-    });
-  }
-
-  let rerenderQueued = false;
-
-  function requestRender(){
-    if(rerenderQueued) return;
-    rerenderQueued = true;
-
-    console.log("requesting render");
-
-    requestAnimationFrame(()=>{
-      render(true);
-      rerenderQueued = false;
+      return Object.assign(r,{
+        x,
+        left,
+        right,
+        cardLane
+      });
     });
   }
 
@@ -435,6 +830,7 @@ export async function openTimeline(rows = null, dataset = null){
 
     const { LABEL_H, html:labels } = buildLabels();
     const FILTER_H = filtersOpen ? LABEL_H + 16 : 0;
+    const contentTop = (filtersOpen ? LABEL_H : 0) + 34;
 
     const visibleRows = allRows
       .filter(rowIncluded)
@@ -444,11 +840,16 @@ export async function openTimeline(rows = null, dataset = null){
         return ay - by;
       });
 
-    const positioned = packVisible(visibleRows);
+    const positioned = packVisible(visibleRows, contentTop);
 
     const laneCount =
       positioned.length
-        ? Math.max(...positioned.map(r=>r.lane))+1
+        ? Math.max(...positioned.map(r =>
+            Math.max(
+              r.cardLane || 0,
+              r.railLane || 0
+            )
+          )) + 1
         : 1;
 
     const totalHeight =
@@ -487,66 +888,194 @@ export async function openTimeline(rows = null, dataset = null){
       `;
     }
 
-    /* cards */
-    const cards = positioned.map((r,i)=>{
-      const top = (filtersOpen ? LABEL_H : 0) + 34 + r.lane * LANE_H;
+    let railHTML = '';
+    let cardHTML = '';
 
-      if(r.type === 'range'){
+    positioned.forEach((r,i)=>{
+      const railY =
+        contentTop +
+        r.railLane * RAIL_STEP +
+        SPAN_Y_CENTER_OFFSET;
+
+      const cardTop = railY - (SPAN_CARD_H / 2);
+      const spanCardW =
+        Math.max(
+          180,
+          Math.min(
+            280,
+            r.label.length * 7 + 100
+          )
+        );
+
+      if(r.type === 'span'){
         const left = xPos(r.start);
         const right = xPos(r.end);
-        const width = right - left;
 
-        return `
+        const spanWidth = Math.max(140, right - left);
+
+        const center = left + spanWidth / 2;
+
+        const primary = getColor(
+            r.filters?.[currentFilterKey()]?.[0]
+            || 'uncategorized'
+          );
+
+        railHTML += `
           <div
             style="
               position:absolute;
               left:${left}px;
-              top:${top}px;
-              width:${width}px;
-              height:140px;
-              background:rgba(59,130,246,.15);
-              border:1px solid rgba(59,130,246,.4);
-              border-radius:12px;
-              padding:6px;
+              top:${railY}px;
+              width:${spanWidth}px;
+              height:6px;
+
+              border-radius:999px;
+              overflow:hidden;
+
+              background:${primary}22;
+
+              pointer-events:none;
+            "
+          >
+            <div style="
+              width:100%;
+              height:100%;
+              background:${primary};
+              opacity:.55;
+            "></div>
+          </div>
+        `;
+
+        cardHTML += `
+          <div
+            data-full="${r.image}"
+            data-idx="${i}"
+
+            style="
+              display:block;
+              position:absolute;
+
+              left:${left + spanWidth/2}px;
+              top:${cardTop}px;
+
+              width:${spanCardW}px;
+              height:${SPAN_CARD_H}px;
+
+              transform:translateX(-50%);
+
+              border-radius:14px;
+              overflow:hidden;
+
+              background:white;
+
+              border:1px solid ${primary}44;
+
+              box-shadow:
+                0 4px 10px rgba(0,0,0,.06),
+                0 10px 24px rgba(0,0,0,.08);
+
               cursor:pointer;
             "
           >
-            <div style="display:flex; gap:8px;">
-              <img src="${r.image}" style="
-                width:60px;
-                height:60px;
-                object-fit:cover;
-                border-radius:8px;
+
+            <div style="
+              height:4px;
+              display:flex;
+              overflow:hidden;
+            ">
+              ${multiColorSegments(
+                r.filters?.[currentFilterKey()] || []
+              )}
+            </div>
+
+            <div style="
+              display:flex;
+              gap:10px;
+              padding:10px;
+              align-items:flex-start;
+            ">
+
+              <img
+                src="${r.image}"
+                style="
+                  width:68px;
+                  height:68px;
+                  object-fit:cover;
+                  border-radius:10px;
+                  background:#f1f5f9;
+                  flex-shrink:0;
+                "
+              >
+
+              <div style="
+                min-width:0;
+                flex:1;
               ">
-              <div>
-                <div style="font-weight:700;">${r.label}</div>
-                <div style="font-size:12px;color:#555;">${r.meta?.primary || ''}</div>
-                <div style="font-size:11px;color:#777;">
-                  ${r.start}-${r.end}
+
+                <div style="
+                  font-size:13px;
+                  font-weight:800;
+                  line-height:1.2;
+                  margin-bottom:4px;
+
+                  overflow:hidden;
+                  display:-webkit-box;
+                  -webkit-line-clamp:2;
+                  -webkit-box-orient:vertical;
+                ">
+                  ${r.label}
                 </div>
+
+                <div style="
+                  font-size:11px;
+                  color:#64748b;
+
+                  overflow:hidden;
+                  text-overflow:ellipsis;
+                  white-space:nowrap;
+                ">
+                  ${r.subtitle || ''}
+                </div>
+
+                <div style="
+                  margin-top:6px;
+                  font-size:10px;
+                  font-weight:700;
+                  color:${primary};
+                  letter-spacing:.03em;
+                ">
+                  ${r.start} — ${r.end}
+                </div>
+
               </div>
             </div>
           </div>
         `;
+
+        return;
       }
 
       const w = estimateCardWidth(r);
       if (!Number.isFinite(w)) w = 140;
-      const primary = getColor(r.meta.tags?.[0]);
-      const bar = multiColorSegments(r.meta.tags);
+      const primary = getColor(
+          r.filters?.[currentFilterKey()]?.[0]
+          || 'uncategorized'
+        );
+      const bar = multiColorSegments( r.filters?.[currentFilterKey()] || [] );
+      const top = contentTop + r.cardLane * LANE_H;
 
-      return `
+      cardHTML += `
         <div
           data-full="${r.image}"
           data-idx="${i}"
           style="
+            display:block;
             position:absolute;
             cursor:pointer;
             left:${r.x}px;
             top:${top}px;
             width:${w}px;
             transform:translateX(-50%);
-            z-index:10;
           ">
           <div style="
             border-radius:14px;
@@ -560,7 +1089,7 @@ export async function openTimeline(rows = null, dataset = null){
               border-radius:4px 4px 0 0;
               overflow:hidden;
             ">
-              ${multiColorSegments(r.meta.tags)}
+              ${multiColorSegments( r.filters?.[currentFilterKey()] || [] )}
             </div>
             <img src="${r.image}" style="
               width:100%;
@@ -569,7 +1098,7 @@ export async function openTimeline(rows = null, dataset = null){
               background:#f8fafc;
             ">
 
-            <div style="padding:8px">
+            <div style="padding:8px; background:white;">
               <div style="
                 font-size:12px;
                 font-weight:700;
@@ -582,16 +1111,16 @@ export async function openTimeline(rows = null, dataset = null){
                 ${r.label}
               </div>
               <div style="font-size:11px;color:#64748b;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;">
-                ${r.meta?.primary}
+                ${r.subtitle || ''}
               </div>
               <div style="font-size:10px;color:#94a3b8;">
-                ${r.type === 'point' ? r.year : `${r.start}-${r.end}`}
+                ${r.displayYear || r.year}
               </div>
             </div>
           </div>
         </div>
       `;
-    }).join('');
+    });
 
     body.innerHTML=`
       <div style="
@@ -607,17 +1136,71 @@ export async function openTimeline(rows = null, dataset = null){
         padding:0 16px;
       ">
         <div style="font-size:20px;font-weight:800;">
-          ${dataset === 'global' ? 'Global Timeline' : 'Art Timeline'}
+          ${title ?? state.active.title ?? 'Timeline'}
         </div>
 
-        <div style="display:flex;gap:8px;align-items:center;">
-          <button id="toggleFilters" style="
+        <div style="display:flex;gap:12px;align-items:center; margin-right:auto;">
+          <button id="togglePaintings" style="
             border:1px solid #d1d5db;
-            background:white;
+            background:${paintingsEnabled ? '#111827' : 'white'};
+            color:${paintingsEnabled ? 'white' : '#111827'};
             border-radius:8px;
             padding:4px 10px;
             cursor:pointer;
-          ">Filters</button>
+            margin-left:10px;
+            white-space:nowrap;
+          ">
+            Art
+          </button>
+          <button id="toggleLeaders" style="
+            border:1px solid #d1d5db;
+            background:${leadersEnabled ? '#111827' : 'white'};
+            color:${leadersEnabled ? 'white' : '#111827'};
+            border-radius:8px;
+            padding:4px 10px;
+            cursor:pointer;
+            white-space:nowrap;
+          ">
+            Leaders
+          </button>
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:center;">
+          ${(() => {
+            const defs = timelineConfig.filterable || [];
+            const grouped = new Map();
+
+            for (const d of defs) {
+              const k = `${d.dataset || 'global'}:${d.key}`;
+              if (!paintingsEnabled && d.dataset === 'art') continue;
+              if (!leadersEnabled && d.dataset === 'leaders') continue;
+
+              if (!grouped.has(k)) grouped.set(k, []);
+              grouped.get(k).push(d);
+            }
+
+            return [...grouped.entries()].map(([key, items]) => `
+              <div style="display:flex;gap:6px;align-items:center;margin-right:10px;">
+                ${items.map(def => `
+                  <button
+                    class="toggleFilter"
+                    data-filter-section="${def.key}"
+                    data-dataset="${def.dataset || ''}"
+                    style="
+                      border:1px solid #d1d5db;
+                      background:white;
+                      border-radius:8px;
+                      padding:4px 10px;
+                      cursor:pointer;
+                      white-space:nowrap;
+                    "
+                  >
+                    ${def.label}
+                  </button>
+                `).join('')}
+              </div>
+            `).join('');
+          })()}
           
           <button id="zoomOut" style="
             border:1px solid #d1d5db;
@@ -674,18 +1257,70 @@ export async function openTimeline(rows = null, dataset = null){
           ` : ``}
 
           ${ticks}
-          ${cards}
+
+          <!-- rails -->
+          <div style="
+            position:absolute;
+            inset:0;
+            z-index:1;
+            pointer-events:none;
+          ">
+            ${railHTML}
+          </div>
+
+          <!-- cards -->
+          <div style="
+            position:absolute;
+            inset:0;
+            z-index:20;
+          ">
+            ${cardHTML}
+          </div>
 
         </div>
       </div>
     `;
 
     const scroller = body.querySelector("#scrollWrap");
+    const paintBtn = body.querySelector("#togglePaintings");
+    const leadersBtn = body.querySelector("#toggleLeaders");
+    if (paintBtn) {
+      paintBtn.onclick = () => {
+        paintingsEnabled = !paintingsEnabled;
+        render(false);
+      };
+    }
 
-    body.querySelector("#toggleFilters").onclick = () => {
-      filtersOpen = !filtersOpen;
-      render(false);
-    };
+    if (leadersBtn) {
+      leadersBtn.onclick = () => {
+        leadersEnabled = !leadersEnabled;
+        render(false);
+      };
+    }
+
+    body.querySelectorAll(".toggleFilter")
+    .forEach(btn => {
+
+      btn.onclick = () => {
+        const dataset =
+          btn.dataset.dataset || 'global';
+
+        const key =
+          btn.dataset.filterSection;
+
+        const compoundKey =
+          `${dataset}:${key}`;
+
+        if(activeFilterKey === compoundKey){
+          filtersOpen = !filtersOpen;
+        } else {
+          activeFilterKey = compoundKey;
+          filtersOpen = true;
+        }
+
+        render(false);
+      };
+    });
 
     if(oldScroller && keepCenter){
       const centerRatio = (prevX + prevW/2) / oldSW;
@@ -701,11 +1336,23 @@ export async function openTimeline(rows = null, dataset = null){
     }
 
     /* movement clicks */
-    body.querySelectorAll("[data-move]").forEach(el=>{
-      el.onclick=()=>{
-        const m=el.dataset.move;
-        if(selected.has(m)) selected.delete(m);
-        else selected.add(m);
+    body.querySelectorAll("[data-filter-key]").forEach(el => {
+      el.onclick = () => {
+        const key = el.dataset.filterKey;
+        const dataset = el.dataset.dataset || 'global';
+        const value = el.dataset.filterValue;
+
+        const compoundKey = `${dataset}:${key}`;
+
+        if (!selected.has(compoundKey)) {
+          selected.set(compoundKey, new Set());
+        }
+
+        const set = selected.get(compoundKey);
+
+        if (set.has(value)) set.delete(value);
+        else set.add(value);
+
         render(false);
       };
     });
@@ -725,35 +1372,31 @@ export async function openTimeline(rows = null, dataset = null){
 
       const r = positioned[idx];
 
-      const source = allRows.find(x =>
-        x.label === r.label &&
-        x.year === r.year
-      );
+      const source = r;
 
       if (!img) return;
 
       function apply() {
         if (img.naturalWidth && img.naturalHeight) {
-          const ratio =
-            img.naturalWidth / img.naturalHeight;
-          r.imgRatio = ratio;
+          const ratio = img.naturalWidth / img.naturalHeight;
+          r._naturalRatio = ratio;
 
           if (source) {
             source.imgRatio = ratio;
             source._needsMeta = false;
           }
-          
-          renderCount++;
-          if (renderCount === positioned.length) {
-            render(true);
-          }
         }
       }
 
       if (img.complete) {
+        renderCount++;
         apply();
       } else {
+        console.log(r.title);
         img.onload = apply;
+      }
+      if (renderCount === positioned.length) {
+        render(true);
       }
     });
 

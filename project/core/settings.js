@@ -10,9 +10,23 @@ export const DATASETS=[
     count:0,
     schema: {
       type: 'image',
-      fields: ['title','artist','year','movement']
+      fields: ['title','artist','year','movement','excerpt']
     },
-    timeline: {type: 'point'}
+    map: {
+      image: 'image',
+      title: 'title',
+      subtitle: 'artist',
+      years: 'year',
+      misc: 'movement',
+      excerpt: 'excerpt'
+    },
+    timeline: {
+      type: 'point',
+      filterable: [
+        { key:'misc', label:'Movement' },
+        { key:'subtitle', label:'Artist' }
+      ]
+    }
   },
   {
     key:'leaders',
@@ -21,9 +35,23 @@ export const DATASETS=[
     count:0,
     schema: {
       type: 'image',
-      fields: ['name','years','house/party','country']
+      fields: ['name','country','years','house/party','excerpt']
     },
-    timeline: {type: 'span'}
+    map: {
+      image: 'image',
+      title: 'name',
+      subtitle: 'country',
+      years: 'years',
+      misc: 'house/party',
+      excerpt: 'excerpt'
+    },
+    timeline: {
+      type: 'span',
+      filterable: [
+        { key:'misc', label:'House/Party' },
+        { key:'subtitle', label:'Country' }
+      ]
+    }
   }
 ];
 

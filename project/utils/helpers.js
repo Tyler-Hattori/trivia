@@ -1,6 +1,14 @@
 import { state } from '../core/state.js';
 
-export const $ = s => document.querySelector(s);
+export const $ = (s, root = document) => {
+  if (typeof s !== 'string') return null;
+
+  if (s.startsWith('#')) {
+    return document.getElementById(s.slice(1));
+  }
+
+  return root.querySelector(s);
+};
 
 export function toast(msg){
 
