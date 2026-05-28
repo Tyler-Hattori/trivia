@@ -4,13 +4,33 @@ import { state } from '../core/state.js';
 import { render } from '../app/render.js';
 import { DATASETS, OWNER, REPO, BRANCH } from '../core/settings.js';
 import { parseCSV, csvOut } from './csv.js';
+import { normalizeTimelineRow } from '../utils/normalize.js';
 
 export async function load(){
-  const txt=await fetch(state.active.file+'?t='+Date.now(),{
-    cache:'no-store'
-  }).then(r=>r.text());
+  const txt = await fetch(
+    state.active.file + '?t=' + Date.now(),
+    { cache:'no-store' }
+  ).then(r => r.text());
 
-  state.data = parseCSV(txt, state.active.schema.fields);
+  const rawRows =
+    parseCSV(txt, state.active.schema.fields);
+
+  state.data = rawRows.map(r =>
+    normalizeTimelineRow(r, state.active)
+  );
+}
+
+function denormalizeRow(row, dataset){
+  const out = {};
+  const map = dataset.map;
+
+  out[map.image] = row.image;
+  out[map.title] = row.title;
+  out[map.subtitle] = row.subtitle;
+  out[map.years] = row.years;
+  out[map.misc] = row.misc;
+
+  return out;
 }
 
 export async function loadQuizCounts() {
@@ -50,8 +70,13 @@ export async function addEntry(){
     row[f]=$('#n'+f).value.trim();
   });
 
-  state.data.push(row);
+  const normalized = normalizeTimelineRow(row, state.active);
+  state.data.push(normalized); 
   state.data.sort((a, b) => yearValue(a.year) - yearValue(b.year));
+
+  const csvRows = state.data.map(r =>
+    denormalizeRow(r, state.active)
+  );
 
   await fetch(
     `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,
@@ -65,7 +90,7 @@ export async function addEntry(){
         message:'update dataset',
         content:btoa(
           unescape(
-            encodeURIComponent(csvOut(state.data))
+            encodeURIComponent(csvOut(rows, state.active.schema.fields))
           )
         ),
         sha:meta.sha,

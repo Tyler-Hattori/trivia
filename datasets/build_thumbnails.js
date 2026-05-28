@@ -62,7 +62,7 @@ async function throttle() {
   lastRequest = Date.now();
 }
 
-async function fetchWithRetry(url, attempts = 2) {
+async function fetchWithRetry(url, attempts = 1) {
   for (let i = 0; i < attempts; i++) {
     try {
       const res = await fetch(url, {
@@ -76,12 +76,12 @@ async function fetchWithRetry(url, attempts = 2) {
       if ([429, 500, 502, 503, 504].includes(res.status)) {
         if (i < attempts - 1) {
           const delay =
-            Math.pow(2, i) * 400 +
+            Math.pow(2, i) * 600 +
             Math.random() * 300;
 
-          console.warn(
-            `Retrying (${i + 1}/${attempts}) after ${res.status}`
-          );
+          // console.warn(
+          //   `Retrying (${i + 1}/${attempts}) after ${res.status}`
+          // );
 
           await new Promise(r => setTimeout(r, delay));
           continue;
@@ -95,7 +95,7 @@ async function fetchWithRetry(url, attempts = 2) {
 
       if (i < attempts - 1) {
         const delay =
-          Math.pow(2, i) * 400 +
+          Math.pow(2, i) * 600 +
           Math.random() * 300;
 
         await new Promise(r => setTimeout(r, delay));
