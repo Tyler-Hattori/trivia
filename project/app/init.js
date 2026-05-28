@@ -11,6 +11,11 @@ window.saveToken = () => {
   state.token = val;
 };
 
+window.saveToken = () => {
+  const val = document.getElementById('token').value;
+  localStorage.setItem('gh_pat', val);
+  state.token = val;
+};
 window.start = quiz.start;
 window.exitQuiz = quiz.exitQuiz;
 window.applyQuizSettings = quiz.applyQuizSettings;

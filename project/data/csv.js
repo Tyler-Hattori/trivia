@@ -62,16 +62,14 @@ export function esc(v){
   return v;
 }
 
-export function csvOut(rows){
-  const header='image,title,artist,year,movement';
+export function csvOut(rows, fields){
+  const header =
+    ['image', ...fields].join(',');
 
-  const body=rows.map(r=>
+  const body = rows.map(r =>
     [
       esc(r.image),
-      esc(r.title),
-      esc(r.artist),
-      esc(r.year),
-      esc(r.movement)
+      ...fields.map(f => esc(r[f]))
     ].join(',')
   );
 
