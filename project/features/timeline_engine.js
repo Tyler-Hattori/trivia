@@ -141,7 +141,6 @@ export async function openTimeline({
     const out = {};
 
     for(const key in filters){
-
       const raw = filters[key];
 
       if(Array.isArray(raw)){
