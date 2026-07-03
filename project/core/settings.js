@@ -7,10 +7,10 @@ export const DATASETS=[
     key:'art',
     title:'Art History',
     file:'datasets/art.csv',
-    count:0,
+    count:10,
     schema: {
       type: 'image',
-      fields: ['title','artist','year','movement','excerpt']
+      fields: ['title','artist','year','movement']
     },
     map: {
       image: 'image',
@@ -32,10 +32,10 @@ export const DATASETS=[
     key:'leaders',
     title:'World Leaders',
     file:'datasets/leaders.csv',
-    count:0,
+    count:10,
     schema: {
       type: 'image',
-      fields: ['name','country','years','house/party','excerpt']
+      fields: ['name','country','years','house/party']
     },
     map: {
       image: 'image',
