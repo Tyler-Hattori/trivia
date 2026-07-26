@@ -1,0 +1,52 @@
+[
+  {
+    "title": "Socrates",
+    "freq": 1,
+    "extract": "Socrates was an ancient Greek philosopher from Classical Athens, perhaps the first Western moral philosopher, and a major inspiration on his student Plato, who largely founded the tradition of Western philosophy. An enigmatic figure, Socrates authored no texts and is known mainly through the posthumous accounts of classical writers, particularly his students Plato and Xenophon. These accounts are written as dialogues, in which Socrates and his interlocutors examine a subject in the style of question and answer; they gave rise to the Socratic dialogue literary genre. Contradictory accounts of Socrates make a reconstruction of his philosophy nearly impossible, a situation known as the Socratic problem. Socrates was a polarizing figure in Athenian society. In 399 BC, he was accused of impiety and corrupting the youth. After a trial that lasted a day, he was sentenced to death. As related by Plato, he was put to death by administration of poison after refusing offers from allies to help him escape.",
+    "qid": "Q913",
+    "year": -470,
+    "types": [
+      "human"
+    ]
+  },
+  {
+    "title": "Laches (dialogue)",
+    "freq": 1,
+    "extract": "The Laches is a Socratic dialogue written by Plato. Participants in the discourse present competing definitions of the concept of courage or \"manliness\", ἀνδρεία in Greek.",
+    "qid": "Q1243625",
+    "year": null,
+    "types": [
+      "written work",
+      "Platonic dialogue"
+    ]
+  },
+  {
+    "title": "Socratic questioning",
+    "freq": 1,
+    "extract": "Socratic questioning is an educational method named after Socrates that focuses on discovering answers by asking questions of students. According to Plato, Socrates believed that \"the disciplined practice of thoughtful questioning enables the scholar/student to examine ideas and be able to determine the validity of those ideas\". Plato explains how, in this method of teaching, the teacher assumes an ignorant mindset in order to compel the student to assume the highest level of knowledge. Thus, a student is expected to develop the ability to acknowledge contradictions, recreate inaccurate or unfinished ideas, and critically determine necessary thought.",
+    "qid": "Q4926165",
+    "year": null,
+    "types": []
+  },
+  {
+    "title": "Clitophon (dialogue)",
+    "freq": 1,
+    "extract": "The Clitophon is a 4th-century BC dialogue traditionally ascribed to Plato, though the work's authenticity is debated. It is the shortest dialogue in Plato's traditional corpus. It centers on a discussion between Clitophon and Socrates, with Socrates remaining mostly silent. Most scholarship until recently has been concerned with the authenticity rather than the actual meaning and contents of Clitophon.",
+    "qid": "Q1653767",
+    "year": null,
+    "types": [
+      "written work"
+    ]
+  },
+  {
+    "title": "Meno",
+    "freq": 1,
+    "extract": "Meno is a Socratic dialogue written by Plato around 385 BC, but set at an earlier date around 402 BC. Meno begins the dialogue by asking Socrates whether virtue can be taught, acquired by practice, or comes by nature. In order to determine whether virtue is teachable or not, Socrates tells Meno that they first need to determine what virtue is. When the characters speak of virtue, or aretē, they refer to virtue in general, rather than particular virtues, such as justice or temperance. The first part of the work showcases Socratic dialectical style; Meno, unable to adequately define virtue, is reduced to confusion or aporia. Socrates suggests that they seek an adequate definition for virtue together. In response, Meno suggests that it is impossible to seek what one does not know, because one will be unable to determine whether one has found it.",
+    "qid": "Q746253",
+    "year": null,
+    "types": [
+      "written work",
+      "Platonic dialogue"
+    ]
+  }
+]

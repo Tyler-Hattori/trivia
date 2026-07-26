@@ -1,6 +1,12 @@
 import { grade, next } from '../features/quiz_engine.js';
 import { state } from '../core/state.js';
-import { $ } from '../utils/helpers.js';
+import { $, thumbUrl } from '../utils/helpers.js';
+
+function currentImage(){
+  if(!state.current) return '';
+  const col = state.active?.map?.image || 'image';
+  return state.current[col] || state.current.image || '';
+}
 
 function openQuizLightbox(src){
   if(!src) return;
@@ -46,10 +52,12 @@ function openQuizLightbox(src){
 }
 
 export function bindQuiz(){
-  if(state.current){
-    $('#img').src = state.current.image;
+  const src = currentImage();
+  if(src){
+    // Quiz panel is large; request a generously sized thumb, full-res in lightbox.
+    $('#img').src = thumbUrl(src, 900);
   }
-  $('#img').onclick = () => openQuizLightbox(state.current?.image);
+  $('#img').onclick = () => openQuizLightbox(currentImage());
 
   $('#submit').onclick = () => grade();
   $('#next').onclick = next;

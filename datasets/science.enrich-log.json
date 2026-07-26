@@ -1,0 +1,242 @@
+[
+  {
+    "row": 7,
+    "name": "Two New Sciences",
+    "title": "Two New Sciences",
+    "sim": 1,
+    "filled": [
+      "image"
+    ],
+    "url": "https://en.wikipedia.org/wiki/Two_New_Sciences"
+  },
+  {
+    "row": 4,
+    "name": "Kepler's Laws of Planetary Motion",
+    "title": "Kepler's laws of planetary motion",
+    "sim": 1,
+    "filled": [
+      "image"
+    ],
+    "url": "https://en.wikipedia.org/wiki/Kepler's_laws_of_planetary_motion"
+  },
+  {
+    "row": 6,
+    "name": "Dialogue on the Two Chief World Systems",
+    "title": "Dialogue Concerning the Two Chief World Systems",
+    "sim": 0.86,
+    "filled": [
+      "image"
+    ],
+    "url": "https://en.wikipedia.org/wiki/Dialogue_Concerning_the_Two_Chief_World_Systems"
+  },
+  {
+    "row": 9,
+    "name": "Von Guericke's Air Pump",
+    "title": "Otto von Guericke",
+    "sim": 0.4,
+    "filled": [
+      "image"
+    ],
+    "url": "https://en.wikipedia.org/wiki/Otto_von_Guericke"
+  },
+  {
+    "row": 15,
+    "name": "Newton's Reflecting Telescope",
+    "title": "Reflecting telescope",
+    "sim": 0.5,
+    "filled": [
+      "image"
+    ],
+    "url": "https://en.wikipedia.org/wiki/Reflecting_telescope"
+  },
+  {
+    "row": 13,
+    "name": "Boyle's Law",
+    "title": "Boyle's law",
+    "sim": 1,
+    "filled": [
+      "image"
+    ],
+    "url": "https://en.wikipedia.org/wiki/Boyle's_law"
+  },
+  {
+    "row": 21,
+    "name": "Newcomen's Steam Engine",
+    "title": "Newcomen atmospheric engine",
+    "sim": 0.5,
+    "filled": [
+      "image"
+    ],
+    "url": "https://en.wikipedia.org/wiki/Newcomen_atmospheric_engine"
+  },
+  {
+    "row": 25,
+    "name": "Invention of the Leyden Jar",
+    "title": "Leyden jar",
+    "sim": 0.4,
+    "filled": [
+      "image"
+    ],
+    "url": "https://en.wikipedia.org/wiki/Leyden_jar"
+  },
+  {
+    "row": 27,
+    "name": "Franklin's Kite Experiment",
+    "title": "Kite experiment",
+    "sim": 0.5,
+    "filled": [
+      "image"
+    ],
+    "url": "https://en.wikipedia.org/wiki/Kite_experiment"
+  },
+  {
+    "row": 29,
+    "name": "Black and Latent Heat",
+    "title": "Latent heat",
+    "sim": 0.5,
+    "filled": [
+      "image"
+    ],
+    "url": "https://en.wikipedia.org/wiki/Latent_heat"
+  },
+  {
+    "row": 30,
+    "name": "Watt Repairs a Newcomen Engine",
+    "title": "Watt steam engine",
+    "sim": 0.4,
+    "filled": [
+      "image"
+    ],
+    "url": "https://en.wikipedia.org/wiki/Watt_steam_engine"
+  },
+  {
+    "row": 32,
+    "name": "Watt's Steam Engine",
+    "title": "Watt steam engine",
+    "sim": 0.75,
+    "filled": [
+      "image"
+    ],
+    "url": "https://en.wikipedia.org/wiki/Watt_steam_engine"
+  },
+  {
+    "row": 33,
+    "name": "Coulomb's Law",
+    "title": "Coulomb's law",
+    "sim": 1,
+    "filled": [
+      "image"
+    ],
+    "url": "https://en.wikipedia.org/wiki/Coulomb's_law"
+  },
+  {
+    "row": 34,
+    "name": "Charles's Law",
+    "title": "Charles's law",
+    "sim": 1,
+    "filled": [
+      "image"
+    ],
+    "url": "https://en.wikipedia.org/wiki/Charles's_law"
+  },
+  {
+    "row": 51,
+    "name": "The Second Law of Thermodynamics",
+    "title": "Second law of thermodynamics",
+    "sim": 0.8,
+    "filled": [
+      "image"
+    ],
+    "url": "https://en.wikipedia.org/wiki/Second_law_of_thermodynamics"
+  },
+  {
+    "row": 58,
+    "name": "Maxwell's Equations",
+    "title": "Maxwell's equations",
+    "sim": 1,
+    "filled": [
+      "image"
+    ],
+    "url": "https://en.wikipedia.org/wiki/Maxwell's_equations"
+  },
+  {
+    "row": 56,
+    "name": "Maxwell's Kinetic Theory of Gases",
+    "title": "Kinetic theory of gases",
+    "sim": 0.67,
+    "filled": [
+      "image"
+    ],
+    "url": "https://en.wikipedia.org/wiki/Kinetic_theory_of_gases"
+  },
+  {
+    "row": 61,
+    "name": "The Crookes Tube",
+    "title": "Crookes tube",
+    "sim": 0.67,
+    "filled": [
+      "image"
+    ],
+    "url": "https://en.wikipedia.org/wiki/Crookes_tube"
+  },
+  {
+    "row": 64,
+    "name": "The Michelson-Morley Experiment",
+    "title": "Michelson–Morley experiment",
+    "sim": 0.75,
+    "filled": [
+      "image"
+    ],
+    "url": "https://en.wikipedia.org/wiki/Michelson%E2%80%93Morley_experiment"
+  },
+  {
+    "row": 66,
+    "name": "The Ultraviolet Catastrophe",
+    "title": "Ultraviolet catastrophe",
+    "sim": 0.67,
+    "filled": [
+      "image"
+    ],
+    "url": "https://en.wikipedia.org/wiki/Ultraviolet_catastrophe"
+  },
+  {
+    "row": 82,
+    "name": "The Bohr Atomic Model",
+    "title": "Bohr model",
+    "sim": 0.5,
+    "filled": [
+      "image"
+    ],
+    "url": "https://en.wikipedia.org/wiki/Bohr_model"
+  },
+  {
+    "row": 86,
+    "name": "The First Artificial Nuclear Reaction",
+    "title": "Nuclear reaction",
+    "sim": 0.4,
+    "filled": [
+      "image"
+    ],
+    "url": "https://en.wikipedia.org/wiki/Nuclear_reaction"
+  },
+  {
+    "row": 87,
+    "name": "De Broglie's Matter Waves",
+    "title": "Louis de Broglie",
+    "sim": 0.4,
+    "filled": [
+      "image"
+    ],
+    "url": "https://en.wikipedia.org/wiki/Louis_de_Broglie"
+  },
+  {
+    "row": 108,
+    "name": "Light Speed Independent of Source",
+    "title": "Speed of light",
+    "sim": 0.6,
+    "filled": [
+      "image"
+    ],
+    "url": "https://en.wikipedia.org/wiki/Speed_of_light"
+  }
+]

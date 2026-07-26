@@ -21,8 +21,8 @@ export async function start(key){
   const fields = state.active.schema.fields;
 
   state.QUIZ_SETTINGS = {
-    count: 10,
-    order: 'random',
+    count: 0,
+    order: 'random'
   };
 
   state.ACTIVE_FIELDS = [...fields];
@@ -65,7 +65,8 @@ function buildQueueFromSettings(){
   }
 
   if(settings.order === 'chronological'){
-    rows.sort((a,b)=>yearValue(a.year)-yearValue(b.year));
+    const yearsCol = state.active.map.years;
+    rows.sort((a,b)=>yearValue(a[yearsCol])-yearValue(b[yearsCol]));
   }
 
   state.queue = rows;
@@ -258,7 +259,7 @@ export function grade(){
   let nonYearTotal = 0;
   let nonYearCorrect = 0;
   let out = '';
- 
+
   fields.forEach(f=>{
     const input = $('#'+f);
 
@@ -268,16 +269,7 @@ export function grade(){
     const vRaw = input.value.trim();
     const v = vRaw.toLowerCase();
 
-    let aRaw;
-
-    if (f === 'year') {
-      aRaw = state.current.years ?? state.current.raw?.year ?? '';
-    } else {
-      aRaw = state.current[f] ?? state.current.raw?.[f] ?? '';
-    }
-
-    aRaw = aRaw.toString();
-
+    const aRaw = (state.current[f] || '').toString();
     const a = aRaw.toLowerCase();
 
     let ok = false;
@@ -339,7 +331,7 @@ export function grade(){
           ${vRaw || '(empty)'}
         </span>
         <span class='text-zinc-500 ml-2'>
-          (correct: ${aRaw})
+          (correct: ${state.current[f]})
         </span>
       </div>
     `;
