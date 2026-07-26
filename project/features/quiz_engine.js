@@ -65,7 +65,8 @@ function buildQueueFromSettings(){
   }
 
   if(settings.order === 'chronological'){
-    rows.sort((a,b)=>yearValue(a.year)-yearValue(b.year));
+    const yearsCol = state.active.map.years;
+    rows.sort((a,b)=>yearValue(a[yearsCol])-yearValue(b[yearsCol]));
   }
 
   state.queue = rows;

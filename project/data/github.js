@@ -4,7 +4,6 @@ import { state } from '../core/state.js';
 import { render } from '../app/render.js';
 import { DATASETS, OWNER, REPO, BRANCH } from '../core/settings.js';
 import { parseCSV, csvOut } from './csv.js';
-import { normalizeTimelineRow } from '../utils/normalize.js';
 
 export async function load(){
   const txt = await fetch(
@@ -12,25 +11,9 @@ export async function load(){
     { cache:'no-store' }
   ).then(r => r.text());
 
-  const rawRows =
-    parseCSV(txt, state.active.schema.fields);
-
-  state.data = rawRows.map(r =>
-    normalizeTimelineRow(r, state.active)
-  );
-}
-
-function denormalizeRow(row, dataset){
-  const out = {};
-  const map = dataset.map;
-
-  out[map.image] = row.image;
-  out[map.title] = row.title;
-  out[map.subtitle] = row.subtitle;
-  out[map.years] = row.years;
-  out[map.misc] = row.misc;
-
-  return out;
+  // Raw, header-keyed rows. The quiz reads these directly (schema.fields are
+  // real column names). The timeline normalizes them when it opens.
+  state.data = parseCSV(txt);
 }
 
 export async function loadQuizCounts() {
@@ -39,7 +22,7 @@ export async function loadQuizCounts() {
       cache:'no-store'
     }).then(r => r.text());
 
-    q.count = parseCSV(txt, q.schema.fields).length;
+    q.count = parseCSV(txt).length;
   }
 
   render();
@@ -47,9 +30,6 @@ export async function loadQuizCounts() {
 
 export async function addEntry(){
   if(!state.token) return toast('No token');
-  
-  console.log('LOCALSTORAGE', localStorage.getItem('gh_pat'));
-  console.log('STATE TOKEN', state.token);
 
   const path=state.active.file;
 
@@ -61,22 +41,29 @@ export async function addEntry(){
   ).then(r=>r.json());
 
   const latestCsv=atob(meta.content.replace(/\n/g,''));
-  state.data = parseCSV(latestCsv, state.active.schema.fields);
+  const rows = parseCSV(latestCsv);
 
-  const row={image:$('#nimage').value.trim()};
+  // Preserve the existing header/column order; fall back to config.
+  const columns =
+    rows.length
+      ? Object.keys(rows[0])
+      : columnsForDataset(state.active);
 
-  const fields = state.active.schema.fields;
-  fields.forEach(f=>{
-    row[f]=$('#n'+f).value.trim();
+  const row = {};
+  columns.forEach(c => {
+    const el = $('#n' + c);
+    row[c] = el ? el.value.trim() : '';
   });
+  // image field uses its own input id for backwards compatibility
+  const imgEl = $('#nimage');
+  if(imgEl && columns.includes(state.active.map.image)){
+    row[state.active.map.image] = imgEl.value.trim();
+  }
 
-  const normalized = normalizeTimelineRow(row, state.active);
-  state.data.push(normalized); 
-  state.data.sort((a, b) => yearValue(a.year) - yearValue(b.year));
+  rows.push(row);
 
-  const csvRows = state.data.map(r =>
-    denormalizeRow(r, state.active)
-  );
+  const yearsCol = state.active.map.years;
+  rows.sort((a, b) => yearValue(a[yearsCol]) - yearValue(b[yearsCol]));
 
   await fetch(
     `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,
@@ -90,7 +77,7 @@ export async function addEntry(){
         message:'update dataset',
         content:btoa(
           unescape(
-            encodeURIComponent(csvOut(rows, state.active.schema.fields))
+            encodeURIComponent(csvOut(rows, columns))
           )
         ),
         sha:meta.sha,
@@ -103,4 +90,13 @@ export async function addEntry(){
 
   await load();
   applyQuizSettings();
+}
+
+function columnsForDataset(dataset){
+  // image column first, then the quizzable fields (deduped)
+  const cols = [dataset.map.image];
+  dataset.schema.fields.forEach(f => {
+    if(!cols.includes(f)) cols.push(f);
+  });
+  return cols;
 }

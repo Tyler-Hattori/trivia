@@ -78,7 +78,7 @@ export function renderQuiz(){
 
         <!-- TIMELINE -->
         ${
-          state.active.key==='art' || state.active.key==='leaders'
+          state.active.timeline
           ? `
           <div class='bg-white p-5 rounded-2xl shadow-sm border border-zinc-200'>
             <div class='font-semibold mb-3'>Explore</div>
