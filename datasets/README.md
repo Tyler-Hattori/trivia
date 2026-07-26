@@ -1,4 +1,41 @@
-# Dataset tooling
+# Datasets — status and tooling
+
+Schema, CSV rules and how to register a new dataset live in the [root README](../README.md).
+This file is about **filling** the CSVs.
+
+## Where things stand (measured 2026-07-26)
+
+| dataset | rows | image | excerpt | avg excerpt | house style¹ | what it needs next |
+|---|---|---|---|---|---|---|
+| `art` | 848 | 848/848 | **1/848** | — | 1 | **excerpts — the single biggest gap.** `enrich.mjs art.csv` fills all 847 for free |
+| `leaders` | 999 | 999/999 | 999/999 | 79 ch | 0 | **rewrite:** every excerpt is the terse fragment style ("Cold War end. Gulf War.") the project rejects |
+| `film` | 628 | 525/628 | 526/628 | 451 ch | 0 | 103 images + 102 excerpts missing; then a house-style pass |
+| `science` | 108 | **31/108** | 108/108 | 453 ch | 22 | images for the iconic ones; broaden past physics (biology, chemistry, medicine, earth) |
+| `people` | 21 | 21/21 | 21/21 | 249 ch | 21 | **the quality bar — copy this one's voice.** Grow it: add every figure named in `science` events |
+| `philosophy` | 14 | 14/14 | 14/14 | 119 ch | 0 | thin + excerpts too short; expand and deepen |
+| `us_history` | 12 | 12/12 | 12/12 | 116 ch | 0 | thin + excerpts too short; expand and deepen |
+| `religion` | 9 | 9/9 | 9/9 | 129 ch | 0 | thin + excerpts too short; expand and deepen |
+
+¹ rows using `\n\n` paragraph breaks — a proxy for "written in the project's
+flowing multi-paragraph voice" rather than one clipped sentence. `people` and
+`science` are the models; the rest are placeholders.
+
+**Highest-value additions, in order**
+
+1. **`enrich.mjs art.csv`** — 847 excerpts for $0. Nothing else comes close on
+   effort-to-payoff.
+2. **A `wars` / `periods` span dataset.** The timeline's era context band exists
+   for long spans, and today the only span data is reigns (median 8 years) and
+   lifespans (median 71), so the band is sparse when zoomed out. This is the one
+   addition that unlocks a feature rather than just adding rows.
+3. **Rewrite `leaders` excerpts.** 999 rows of fragments; the worst
+   style-consistency problem in the data.
+4. **Grow `people`** from the figures already named in `science` rows —
+   occupation `scientist/<type>`, `years` = lifespan.
+
+---
+
+## Tooling
 
 Two zero-dependency Node scripts for populating `datasets/*.csv` **thoroughly while
 spending almost nothing on Claude**. The strategy: let free APIs do the fetching,
@@ -59,8 +96,28 @@ node enrich.mjs film.csv --limit=20         # write 20, inspect quality
 node enrich.mjs film.csv                     # full run once happy
 ```
 
-Default target fields per dataset: `art`→excerpt, `film`→excerpt+image,
-`science`→image (the rest are already full). Override with `--fields`.
+Default target fields come from the `DATASETS` table at the top of `wikilib.mjs`
+(which also tells the matcher which column is the *name* and which adds
+disambiguating context):
+
+| file | name column | context | fills by default |
+|---|---|---|---|
+| `art.csv` | `title` | `artist` | `excerpt` |
+| `film.csv` | `title` | `director` | `excerpt`, `image` |
+| `science.csv` | `discovery` | `scientist` | `image` |
+| `people.csv` | `name` | `occupation` | `excerpt`, `image` |
+| `leaders.csv` | `name` | `country` | `excerpt`, `image` |
+| `philosophy.csv` | `work` | `philosopher` | `excerpt`, `image` |
+| `religion.csv` | `event` | `tradition` | `excerpt`, `image` |
+| `us_history.csv` | `event` | `category` | `excerpt`, `image` |
+
+Override per run with `--fields`. **A new dataset must be added to that table**
+or it falls back to a generic `excerpt`+`image` fill with no name column, which
+matches poorly.
+
+Note that `enrich.mjs` only fills *blank* cells, so it will not touch the 999
+terse `leaders` excerpts — those need `--force` (after you have decided the raw
+Wikipedia lead is better than what is there, which for `leaders` it is).
 
 ### Outputs
 
@@ -117,6 +174,47 @@ node suggest.mjs us_history.csv --seeds=12 --top=50
 ```
 
 ---
+
+## Excerpt house style (the thing scripts can't do)
+
+The excerpt is the main readable payload — it is shown only in the timeline
+lightbox, never on a card. Match `people.csv` and `science.csv`:
+
+- **Flowing complete prose**, a few sentences that give historical perspective
+  plus the concrete details. Never clipped fragments.
+- **Paragraph breaks are the literal two characters `\n\n`**, no indentation.
+  The lightbox turns `\n` into `<br>`, so `\n\n` renders as a blank line.
+- Keep the whole record **on one physical line** and quote the field.
+- Accurate, from reliable sources. Do not invent. When given a link, cover
+  **every** entry on it, not a sample.
+
+Good (from `people.csv`):
+
+> `"A church canon and astronomer, Copernicus proposed that the Earth and planets orbit the Sun, overturning the 1,400-year-old Earth-centered cosmos of Ptolemy.\n\nPublished as he lay dying in 1543, ..."`
+
+Bad (the current `leaders.csv` pattern, ~79 chars, no perspective):
+
+> `Cold War end. Gulf War. Single term.`
+
+## Refreshing the status table
+
+```
+node --input-type=module -e '
+import fs from "node:fs";
+const {parseCSV} = await import("./project/data/csv.js");
+for(const f of ["art","leaders","film","science","people","philosophy","us_history","religion"]){
+  const r = parseCSV(fs.readFileSync("datasets/"+f+".csv","utf8"));
+  const ex = r.filter(x=>(x.excerpt||"").trim());
+  const avg = ex.length ? Math.round(ex.reduce((s,x)=>s+x.excerpt.length,0)/ex.length) : 0;
+  console.log(f.padEnd(11), "rows",String(r.length).padStart(4),
+    "img", (r.filter(x=>(x.image||"").trim()).length+"/"+r.length).padStart(9),
+    "excerpt", (ex.length+"/"+r.length).padStart(9),
+    "avg", String(avg).padStart(4),
+    "multi-para", r.filter(x=>(x.excerpt||"").includes(String.raw`\n\n`)).length);
+}'
+```
+
+Run from the repo root (not from `datasets/`).
 
 ## Guardrails
 
