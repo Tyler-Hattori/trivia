@@ -14,6 +14,13 @@ export function paintRail(innerEl, layout, dsMeta, selected, pinned, matched, sc
   const yMax = scrollTop + vh + 200;
   const [from, to] = rowsInWindow(layout.rows, yMin, yMax);
 
+  // A band can be thousands of pixels tall, so a label pinned to its top edge is
+  // off-screen for most of the band's height — the rail just looks empty. Slide
+  // the label down to follow the viewport instead, staying inside its own row.
+  // This positions chrome only; lane geometry is untouched, so invariant 1 holds.
+  const stick = (row, labelH) =>
+    Math.max(0, Math.min(scrollTop + 4 - row.y, row.h - labelH));
+
   let html = '';
 
   for(let i = from; i < to; i++){
@@ -31,7 +38,32 @@ export function paintRail(innerEl, layout, dsMeta, selected, pinned, matched, sc
       continue;
     }
 
-    const lane = row.lane;
+    const band = row.lanes;
+
+    // Packed band: list its lanes as chips, each its own filter target.
+    if(band.length > 1){
+      html += `<div class="rrow band" style="top:${row.y}px;height:${row.h}px;` +
+        `padding-top:${stick(row, 26)}px">` +
+        band.map(l => {
+          const s = selected.get(`${l.ds}:${l.facetKey}`);
+          const on = !!(s && s.has(l.value));
+          const none = matched && l.matchCount === 0;
+          const attr = l.rolled
+            ? `data-expand="${esc(l.ds)}"`
+            : `data-lane="${esc(l.id)}"`;
+          return `<span class="lchip${on ? ' sel' : ''}${none ? ' nomatch' : ''}` +
+            `${l.rolled ? ' rollup' : ''}" ${attr} title="${esc(l.value)}" ` +
+            `style="border-left-color:${l.colors.solid}">` +
+            `<span class="sw" style="background:${l.colors.solid}"></span>` +
+            `<span class="nm">${esc(l.value)}</span>` +
+            `<span class="n">${matched ? l.matchCount + '/' : ''}${l.count}</span>` +
+            `</span>`;
+        }).join('') +
+        `</div>`;
+      continue;
+    }
+
+    const lane = band[0];
     const sel = selected.get(`${lane.ds}:${lane.facetKey}`);
     const isSel = !!(sel && sel.has(lane.value));
     const isPinned = pinned.has(lane.id);
@@ -40,8 +72,8 @@ export function paintRail(innerEl, layout, dsMeta, selected, pinned, matched, sc
     if(lane.rolled){
       html += `<div class="rrow lane rollup" data-expand="${esc(lane.ds)}" ` +
         `title="${lane.rolled} smaller lanes folded together — click to show them all" ` +
-        `style="top:${lane.y}px;height:${lane.h}px;border-left-color:${lane.colors.solid};` +
-        `border-left-style:dashed">` +
+        `style="top:${row.y}px;height:${row.h}px;padding-top:${stick(row, 22)}px;` +
+        `border-left-color:${lane.colors.solid};border-left-style:dashed">` +
         `<span class="sw" style="background:${lane.colors.solid};opacity:.5"></span>` +
         `<span class="nm">${esc(lane.value)}</span>` +
         `<span class="n">${matched ? lane.matchCount + '/' : ''}${lane.count} ▸</span>` +
@@ -51,7 +83,8 @@ export function paintRail(innerEl, layout, dsMeta, selected, pinned, matched, sc
 
     html += `<div class="rrow lane${isSel ? ' sel' : ''}${noMatch ? ' nomatch' : ''}" ` +
       `data-lane="${esc(lane.id)}" title="${esc(lane.value)}" ` +
-      `style="top:${lane.y}px;height:${lane.h}px;border-left-color:${lane.colors.solid};` +
+      `style="top:${row.y}px;height:${row.h}px;padding-top:${stick(row, 22)}px;` +
+      `border-left-color:${lane.colors.solid};` +
       `background:${isSel ? lane.colors.soft : 'transparent'}">` +
       `<span class="sw" style="background:${lane.colors.solid}"></span>` +
       `<span class="nm">${esc(lane.value)}</span>` +

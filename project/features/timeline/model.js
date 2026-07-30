@@ -3,11 +3,13 @@
  * index and query engine. Nothing here touches the DOM.
  */
 
-import { thumbUrl } from '../../utils/helpers.js';
+import { thumbUrl, fullUrl } from '../../utils/helpers.js';
 import { DATASETS } from '../../core/settings.js';
 import { excerptToText, truncate } from './util.js';
 
-export const CARD_IMG_W = 320;   // px requested from Wikimedia for card thumbs
+// A standard Wikimedia width (see WM_STD_WIDTHS) that covers a card image at 2x
+// DPR. Anything off that list is refused by the CDN with a 400.
+export const CARD_IMG_W = 330;
 
 function slugify(str = ''){
   return String(str)
@@ -30,9 +32,13 @@ export async function loadThumbMeta(){
 
 function resolveImage(meta, r){
   if(!r.image) return { thumb: null, full: null };
+  // `full` never uses the raw CSV URL: ~1,059 of them carry an 800px width
+  // token, which the CDN no longer serves. fullUrl() routes via Special:FilePath,
+  // which resolves whatever the file is actually called today.
+  const full = fullUrl(r.image);
   const local = `${slugify(r.subtitle)}_${slugify(r.title)}_${r.year ?? r.start ?? ''}.jpg`;
-  if(meta[local]) return { thumb: `./thumbnails/${local}`, full: r.image };
-  return { thumb: thumbUrl(r.image, CARD_IMG_W), full: r.image };
+  if(meta[local]) return { thumb: `./thumbnails/${local}`, full };
+  return { thumb: thumbUrl(r.image, CARD_IMG_W), full };
 }
 
 /**

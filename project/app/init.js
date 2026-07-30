@@ -4,6 +4,7 @@ import * as quiz from '../features/quiz_engine.js';
 import { openTimeline } from '../features/timeline_engine.js';
 import { state } from '../core/state.js';
 import { openGlobalTimeline } from '../features/global_timeline.js';
+import { openAtlas } from '../features/atlas/index.js';
 
 window.saveToken = () => {
   const val = document.getElementById('token').value;
@@ -11,17 +12,13 @@ window.saveToken = () => {
   state.token = val;
 };
 
-window.saveToken = () => {
-  const val = document.getElementById('token').value;
-  localStorage.setItem('gh_pat', val);
-  state.token = val;
-};
 window.start = quiz.start;
 window.exitQuiz = quiz.exitQuiz;
 window.applyQuizSettings = quiz.applyQuizSettings;
 window.restartQuiz = quiz.restartQuiz;
 window.openTimeline = openTimeline;
 window.openGlobalTimeline = openGlobalTimeline;
+window.openAtlas = openAtlas;
 
 window.toggleTimelineFilters = () => {
   state.filtersOpen = !state.filtersOpen;

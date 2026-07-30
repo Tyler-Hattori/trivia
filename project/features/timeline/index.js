@@ -202,6 +202,7 @@ export async function openTimeline({
     pinned: new Set(),
     laneSort: 'az',
     maxLanes: 24,
+    packLanes: true,
     hideNonMatches: false,
     railOpen: true,
     filtersOpen: true,
@@ -225,6 +226,7 @@ export async function openTimeline({
       }
       if(typeof saved.laneSort === 'string') V.laneSort = saved.laneSort;
       if(saved.maxLanes === null || Number.isFinite(saved.maxLanes)) V.maxLanes = saved.maxLanes ?? Infinity;
+      if(typeof saved.packLanes === 'boolean') V.packLanes = saved.packLanes;
       if(typeof saved.hideNonMatches === 'boolean') V.hideNonMatches = saved.hideNonMatches;
       if(typeof saved.railOpen === 'boolean') V.railOpen = saved.railOpen;
       if(typeof saved.filtersOpen === 'boolean') V.filtersOpen = saved.filtersOpen;
@@ -243,6 +245,7 @@ export async function openTimeline({
         activeFacet: V.activeFacet,
         laneSort: V.laneSort,
         maxLanes: Number.isFinite(V.maxLanes) ? V.maxLanes : null,
+        packLanes: V.packLanes,
         hideNonMatches: V.hideNonMatches,
         railOpen: V.railOpen,
         filtersOpen: V.filtersOpen,
@@ -308,6 +311,7 @@ export async function openTimeline({
       pinned: V.pinned,
       laneSort: V.laneSort,
       maxLanes: V.maxLanes,
+      packLanes: V.packLanes,
       laneTags: V.laneTags,
       scale, tier,
       pinTier: (tier === 'card' || tier === 'detail') ? 'chip' : tier
@@ -493,6 +497,8 @@ export async function openTimeline({
       `<span class="grp"><span class="lbl">Era band</span>` +
         `<select id="eraSel" class="btn">${eraOpts}</select></span>` +
       `<span class="grp">` +
+        `<button class="btn${V.packLanes ? ' on' : ''}" data-pack="1" ` +
+          `title="Let lanes that never overlap in time share one band">Dense</button>` +
         `<button class="btn${V.laneTags ? ' on' : ''}" data-lanetags="1">Lane tags</button>` +
         `<button class="btn" data-clear="1">Clear filters</button>` +
         `<button class="btn" data-reset="1">Reset view</button>` +
@@ -818,6 +824,7 @@ export async function openTimeline({
       return invalidate(true);
     }
     if(t.dataset.mode){ V.hideNonMatches = t.dataset.mode === 'hide'; savePrefs(); return invalidate(true); }
+    if(t.dataset.pack){ V.packLanes = !V.packLanes; savePrefs(); return invalidate(true); }
     if(t.dataset.lanetags){ V.laneTags = !V.laneTags; savePrefs(); view.clear(); return invalidate(true); }
     if(t.dataset.clear){
       V.selected.clear(); V.dsOff.clear(); V.collapsed.clear(); V.pinned.clear();
@@ -828,7 +835,7 @@ export async function openTimeline({
     if(t.dataset.reset){
       V.selected.clear(); V.dsOff.clear(); V.collapsed.clear(); V.pinned.clear();
       V.laneSort = 'az'; V.hideNonMatches = false; V.laneTags = true;
-      V.maxLanes = 24;
+      V.maxLanes = 24; V.packLanes = true;
       V.eraDs = defaultEraDs;
       qInput.value = ''; V.query = ''; V.matched = null; V.parsed = null;
       savePrefs();

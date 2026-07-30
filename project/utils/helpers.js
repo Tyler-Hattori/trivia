@@ -1,5 +1,13 @@
 import { state } from '../core/state.js';
 
+/**
+ * Year parsing lives in `datasets/lib/years.mjs` and is re-exported here rather
+ * than duplicated. Two copies drifting apart mis-places entries silently: a span
+ * read as a point lands at the wrong x and nothing errors.
+ */
+export { parseEraYear, parseYears, yearValue, yearLabel, isCirca } from '../../datasets/lib/years.mjs';
+import { parseYears, yearValue } from '../../datasets/lib/years.mjs';
+
 export const $ = (s, root = document) => {
   if (typeof s !== 'string') return null;
 
@@ -82,32 +90,6 @@ export function yearNumSafe(v){
   return m ? parseInt(m[0],10) : 0;
 }
 
-/**
- * Parse a single year token to a signed integer, BC/BCE -> negative.
- * "27 BC" -> -27, "14 AD" -> 14, "c. 1500" -> 1500, "1305" -> 1305.
- * Returns null when no number is present.
- */
-export function parseEraYear(s){
-  s = String(s ?? '');
-  const bc = /\bB\.?C\.?E?\.?/i.test(s);
-  const m = s.match(/-?\d{1,4}/);
-  if(!m) return null;
-  const n = parseInt(m[0], 10);       // honours an explicit leading minus
-  return bc ? -Math.abs(n) : n;
-}
-
-export function yearValue(v){
-  v = String(v || '');
-
-  if(/[-–—]/.test(v)){
-    const { start, end } = parseYears(v);
-    if(start != null && end != null) return (start + end) / 2;
-  }
-
-  const y = parseEraYear(v);
-  return y == null ? 0 : y;
-}
-
 export function nextItem(){
   if(!state.queue || state.queue.length === 0){
     return null;
@@ -124,6 +106,34 @@ export function calcRMSE(arr){
 }
 
 /**
+ * The only thumbnail widths Wikimedia's CDN will generate. Since 2025 (phabricator
+ * T360589) a direct hotlink at any other width is rejected with HTTP 400 rather
+ * than being rounded — asking for the old 320px returned an error page for every
+ * single file, which is why the timeline rendered almost everything as a text card.
+ * https://www.mediawiki.org/wiki/Common_thumbnail_sizes
+ */
+export const WM_STD_WIDTHS = [20, 40, 60, 120, 250, 330, 500, 960, 1280, 1920, 3840];
+
+/** Smallest standard width that is still at least `w`, so we never upscale-blur. */
+export function snapWikimediaWidth(w){
+  for(const s of WM_STD_WIDTHS) if(s >= w) return s;
+  return WM_STD_WIDTHS[WM_STD_WIDTHS.length - 1];
+}
+
+/** Commons filename + the wiki that hosts it, from any upload.wikimedia.org URL. */
+function wikimediaFile(url){
+  const m = url.match(/^https?:\/\/upload\.wikimedia\.org\/wikipedia\/([^/]+)\//);
+  if(!m) return null;
+  const project = m[1];
+  // thumb form ends "/File.jpg/<n>px-File.jpg"; bare form just "/File.jpg".
+  const parts = url.split('#')[0].split('?')[0].split('/');
+  const file = url.includes('/thumb/') ? parts[parts.length - 2] : parts[parts.length - 1];
+  if(!file) return null;
+  const host = project === 'commons' ? 'commons.wikimedia.org' : `${project}.wikipedia.org`;
+  return { host, file };
+}
+
+/**
  * Rewrite a Wikimedia Commons image URL to request a specific pixel width from
  * their CDN, dramatically cutting bytes for cards/thumbnails. Handles the two
  * URL shapes Wikimedia serves:
@@ -131,16 +141,22 @@ export function calcRMSE(arr){
  *   thumb form:  .../commons/thumb/a/ab/File.jpg/3840px-File.jpg
  *   bare  form:  .../commons/a/ab/File.jpg
  *
+ * The requested width is snapped to a standard size — see WM_STD_WIDTHS. Direct
+ * CDN thumbs are used (rather than Special:FilePath) because they are served
+ * without a redirect hop, which matters when a viewport holds dozens of cards.
+ *
  * Non-Wikimedia URLs (or unparseable ones) pass through unchanged, which is
  * why the local thumbnail pipeline stays useful as a fallback.
  */
-export function thumbUrl(url, width = 320){
+export function thumbUrl(url, width = 330){
   if(!url || typeof url !== 'string') return url;
 
-  const w = Math.round(width);
+  const w = snapWikimediaWidth(Math.round(width));
 
   // Commons Special:FilePath resolves any filename to the current file and
   // natively supports ?width= resizing — ideal for hand-authored datasets.
+  // It runs through PHP, which rounds up on its own, but snapping here keeps
+  // every request for the same image on one CDN cache key.
   if(url.includes('Special:FilePath')){
     const [pathPart, q] = url.split('#')[0].split('?');
     const params = new URLSearchParams(q || '');
@@ -166,35 +182,23 @@ export function thumbUrl(url, width = 320){
   return url;
 }
 
-export function parseYears(v){
-  v = String(v || '').trim();
-  if(!v) return { start: null, end: null };
+/**
+ * Full-size form for the lightbox, where one big image loads at a time.
+ *
+ * Prefers Special:FilePath: it is resolved by PHP, so it rounds any width up to
+ * a standard size *and* falls back to the original when the request is larger
+ * than the source. A direct CDN hotlink does neither — it just 400s. The extra
+ * redirect costs nothing when only one image is in flight.
+ */
+export function fullUrl(url, width = 1280){
+  if(!url || typeof url !== 'string') return url;
+  if(url.includes('Special:FilePath')) return thumbUrl(url, width);
 
-  // "1990-present" / "incumbent" -> current year
-  const cur = new Date().getFullYear();
-  v = v.replace(/\b(present|current|now|incumbent)\b/gi, String(cur));
+  const f = wikimediaFile(url);
+  if(!f) return url;
 
-  const eraAll = /\bB\.?C\.?E?\.?/i.test(v);
-
-  // Split on a genuine range separator only — never on a leading minus sign:
-  //   " to "  |  " - " (spaced dash)  |  a dash directly between two digits
-  const parts = v.split(/\s+to\s+|\s+[-–—]\s+|(?<=\d)[-–—](?=\d)/i);
-
-  if(parts.length >= 2){
-    let start = parseEraYear(parts[0]);
-    let end   = parseEraYear(parts[1]);
-
-    // "100-44 BC": the era token trails the range, so the first number lacks it.
-    if(eraAll && start != null && start > 0 &&
-       !/\bAD\b|\bCE\b/i.test(parts[0]) && end != null && end < 0){
-      start = -start;
-    }
-
-    return { start, end };
-  }
-
-  const y = parseEraYear(v);
-  return { start: y, end: y };
+  return `https://${f.host}/wiki/Special:FilePath/${f.file}` +
+         `?width=${snapWikimediaWidth(Math.round(width))}`;
 }
 
 export function normalizeRow(row, dataset){

@@ -146,6 +146,23 @@ button{font:inherit;color:inherit}
 .rrow .pin.on{opacity:1;color:#b45309}
 .rrow .pin:hover{background:#e2e8f0}
 
+/* A packed band holds several lanes at one height, so its rail row lists them
+   as chips instead of a single name. Each chip is its own filter target. */
+.rrow.band{align-items:flex-start;padding:4px 6px 0 10px;display:flex;flex-wrap:wrap;
+  gap:3px 4px;align-content:flex-start;cursor:default}
+.rrow.band .lchip{display:inline-flex;align-items:center;gap:4px;max-width:100%;
+  border:1px solid var(--line);border-left-width:3px;border-radius:0 5px 5px 0;
+  padding:1px 5px 1px 4px;background:#fff;cursor:pointer;min-width:0}
+.rrow.band .lchip:hover{background:#f1f5f9}
+.rrow.band .lchip.sel{background:#0f172a;border-color:#0f172a}
+.rrow.band .lchip.sel .nm,.rrow.band .lchip.sel .n{color:#fff}
+.rrow.band .lchip .sw{width:7px;height:7px;border-radius:50%;flex:0 0 auto}
+.rrow.band .lchip .nm{font-size:10.5px;color:#334155;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;text-transform:capitalize;min-width:0}
+.rrow.band .lchip .n{font-size:9.5px;color:var(--faint);font-variant-numeric:tabular-nums;flex:0 0 auto}
+.rrow.band .lchip.rollup .nm{font-style:italic;color:var(--muted)}
+.rrow.band .lchip.nomatch{opacity:.35}
+
 /* canvas furniture */
 .secband{position:absolute;left:0;top:0;pointer-events:none;
   background:linear-gradient(#f1f5f9,#f8fafc);border-top:1px solid var(--line);
@@ -170,10 +187,17 @@ button{font:inherit;color:inherit}
 .card{border-radius:10px;overflow:hidden;background:#fff;border:1px solid var(--bd);
   box-shadow:0 3px 9px rgba(15,23,42,.09);height:100%;display:flex;flex-direction:column}
 .card .bar{height:3px;background:var(--c);flex:0 0 auto}
-.card img{width:100%;height:94px;object-fit:cover;background:#f1f5f9;display:block;flex:0 0 auto}
+/* The picture is the point of a card, so it takes every pixel the caption does
+   not need. object-fit is contain, not cover: cover was slicing a horizontal
+   band out of every portrait image. The matte reads as a gallery mount. */
+.card .ph{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;
+  background:#eceff4;overflow:hidden}
+.card .ph img{width:100%;height:100%;object-fit:contain;display:block}
 /* A dead image URL degrades to a text card instead of a broken-image icon. */
-.card img.failed{display:none}
-.card .body{padding:6px 7px;min-height:0;overflow:hidden}
+.card .ph.failed,.card img.failed{display:none}
+/* The detail tier is the reading tier, so the excerpt keeps a fixed share. */
+.card.detail .ph{flex:0 0 auto;height:132px}
+.card .body{flex:0 0 auto;padding:5px 7px 6px;min-height:0;overflow:hidden}
 .card .t{font-size:11.5px;font-weight:700;line-height:1.22;color:#0f172a;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .card .s{font-size:10.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

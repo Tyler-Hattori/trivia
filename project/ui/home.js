@@ -4,6 +4,23 @@ import { $ } from '../utils/helpers.js';
 
 export function renderHome(){
   return `
+    <div class="mb-8 bg-white p-7 rounded-3xl shadow-sm border border-zinc-200">
+      <div class="text-xl font-bold">Atlas</div>
+      <div class="text-zinc-500 mb-4">
+        Every entry on one map: time across, similarity down. Zoom out for cluster
+        summaries, zoom in for cards.
+      </div>
+      <button onclick="openAtlas()"
+        class="px-5 py-2.5 bg-black text-white rounded-xl font-semibold hover:bg-zinc-800 transition">
+        Open the atlas
+      </button>
+      <button onclick="openGlobalTimeline()"
+        class="ml-3 px-4 py-2.5 text-zinc-500 rounded-xl hover:text-zinc-900 transition"
+        title="The previous swimlane view, kept until the atlas fully replaces it">
+        Old lane timeline
+      </button>
+    </div>
+
     <div class="grid md:grid-cols-2 gap-4">
       ${DATASETS.map(q=>`
         <button
@@ -22,12 +39,6 @@ export function renderHome(){
         class="mt-2 px-4 py-2 bg-black text-white rounded">
         Save
       </button>
-    </div>
-
-    <div class="mt-8 bg-white p-7 rounded-3xl shadow-sm border border-zinc-200">
-        <button onclick="openGlobalTimeline()">
-          Explore All Timelines
-        </button>
     </div>
 
   `;

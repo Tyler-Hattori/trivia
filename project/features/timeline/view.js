@@ -13,14 +13,17 @@ import { GEO, rowsInWindow, specsInWindow } from './layout.js';
 
 const MARGIN_X = 400;
 const MARGIN_Y = 320;
+const TAG_W = 120;        // approximate lane-tag width, used to keep it in its lane
 
 function itemHTML(spec, it){
   switch(spec.kind){
     case 'card':
+      // Image-led: the picture owns the card and the caption is trimmed to a
+      // title and a year. The subtitle still reaches the reader through the
+      // hover tooltip and the lightbox, so nothing is actually lost.
       return `<div class="card"><div class="bar"></div>` +
-        `<img src="${esc(it.thumb)}" loading="lazy" decoding="async" alt="">` +
+        `<div class="ph"><img src="${esc(it.thumb)}" loading="lazy" decoding="async" alt=""></div>` +
         `<div class="body"><div class="t">${esc(it.label)}</div>` +
-        (it.subtitle ? `<div class="s">${esc(it.subtitle)}</div>` : '') +
         `<div class="y">${esc(it.displayYear)}</div></div></div>`;
 
     case 'textcard':
@@ -35,8 +38,8 @@ function itemHTML(spec, it){
         `<div class="y">${esc(it.displayYear)}</div></div></div>`;
 
     case 'detail':
-      return `<div class="card"><div class="bar"></div>` +
-        (it.thumb ? `<img src="${esc(it.thumb)}" loading="lazy" decoding="async" alt="">` : '') +
+      return `<div class="card detail"><div class="bar"></div>` +
+        (it.thumb ? `<div class="ph"><img src="${esc(it.thumb)}" loading="lazy" decoding="async" alt=""></div>` : '') +
         `<div class="body"><div class="t">${esc(it.label)}</div>` +
         (it.subtitle ? `<div class="s">${esc(it.subtitle)}</div>` : '') +
         `<div class="y">${esc(it.displayYear)}</div>` +
@@ -65,9 +68,14 @@ export function createCanvasView(doc, canvasEl){
   const pool = new Map();     // kind -> el[]
 
   // Some dataset image URLs are dead. `error` does not bubble, so listen in the
-  // capture phase and let the card fall back to its text-only form.
+  // capture phase and let the card fall back to its text-only form. The holder
+  // is marked too, otherwise an empty matte is left where the picture was.
   canvasEl.addEventListener('error', (e) => {
-    if(e.target && e.target.tagName === 'IMG') e.target.classList.add('failed');
+    const t = e.target;
+    if(!t || t.tagName !== 'IMG') return;
+    t.classList.add('failed');
+    const ph = t.closest('.ph');
+    if(ph) ph.classList.add('failed');
   }, true);
 
   function take(kind){
@@ -130,35 +138,51 @@ export function createCanvasView(doc, canvasEl){
         continue;
       }
 
-      const lane = row.lane;
+      // A row is a band: one lane when packing is off, several that never
+      // overlap in time when it is on.
+      const band = row.lanes;
 
-      want.set('L:' + lane.id, {
+      want.set('L:' + band[0].id, {
         kind: 'laneband',
-        cls: 'laneband' + (lane.alt ? ' alt' : ''),
-        x: scrollLeft, y: lane.y, w: bandW, h: lane.h,
+        cls: 'laneband' + (band[0].alt ? ' alt' : ''),
+        x: scrollLeft, y: row.y, w: bandW, h: row.h,
         ck: 'lb',
         html: ''
       });
 
-      if(p.laneTags && !lane.stub){
-        want.set('T:' + lane.id, {
-          kind: 'lanetag',
-          cls: 'lanetag',
-          x: scrollLeft, y: lane.y + 2, w: null, h: null,
-          borderColor: lane.colors.solid,
-          ck: 'tag:' + lane.id,
-          html: esc(lane.value)
-        });
-      }
+      for(const lane of band){
+        const ext = lane.ext;
+        if(ext && (ext.x1 < xMin || ext.x0 > xMax)) continue;   // lane offscreen
 
-      if(lane.stub) continue;
+        if(p.laneTags && !lane.stub){
+          // Sticky to the viewport's left edge, but clamped inside the lane's
+          // own span — so in a shared band the tag always names the lane you
+          // are actually looking at rather than whichever one sorted first.
+          const tagX = ext
+            ? Math.min(Math.max(scrollLeft, ext.x0), Math.max(ext.x0, ext.x1 - TAG_W))
+            : scrollLeft;
+          // Same idea vertically: a tall band would otherwise keep its tag above
+          // the viewport for most of the band's height.
+          const tagY = Math.max(lane.y + 2, Math.min(scrollTop + 4, lane.y + row.h - 20));
+          want.set('T:' + lane.id, {
+            kind: 'lanetag',
+            cls: 'lanetag',
+            x: tagX, y: tagY, w: null, h: null,
+            borderColor: lane.colors.solid,
+            ck: 'tag:' + lane.id,
+            html: esc(lane.value)
+          });
+        }
 
-      scratch.length = 0;
-      specsInWindow(lane, xMin, xMax, scratch);
+        if(lane.stub) continue;
 
-      for(const spec of scratch){
-        const it = spec.id != null ? itemsById[spec.id] : null;
-        want.set(lane.id + '|' + spec.k, { kind: 'item', spec, it, lane });
+        scratch.length = 0;
+        specsInWindow(lane, xMin, xMax, scratch);
+
+        for(const spec of scratch){
+          const it = spec.id != null ? itemsById[spec.id] : null;
+          want.set(lane.id + '|' + spec.k, { kind: 'item', spec, it, lane });
+        }
       }
     }
 

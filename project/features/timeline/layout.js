@@ -19,6 +19,7 @@ export const GEO = {
   ROW_GAP: 8,
   ITEM_GAP: 8,
   STUB_H: 10,
+  BAND_GAP: 30,         // clear space required between two lanes sharing a band
 
   HEAT_H: 26,
   HEAT_BIN_PX: 6,
@@ -32,14 +33,17 @@ export const GEO = {
   CHIP_MIN_W: 86,
   CHIP_MAX_W: 200,
 
+  // Card heights are sized to the WORST-CASE caption, because .body is
+  // overflow:hidden and will clip silently. Card = 3 bar + 141 picture + 52
+  // caption (2-line title + year). Detail = 3 + 132 picture + 151 text.
   CARD_W: 152,
-  CARD_H: 170,
+  CARD_H: 196,
   TEXTCARD_W: 140,
   TEXTCARD_H: 64,
 
   DETAIL_W: 212,
-  DETAIL_H: 262,
-  DETAIL_TEXT_H: 150,
+  DETAIL_H: 286,
+  DETAIL_TEXT_H: 156,
 
   SPAN_H: 24,
   TAG_INSET: 17,        // room reserved for the sticky lane tag
@@ -66,6 +70,58 @@ function pack(specs, gap){
     }
   }
   return Math.max(1, ends.length);
+}
+
+/** Pixel extent of a built lane; null when it has nothing placed in it. */
+function laneExtent(lane){
+  const s = lane.specs;
+  if(!s || !s.length) return null;
+  let x0 = Infinity, x1 = -Infinity;
+  for(const sp of s){
+    if(sp.x < x0) x0 = sp.x;
+    const right = sp.x + sp.w;
+    if(right > x1) x1 = right;
+  }
+  return { x0, x1 };
+}
+
+/**
+ * Greedy first-fit of lanes into shared bands.
+ *
+ * Lanes arrive in the user's chosen display order rather than sorted by x, so a
+ * candidate may only join a band when it clears EVERY lane already there —
+ * tracking just the band's rightmost edge (the usual first-fit shortcut) would
+ * happily overlap a lane that sits further left.
+ */
+function packBands(lanes, gap){
+  const bands = [];   // { lanes: [], h: number }
+
+  const fits = (band, lane) => {
+    for(const other of band.lanes){
+      if(!other.ext) return false;
+      if(lane.ext.x0 < other.ext.x1 + gap && other.ext.x0 < lane.ext.x1 + gap) return false;
+    }
+    return true;
+  };
+
+  for(const lane of lanes){
+    if(!lane.ext){ bands.push({ lanes: [lane], h: lane.h }); continue; }  // stub: stands alone
+
+    // Best-fit, not first-fit: put the lane in the band it grows the least.
+    // First-fit drops a 900px lane into the first band it clears and every
+    // short lane sharing that band then sits in 900px of dead vertical space.
+    let best = null, bestCost = Infinity;
+    for(const band of bands){
+      if(!fits(band, lane)) continue;
+      const cost = Math.max(0, lane.h - band.h);
+      if(cost < bestCost){ bestCost = cost; best = band; if(cost === 0) break; }
+    }
+
+    if(best){ best.lanes.push(lane); best.h = Math.max(best.h, lane.h); }
+    else bands.push({ lanes: [lane], h: lane.h });
+  }
+
+  return bands.map(b => b.lanes);
 }
 
 function chipWidth(label){
@@ -107,7 +163,7 @@ function heatBins(items, scale, colors){
 
   const specs = [];
   for(const [b, e] of map){
-    const y0 = b * binYears, y1 = y0 + binYears;
+    const y0 = b * binYears;
     specs.push({
       k: 'b' + b,
       kind: 'bin',
@@ -116,7 +172,10 @@ function heatBins(items, scale, colors){
       w: Math.max(2, binYears * scale.ppy - 1),
       h: GEO.HEAT_H - 8,
       n: e.n,
-      r0: y0, r1: y1,
+      // The click target is where the entries actually are, NOT the bin's
+      // rounded boundaries. A bin can be centuries wide when zoomed out, so
+      // zooming to y0..y0+binYears would land beside its contents.
+      r0: e.lo, r1: e.hi,
       intensity: 0.22 + 0.78 * (e.n / peak),
       col: colors
     });
@@ -252,12 +311,17 @@ function buildLane(laneItems, scale, tier, colors, dimOf, tagInset){
  *   items, order (dataset keys), dsMeta (key -> settings entry),
  *   activeFacet, dsOff (Set), collapsed (Set), selected (Map compound->Set),
  *   matched (Set|null), hideNonMatches (bool), pinned (Set), laneSort,
- *   scale, tier
+ *   packLanes (bool, default true), scale, tier
+ *
+ * Returns `rows` whose lane entries are BANDS: `{type:'lane', lanes:[...], y, h}`.
+ * A band holds one lane when packing is off, and any number of mutually
+ * non-overlapping lanes when it is on.
  */
 export function computeLayout(v){
   const { items, order, dsMeta, activeFacet, dsOff, collapsed, selected,
           matched, hideNonMatches, pinned, laneSort, scale, tier } = v;
   const maxLanes = v.maxLanes ?? Infinity;
+  const packLanes = v.packLanes !== false;
   // Pinned lanes are a comparison strip, not a reading surface — they stay
   // compact so the sticky band never swallows the viewport.
   const pinTier = v.pinTier ?? tier;
@@ -379,14 +443,14 @@ export function computeLayout(v){
     sections.push(sectionRow);
     y += GEO.SECTION_H;
 
-    let alt = false;
+    // Build geometry for every lane first: packing needs each lane's pixel
+    // extent, and that is only known once its specs exist.
+    const toPlace = [];
     for(const lane of group.lanes){
-      lane.alt = (alt = !alt);
       const isPinned = pinned.has(lane.id);
-      const isStub = hideNonMatches && lane.count === 0;
-
       if(isCollapsed && !isPinned) continue;
 
+      const isStub = hideNonMatches && lane.count === 0;
       if(isStub){
         lane.specs = [];
         lane.maxW = 0;
@@ -402,6 +466,7 @@ export function computeLayout(v){
         lane.h = built.height;
         lane.stub = false;
       }
+      lane.ext = laneExtent(lane);
 
       if(isPinned){
         lane.y = pinY;
@@ -409,12 +474,29 @@ export function computeLayout(v){
         pinY += lane.h + GEO.LANE_GAP;
         pinLanes.push(lane);
       } else {
-        lane.y = y;
         lane.pinned = false;
-        y += lane.h + GEO.LANE_GAP;
-        lanes.push(lane);
-        rows.push({ type: 'lane', lane, y: lane.y, h: lane.h });
+        toPlace.push(lane);
       }
+    }
+
+    // A category confined to 80 years of a 3,000-year axis otherwise owns a
+    // full-width band that is ~97% empty. Lanes whose extents never overlap can
+    // share one band and still never collide. Vertical position remains a pure
+    // function of view state — no scroll input — so invariant 1 holds.
+    const bands = packLanes ? packBands(toPlace, GEO.BAND_GAP) : toPlace.map(l => [l]);
+
+    let alt = false;
+    for(const band of bands){
+      const bandH = band.reduce((m, l) => Math.max(m, l.h), GEO.STUB_H);
+      const isAlt = (alt = !alt);
+      for(const lane of band){
+        lane.alt = isAlt;
+        lane.y = y;
+        lane.bandH = bandH;
+        lanes.push(lane);
+      }
+      rows.push({ type: 'lane', lanes: band, y, h: bandH });
+      y += bandH + GEO.LANE_GAP;
     }
 
     y += GEO.SECTION_GAP;
