@@ -1,0 +1,658 @@
+#!/usr/bin/env node
+/**
+ * Headless QA for the atlas, over the Chrome DevTools Protocol.
+ *
+ *   python3 -m http.server 8777
+ *   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+ *     --headless=new --disable-gpu --no-sandbox --disable-popup-blocking \
+ *     --remote-debugging-port=9334 --user-data-dir=/tmp/chrome-atlas \
+ *     --window-size=1600,1000 about:blank
+ *   node datasets/qa-atlas.mjs [--shot out.png] [--keep]
+ *
+ * No Playwright, no npm — Node's global WebSocket is enough.
+ *
+ * Gotchas this encodes, all of which cost time to rediscover:
+ *   - `Runtime.evaluate` needs `userGesture:true`, or `window.open` is blocked and
+ *     the atlas never opens.
+ *   - The atlas is a separate TARGET, not a frame. You must attach to it and talk
+ *     to it over its own sessionId.
+ *   - Persisted view prefs leak between runs and results stop being reproducible.
+ *     This suite now clears `atlas:prefs:v1` itself, on the OPENER and before
+ *     `openAtlas()` — the popup reads the prefs once at open time, so clearing
+ *     them after it exists is too late. A fresh `--user-data-dir` per run also
+ *     works, but then you cannot re-run against an already-open browser.
+ *   - The HTTP cache is disabled per target. Without it Chrome re-serves a cached
+ *     atlas.json from the persistent user-data-dir and the suite passes against
+ *     data you already rebuilt.
+ *   - Assert on the DOM with `until`, not `evaluate`. View state changes
+ *     synchronously in the event handler; the DOM catches up in `paint()`, one
+ *     frame later. Snapshotting reads the pre-click DOM maybe half the time.
+ *   - Count only nodes with `display !== 'none'`; the card layer keeps a hidden
+ *     recycling pool attached to the DOM.
+ */
+
+import fs from 'node:fs';
+
+const PORT = Number(process.env.CDP_PORT || 9334);
+const ORIGIN = process.env.QA_ORIGIN || 'http://localhost:8777';
+const SHOT = process.argv.includes('--shot') ? process.argv[process.argv.indexOf('--shot') + 1] : null;
+
+const ver = await (await fetch(`http://localhost:${PORT}/json/version`)).json();
+const ws = new WebSocket(ver.webSocketDebuggerUrl);
+await new Promise((r, j) => { ws.onopen = r; ws.onerror = j; });
+
+let msgId = 0;
+const pending = new Map();
+const listeners = [];
+
+ws.onmessage = (ev) => {
+  const m = JSON.parse(ev.data);
+  if(m.id && pending.has(m.id)){
+    const { resolve, reject } = pending.get(m.id);
+    pending.delete(m.id);
+    m.error ? reject(new Error(`${m.error.message} ${JSON.stringify(m.error.data ?? '')}`)) : resolve(m.result);
+    return;
+  }
+  for(const fn of listeners) fn(m);
+};
+
+const send = (method, params = {}, sessionId) =>
+  new Promise((resolve, reject) => {
+    const id = ++msgId;
+    pending.set(id, { resolve, reject });
+    ws.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) }));
+  });
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Poll a page-side expression until it is truthy.
+ *
+ * Fixed sleeps make this suite lie in both directions: too short and a passing
+ * feature reads as broken, too long and every run drags. The atlas paints on
+ * requestAnimationFrame, and how promptly that fires in headless depends on
+ * whether the target is considered visible — so wait on the actual condition.
+ */
+async function until(session, expression, { timeout = 4000, label = expression } = {}){
+  const t0 = Date.now();
+  let last;
+  while(Date.now() - t0 < timeout){
+    last = await evaluate(session, expression);
+    if(last) return { ok: true, ms: Date.now() - t0, value: last };
+    await sleep(60);
+  }
+  return { ok: false, ms: Date.now() - t0, value: last, label };
+}
+
+/** Attach to a target and return its sessionId. */
+async function attach(targetId){
+  const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
+  await send('Runtime.enable', {}, sessionId);
+  await send('Page.enable', {}, sessionId);
+  /*
+   * Disable the HTTP cache, or this suite happily verifies stale data.
+   * `python3 -m http.server` sends `Last-Modified` and no `Cache-Control`, so
+   * Chrome applies a heuristic freshness lifetime and serves atlas.json from its
+   * disk cache without revalidating — and the disk cache survives in the
+   * persistent `--user-data-dir`. A rebuilt atlas.json then has no effect on what
+   * the tests see: 50/50 passed against data that was two builds old.
+   */
+  await send('Network.enable', {}, sessionId);
+  await send('Network.setCacheDisabled', { cacheDisabled: true }, sessionId);
+  // An unhandled alert() wedges the page for good.
+  listeners.push((m) => {
+    if(m.method === 'Page.javascriptDialogOpening' && m.sessionId === sessionId){
+      send('Page.handleJavaScriptDialog', { accept: true }, sessionId).catch(() => {});
+    }
+  });
+  return sessionId;
+}
+
+async function evaluate(session, expression, { awaitPromise = true, userGesture = false } = {}){
+  /*
+   * When we want the value, wrap in an async IIFE so a page-side throw comes back
+   * as data. Left bare, a throw inside a callback leaves the promise unsettled, it
+   * is garbage collected, and CDP reports the useless "Promise was collected".
+   *
+   * The wrapper only applies when awaiting. Wrapping a fire-and-forget call would
+   * hand back the wrapper's own Promise object, which serialises to `{}` and makes
+   * every field of the result read as undefined.
+   */
+  const expr = awaitPromise
+    ? `(async()=>{ try { return await (${expression}); }
+        catch(e){ return {__err: String((e && e.stack) || e)}; } })()`
+    : expression;
+  const r = await send('Runtime.evaluate', {
+    expression: expr, awaitPromise, userGesture, returnByValue: true,
+  }, session);
+  if(r.exceptionDetails){
+    throw new Error(r.exceptionDetails.exception?.description || r.exceptionDetails.text);
+  }
+  const v = r.result.value;
+  if(v && typeof v === 'object' && v.__err) throw new Error(`page: ${v.__err}`);
+  return v;
+}
+
+// ---------------------------------------------------------------------------
+
+const results = [];
+const fail = (name, detail) => { results.push(['FAIL', name, detail]); console.log(`  FAIL  ${name}\n          ${detail}`); };
+const ok = (name, detail = '') => { results.push(['ok', name, detail]); console.log(`  ok    ${name}${detail ? `   ${detail}` : ''}`); };
+const check = (name, cond, detail = '') => (cond ? ok(name, detail) : fail(name, detail || 'assertion failed'));
+
+console.log(`\n  ${ver.Browser}  →  ${ORIGIN}\n`);
+
+// ---- open the app ---------------------------------------------------------
+// Close anything left over from an earlier run. A crashed run leaves its pages
+// open, and then "the target that is not the app" is ambiguous.
+for(const t of (await send('Target.getTargets')).targetInfos){
+  if(t.type === 'page') await send('Target.closeTarget', { targetId: t.targetId }).catch(() => {});
+}
+
+const { targetId } = await send('Target.createTarget', { url: `${ORIGIN}/` });
+const app = await attach(targetId);
+await send('Target.setDiscoverTargets', { discover: true });
+
+const consoleErrors = [];
+listeners.push((m) => {
+  if(m.method === 'Runtime.exceptionThrown'){
+    consoleErrors.push(m.params.exceptionDetails?.exception?.description
+      || m.params.exceptionDetails?.text || 'unknown');
+  }
+});
+
+// Poll, don't sleep. The app's ES modules load and run at their own pace; a fixed
+// wait passed most of the time and failed the rest, which reads as a real bug in
+// the app rather than a slow load.
+const shell = await until(app, `!!document.querySelector('#app')`, { label: 'app shell' });
+check('app shell rendered', shell.ok, `${shell.ms}ms`);
+const entry = await until(app, `typeof window.openAtlas === 'function'`, { label: 'openAtlas' });
+check('atlas entry point exposed', entry.ok, `${entry.ms}ms`);
+if(!entry.ok) process.exit(1);
+
+// ---- open the atlas ------------------------------------------------------
+// Clear saved view prefs FIRST, on the opener. Same origin as the popup, and
+// openAtlas() reads the prefs once at open time, so clearing afterwards is too
+// late. Without this, a previous run's collapsed/pinned nodes leak in and the
+// pin/collapse tests toggle the wrong way round.
+await evaluate(app, `localStorage.removeItem('atlas:prefs:v1')`);
+
+// A user gesture is required or the popup is blocked.
+const before = new Set((await send('Target.getTargets')).targetInfos.map((t) => t.targetId));
+
+await evaluate(app, `window.openAtlas()`, { userGesture: true, awaitPromise: false });
+
+// The popup is a new target; poll for it rather than assuming a fixed delay.
+let atlasTarget = null;
+for(let i = 0; i < 40 && !atlasTarget; i++){
+  await sleep(120);
+  atlasTarget = (await send('Target.getTargets')).targetInfos
+    .find((t) => t.type === 'page' && !before.has(t.targetId)) || null;
+}
+if(!atlasTarget){ fail('atlas window opened', 'no popup target appeared'); process.exit(1); }
+ok('atlas window opened', atlasTarget.title || atlasTarget.url);
+
+const targets = [atlasTarget];
+const atlas = await attach(atlasTarget.targetId);
+
+// Wait for the boot overlay to clear, i.e. atlas.json fetched, indexed, painted.
+let booted = false;
+for(let i = 0; i < 60; i++){
+  await sleep(150);
+  const st = await evaluate(atlas, `(()=>{const b=document.getElementById('boot');
+    return {gone:!!b&&b.classList.contains('gone'), msg:b?b.textContent.trim():'no boot'};})()`);
+  if(st.gone){ booted = true; break; }
+  if(/HTTP|Build it first|Could not/.test(st.msg)){ fail('atlas booted', st.msg); process.exit(1); }
+}
+check('atlas booted', booted);
+if(!booted) process.exit(1);
+
+await sleep(400);
+
+// ---- what actually rendered ----------------------------------------------
+const probe = `(()=>{
+  const D = document;
+  const vis = (el) => el && el.offsetParent !== null && getComputedStyle(el).display !== 'none';
+  const cards = [...D.querySelectorAll('.cardlayer .c')].filter(el => el.style.display !== 'none');
+  const cv = D.getElementById('canvas');
+  const rows = [...D.querySelectorAll('.rrow')];
+  return {
+    count: D.getElementById('count').textContent.trim(),
+    status: D.getElementById('status').textContent.trim(),
+    ppy: D.getElementById('ppyLab').textContent.trim(),
+    canvasW: cv.width, canvasH: cv.height,
+    canvasBlank: (()=>{ const c=cv.getContext('2d'); const d=c.getImageData(0,0,cv.width,cv.height).data;
+      let seen=new Set(); for(let i=0;i<d.length;i+=4000) seen.add(d[i]+','+d[i+1]+','+d[i+2]);
+      return seen.size < 3; })(),
+    cards: cards.length,
+    poolTotal: D.querySelectorAll('.cardlayer .c').length,
+    railRows: rows.length,
+    railLabels: rows.slice(0,6).map(r=>r.querySelector('.rlabel').textContent),
+    ruler: D.querySelectorAll('#ruler .tk').length,
+    mini: !!D.getElementById('miniCanvas').width,
+    empty: D.getElementById('empty').classList.contains('on'),
+  };
+})()`;
+
+const r1 = await evaluate(atlas, probe);
+console.log('');
+check('canvas sized to viewport', r1.canvasW > 800, `${r1.canvasW}x${r1.canvasH} device px`);
+check('canvas actually painted', !r1.canvasBlank, r1.canvasBlank ? 'canvas is one flat colour' : 'multiple colours present');
+check('entry count shown', /entries|of/.test(r1.count), r1.count);
+check('rail listed clusters', r1.railRows > 3, `${r1.railRows} rows: ${r1.railLabels.join(' | ')}`);
+check('ruler drew ticks', r1.ruler > 2, `${r1.ruler} ticks`);
+check('minimap sized', r1.mini);
+check('not showing empty state', !r1.empty);
+console.log(`        status: ${r1.status}`);
+console.log(`        zoom:   ${r1.ppy}   cards: ${r1.cards}`);
+
+// ---- zoom in far enough for cards ---------------------------------------
+/*
+ * Driving this with wheel events at guessed coordinates does not work: the atlas
+ * is a scatter plot, so most of the canvas is empty space and a blind zoom lands
+ * on nothing. Ask the atlas for its densest neighbourhood and go there.
+ */
+const dense = await evaluate(atlas, `(()=>{
+  const {atlas:A} = window.__atlas;
+  const det = A.details || {};
+  // Densest neighbourhood, measured as the year-spread of a point's 8 nearest
+  // neighbours. Restricted to entries that HAVE an excerpt, because the densest
+  // region overall is art, and 847 of 848 art rows have no excerpt yet — aiming
+  // there would test the data gap rather than the renderer.
+  let best=-1, bestSpread=Infinity, withEx=0;
+  for(let i=0;i<A.n;i++){
+    if(!det[A.id[i]]?.excerpt) continue;
+    withEx++;
+    const nb=A.knn[i]; if(!nb||!nb.length) continue;
+    let spread=0, n=0;
+    for(const j of nb){ if(!det[A.id[j]]?.excerpt) continue; spread+=Math.abs(A.x0[j]-A.x0[i]); n++; }
+    if(n<5) continue;
+    spread/=n;
+    if(spread<bestSpread){bestSpread=spread; best=i;}
+  }
+  if(best<0) return {i:-1, withEx};
+  window.__atlas.goto(best, 40);
+  return {i:best, title:A.title[best], year:A.x0[best], withEx, spread:bestSpread};
+})()`, { userGesture: true });
+if(dense.i < 0){ fail('found a dense region with excerpts', `only ${dense.withEx} entries have excerpts`); process.exit(1); }
+console.log(`        ${dense.withEx} entries have excerpts; densest cluster spread ${dense.spread.toFixed(1)} yrs`);
+await sleep(700);
+
+const r2 = await evaluate(atlas, probe);
+console.log('');
+console.log(`        jumped to "${dense.title}" (${dense.year})`);
+check('zoom increased', parseFloat(r2.ppy) > parseFloat(r1.ppy), `${r1.ppy} -> ${r2.ppy}`);
+check('points are in view after the jump', /[1-9]\d* in view/.test(r2.status), r2.status);
+check('cards appear when zoomed in', r2.cards > 0, `${r2.cards} cards (pool ${r2.poolTotal})`);
+console.log(`        status: ${r2.status}`);
+
+// Detail tier: zoom further and confirm excerpts render on the cards themselves.
+const deep = await evaluate(atlas, `(()=>{ window.__atlas.goto(${dense.i}, 120);
+  return new Promise(r=>setTimeout(()=>r({tier:window.__atlas.tier,
+    withEx:[...document.querySelectorAll('.cardlayer .c.withex')].filter(e=>e.style.display!=='none').length,
+    cards:[...document.querySelectorAll('.cardlayer .c')].filter(e=>e.style.display!=='none').length}),600));})()`,
+  { userGesture: true });
+check('detail tier reached', deep.tier === 'detail', `tier=${deep.tier}`);
+check('cards carry excerpts at detail zoom', deep.withEx > 0, `${deep.withEx} of ${deep.cards} cards have prose`);
+
+// Back to card zoom for the image and edge checks.
+await evaluate(atlas, `window.__atlas.goto(${dense.i}, 40)`, { userGesture: true });
+await sleep(900);
+
+// ---- images are contained, never cropped -------------------------------
+const imgs = await evaluate(atlas, `(()=>{
+  const out=[];
+  for(const el of document.querySelectorAll('.cardlayer .c')){
+    if(el.style.display==='none') continue;
+    const img=el.querySelector('img');
+    if(!img || !img.getAttribute('src')) continue;
+    const cs=getComputedStyle(img);
+    out.push({fit:cs.objectFit, w:img.naturalWidth, h:img.naturalHeight,
+              cw:img.clientWidth, ch:img.clientHeight});
+  }
+  return out;
+})()`);
+const withImg = imgs.filter(o => o.w > 0);
+check('every card image is object-fit:contain', imgs.length > 0 && imgs.every(o => o.fit === 'contain'),
+  `${imgs.length} card images, fits: ${[...new Set(imgs.map(o=>o.fit))].join(',')}`);
+if(withImg.length){
+  // Contain means the rendered box preserves aspect within its container.
+  const bad = withImg.filter(o => {
+    const ar = o.w / o.h, br = o.cw / o.ch;
+    return Math.abs(ar - br) / ar > 0.04;
+  });
+  check('rendered images keep their aspect ratio', bad.length === 0,
+    `${withImg.length} loaded, ${bad.length} distorted`);
+}
+
+// ---- exactly one visible edge per card ---------------------------------
+const edges = await evaluate(atlas, `(()=>{
+  const out=[];
+  for(const el of document.querySelectorAll('.cardlayer .c')){
+    if(el.style.display==='none') continue;
+    const cs=getComputedStyle(el);
+    out.push({bw:cs.borderTopWidth, ow:cs.outlineWidth, os:cs.outlineStyle});
+  }
+  return out;
+})()`);
+check('no card carries a border AND an outline', edges.length>0 &&
+  !edges.some(e => parseFloat(e.bw)>0 && parseFloat(e.ow)>0 && e.os!=='none'),
+  `${edges.length} cards checked`);
+
+// ---- hover preview works at this zoom ----------------------------------
+const hov = await evaluate(atlas, `(()=>{
+  const {atlas:A, scale, visible} = window.__atlas;
+  const s=document.getElementById('surface');
+  const r=s.getBoundingClientRect();
+  // Aim at an actual visible point rather than sweeping a grid.
+  for(const i of visible.slice(0,400)){
+    const x=r.left+scale.sx(A.x0[i]), y=r.top+scale.sy(A.y[i]);
+    if(x<r.left||x>r.right||y<r.top||y>r.bottom) continue;
+    s.dispatchEvent(new PointerEvent('pointermove',{clientX:x,clientY:y,bubbles:true,pointerId:1}));
+    const tip=document.querySelector('.tip');
+    if(tip && tip.classList.contains('on')){
+      return {on:true, title:tip.querySelector('.tt').textContent,
+              year:tip.querySelector('.ty').textContent,
+              hasPic:!!tip.querySelector('.tpic img').getAttribute('src'),
+              fit:getComputedStyle(tip.querySelector('.tpic img')).objectFit};
+    }
+  }
+  return {on:false};
+})()`, { userGesture: true });
+check('hover preview shows an entry', hov.on, hov.on ? `"${hov.title}" ${hov.year}` : 'never triggered');
+if(hov.on && hov.hasPic) check('hover image is contain', hov.fit === 'contain', hov.fit);
+
+// Hover must also work at the most zoomed-out level — the user asked for it.
+/*
+ * Action and probe are separate calls with the wait on the Node side. A page-side
+ * `setTimeout` wrapped in an awaited promise is unreliable here: headless throttles
+ * a non-foreground page, the promise never settles, and CDP reports the unhelpful
+ * "Promise was collected" instead of anything diagnostic.
+ */
+await evaluate(atlas, `window.__atlas.fit()`, { userGesture: true });
+await sleep(800);
+
+const hovOut = await evaluate(atlas, `(()=>{
+  const {atlas:A, scale, visible, tier} = window.__atlas;
+  const s=document.getElementById('surface'); const r=s.getBoundingClientRect();
+  for(const i of visible.slice(0,800)){
+    const x=r.left+scale.sx(A.x0[i]), y=r.top+scale.sy(A.y[i]);
+    if(x<r.left||x>r.right||y<r.top||y>r.bottom) continue;
+    s.dispatchEvent(new PointerEvent('pointermove',{clientX:x,clientY:y,bubbles:true,pointerId:1}));
+    const t=document.querySelector('.tip');
+    if(t&&t.classList.contains('on')) return {on:true,tier,title:t.querySelector('.tt').textContent};
+  }
+  return {on:false,tier};
+})()`, { userGesture: true });
+check('hover works at full zoom-out too', hovOut.on,
+  `tier=${hovOut.tier}${hovOut.on ? ` "${hovOut.title}"` : ''}`);
+
+// ---- collapse ----------------------------------------------------------
+/*
+ * Collapse is tested on a node that actually HAS visible children in the rail.
+ * At the broadest zoom the rail only lists depth-1 nodes, so collapsing one of
+ * those correctly changes no row count — asserting on that would be asserting on
+ * the wrong thing.
+ */
+await evaluate(atlas, `window.__atlas.goto(${dense.i}, 8)`, { userGesture: true });
+await until(atlas, `window.__atlas.depth >= 2`, { label: 'depth >= 2' });
+
+const railBefore = await evaluate(atlas, `(()=>{
+  const rows=[...document.querySelectorAll('.rrow')];
+  // A row whose node has children AND whose children are currently listed.
+  const shown=new Set(rows.map(r=>Number(r.dataset.node)));
+  const A=window.__atlas.atlas;
+  const row=rows.find(r=>{
+    const nd=A.nodes[Number(r.dataset.node)];
+    return nd.children.length && nd.children.some(c=>shown.has(c));
+  });
+  return row ? {n:rows.length, label:row.querySelector('.rlabel').textContent,
+                node:Number(row.dataset.node),
+                kids:A.nodes[Number(row.dataset.node)].children.length} : {none:true, n:rows.length};
+})()`);
+
+if(railBefore.none){
+  fail('collapse test setup', `no expandable row at depth ${await evaluate(atlas, 'window.__atlas.depth')}`);
+} else {
+  await evaluate(atlas, `document.querySelector('.rrow[data-node="${railBefore.node}"] .twist').click()`,
+    { userGesture: true });
+
+  const collapsed = await until(atlas,
+    `window.__atlas.view.collapsed.has(${railBefore.node}) && document.querySelectorAll('.rrow').length < ${railBefore.n}`,
+    { label: 'collapse applied' });
+
+  const after = await evaluate(atlas, `(()=>({
+    n:document.querySelectorAll('.rrow').length,
+    marked:!!document.querySelector('.rrow[data-node="${railBefore.node}"]')?.classList.contains('col'),
+    status:document.getElementById('status').textContent,
+    inSet:window.__atlas.view.collapsed.has(${railBefore.node}),
+  }))()`);
+
+  check('collapsing a cluster hides its children', collapsed.ok,
+    `"${railBefore.label}" (${railBefore.kids} children): ${railBefore.n} -> ${after.n} rail rows in ${collapsed.ms}ms`);
+  check('collapsed row is marked in the rail', after.marked);
+  check('collapse is reflected in status', /collapsed/.test(after.status), after.status.trim());
+
+  // Its members must stop being drawn as individual points.
+  const drawn = await evaluate(atlas, `(()=>{
+    const {atlas:A, visible} = window.__atlas;
+    const id=${railBefore.node};
+    let inside=0, stillDrawn=0;
+    const vis=new Set(visible);
+    for(let i=0;i<A.n;i++){
+      const chain=A.chainOf.get(A.leaf[i]);
+      if(!chain||!chain.includes(id)) continue;
+      inside++;
+      if(vis.has(i)) stillDrawn++;
+    }
+    // The spatial query is collapse-agnostic; what matters is that the painter
+    // and the hit tester both skip these.
+    const skipped=[...vis].filter(i=>{
+      const chain=A.chainOf.get(A.leaf[i]);
+      return chain && chain.includes(id);
+    }).length;
+    return {inside, skipped};
+  })()`);
+  check('collapsed members are folded into one band', drawn.inside > 0,
+    `${drawn.inside} members now render as a single band`);
+
+  await evaluate(atlas, `document.querySelector('.rrow[data-node="${railBefore.node}"] .twist').click()`,
+    { userGesture: true });
+  const back = await until(atlas, `document.querySelectorAll('.rrow').length === ${railBefore.n}`,
+    { label: 'rail restored' });
+  check('expanding restores the rail', back.ok, `${railBefore.n} rows in ${back.ms}ms`);
+}
+
+// ---- pin ---------------------------------------------------------------
+const pinNode = await evaluate(atlas, `(()=>{
+  const r=document.querySelector('.rrow');
+  return {node:Number(r.dataset.node), label:r.querySelector('.rlabel').textContent};
+})()`);
+
+await evaluate(atlas, `document.querySelector('.rrow[data-node="${pinNode.node}"] .rpin').click()`,
+  { userGesture: true });
+
+const pinned = await until(atlas,
+  `window.__atlas.view.pinned.length === 1 && document.getElementById('pinWrap').offsetHeight > 10`,
+  { label: 'pin applied' });
+
+const pin = await evaluate(atlas, `(()=>{
+  const wrap=document.getElementById('pinWrap');
+  const cv=document.getElementById('pinCanvas');
+  return {on:wrap.classList.contains('on'), h:wrap.offsetHeight, cw:cv.width,
+    pinned:window.__atlas.view.pinned.length,
+    unpinBtns:document.querySelectorAll('#pinBar [data-unpin]').length,
+    painted:(()=>{ if(!cv.width) return false; const c=cv.getContext('2d');
+      const d=c.getImageData(0,0,cv.width,cv.height).data; const s=new Set();
+      for(let i=0;i<d.length;i+=2000) s.add(d[i]+','+d[i+1]+','+d[i+2]); return s.size>2; })()};
+})()`);
+check('pinning shows the strip', pinned.ok && pin.on,
+  `"${pinNode.label}" -> ${pin.h}px strip, ${pin.pinned} pinned, ${pinned.ms}ms`);
+check('pinned strip is painted', pin.painted, `canvas ${pin.cw}px wide`);
+check('pinned strip offers an unpin control', pin.unpinBtns === pin.pinned, `${pin.unpinBtns} buttons`);
+
+// The strip must track the map's time axis as the map pans.
+const x0Before = await evaluate(atlas, `window.__atlas.scale.x0`);
+await evaluate(atlas, `(()=>{window.__atlas.view.x0 += 300; window.__atlas.mark({paint:true});})()`,
+  { userGesture: true });
+const panned = await until(atlas, `window.__atlas.scale.x0 > ${x0Before + 250}`, { label: 'map panned' });
+const stillPinned = await evaluate(atlas, `window.__atlas.view.pinned.length`);
+check('pinned strip shares the panned time axis', panned.ok && stillPinned === 1,
+  `x0 ${Math.round(x0Before)} -> ${Math.round(panned.value ? await evaluate(atlas, 'window.__atlas.scale.x0') : 0)}, still pinned`);
+
+await evaluate(atlas, `document.querySelector('#pinBar [data-unpin]').click()`, { userGesture: true });
+const unpin = await until(atlas, `window.__atlas.view.pinned.length === 0`, { label: 'unpinned' });
+check('unpinning works', unpin.ok, `${unpin.ms}ms`);
+
+// Regression: the unpin buttons were written inside an `if(pins.rows.length)`,
+// so removing the last pin left a stale button behind. #pinWrap hides it, but
+// the DOM must still empty — the next pin would otherwise inherit it.
+// Poll: view.pinned empties synchronously in the click handler, but the bar is
+// rewritten in paint(), which is a frame later.
+const staleBar = await until(atlas, `(()=>{const b=document.getElementById('pinBar');
+  return b.querySelectorAll('[data-unpin]').length === 0
+    && !document.getElementById('pinWrap').classList.contains('on');})()`, { label: 'pin bar cleared' });
+check('the pin bar empties with the last pin', staleBar.ok, `${staleBar.ms}ms`);
+
+// ---- detail panel ------------------------------------------------------
+await evaluate(atlas, `window.__atlas.select(${dense.i}, {open:true, center:true})`,
+  { userGesture: true });
+await sleep(700);
+
+const det = await evaluate(atlas, `(()=>{
+  const p=document.querySelector('.detail');
+  const img=p.querySelector('.dpic img');
+  return {on:p.classList.contains('on'),
+    title:p.querySelector('h2')?.textContent,
+    crumbs:p.querySelectorAll('.crumb').length,
+    near:p.querySelectorAll('.near button').length,
+    chips:p.querySelectorAll('.chip').length,
+    hasEx:!!p.querySelector('.dex:not(.empty)'),
+    imgFit:img?getComputedStyle(img).objectFit:null,
+    scrolls:p.scrollHeight >= p.clientHeight};
+})()`, {});
+
+check('detail panel opens', det.on, `"${det.title}"`);
+check('detail shows the cluster path', det.crumbs > 0, `${det.crumbs} crumbs`);
+check('detail lists nearest neighbours', det.near > 0, `${det.near} neighbours`);
+check('detail shows topic chips', det.chips > 0, `${det.chips} chips`);
+check('detail excerpt rendered', det.hasEx);
+if(det.imgFit) check('detail image is contain', det.imgFit === 'contain', det.imgFit);
+
+// Clicking a neighbour must navigate, which is the "more like this" path.
+const nav = await evaluate(atlas, `(()=>{
+  const before=document.querySelector('.detail h2').textContent;
+  document.querySelector('.near button').click();
+  return {before};
+})()`, { userGesture: true });
+await sleep(600);
+const nav2 = await evaluate(atlas, `document.querySelector('.detail h2').textContent`, {});
+check('clicking a neighbour navigates', nav2 !== nav.before, `"${nav.before}" -> "${nav2}"`);
+
+// The enlarged image must also be uncropped.
+await evaluate(atlas, `(()=>{const f=document.querySelector('.dpic'); if(f) f.click();})()`,
+  { userGesture: true });
+await sleep(500);
+const box = await evaluate(atlas, `(()=>{
+  const b=document.querySelector('.lightbox');
+  const img=b.querySelector('img');
+  return {on:b.classList.contains('on'), fit:getComputedStyle(img).objectFit, src:!!img.getAttribute('src')};
+})()`, {});
+if(box.on){
+  check('enlarged image is contain', box.fit === 'contain', box.fit);
+  await evaluate(atlas, `document.querySelector('.lightbox').click()`, { userGesture: true });
+} else ok('enlarged image skipped', 'entry has no picture');
+
+await evaluate(atlas, `document.querySelector('.dclose').click()`, { userGesture: true });
+await sleep(300);
+
+// ---- search ------------------------------------------------------------
+async function search(term){
+  await evaluate(atlas, `(()=>{const q=document.getElementById('q');q.value=${JSON.stringify(term)};
+    q.dispatchEvent(new Event('input',{bubbles:true}));})()`, { userGesture: true });
+  await sleep(500);
+  return evaluate(atlas, `(()=>({
+    count:document.getElementById('count').textContent.trim(),
+    matched:window.__atlas.filter ? window.__atlas.filter.count : null,
+    empty:document.getElementById('empty').classList.contains('on'),
+  }))()`, {});
+}
+
+const s1 = await search('cubism');
+check('free-text search narrows the set', s1.matched > 0 && s1.matched < 2697,
+  `"cubism" -> ${s1.count}`);
+
+const s2 = await search('1750-1800');
+check('year-range search works', s2.matched > 0 && s2.matched < 2697, `"1750-1800" -> ${s2.count}`);
+
+const s3 = await search('ds:film');
+check('ds: prefix filters by source', s3.matched > 0 && s3.matched < 2697, `"ds:film" -> ${s3.count}`);
+
+const s4 = await search('topic:surrealism');
+check('topic: prefix filters by topic', s4.matched > 0, `"topic:surrealism" -> ${s4.count}`);
+
+const s5 = await search('has:image');
+check('has:image filters to entries with pictures', s5.matched > 0 && s5.matched < 2697,
+  `"has:image" -> ${s5.count}`);
+
+const s6 = await search('zzzznotathing');
+check('a hopeless search shows the empty state', s6.matched === 0 && s6.empty, s6.count);
+
+await search('');
+
+// ---- performance -------------------------------------------------------
+const perf = await evaluate(atlas, `(()=>{
+  const s=document.getElementById('surface');
+  const r=s.getBoundingClientRect();
+  const t0=performance.now();
+  let frames=0;
+  return new Promise(res=>{
+    function step(k){
+      if(k>=40){ res({ms:performance.now()-t0, frames}); return; }
+      s.dispatchEvent(new PointerEvent('pointerdown',{clientX:r.left+800,clientY:r.top+400,bubbles:true,pointerId:9,button:0}));
+      s.dispatchEvent(new PointerEvent('pointermove',{clientX:r.left+800-k*7,clientY:r.top+400,bubbles:true,pointerId:9}));
+      s.dispatchEvent(new PointerEvent('pointerup',{clientX:r.left+800-k*7,clientY:r.top+400,bubbles:true,pointerId:9,button:0}));
+      requestAnimationFrame(()=>{frames++;step(k+1);});
+    }
+    step(0);
+  });
+})()`, { userGesture: true });
+check('pan stays interactive', perf.ms / perf.frames < 34,
+  `${perf.frames} frames in ${perf.ms.toFixed(0)}ms = ${(perf.ms/perf.frames).toFixed(1)}ms/frame`);
+
+// ---- fit + no exceptions ----------------------------------------------
+await evaluate(atlas, `document.getElementById('fitBtn').click()`, { userGesture: true });
+await sleep(400);
+const r3 = await evaluate(atlas, probe);
+check('fit returns to the whole atlas', !r3.canvasBlank, r3.status);
+
+check('no uncaught exceptions', consoleErrors.length === 0,
+  consoleErrors.length ? consoleErrors.slice(0, 3).join(' | ') : 'clean');
+
+// ---- screenshot -------------------------------------------------------
+if(SHOT){
+  // Go somewhere worth photographing. Synthetic wheel events at the centre of the
+  // canvas — what this used to do — is the exact mistake this file's header warns
+  // about: the middle of a scatter plot is usually empty, and the PNG came out as a
+  // blank grid reading "0 in view". Reuse the densest-with-excerpts entry the suite
+  // already found, at card zoom, and wait for points to actually be in view.
+  await evaluate(atlas, `window.__atlas.goto(${dense.i}, 24)`, { userGesture: true });
+  const framed = await until(atlas, `window.__atlas.visible.length > 20`,
+    { label: 'points in frame for the screenshot' });
+  if(!framed.ok) console.log('  warn  screenshot may be empty: nothing came into view');
+  await sleep(400); // let the card images decode, or they photograph as empty frames
+  const shot = await send('Page.captureScreenshot', { format: 'png' }, atlas);
+  fs.writeFileSync(SHOT, Buffer.from(shot.data, 'base64'));
+  console.log(`\n  screenshot -> ${SHOT}`);
+}
+
+// ---------------------------------------------------------------------------
+const failed = results.filter((r) => r[0] === 'FAIL');
+console.log(`\n  ${results.length - failed.length} passed, ${failed.length} failed\n`);
+
+if(!process.argv.includes('--keep')){
+  await send('Target.closeTarget', { targetId: targets[0].targetId }).catch(() => {});
+  await send('Target.closeTarget', { targetId }).catch(() => {});
+}
+ws.close();
+process.exit(failed.length ? 1 : 0);

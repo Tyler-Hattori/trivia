@@ -1,5 +1,15 @@
 # Datasets — status and tooling
 
+> **The pipeline has changed.** Entries now live in `atlas/entries.jsonl` and are
+> placed on the timeline by embedding, not by category column. Read
+> **[ATLAS.md](ATLAS.md)** first — it covers `ingest.mjs` (add entries from
+> Wikipedia in bulk, no Claude), `embed-all.mjs`, `atlas.mjs`, `verify.mjs` and
+> `inspect.mjs`.
+>
+> The CSVs below are still a valid authoring format: edit one, then re-run
+> `migrate.mjs && embed-all.mjs && atlas.mjs`. `enrich.mjs` and `suggest.mjs`
+> still work on them and are still the cheapest way to fill their blanks.
+
 Schema, CSV rules and how to register a new dataset live in the [root README](../README.md).
 This file is about **filling** the CSVs.
 
@@ -37,7 +47,7 @@ flowing multi-paragraph voice" rather than one clipped sentence. `people` and
 
 ## Tooling
 
-Two zero-dependency Node scripts for populating `datasets/*.csv` **thoroughly while
+Zero-dependency Node scripts for populating `datasets/*.csv` **thoroughly while
 spending almost nothing on Claude**. The strategy: let free APIs do the fetching,
 and reserve a model only for judgment.
 
@@ -45,11 +55,37 @@ and reserve a model only for judgment.
 |---|---|---|
 | `enrich.mjs` | Fills empty `excerpt`/`image` cells from the Wikipedia REST API | **$0** (no LLM) |
 | `suggest.mjs` | Proposes new entries + new dataset ideas from Wikipedia/Wikidata | **$0** (no LLM) |
+| `imgcheck.mjs` | HEAD-checks every image URL as the browser will request it | **$0** (no LLM) |
 | `build_thumbnails.js` | Pre-existing local thumbnail cache builder (unchanged) | $0 |
 
 Requirements: Node 18+ (uses global `fetch`). No `npm install` needed — the scripts
 are self-contained `.mjs` and reuse the app's own CSV parser semantics, so files
 round-trip byte-compatibly with what the app writes.
+
+### `imgcheck.mjs` — find images that will not render
+
+```
+node imgcheck.mjs               # every dataset
+node imgcheck.mjs art.csv       # just one
+```
+
+Read-only; never edits a CSV. It applies the same `thumbUrl()` rewrite the app
+does, so it tests the URL the **browser** actually requests, and writes
+`<name>.deadimg.json` listing every failure with its CSV line number.
+
+Two things make its output easy to misread:
+
+- **429 is not a dead image.** Wikimedia throttles hard. The script backs off and
+  retries, and `CONCURRENCY` is deliberately 6 — raise it and healthy images get
+  reported as broken.
+- **400 means a bad *width*, not a missing file.** Wikimedia only generates
+  thumbnails at the standard sizes listed in `WM_STD_WIDTHS`
+  (`utils/helpers.js`) and rejects direct hotlinks at anything else. 1,059 URLs
+  in these CSVs carry an `800px-` token, which is not a standard size — those
+  400 at source. `thumbUrl()` snaps the width for card thumbs and `fullUrl()`
+  routes the lightbox through `Special:FilePath`, so both render correctly today
+  even where the stored URL would not. Rewriting the stored tokens is still
+  worth doing eventually. **404 is the only status that means the file is gone.**
 
 ---
 
