@@ -1,13 +1,38 @@
 [
   {
+    "row": 139,
+    "name": "ladri di biciclete",
+    "query": "ladri di biciclete 1948 film",
+    "reason": "no-search-hit"
+  },
+  {
     "row": 73,
     "name": "sunrise",
     "title": "Sunrise: A Song of Two Humans",
     "sim": 0.17,
     "reason": "low-confidence",
     "proposed": {
-      "excerpt": "Sunrise: A Song of Two Humans is a 1927 American synchronized sound romantic drama directed by German director F. W. Murnau and starring George O'Brien, Janet Gaynor, and Margaret Livingston. The film's plot follows a married farmer (O'Brien) who falls for a woman vacationing from the city (Livingston), who tries to convince him to murder his wife (Gaynor) in order to be with her. While the film has no audible dialogue, it was released with a synchronized musical score with sound effects using the Movietone sound-on-film process. The story was adapted by Carl Mayer from the short story \"The Excursion to Tilsit\", from the 1917 collection with the same title by Hermann Sudermann.",
-      "image": "https://upload.wikimedia.org/wikipedia/commons/2/27/Sunrise_-_A_Song_of_Two_Humans.jpg"
+      "excerpt": "Sunrise: A Song of Two Humans is a 1927 American synchronized sound romantic drama directed by German director F. W. Murnau and starring George O'Brien, Janet Gaynor, and Margaret Livingston. The film's plot follows a married farmer (O'Brien) who falls for a woman vacationing from the city (Livingston), who tries to convince him to murder his wife (Gaynor) in order to be with her. While the film has no audible dialogue, it was released with a synchronized musical score with sound effects using the Movietone sound-on-film process. The story was adapted by Carl Mayer from the short story \"The Excursion to Tilsit\", from the 1917 collection with the same title by Hermann Sudermann."
+    }
+  },
+  {
+    "row": 137,
+    "name": "gentlemans agreement",
+    "title": "Gentleman's Agreement",
+    "sim": 0.33,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Gentleman's Agreement is a 1947 American drama film based on Laura Z. Hobson's best-selling 1947 novel of the same title, directed by Elia Kazan. The film is about a journalist who pretends to be Jewish to research an exposé on the widespread antisemitism in New York City and the affluent communities of New Canaan and Darien, Connecticut. It was nominated for eight Academy Awards and won three: Best Picture, Best Supporting Actress, and Best Director."
+    }
+  },
+  {
+    "row": 111,
+    "name": "sullivans travels",
+    "title": "Sullivan's Travels",
+    "sim": 0.33,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Sullivan's Travels is a 1941 American comedy-drama film written and directed by Preston Sturges. A satire of the film industry, it follows a famous Hollywood comedy director who, longing to make a socially relevant drama, sets out to live as a tramp to gain life experience for his forthcoming film. Along the way he unites with a poor aspiring actress who accompanies him. The title is a reference to Gulliver's Travels, the 1726 novel by satirist Jonathan Swift about another journey of self-discovery."
     }
   },
   {
@@ -21,53 +46,13 @@
     }
   },
   {
-    "row": 111,
-    "name": "sullivans travels",
-    "title": "Sullivan's Travels",
-    "sim": 0.33,
-    "reason": "low-confidence",
-    "proposed": {
-      "excerpt": "Sullivan's Travels is a 1941 American comedy-drama film written and directed by Preston Sturges. A satire of the film industry, it follows a famous Hollywood comedy director who, longing to make a socially relevant drama, sets out to live as a tramp to gain life experience for his forthcoming film. Along the way he unites with a poor aspiring actress who accompanies him. The title is a reference to Gulliver's Travels, the 1726 novel by satirist Jonathan Swift about another journey of self-discovery.",
-      "image": "https://upload.wikimedia.org/wikipedia/commons/e/e6/Sullivan%27s_Travels_%281941_film%29_%E2%80%93_Style_B_poster.jpg"
-    }
-  },
-  {
-    "row": 139,
-    "name": "ladri di biciclete",
-    "query": "ladri di biciclete 1948 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 137,
-    "name": "gentlemans agreement",
-    "title": "Gentleman's Agreement",
-    "sim": 0.33,
-    "reason": "low-confidence",
-    "proposed": {
-      "excerpt": "Gentleman's Agreement is a 1947 American drama film based on Laura Z. Hobson's best-selling 1947 novel of the same title, directed by Elia Kazan. The film is about a journalist who pretends to be Jewish to research an exposé on the widespread antisemitism in New York City and the affluent communities of New Canaan and Darien, Connecticut. It was nominated for eight Academy Awards and won three: Best Picture, Best Supporting Actress, and Best Director.",
-      "image": "https://upload.wikimedia.org/wikipedia/commons/c/c3/Gentleman%27s_Agreement_%281947_poster%29.jpg"
-    }
-  },
-  {
     "row": 143,
     "name": "adams rib",
     "title": "Adam's Rib",
     "sim": 0.33,
     "reason": "low-confidence",
     "proposed": {
-      "excerpt": "Adam's Rib is a 1949 American romantic comedy-drama film by director George Cukor from a screenplay written by Ruth Gordon and Garson Kanin. It stars Spencer Tracy and Katharine Hepburn as married lawyers who come to oppose each other in court. Judy Holliday co-stars as the third lead in her second credited movie role. Also featured are Tom Ewell, David Wayne, and Jean Hagen. The music was composed by Miklós Rózsa, and the song \"Farewell, Amanda\" was written by Cole Porter.",
-      "image": "https://upload.wikimedia.org/wikipedia/commons/b/b9/Adam%27s_Rib_%281949_poster%29.jpg"
-    }
-  },
-  {
-    "row": 196,
-    "name": "8 1/2",
-    "title": "8½",
-    "sim": 0.33,
-    "reason": "low-confidence",
-    "proposed": {
-      "excerpt": "8½ is a 1963 Italian avant-garde comedy-drama film directed and co-written by Federico Fellini. The metafictional narrative centers on famous Italian film director Guido Anselmi who suffers from writer's block as he attempts to direct an epic science fiction film. Claudia Cardinale, Anouk Aimée, Sandra Milo, Rossella Falk, Barbara Steele, and Eddra Gale portray the various women in Guido's life. An international co-production between France and Italy, the film was shot in black and white by cinematographer Gianni Di Venanzo and features a score by Nino Rota, with costume and set designs by Piero Gherardi.",
-      "image": "https://upload.wikimedia.org/wikipedia/en/4/46/8Mezzo.jpg"
+      "excerpt": "Adam's Rib is a 1949 American romantic comedy-drama film by director George Cukor from a screenplay written by Ruth Gordon and Garson Kanin. It stars Spencer Tracy and Katharine Hepburn as married lawyers who come to oppose each other in court. Judy Holliday co-stars as the third lead in her second credited movie role. Also featured are Tom Ewell, David Wayne, and Jean Hagen. The music was composed by Miklós Rózsa, and the song \"Farewell, Amanda\" was written by Cole Porter."
     }
   },
   {
@@ -77,8 +62,17 @@
     "sim": 0,
     "reason": "low-confidence",
     "proposed": {
-      "excerpt": "Red Alert is a 1958 novel by Peter George about nuclear war. The book provided the underlying narrative structure for Stanley Kubrick's 1964 film Dr. Strangelove or: How I Learned to Stop Worrying and Love the Bomb. Kubrick's film differs significantly from the novel in that the film is a black comedy.",
-      "image": "https://upload.wikimedia.org/wikipedia/en/3/37/Red_alert_novel_two_hours_of_doom_1st_edition_1958.jpg"
+      "excerpt": "Red Alert is a 1958 novel by Peter George about nuclear war. The book provided the underlying narrative structure for Stanley Kubrick's 1964 film Dr. Strangelove or: How I Learned to Stop Worrying and Love the Bomb. Kubrick's film differs significantly from the novel in that the film is a black comedy."
+    }
+  },
+  {
+    "row": 196,
+    "name": "8 1/2",
+    "title": "8½",
+    "sim": 0.33,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "8½ is a 1963 Italian avant-garde comedy-drama film directed and co-written by Federico Fellini. The metafictional narrative centers on famous Italian film director Guido Anselmi who suffers from writer's block as he attempts to direct an epic science fiction film. Claudia Cardinale, Anouk Aimée, Sandra Milo, Rossella Falk, Barbara Steele, and Eddra Gale portray the various women in Guido's life. An international co-production between France and Italy, the film was shot in black and white by cinematographer Gianni Di Venanzo and features a score by Nino Rota, with costume and set designs by Piero Gherardi."
     }
   },
   {
@@ -86,18 +80,6 @@
     "name": "the jungle book",
     "query": "the jungle book 1967 film",
     "reason": "no-search-hit"
-  },
-  {
-    "row": 208,
-    "name": "guess whos coming to dinner",
-    "title": "Guess Who's Coming to Dinner",
-    "reason": "no-summary"
-  },
-  {
-    "row": 210,
-    "name": "the producers",
-    "title": "The Producers (1967 film)",
-    "reason": "no-summary"
   },
   {
     "row": 214,
@@ -112,15 +94,21 @@
     "reason": "no-search-hit"
   },
   {
-    "row": 217,
-    "name": "funny girl",
-    "query": "funny girl 1968 film",
-    "reason": "no-search-hit"
-  },
-  {
     "row": 216,
     "name": "the odd couple",
     "query": "the odd couple 1968 film",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 210,
+    "name": "the producers",
+    "title": "The Producers (1967 film)",
+    "reason": "no-summary"
+  },
+  {
+    "row": 217,
+    "name": "funny girl",
+    "query": "funny girl 1968 film",
     "reason": "no-search-hit"
   },
   {
@@ -144,12 +132,17 @@
   {
     "row": 224,
     "name": "m*a*s*h",
-    "title": "Marrakesh",
+    "query": "m*a*s*h 1970 film",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 275,
+    "name": "war games",
+    "title": "WarGames",
     "sim": 0,
     "reason": "low-confidence",
     "proposed": {
-      "excerpt": "Marrakesh or Marrakech is the fourth-largest city in Morocco. It is one of the four imperial cities of Morocco and is the capital of the Marrakesh-Safi region. The city lies west of the foothills of the Atlas Mountains.",
-      "image": "https://upload.wikimedia.org/wikipedia/commons/9/9c/Pavillon_Menarag%C3%A4rten.jpg"
+      "excerpt": "WarGames is a 1983 American techno-thriller film directed by John Badham, written by Lawrence Lasker and Walter F. Parkes, and starring Matthew Broderick, Dabney Coleman, John Wood and Ally Sheedy. Broderick plays David Lightman, a young computer hacker who unwittingly accesses a United States military supercomputer programmed to simulate, predict and execute nuclear war against the Soviet Union, triggering a false alarm that threatens to start World War III. Martin Brest was originally the film's director, but was fired early into production."
     }
   },
   {
@@ -159,129 +152,18 @@
     "sim": 0,
     "reason": "low-confidence",
     "proposed": {
-      "excerpt": "Star Wars is a 1977 American epic space opera film written and directed by George Lucas. Produced by Lucasfilm Ltd. and distributed by Twentieth Century-Fox, it is the first film in the Star Wars franchise and the fourth chronological chapter of the \"Skywalker Saga\". Set in a fictional galaxy under the rule of the tyrannical Galactic Empire, the film follows a resistance movement, called the Rebel Alliance, that aims to destroy the Empire's ultimate weapon, the Death Star. When the rebel leader Princess Leia is captured by the Galactic Empire, Luke Skywalker acquires stolen architectural plans for the Death Star and sets out to rescue her while learning the ways of a metaphysical power known as \"the Force\" from the Jedi Master Obi-Wan Kenobi. The film stars Mark Hamill, Harrison Ford, Carrie Fisher, Peter Cushing, Alec Guinness, Anthony Daniels, Kenny Baker, Peter Mayhew, David Prowse, and James Earl Jones.",
-      "image": "https://upload.wikimedia.org/wikipedia/en/8/87/StarWarsMoviePoster1977.jpg"
+      "excerpt": "Star Wars is a 1977 American epic space opera film written and directed by George Lucas. Produced by Lucasfilm Ltd. and distributed by Twentieth Century-Fox, it is the first film in the Star Wars franchise and the fourth chronological chapter of the \"Skywalker Saga\". Set in a fictional galaxy under the rule of the tyrannical Galactic Empire, the film follows a resistance movement, called the Rebel Alliance, that aims to destroy the Empire's ultimate weapon, the Death Star. When the rebel leader Princess Leia is captured by the Galactic Empire, Luke Skywalker acquires stolen architectural plans for the Death Star and sets out to rescue her while learning the ways of a metaphysical power known as \"the Force\" from the Jedi Master Obi-Wan Kenobi. The film stars Mark Hamill, Harrison Ford, Carrie Fisher, Peter Cushing, Alec Guinness, Anthony Daniels, Kenny Baker, Peter Mayhew, David Prowse, and James Earl Jones."
     }
-  },
-  {
-    "row": 275,
-    "name": "war games",
-    "query": "war games 1983 film",
-    "reason": "no-search-hit"
   },
   {
     "row": 276,
     "name": "rumblefish",
-    "query": "rumblefish 1983 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 277,
-    "name": "a christmas story",
-    "query": "a christmas story 1983 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 278,
-    "name": "the outsiders",
-    "query": "the outsiders 1983 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 279,
-    "name": "amadeus",
-    "query": "amadeus 1984 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 281,
-    "name": "the natural",
-    "query": "the natural 1984 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 280,
-    "name": "karate kid",
-    "query": "karate kid 1984 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 282,
-    "name": "beverly hills cop",
-    "query": "beverly hills cop 1984 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 284,
-    "name": "romancing the stone",
-    "query": "romancing the stone 1984 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 283,
-    "name": "this is spinal tap",
-    "query": "this is spinal tap 1984 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 287,
-    "name": "temple of doom",
-    "query": "temple of doom 1984 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 286,
-    "name": "terminator",
-    "query": "terminator 1984 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 285,
-    "name": "ghostbusters",
-    "query": "ghostbusters 1984 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 288,
-    "name": "the neverending story",
-    "query": "the neverending story 1984 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 289,
-    "name": "the goonies",
-    "query": "the goonies 1985 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 292,
-    "name": "ferris bueller's day off",
-    "query": "ferris bueller's day off 1986 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 291,
-    "name": "weird science",
-    "query": "weird science 1985 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 290,
-    "name": "fletch",
-    "query": "fletch 1985 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 294,
-    "name": "stand by me",
-    "query": "stand by me 1986 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 293,
-    "name": "three amigos",
-    "query": "three amigos 1986 film",
-    "reason": "no-search-hit"
+    "title": "Rumble Fish (disambiguation)",
+    "sim": 0,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Rumble Fish is a 1983 film."
+    }
   },
   {
     "row": 348,
@@ -290,8 +172,7 @@
     "sim": 0.33,
     "reason": "low-confidence",
     "proposed": {
-      "excerpt": "Schindler's List is a 1993 American historical drama film directed and co-produced by Steven Spielberg and written by Steven Zaillian. It is based on the historical novel Schindler's Ark (1982) by Thomas Keneally. The film follows Oskar Schindler, a German industrialist who saved more than a thousand mostly Polish–Jewish refugees from the Holocaust by employing them in his factories during World War II. It stars Liam Neeson as Schindler, Ralph Fiennes as SS officer Amon Göth, and Ben Kingsley as Schindler's Jewish accountant Itzhak Stern.",
-      "image": "https://upload.wikimedia.org/wikipedia/en/3/38/Schindler%27s_List_movie.jpg"
+      "excerpt": "Schindler's List is a 1993 American epic historical drama film directed and co-produced by Steven Spielberg and written by Steven Zaillian. It is based on the historical novel Schindler's Ark (1982) by Thomas Keneally. The film follows Oskar Schindler, a German industrialist who saved more than a thousand mostly Polish–Jewish refugees from the Holocaust by employing them in his factories during World War II. It stars Liam Neeson as Schindler, Ralph Fiennes as SS officer Amon Göth, and Ben Kingsley as Schindler's Jewish accountant Itzhak Stern."
     }
   },
   {
@@ -301,8 +182,7 @@
     "sim": 0.33,
     "reason": "low-confidence",
     "proposed": {
-      "excerpt": "Léon is a 1994 French English-language action-thriller film written and directed by Luc Besson. It stars Jean Reno, Gary Oldman and Natalie Portman in her feature film debut. The plot centers on Léon (Reno), an Italian-American professional hitman who reluctantly takes in twelve-year-old Mathilda Lando (Portman) after her family is murdered by corrupt Drug Enforcement Administration (DEA) agent Norman Stansfield (Oldman). Léon and Mathilda form an unusual relationship as she becomes his protégée and learns the hitman's trade. The film was released in France by Gaumont Buena Vista International on 14 September 1994 and received mostly positive reviews from critics.",
-      "image": "https://upload.wikimedia.org/wikipedia/en/0/03/Leon-poster.jpg"
+      "excerpt": "Léon is a 1994 French English-language action-thriller film written and directed by Luc Besson. It stars Jean Reno, Gary Oldman and Natalie Portman in her feature film debut. The plot centers on Léon (Reno), an Italian-American professional hitman who reluctantly takes in twelve-year-old Mathilda Lando (Portman) after her family is murdered by corrupt Drug Enforcement Administration (DEA) agent Norman Stansfield (Oldman). Léon and Mathilda form an unusual relationship as she becomes his protégée and learns the hitman's trade. The film was released in France by Gaumont Buena Vista International on 14 September 1994 and received mostly positive reviews from critics."
     }
   },
   {
@@ -312,30 +192,7 @@
     "sim": 0,
     "reason": "low-confidence",
     "proposed": {
-      "excerpt": "Seven is a 1995 American crime thriller film directed by David Fincher and written by Andrew Kevin Walker. It stars Brad Pitt and Morgan Freeman, with Gwyneth Paltrow and John C. McGinley in supporting roles. Set in an unnamed, crime-ridden city, the narrative follows disenchanted, nearly retired Detective Lieutenant William Somerset and his newly transferred partner David Mills as they try to stop a serial killer from committing a series of murders based on the seven deadly sins.",
-      "image": "https://upload.wikimedia.org/wikipedia/en/6/68/Seven_%28movie%29_poster.jpg"
-    }
-  },
-  {
-    "row": 397,
-    "name": "oceans eleven",
-    "title": "Ocean's Eleven",
-    "sim": 0.33,
-    "reason": "low-confidence",
-    "proposed": {
-      "excerpt": "Ocean's Eleven is a 2001 American heist comedy film directed by Steven Soderbergh from a screenplay by Ted Griffin. The first installment in the Ocean's film trilogy, it is a remake of the 1960 Rat Pack film. The film features an ensemble cast including George Clooney, Matt Damon, Andy García, Brad Pitt, Julia Roberts, Casey Affleck, Don Cheadle, Scott Caan, Elliott Gould, Bernie Mac and Carl Reiner. The story follows friends Danny Ocean (Clooney) and Rusty Ryan (Pitt), who plan a heist of $160 million from casino owner Terry Benedict (García), the lover of Ocean's ex-wife Tess (Roberts).",
-      "image": "https://upload.wikimedia.org/wikipedia/en/6/68/Ocean%27s_Eleven_2001_Poster.jpg"
-    }
-  },
-  {
-    "row": 402,
-    "name": "atlantis",
-    "title": "Atlantis: The Lost Empire",
-    "sim": 0.25,
-    "reason": "low-confidence",
-    "proposed": {
-      "excerpt": "Atlantis: The Lost Empire is a 2001 American animated science fiction adventure film directed by Gary Trousdale and Kirk Wise, produced by Don Hahn, and written by Tab Murphy. Produced by Walt Disney Feature Animation, it stars Michael J. Fox, James Garner, Cree Summer, Don Novello, Phil Morris, Claudia Christian, Jacqueline Obradors, Florence Stanley, David Ogden Stiers, John Mahoney, Jim Varney, Corey Burton and Leonard Nimoy. Set in 1914, the film follows young linguist Milo Thatch (Fox), who gains possession of a sacred book, which he believes will guide him and a crew of mercenaries to the lost city of Atlantis.",
-      "image": "https://upload.wikimedia.org/wikipedia/en/d/de/Atlantis_The_Lost_Empire_poster.jpg"
+      "excerpt": "Seven is a 1995 American crime thriller film directed by David Fincher and written by Andrew Kevin Walker. It stars Brad Pitt and Morgan Freeman, with Gwyneth Paltrow and John C. McGinley in supporting roles. Set in an unnamed, crime-ridden city, the narrative follows disenchanted, nearly retired Detective Lieutenant William Somerset and his newly transferred partner David Mills as they try to stop a serial killer from committing a series of murders based on the seven deadly sins."
     }
   },
   {
@@ -345,8 +202,27 @@
     "sim": 0.2,
     "reason": "low-confidence",
     "proposed": {
-      "excerpt": "Dodgeball: A True Underdog Story is a 2004 sports comedy film written and directed by Rawson Marshall Thurber, in his directorial debut, and starring Vince Vaughn, Ben Stiller, Christine Taylor, and Rip Torn. The film follows a group of unlikely misfits who enter a Las Vegas dodgeball tournament, needing the prize money to save their cherished gym from being taken over by a corporate health fitness chain.",
-      "image": "https://upload.wikimedia.org/wikipedia/en/7/70/Movie_poster_Dodgeball_A_True_Underdog_Story.jpg"
+      "excerpt": "Dodgeball: A True Underdog Story is a 2004 sports comedy film written and directed by Rawson Marshall Thurber, in his directorial debut, and starring Vince Vaughn, Ben Stiller, Christine Taylor, and Rip Torn. The film follows a group of unlikely misfits who enter a Las Vegas dodgeball tournament, needing the prize money to save their cherished gym from being taken over by a corporate health fitness chain."
+    }
+  },
+  {
+    "row": 397,
+    "name": "oceans eleven",
+    "title": "Ocean's Eleven",
+    "sim": 0.33,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Ocean's Eleven is a 2001 American heist comedy film directed by Steven Soderbergh from a screenplay by Ted Griffin. The first installment in the Ocean's film trilogy, it is a remake of the 1960 Rat Pack film. The film features an ensemble cast including George Clooney, Matt Damon, Andy García, Brad Pitt, Julia Roberts, Casey Affleck, Don Cheadle, Scott Caan, Elliott Gould, Bernie Mac and Carl Reiner. The story follows friends Danny Ocean (Clooney) and Rusty Ryan (Pitt), who plan a heist of $160 million from casino owner Terry Benedict (García), the lover of Ocean's ex-wife Tess (Roberts)."
+    }
+  },
+  {
+    "row": 402,
+    "name": "atlantis",
+    "title": "Atlantis: The Lost Empire",
+    "sim": 0.25,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Atlantis: The Lost Empire is a 2001 American animated science fiction adventure film directed by Gary Trousdale and Kirk Wise, produced by Don Hahn, and written by Tab Murphy. Produced by Walt Disney Feature Animation, it stars Michael J. Fox, James Garner, Cree Summer, Don Novello, Phil Morris, Claudia Christian, Jacqueline Obradors, Florence Stanley, David Ogden Stiers, John Mahoney, Jim Varney, Corey Burton and Leonard Nimoy. Set in 1914, the film follows young linguist Milo Thatch (Fox), who gains possession of a sacred book, which he believes will guide him and a crew of mercenaries to the lost city of Atlantis."
     }
   },
   {
@@ -356,69 +232,8 @@
     "sim": 0.17,
     "reason": "low-confidence",
     "proposed": {
-      "excerpt": "Anchorman: The Legend of Ron Burgundy is a 2004 American satirical comedy film directed by Adam McKay in his directorial debut, produced by Judd Apatow, starring Will Ferrell and Christina Applegate and written by McKay and Ferrell. The first installment in the Anchorman series, the film is a tongue-in-cheek take on the culture of the 1970s, particularly the new Action News format. It portrays a San Diego television station where news anchor Ron Burgundy (Ferrell) clashes with his new co-anchor Veronica Corningstone (Applegate).",
-      "image": "https://upload.wikimedia.org/wikipedia/en/6/64/Movie_poster_Anchorman_The_Legend_of_Ron_Burgundy.jpg"
+      "excerpt": "Anchorman: The Legend of Ron Burgundy is a 2004 American satirical comedy film directed by Adam McKay in his directorial debut, produced by Judd Apatow, starring Will Ferrell and Christina Applegate and written by McKay and Ferrell. The first installment in the Anchorman series, the film is a tongue-in-cheek take on the culture of the 1970s, particularly the new Action News format. It portrays a San Diego television station where news anchor Ron Burgundy (Ferrell) clashes with his new co-anchor Veronica Corningstone (Applegate)."
     }
-  },
-  {
-    "row": 434,
-    "name": "hitch",
-    "title": "Hitch (film)",
-    "reason": "no-summary"
-  },
-  {
-    "row": 438,
-    "name": "the goblet of fire",
-    "query": "the goblet of fire 2005 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 437,
-    "name": "herbie fully loaded",
-    "title": "Herbie: Fully Loaded",
-    "reason": "no-summary"
-  },
-  {
-    "row": 439,
-    "name": "wedding crashers",
-    "query": "wedding crashers 2005 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 436,
-    "name": "the greatest game ever played",
-    "title": "The Greatest Game Ever Played",
-    "reason": "no-summary"
-  },
-  {
-    "row": 440,
-    "name": "mr and mrs smith",
-    "query": "mr and mrs smith 2005 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 441,
-    "name": "fever pitch",
-    "query": "fever pitch 2005 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 442,
-    "name": "madagascar",
-    "query": "madagascar 2005 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 444,
-    "name": "coach carter",
-    "query": "coach carter 2005 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 443,
-    "name": "the curse of the were-rabbit",
-    "query": "the curse of the were-rabbit 2005 film",
-    "reason": "no-search-hit"
   },
   {
     "row": 448,
@@ -427,8 +242,7 @@
     "sim": 0.29,
     "reason": "low-confidence",
     "proposed": {
-      "excerpt": "Talladega Nights: The Ballad of Ricky Bobby is a 2006 American sports comedy film directed by Adam McKay who co-wrote the film with Will Ferrell. It features Ferrell as the titular Ricky Bobby, an immature yet successful NASCAR driver. The film also features John C. Reilly, Sacha Baron Cohen, Gary Cole, Michael Clarke Duncan, Leslie Bibb, Jane Lynch, and Amy Adams in supporting roles. NASCAR drivers Jamie McMurray and Dale Earnhardt Jr. appear in cameos, as do broadcasting teams from NASCAR on Fox and NASCAR on NBC.",
-      "image": "https://upload.wikimedia.org/wikipedia/en/e/e7/Talladega_nights.jpg"
+      "excerpt": "Talladega Nights: The Ballad of Ricky Bobby is a 2006 American sports comedy film directed by Adam McKay who co-wrote the film with Will Ferrell. It features Ferrell as the titular Ricky Bobby, an immature yet successful NASCAR driver. The film also features John C. Reilly, Sacha Baron Cohen, Gary Cole, Michael Clarke Duncan, Leslie Bibb, Jane Lynch, and Amy Adams in supporting roles. NASCAR drivers Jamie McMurray and Dale Earnhardt Jr. appear in cameos, as do broadcasting teams from NASCAR on Fox and NASCAR on NBC."
     }
   },
   {
@@ -438,8 +252,7 @@
     "sim": 0.25,
     "reason": "low-confidence",
     "proposed": {
-      "excerpt": "Pirates of the Caribbean: At World's End is a 2007 American epic fantasy swashbuckler film directed by Gore Verbinski, produced by Jerry Bruckheimer, and written by Ted Elliott and Terry Rossio. The direct sequel to Pirates of the Caribbean: Dead Man's Chest (2006), it is the third installment in the Pirates of the Caribbean film series, and follows an urgent quest to locate and save Captain Jack Sparrow, trapped on a sea of sand in Davy Jones' Locker, and convene the Brethren Court in a war against the East India Trading Company. In an uneasy alliance, Will Turner, Elizabeth Swann, Hector Barbossa, and the Black Pearl crew rescue Jack and prepare to fight Lord Cutler Beckett, who controls Davy Jones and the Flying Dutchman.",
-      "image": "https://upload.wikimedia.org/wikipedia/en/5/5a/Pirates_AWE_Poster.jpg"
+      "excerpt": "Pirates of the Caribbean: At World's End is a 2007 American epic fantasy swashbuckler film directed by Gore Verbinski, produced by Jerry Bruckheimer, and written by Ted Elliott and Terry Rossio. The direct sequel to Pirates of the Caribbean: Dead Man's Chest (2006), it is the third installment in the Pirates of the Caribbean film series, and follows an urgent quest to locate and save Captain Jack Sparrow, trapped on a sea of sand in Davy Jones' Locker, and convene the Brethren Court in a war against the East India Trading Company. In an uneasy alliance, Will Turner, Elizabeth Swann, Hector Barbossa, and the Black Pearl crew rescue Jack and prepare to fight Lord Cutler Beckett, who controls Davy Jones and the Flying Dutchman."
     }
   },
   {
@@ -449,33 +262,14 @@
     "sim": 0.33,
     "reason": "low-confidence",
     "proposed": {
-      "excerpt": "Surf's Up is a 2007 American animated mockumentary sports comedy film directed by Ash Brannon and Chris Buck, and written by Brannon, Buck, Don Rhymer and Chris Jenkins. Produced by Sony Pictures Animation, the film features the voices of Shia LaBeouf, Jeff Bridges, Zooey Deschanel, Jon Heder, and James Woods. It is a parody of surfing documentaries, such as The Endless Summer, Step into Liquid, and Riding Giants, with parts of the plot parodying North Shore. Real-life surfers Kelly Slater and Rob Machado have vignettes as their penguin surfer counterparts. To obtain the desired hand-held documentary feel, the film's animation team motion-captured a physical camera operator's moves.",
-      "image": "https://upload.wikimedia.org/wikipedia/en/6/6a/Surfs_upmp.jpg"
+      "excerpt": "Surf's Up is a 2007 American animated mockumentary sports comedy film directed by Ash Brannon and Chris Buck, and written by Brannon, Buck, Don Rhymer and Chris Jenkins. Produced by Sony Pictures Animation, the film features the voices of Shia LaBeouf, Jeff Bridges, Zooey Deschanel, Jon Heder, and James Woods. It is a parody of surfing documentaries, such as The Endless Summer, Step into Liquid, and Riding Giants, with parts of the plot parodying North Shore. Real-life surfers Kelly Slater and Rob Machado have vignettes as their penguin surfer counterparts. To obtain the desired hand-held documentary feel, the film's animation team motion-captured a physical camera operator's moves."
     }
-  },
-  {
-    "row": 475,
-    "name": "four christmases",
-    "query": "four christmases 2008 film",
-    "reason": "no-search-hit"
   },
   {
     "row": 476,
     "name": "ponyo",
-    "query": "ponyo 2008 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 477,
-    "name": "wall e",
-    "query": "wall e 2008 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 478,
-    "name": "the hurt locker",
-    "query": "the hurt locker 2008 film",
-    "reason": "no-search-hit"
+    "title": "Ponyo",
+    "reason": "no-summary"
   },
   {
     "row": 479,
@@ -484,21 +278,33 @@
     "reason": "no-search-hit"
   },
   {
+    "row": 478,
+    "name": "the hurt locker",
+    "title": "The Hurt Locker",
+    "reason": "no-summary"
+  },
+  {
+    "row": 477,
+    "name": "wall e",
+    "title": "WALL-E",
+    "reason": "no-summary"
+  },
+  {
     "row": 480,
     "name": "synecdoche new york",
     "query": "synecdoche new york 2008 film",
     "reason": "no-search-hit"
   },
   {
-    "row": 481,
-    "name": "inglorious basterds",
-    "query": "inglorious basterds 2009 film",
-    "reason": "no-search-hit"
-  },
-  {
     "row": 482,
     "name": "the hangover",
     "query": "the hangover 2009 film",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 481,
+    "name": "inglorious basterds",
+    "query": "inglorious basterds 2009 film",
     "reason": "no-search-hit"
   },
   {
@@ -550,15 +356,15 @@
     "reason": "no-search-hit"
   },
   {
-    "row": 491,
-    "name": "the social network",
-    "query": "the social network 2010 film",
-    "reason": "no-search-hit"
-  },
-  {
     "row": 493,
     "name": "easy a",
     "query": "easy a 2010 film",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 491,
+    "name": "the social network",
+    "query": "the social network 2010 film",
     "reason": "no-search-hit"
   },
   {
@@ -580,9 +386,9 @@
     "reason": "no-search-hit"
   },
   {
-    "row": 496,
-    "name": "the king's speech",
-    "query": "the king's speech 2010 film",
+    "row": 498,
+    "name": "moneyball",
+    "query": "moneyball 2011 film",
     "reason": "no-search-hit"
   },
   {
@@ -592,21 +398,33 @@
     "reason": "no-search-hit"
   },
   {
-    "row": 498,
-    "name": "moneyball",
-    "query": "moneyball 2011 film",
-    "reason": "no-search-hit"
-  },
-  {
     "row": 499,
     "name": "crazy, stupid, love",
     "query": "crazy, stupid, love 2011 film",
     "reason": "no-search-hit"
   },
   {
+    "row": 496,
+    "name": "the king's speech",
+    "query": "the king's speech 2010 film",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 500,
+    "name": "deathly hallows part 2",
+    "query": "deathly hallows part 2 2011 film",
+    "reason": "no-search-hit"
+  },
+  {
     "row": 501,
     "name": "the artist",
     "query": "the artist 2011 film",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 504,
+    "name": "rango",
+    "query": "rango 2011 film",
     "reason": "no-search-hit"
   },
   {
@@ -622,61 +440,21 @@
     "reason": "no-search-hit"
   },
   {
-    "row": 500,
-    "name": "deathly hallows part 2",
-    "query": "deathly hallows part 2 2011 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 504,
-    "name": "rango",
-    "query": "rango 2011 film",
-    "reason": "no-search-hit"
-  },
-  {
     "row": 571,
     "name": "spiderman: into the spiderverse",
-    "title": "Spider-Man: Across the Spider-Verse",
-    "sim": 0.2,
-    "reason": "low-confidence",
-    "proposed": {
-      "excerpt": "Spider-Man: Across the Spider-Verse is a 2023 American animated superhero film based on Marvel Comics featuring the character Miles Morales / Spider-Man. Directed by Joaquim Dos Santos, Kemp Powers and Justin K. Thompson from a screenplay by the writing team of Phil Lord and Christopher Miller and Dave Callaham, it is the sequel to Spider-Man: Into the Spider-Verse (2018) and the second film in the Spider-Verse franchise. It stars Shameik Moore as Miles Morales, with Hailee Steinfeld, Brian Tyree Henry, Lauren Vélez, Jake Johnson, Jason Schwartzman, Issa Rae, Karan Soni, Shea Whigham, Daniel Kaluuya, Mahershala Ali, and Oscar Isaac in supporting roles. In the film, Miles goes on an adventure with Gwen Stacy / Spider-Gwen (Steinfeld) across the multiverse, where he meets a team of Spider-People led by Miguel O'Hara / Spider-Man 2099 (Isaac) known as the Spider-Society, but comes into conflict with them over handling a new threat in the form of the Spot (Schwartzman). It was produced by Columbia Pictures and Sony Pictures Animation in association with Marvel Entertainment.",
-      "image": "https://upload.wikimedia.org/wikipedia/en/b/b4/Spider-Man-_Across_the_Spider-Verse_poster.jpg"
-    }
-  },
-  {
-    "row": 599,
-    "name": "glass onion",
-    "title": "Glass Onion: A Knives Out Mystery",
-    "sim": 0.33,
-    "reason": "low-confidence",
-    "proposed": {
-      "excerpt": "Glass Onion: A Knives Out Mystery is a 2022 American mystery film written and directed by Rian Johnson, and produced by Johnson and Ram Bergman. It is a standalone sequel to the 2019 film Knives Out, and the second installment in the Knives Out film series. Glass Onion sees Daniel Craig return as master detective Benoit Blanc as he takes on a new case revolving around tech billionaire Miles Bron and his closest friends. The ensemble cast also includes Janelle Monáe, Kathryn Hahn, Leslie Odom Jr., Jessica Henwick, Madelyn Cline, Kate Hudson, and Dave Bautista.",
-      "image": "https://upload.wikimedia.org/wikipedia/en/6/62/Glass_Onion_poster.jpg"
-    }
+    "query": "spiderman: into the spiderverse 2018 film",
+    "reason": "no-search-hit"
   },
   {
     "row": 609,
     "name": "the holdovers",
-    "title": "The Holdovers",
-    "reason": "no-summary"
+    "query": "the holdovers 2023 film",
+    "reason": "no-search-hit"
   },
   {
     "row": 610,
     "name": "the zone of interest",
-    "title": "The Zone of Interest (film)",
-    "reason": "no-summary"
-  },
-  {
-    "row": 616,
-    "name": "a real pain",
-    "query": "a real pain 2024 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 615,
-    "name": "deadpool & wolverine",
-    "query": "deadpool & wolverine 2024 film",
+    "query": "the zone of interest 2023 film",
     "reason": "no-search-hit"
   },
   {
@@ -686,33 +464,15 @@
     "reason": "no-search-hit"
   },
   {
-    "row": 617,
-    "name": "the wild robot",
-    "query": "the wild robot 2024 film",
+    "row": 599,
+    "name": "glass onion",
+    "query": "glass onion 2022 film",
     "reason": "no-search-hit"
   },
   {
-    "row": 618,
-    "name": "carry-on",
-    "query": "carry-on 2024 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 620,
-    "name": "i like me",
-    "query": "i like me 2025 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 619,
-    "name": "the phoenician scheme",
-    "query": "the phoenician scheme 2025 film",
-    "reason": "no-search-hit"
-  },
-  {
-    "row": 621,
-    "name": "wake up dead man",
-    "query": "wake up dead man 2025 film",
+    "row": 615,
+    "name": "deadpool & wolverine",
+    "query": "deadpool & wolverine 2024 film",
     "reason": "no-search-hit"
   }
 ]

@@ -32,16 +32,18 @@
 
 import fs from 'node:fs';
 import {
-  readEntries, readVectors, writeJSON, readJSON, PATHS, DIM,
+  readEntries, readVectors, writeJSON, readJSON, readVocab, writeVocab,
+  truncateNormalize, PATHS, DIM,
 } from './lib/store.mjs';
 import {
   buildTree, assignY, labelNodes, assignColors, leavesInOrder,
-  nearestLeaf, centroid, cosine, pc1Projections, knn,
+  nearestLeaf, centroid, cosine, pc1Projections, knn, harvestVocabulary,
 } from './lib/cluster.mjs';
 
 const argv = process.argv.slice(2);
 const REBUILD = argv.includes('--rebuild');
 const KNN_K = Number(argv[argv.indexOf('--knn') + 1]) || 8;
+const NO_SEMANTIC = argv.includes('--no-semantic-labels');
 
 const entries = readEntries();
 if(!entries.length){
@@ -73,7 +75,7 @@ console.log(`  ${n} entries x ${dim} dims · model ${vec.model}`);
 // The hierarchy
 // ---------------------------------------------------------------------------
 
-const FIT_OPTS = { leafTarget: 12, maxBranch: 8, seed: 1, sizeExponent: 0.75, gutter: 0.6 };
+const FIT_OPTS = { leafTarget: 12, maxBranch: 10, maxDepth: 6, seed: 1, sizeExponent: 0.75, gutter: 0.6 };
 
 let nodes, y, frozen = null;
 
@@ -136,7 +138,64 @@ if(frozen){
   ({ y } = assignY(m, dim, n, nodes, FIT_OPTS));
 }
 
-labelNodes(nodes, rows);
+/**
+ * Vectors for the candidate label terms.
+ *
+ * Cached in `atlas/vocab.bin`, and only the terms missing from that cache are
+ * embedded — the vocabulary is document-frequency gated, so a few hundred new
+ * entries typically add a handful of rows rather than thousands.
+ *
+ * Ollama being down is not fatal here. It is required to embed *entries*, but a
+ * build that only re-lays-out existing vectors should still work offline, so a
+ * failure downgrades to the c-TF-IDF labels rather than stopping the run.
+ */
+async function labelVocabulary(){
+  if(NO_SEMANTIC) return null;
+
+  const { terms, df } = harvestVocabulary(rows);
+  if(!terms.length) return null;
+
+  const cached = readVocab();
+  const usable = cached && cached.model === vec.model && cached.dim === dim ? cached : null;
+  const vm = new Float32Array(terms.length * dim);
+  const missing = [];
+
+  terms.forEach((t, i) => {
+    const v = usable && usable.get(t);
+    if(v) vm.set(v, i * dim);
+    else missing.push(i);
+  });
+
+  if(missing.length){
+    let embed, ensureUp;
+    try {
+      ({ embed, ensureUp } = await import('./lib/ollama.mjs'));
+      await ensureUp();
+    } catch(e){
+      console.warn(`  label vocabulary: ${String(e.message).split('\n')[0]}`);
+      console.warn('  falling back to c-TF-IDF labels for this build.');
+      return null;
+    }
+
+    console.log(`  label vocabulary: ${terms.length} terms · ${missing.length} to embed`);
+    const BATCH = 64;
+    for(let i = 0; i < missing.length; i += BATCH){
+      const idx = missing.slice(i, i + BATCH);
+      // Same `title: … | text: …` document form the entries use, so a term and
+      // an entry land in the same region of the space rather than two dialects
+      // of it.
+      const out = await embed(idx.map((j) => `title: ${terms[j]} | text: ${terms[j]}`));
+      idx.forEach((j, k) => vm.set(truncateNormalize(out[k], dim), j * dim));
+    }
+    writeVocab(terms.map((t, i) => [t, vm.subarray(i * dim, (i + 1) * dim)]), { model: vec.model });
+  }
+
+  return { terms, df, m: vm, dim };
+}
+
+const vocab = await labelVocabulary();
+
+labelNodes(nodes, rows, { vocab });
 assignColors(nodes);
 
 const leaves = leavesInOrder(nodes);

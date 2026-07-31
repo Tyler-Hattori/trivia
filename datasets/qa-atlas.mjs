@@ -456,12 +456,147 @@ if(railBefore.none){
   check('collapsed members are folded into one band', drawn.inside > 0,
     `${drawn.inside} members now render as a single band`);
 
+  /*
+   * The point of collapsing: the band must stop TAKING UP SPACE, not merely stop
+   * drawing its members. It used to keep its full height and go dark, so folding a
+   * big branch bought you nothing but a tall empty stripe. The y axis is warped now,
+   * so this asserts the geometry directly: the folded band shrinks to a thin strip
+   * and its siblings get the freed pixels.
+   */
+  await until(atlas, `window.__atlas.scale.warp.n === 1`, { label: 'fold painted' });
+  const geom = await evaluate(atlas, `(()=>{
+    const X=window.__atlas, A=X.atlas, id=${railBefore.node};
+    const h=(n)=>X.scale.sy(n.y1)-X.scale.sy(n.y0);
+    const nd=A.nodes[id];
+    const sibs=(A.nodes[nd.parent]?.children||[]).filter(c=>c!==id);
+    return { strip:h(nd), sibs:sibs.map(c=>h(A.nodes[c])), H:X.view.H };
+  })()`);
+
+  check('a folded band shrinks to a thin strip',
+    geom.strip > 0 && geom.strip < 40 && geom.strip < geom.H * 0.1,
+    `${geom.strip.toFixed(1)}px tall in a ${geom.H}px viewport`);
+
+  /*
+   * Poll on the PAINTED scale, not on the view. `toggleCollapse` empties
+   * `view.folded` synchronously, but `scale` — and therefore every `sy` this check
+   * measures with — is rebuilt in `paint()` one frame later. Waiting on the view
+   * measured the folded geometry twice and read as "folding freed no space".
+   */
+  await evaluate(atlas, `window.__atlas.toggleCollapse(${railBefore.node})`);
+  await until(atlas, `window.__atlas.scale.warp.n === 0`, { label: 'unfolded and repainted' });
+  const open = await evaluate(atlas, `(()=>{
+    const X=window.__atlas, A=X.atlas, id=${railBefore.node};
+    const h=(n)=>X.scale.sy(n.y1)-X.scale.sy(n.y0);
+    const nd=A.nodes[id];
+    const sibs=(A.nodes[nd.parent]?.children||[]).filter(c=>c!==id);
+    return { band:h(nd), sibs:sibs.map(c=>h(A.nodes[c])) };
+  })()`);
+  const grew = geom.sibs.length
+    ? geom.sibs.reduce((a,b)=>a+b,0) / Math.max(1e-6, open.sibs.reduce((a,b)=>a+b,0))
+    : null;
+  check('folding gives its height to the other bands',
+    geom.sibs.length === 0 || grew > 1.05,
+    geom.sibs.length === 0
+      ? 'no siblings to compare (single-child parent)'
+      : `${geom.sibs.length} siblings grew ${grew.toFixed(2)}x; the band itself ` +
+        `${open.band.toFixed(0)}px open -> ${geom.strip.toFixed(0)}px folded`);
+  await evaluate(atlas, `window.__atlas.toggleCollapse(${railBefore.node})`);
+  await until(atlas, `window.__atlas.scale.warp.n === 1`, { label: 'refolded and repainted' });
+
   await evaluate(atlas, `document.querySelector('.rrow[data-node="${railBefore.node}"] .twist').click()`,
     { userGesture: true });
   const back = await until(atlas, `document.querySelectorAll('.rrow').length === ${railBefore.n}`,
     { label: 'rail restored' });
   check('expanding restores the rail', back.ok, `${railBefore.n} rows in ${back.ms}ms`);
 }
+
+// ---- gestures ----------------------------------------------------------
+/*
+ * A scroll must PAN and a pinch must ZOOM. Both arrive as `wheel`; the only thing
+ * telling them apart is `ctrlKey`, which the browser sets synthetically on a
+ * trackpad pinch. Dispatching a wheel event is meaningful here in a way that
+ * dispatching one to "zoom into a dense region" is not: what is being asserted is
+ * which camera field moved, not what ended up under the cursor.
+ */
+const gesture = await evaluate(atlas, `(async()=>{
+  const X=window.__atlas, V=X.view;
+  const s=document.getElementById('surface');
+  const r=s.getBoundingClientRect();
+  const frame=()=>new Promise(res=>requestAnimationFrame(()=>requestAnimationFrame(res)));
+  const fire=(init)=>{ s.dispatchEvent(new WheelEvent('wheel',{
+    clientX:r.left+r.width/2, clientY:r.top+r.height/2, bubbles:true, cancelable:true, ...init })); };
+
+  X.goto(0, 6); await frame();
+  const a={ppy:V.ppy, x0:V.x0, yTop:V.yTop};
+
+  fire({deltaY:120, deltaX:0}); await frame();
+  const scrolled={ppy:V.ppy, x0:V.x0, yTop:V.yTop};
+
+  fire({deltaY:-240, deltaX:0, ctrlKey:true}); await frame();
+  const pinched={ppy:V.ppy};
+
+  X.goto(0, 6); await frame();
+  fire({deltaY:150, deltaX:0, shiftKey:true}); await frame();
+  const shifted={ppy:V.ppy, x0:V.x0, yTop:V.yTop};
+
+  return {a, scrolled, pinched, shifted};
+})()`);
+
+check('a two-finger scroll pans instead of zooming',
+  gesture.scrolled.ppy === gesture.a.ppy && gesture.scrolled.yTop > gesture.a.yTop,
+  `ppy held at ${gesture.a.ppy.toFixed(2)}, yTop ${gesture.a.yTop.toFixed(4)} -> ${gesture.scrolled.yTop.toFixed(4)}`);
+check('a pinch zooms', gesture.pinched.ppy > gesture.scrolled.ppy * 1.1,
+  `${gesture.scrolled.ppy.toFixed(2)} -> ${gesture.pinched.ppy.toFixed(2)} px/yr`);
+check('shift+wheel pans through time',
+  gesture.shifted.x0 > gesture.a.x0 && gesture.shifted.ppy === gesture.a.ppy,
+  `x0 ${Math.round(gesture.a.x0)} -> ${Math.round(gesture.shifted.x0)}`);
+
+// ---- the sidebar folds -------------------------------------------------
+const railFold = await evaluate(atlas, `(async()=>{
+  const frame=()=>new Promise(res=>requestAnimationFrame(()=>requestAnimationFrame(res)));
+  const el=document.querySelector('.rail');
+  const open=el.getBoundingClientRect().width;
+  document.querySelector('.rail .railfold').click(); await frame();
+  const folded=el.getBoundingClientRect().width;
+  const chevron=document.querySelector('.rail .railfold');
+  const spineVisible=chevron.getBoundingClientRect().width > 0;
+  document.querySelector('.rail .railfold').click(); await frame();
+  return {open, folded, spineVisible, reopened:el.getBoundingClientRect().width};
+})()`, { userGesture: true });
+
+check('the sidebar keeps to its declared width', railFold.open > 180 && railFold.open < 240,
+  `${Math.round(railFold.open)}px (flex-basis is 216)`);
+check('the sidebar folds from its own edge', railFold.folded > 0 && railFold.folded < 40,
+  `${Math.round(railFold.open)}px -> ${Math.round(railFold.folded)}px spine`);
+check('the folded sidebar keeps a way back', railFold.spineVisible && railFold.reopened === railFold.open,
+  `chevron still hittable, reopens to ${Math.round(railFold.reopened)}px`);
+
+// ---- theme -------------------------------------------------------------
+/*
+ * The canvas cannot read CSS variables, so a theme switch has to move BOTH halves.
+ * Asserting only the attribute would pass with a black canvas under a white UI.
+ */
+const themed = await evaluate(atlas, `(async()=>{
+  const frame=()=>new Promise(res=>requestAnimationFrame(()=>requestAnimationFrame(res)));
+  const cv=document.getElementById('canvas');
+  const corner=()=>{ const d=cv.getContext('2d').getImageData(cv.width-3,cv.height-3,1,1).data;
+                     return d[0]+d[1]+d[2]; };
+  const out={};
+  window.__atlas.setTheme('light'); await frame();
+  out.light={attr:document.documentElement.dataset.theme,
+             body:getComputedStyle(document.body).backgroundColor, canvas:corner()};
+  window.__atlas.setTheme('dark'); await frame();
+  out.dark={attr:document.documentElement.dataset.theme,
+            body:getComputedStyle(document.body).backgroundColor, canvas:corner()};
+  window.__atlas.setTheme('light'); await frame();
+  return out;
+})()`);
+
+check('light is the theme', themed.light.attr === 'light' && themed.light.canvas > 600,
+  `body ${themed.light.body}, canvas luma sum ${themed.light.canvas}`);
+check('the theme switch moves the canvas too, not just the CSS',
+  themed.dark.attr === 'dark' && themed.dark.canvas < themed.light.canvas - 200,
+  `canvas ${themed.light.canvas} -> ${themed.dark.canvas}, body ${themed.dark.body}`);
 
 // ---- pin ---------------------------------------------------------------
 const pinNode = await evaluate(atlas, `(()=>{
@@ -567,6 +702,14 @@ await evaluate(atlas, `document.querySelector('.dclose').click()`, { userGesture
 await sleep(300);
 
 // ---- search ------------------------------------------------------------
+/*
+ * The corpus size, read from the atlas rather than hardcoded. Every "a filter
+ * narrowed the set" check used a literal 2697 — the entry count on the day they
+ * were written — so `has:image` started failing purely because the store grew past
+ * it, which reads as a broken filter.
+ */
+const CORPUS = await evaluate(atlas, `window.__atlas.atlas.n`, {});
+
 async function search(term){
   await evaluate(atlas, `(()=>{const q=document.getElementById('q');q.value=${JSON.stringify(term)};
     q.dispatchEvent(new Event('input',{bubbles:true}));})()`, { userGesture: true });
@@ -579,20 +722,20 @@ async function search(term){
 }
 
 const s1 = await search('cubism');
-check('free-text search narrows the set', s1.matched > 0 && s1.matched < 2697,
+check('free-text search narrows the set', s1.matched > 0 && s1.matched < CORPUS,
   `"cubism" -> ${s1.count}`);
 
 const s2 = await search('1750-1800');
-check('year-range search works', s2.matched > 0 && s2.matched < 2697, `"1750-1800" -> ${s2.count}`);
+check('year-range search works', s2.matched > 0 && s2.matched < CORPUS, `"1750-1800" -> ${s2.count}`);
 
 const s3 = await search('ds:film');
-check('ds: prefix filters by source', s3.matched > 0 && s3.matched < 2697, `"ds:film" -> ${s3.count}`);
+check('ds: prefix filters by source', s3.matched > 0 && s3.matched < CORPUS, `"ds:film" -> ${s3.count}`);
 
 const s4 = await search('topic:surrealism');
 check('topic: prefix filters by topic', s4.matched > 0, `"topic:surrealism" -> ${s4.count}`);
 
 const s5 = await search('has:image');
-check('has:image filters to entries with pictures', s5.matched > 0 && s5.matched < 2697,
+check('has:image filters to entries with pictures', s5.matched > 0 && s5.matched < CORPUS,
   `"has:image" -> ${s5.count}`);
 
 const s6 = await search('zzzznotathing');
@@ -620,11 +763,158 @@ const perf = await evaluate(atlas, `(()=>{
 check('pan stays interactive', perf.ms / perf.frames < 34,
   `${perf.frames} frames in ${perf.ms.toFixed(0)}ms = ${(perf.ms/perf.frames).toFixed(1)}ms/frame`);
 
+// ---- time ranges (modes) ----------------------------------------------
+/*
+ * Each mode is asserted on the thing that actually broke: that pressing Fit puts
+ * the mode's entries ON SCREEN. The old fit check only matched the status line's
+ * SHAPE, so when one entry at −113,000 stretched the axis past the hardcoded
+ * px-per-year floor and Fit started landing on 50,000 years of empty prehistory
+ * with a single point in view, the suite went on reporting 50/50.
+ */
+const modeKeys = await evaluate(atlas, `window.__atlas.modes`);
+check('three time ranges offered', Array.isArray(modeKeys) && modeKeys.length === 3,
+  Array.isArray(modeKeys) ? modeKeys.join(', ') : String(modeKeys));
+check('a control exists for every range',
+  await evaluate(atlas, `document.querySelectorAll('#modeSeg button[data-mode]').length`) === 3);
+
+const modeReport = [];
+for(const key of modeKeys || []){
+  await evaluate(atlas, `window.__atlas.setMode('${key}')`, { userGesture: true });
+  await evaluate(atlas, `window.__atlas.fit()`, { userGesture: true });
+  await sleep(400);
+
+  const m = await evaluate(atlas, `(()=>{
+    const X = window.__atlas, A = X.atlas, s = X.scale, [lo, hi] = X.domain;
+    let inDomain = 0;
+    for(let i = 0; i < A.n; i++) if(A.x1[i] >= lo) inDomain++;
+    return {
+      mode: X.mode, lo, hi, ppy: s.ppy, atEdge: X.atEdge, outside: X.outside,
+      inView: X.visible.length, inDomain, n: A.n,
+      // Does the fitted viewport actually span the whole domain?
+      covers: s.x0 <= lo + 1 && s.x1 >= hi - 1,
+      ticks: document.querySelectorAll('#ruler .tk').length,
+      tickText: [...document.querySelectorAll('#ruler .tk')].map(e => e.textContent),
+      status: document.getElementById('status').textContent,
+      stops: [...document.querySelectorAll('#scaleSeg button')].map(e => e.textContent),
+      ppyLab: document.getElementById('ppyLab').textContent,
+    };
+  })()`);
+  modeReport.push(m);
+
+  // THE check the old suite was missing: fit has to show you something.
+  check(`fit shows ${key}'s entries`, m.inView > m.inDomain * 0.9,
+    `${m.inView} in view of ${m.inDomain} reachable  ·  ${m.status}`);
+  check(`fit spans the whole ${key} range`, m.covers,
+    `${m.lo} … ${m.hi} at ${m.ppy.toExponential(2)} px/yr`);
+  check(`fit is the ${key} zoom-out limit`, m.atEdge,
+    `ppy ${m.ppy.toExponential(2)}, atEdge=${m.atEdge}`);
+  check(`${key} ruler is legible`, m.ticks >= 5 && m.ticks <= 40
+    && m.tickText.every((s) => s.length > 0 && s.length < 12),
+    `${m.ticks} ticks: ${m.tickText.slice(0, 4).join(' | ')} … ${m.tickText.at(-1)}`);
+  check(`${key} zoom readout is a number`, !/^0\.00 /.test(m.ppyLab), m.ppyLab);
+  // A range that hides entries has to admit it. Silent truncation reads as
+  // "that is all there is".
+  if(m.outside > 0){
+    check(`${key} says how many entries it leaves behind`,
+      new RegExp(`${m.outside}\\s+before`).test(m.status), m.status);
+  }
+}
+
+check('narrower ranges cover less time',
+  modeReport.length === 3 && modeReport[0].hi - modeReport[0].lo < modeReport[1].hi - modeReport[1].lo
+    && modeReport[1].hi - modeReport[1].lo < modeReport[2].hi - modeReport[2].lo,
+  modeReport.map((m) => `${m.mode}:${Math.round(m.hi - m.lo)}y`).join('  '));
+
+check('each range gets its own scale ladder',
+  new Set(modeReport.map((m) => m.stops.join(','))).size === 3,
+  modeReport.map((m) => `${m.mode}: ${m.stops.join('/')}`).join('   '));
+
+// Every stop must land where its label claims, in every mode.
+const ladder = await evaluate(atlas, `(async()=>{
+  const X = window.__atlas, out = [];
+  const wait = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  for(const mode of X.modes){
+    X.setMode(mode); await wait();
+    for(const b of document.querySelectorAll('#scaleSeg button')){
+      const key = b.dataset.stop;
+      X.gotoStop(key); await wait();
+      out.push({ mode, key, ppy: X.scale.ppy, on: b.classList.contains('on'),
+                 lit: [...document.querySelectorAll('#scaleSeg button.on')].length });
+    }
+  }
+  return out;
+})()`);
+check('every scale stop lands on itself', ladder.every((r) => r.on && r.lit === 1),
+  ladder.filter((r) => !r.on || r.lit !== 1).map((r) => `${r.mode}/${r.key}`).join(',') || `${ladder.length} stops across 3 ranges`);
+
+// The edge highlight is the only thing inviting a mode change, so it has to appear
+// exactly when you are against the edge — and never on the widest range.
+const edgeHint = await evaluate(atlas, `(async()=>{
+  const X = window.__atlas;
+  const wait = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  const lit = () => [...document.querySelectorAll('#modeSeg button.edge')].map(b => b.dataset.mode);
+  X.setMode('${modeKeys[0]}'); X.fit(); await wait();
+  const atFit = lit();
+  X.zoom(9, 800, 400); await wait();
+  const zoomedIn = lit();
+  X.setMode('${modeKeys[2]}'); X.fit(); await wait();
+  const widest = lit();
+  return { atFit, zoomedIn, widest };
+})()`);
+check('the wider range is offered at the edge', edgeHint.atFit.length === 1
+  && edgeHint.atFit[0] === modeKeys[1], edgeHint.atFit.join(',') || 'nothing lit');
+check('no offer once you zoom in', edgeHint.zoomedIn.length === 0, edgeHint.zoomedIn.join(','));
+check('nothing to offer past the widest range', edgeHint.widest.length === 0, edgeHint.widest.join(','));
+
+// Switching ranges while parked mid-history must not teleport you.
+const keepPlace = await evaluate(atlas, `(async()=>{
+  const X = window.__atlas;
+  const wait = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  X.setMode('civ'); await wait();
+  X.gotoStop('decades'); await wait();
+  const a = { mid: (X.scale.x0 + X.scale.x1) / 2, ppy: X.scale.ppy };
+  X.setMode('human'); await wait();
+  const b = { mid: (X.scale.x0 + X.scale.x1) / 2, ppy: X.scale.ppy };
+  return { a, b };
+})()`);
+check('switching range mid-history keeps your place',
+  Math.abs(keepPlace.b.mid - keepPlace.a.mid) < 60 && Math.abs(keepPlace.b.ppy / keepPlace.a.ppy - 1) < 0.02,
+  `${Math.round(keepPlace.a.mid)} @ ${keepPlace.a.ppy.toFixed(2)} -> ${Math.round(keepPlace.b.mid)} @ ${keepPlace.b.ppy.toFixed(2)}`);
+
+// ...but switching while zoomed out should reframe, or the toggle looks inert:
+// 5,000 years is invisible inside 4.5 billion either way.
+const reframe = await evaluate(atlas, `(async()=>{
+  const X = window.__atlas;
+  const wait = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  X.setMode('civ'); X.fit(); await wait();
+  const a = X.scale.ppy;
+  X.setMode('earth'); await wait();
+  return { a, b: X.scale.ppy, edge: X.atEdge };
+})()`);
+check('switching range while zoomed out reframes', reframe.b < reframe.a && reframe.edge,
+  `${reframe.a.toExponential(2)} -> ${reframe.b.toExponential(2)} px/yr, atEdge=${reframe.edge}`);
+
+// The saved range has to survive a reopen, which is the one thing that silently
+// inverted the pin and collapse tests once.
+await evaluate(atlas, `window.__atlas.setMode('human')`, { userGesture: true });
+await sleep(300);
+check('the chosen range is remembered',
+  /"mode":"human"/.test(await evaluate(atlas, `localStorage.getItem('atlas:prefs:v1')`)),
+  await evaluate(atlas, `JSON.parse(localStorage.getItem('atlas:prefs:v1')).mode`));
+
+await evaluate(atlas, `window.__atlas.setMode('civ')`, { userGesture: true });
+await sleep(200);
+
 // ---- fit + no exceptions ----------------------------------------------
 await evaluate(atlas, `document.getElementById('fitBtn').click()`, { userGesture: true });
 await sleep(400);
 const r3 = await evaluate(atlas, probe);
-check('fit returns to the whole atlas', !r3.canvasBlank, r3.status);
+const fitView3 = await evaluate(atlas, `({inView: window.__atlas.visible.length,
+  reach: (()=>{const A=window.__atlas.atlas, lo=window.__atlas.domain[0];
+    let k=0; for(let i=0;i<A.n;i++) if(A.x1[i]>=lo) k++; return k;})()})`);
+check('fit returns to the whole atlas',
+  !r3.canvasBlank && fitView3.inView > fitView3.reach * 0.9,
+  `${fitView3.inView} of ${fitView3.reach} reachable in view  ·  ${r3.status}`);
 
 check('no uncaught exceptions', consoleErrors.length === 0,
   consoleErrors.length ? consoleErrors.slice(0, 3).join(' | ') : 'clean');

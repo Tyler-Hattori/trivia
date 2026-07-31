@@ -10,9 +10,10 @@
  */
 
 import fs from 'node:fs';
-import { readEntries, readVectors, readJSON, PATHS, entryText } from './lib/store.mjs';
+import path from 'node:path';
+import { readEntries, readVectors, readJSON, PATHS, REPO_DIR, entryText } from './lib/store.mjs';
 import { cosine, nearestLeaf } from './lib/cluster.mjs';
-import { parseYears } from './lib/years.mjs';
+import { parseYears, findDate } from './lib/years.mjs';
 
 let pass = 0;
 const fails = [];
@@ -78,6 +79,133 @@ check('yearText still parses to the stored start', () => {
   // A mismatch means the stored number and the displayed text disagree — the
   // card would show one year and sit at another.
   assert(bad.length === 0, `${bad.length} disagree, e.g. ${bad[0]?.id}: text "${bad[0]?.yearText}" vs start ${bad[0]?.start}`);
+});
+
+check('a span\'s yearText still parses to its stored end', () => {
+  /*
+   * The start check above passes on a range whose second half was misread, which is
+   * how "320 kya – 305 kya" once stored 320 kya with "305 kya:" left sitting in the
+   * title. A span's far edge needs asserting too.
+   *
+   * Spans only. A point-kind dataset collapses a range on purpose — art.csv dates a
+   * painting "1330-1340" and the entry is a point at 1330 — so a point whose text is
+   * a range is intended, not a parse failure. 155 rows are in that state.
+   */
+  const bad = entries.filter((e) => {
+    if(e.kind !== 'span' || !e.yearText || e.end == null) return false;
+    const { end } = parseYears(e.yearText);
+    return end != null && end !== e.end;
+  });
+  assert(bad.length === 0,
+    `${bad.length} disagree, e.g. ${bad[0]?.id}: text "${bad[0]?.yearText}" vs end ${bad[0]?.end}`);
+});
+
+check('the year parser reads deep time', () => {
+  /*
+   * Not a property of the data but of the code the data depends on, and it belongs
+   * here because breaking it is invisible: every one of these forms appears in the
+   * geologic timeline articles `ingest.mjs --events` mines, and a regression does
+   * not throw — it files the Archean inside the Pleistocene, three orders of
+   * magnitude out, on an axis where nothing looks wrong.
+   *
+   * The epoch cases are the fragile ones. A relative date is converted with a FIXED
+   * 1950 reference, so if that ever becomes `new Date()` these assertions start
+   * failing every January while the atlas still renders.
+   */
+  const cases = [
+    ['66 Ma',                              -66000000,   -66000000],
+    ['c. 4,570 Ma',                        -4570000000, -4570000000],
+    ['4.54 billion years ago',             -4540000000, -4540000000],
+    ['541 to 485 million years ago',       -541000000,  -485000000],
+    ['252-201 Ma',                         -252000000,  -201000000],
+    ['320 kya – 305 kya',                  -320000,     -305000],   // unit on both sides
+    ['2 Ma – 500 ka',                      -2000000,    -500000],   // mixed units
+    ['c. 4,567 ±3 Ma',                     -4567000000, -4567000000], // tolerance, not a range
+    ['11,700 BP',                          -9750,       -9750],
+    ['300,000 years ago',                  -300000,     -300000],
+    // Absolute dates must NOT be dragged into the relative reading.
+    ['3000 BC',                            -3000,       -3000],
+    ['1879-1955',                          1879,        1955],
+    ['27 BC - 14 AD',                      -27,         14],
+    ['c. 251.9 Ma ± 0.024 Ma',             -251900000,  -251900000], // unit on the tolerance
+    // Ranges that would otherwise run backwards, which `spans run forwards` forbids.
+    ['1601–03',                            1601,        1603],       // abbreviated far half
+    ['1899-01',                            1899,        1901],       // …across the century
+    ['180–10 AD',                          -180,        10],          // straddles the era
+    ['between 1850 and 1900',              1850,        1900],
+  ];
+  for(const [text, start, end] of cases){
+    const got = parseYears(text);
+    assert(got.start === start && got.end === end,
+      `"${text}" -> ${got.start}..${got.end}, expected ${start}..${end}`);
+  }
+  return `${cases.length} forms`;
+});
+
+check('a duration is not read as a date', () => {
+  // "flora recovered over 1.7 million years" is a length of time. Read as a date it
+  // became a year in the Pleistocene, so `findDate` requires "ago" on the spelled-out
+  // form. The symbol form is a date on its own and must still be found.
+  assert(!findDate('flora recovered over 1.7 million years'), '"1.7 million years" read as a date');
+  assert(!findDate('diversifying approximately 30 million years after the event'),
+    '"30 million years after" read as a date');
+  assert(findDate('the impact 66 million years ago')?.start === -66000000, '"66 million years ago" not found');
+  assert(findDate('the Judith River Formation at 75 Ma')?.start === -75000000, '"75 Ma" not found');
+  assert(!findDate('It has 400 members and covers 12 states'), 'a bare quantity read as a year');
+});
+
+check('a year followed by punctuation is still a year', () => {
+  /*
+   * The guard after a bare year is there to stop a fragment of a longer number
+   * reading as one. It used to reject any following comma or period, which threw
+   * away the commonest timeline line there is and — worse — half-matched ranges,
+   * leaving the second date sitting in the title. Both shapes are asserted because
+   * neither failed loudly: the page simply mined fewer events.
+   */
+  const head = (s) => findDate(s, { anchored: true });
+  assert(head('1066, the Norman conquest of England')?.text === '1066', '"1066," not read as a year');
+  assert(head('1914–1918, the Great War')?.end === 1918, 'a range before a comma was truncated');
+  assert(findDate('published in 1900, he said')?.start === 1900, 'a mid-sentence year before a comma');
+  assert(head('1920s Droughts on Euboea')?.text === '1920s', 'a decade left its "s" behind');
+  // Still not a year: these are what the guard is actually for.
+  assert(!findDate('1,900 members attended'), '"1,900" read as the year 900');
+  assert(!findDate('the figure rose to 1955.5 units'), '"1955.5" read as the year 1955');
+});
+
+check('the loose prose grammar stays narrower than prose', () => {
+  /*
+   * `--events-prose` accepts attributive and parenthetical years, which is the only
+   * way narrative history yields anything. The bound that keeps it honest is the
+   * 4-digit year range plus a unit lookahead — with those gone it reads every
+   * quantity on the page as a date, and a quantity misread as a year lands an entry
+   * in the wrong millennium with nothing to flag it.
+   */
+  const loose = (s) => findDate(s, { loose: true });
+  assert(loose('Planck won the 1918 Nobel Prize')?.start === 1918, 'an attributive year not found');
+  assert(loose('the planetary model of the atom (1911).')?.start === 1911, 'a parenthesised year not found');
+  assert(loose('Throughout the 1800s many studies')?.start === 1800, 'a decade not found');
+  assert(loose('between 1850 and 1900, which')?.end === 1900, 'an unprepositioned range not found');
+  assert(!loose('It has 400 members and covers 12 states'), 'a 3-digit quantity read as a year');
+  assert(!loose('the tunnel runs 1500 metres beneath the ridge'), '"1500 metres" read as a year');
+  assert(!loose('a crowd of 2000 people gathered'), '"2000 people" read as a year');
+  assert(!loose('a print run of 1,200 copies'), '"1,200 copies" read as a year');
+});
+
+check('every entry migrate.mjs cannot rebuild is marked', () => {
+  /*
+   * migrate.mjs rewrites entries.jsonl from the CSVs and carries everything else
+   * over. A row it can neither regenerate nor recognise is a row it deletes, and the
+   * marker that saves one is `origin.manual`. This asserts the store holds no entry
+   * relying on the old, weaker rule.
+   */
+  const bad = entries.filter((e) => {
+    if(e.origin?.wiki || e.origin?.qid || e.origin?.manual) return false;
+    return !fs.existsSync(path.join(path.dirname(PATHS.entries), '..', `${e.origin?.dataset || ''}.csv`));
+  });
+  assert(!bad.length,
+    `${bad.length} entry/entries have no provenance and no CSV, e.g. ${bad[0]?.id} ` +
+    `(dataset "${bad[0]?.origin?.dataset}") — set origin.manual = true`);
+  return `${entries.filter((e) => e.origin?.manual).length} marked manual`;
 });
 
 check('vectors exist for every placed point', () => {
@@ -278,6 +406,39 @@ check('embedded text excludes domains', () => {
                                           !e.topics.includes(d) &&
                                           !String(e.title + e.subtitle + e.excerpt).toLowerCase().includes(d));
   assert(!leaked.length, `domains leaked into entryText: ${leaked.join(', ')}`);
+});
+
+check('no JS-eaten characters inside the CSS template literal', () => {
+  /*
+   * A backtick in a comment inside styles.js's CSS template closes the string, and
+   * the rest of the stylesheet is then parsed as JavaScript. It surfaces as
+   * "Unexpected identifier" or "Invalid left-hand side expression in postfix
+   * operation" (`--bg` read as a decrement) pointing at a line of CSS, with the
+   * whole atlas failing to load — three separate sessions have lost time to it.
+   * One grep is cheaper than rediscovering it a fourth time.
+   *
+   * A backslash is the same trap from the other end: the stylesheet is a JS
+   * template literal, so JS eats the escape before CSS ever sees it. A CSS escape
+   * is at best silently wrong and at worst fatal — `content:'\00a0'` is an outright
+   * "Octal escape sequences are not allowed in template strings". Write the literal
+   * character instead; there is no legitimate backslash in this stylesheet.
+   */
+  const file = path.join(REPO_DIR, 'project/features/atlas/styles.js');
+  if(!fs.existsSync(file)) return 'styles.js not found';
+  const lines = fs.readFileSync(file, 'utf8').split('\n');
+  const open = lines.findIndex((l) => /export const CSS = `/.test(l));
+  assert(open >= 0, 'could not find the CSS template literal');
+  const close = lines.findIndex((l, i) => i > open && /^\s*`;\s*$/.test(l));
+  assert(close > open, 'could not find the end of the CSS template literal');
+  const ticks = [], slashes = [];
+  for(let i = open + 1; i < close; i++){
+    if(lines[i].includes('`')) ticks.push(i + 1);
+    if(lines[i].includes('\\')) slashes.push(i + 1);
+  }
+  assert(!ticks.length, `backtick inside the template at styles.js:${ticks.join(', ')}`);
+  assert(!slashes.length,
+    `backslash escape inside the template at styles.js:${slashes.join(', ')} — use the literal character`);
+  return `${close - open - 1} lines clean`;
 });
 
 // ---------------------------------------------------------------------------

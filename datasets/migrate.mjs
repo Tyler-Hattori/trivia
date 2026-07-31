@@ -2,11 +2,18 @@
 /**
  * One-time migration: the eight per-topic CSVs -> atlas/entries.jsonl.
  *
- *     node datasets/migrate.mjs [--dry]
+ *     node datasets/migrate.mjs [--dry] [--prune]
  *
  * The CSVs are left untouched; this only reads them. Re-running is safe — it
  * rewrites entries.jsonl from scratch, and any entry added later by ingest.mjs
  * that did not come from a CSV is carried over.
+ *
+ * This is the only script in the pipeline that DELETES entries, so it refuses to.
+ * A stored row that no CSV produces any more stops the run and is listed; pass
+ * `--prune` once you have read the list and agree they should go. The reason is
+ * that the same silent deletion has been introduced twice by two different
+ * carry-over rules (see the discriminator below), and both times the data it took
+ * was the kind nothing can re-fetch.
  *
  * ## What changes in the data model
  *
@@ -35,6 +42,7 @@ import {
 } from './lib/store.mjs';
 
 const DRY = process.argv.includes('--dry');
+const PRUNE = process.argv.includes('--prune');
 
 /**
  * Per-CSV mapping into the canonical shape.
@@ -172,20 +180,38 @@ for(const e of entries){
 }
 
 /*
- * Preserve anything ingest.mjs added that no CSV accounts for.
+ * Preserve anything added since that no CSV accounts for.
  *
- * The discriminator is `origin.wiki`/`origin.qid`, NOT the dataset name. Filing
- * an entry under a dataset that happens to have a CSV — `ingest.mjs --domain art`
- * sets `origin.dataset: 'art'` — used to make `!MAP['art.csv']` false and drop it.
- * Every one of the 58 ingested entries was in that state, so a routine re-run of
- * this script would have silently deleted all of them.
+ * A stored row whose id no CSV produced is one of two things: a CSV row deleted
+ * upstream, which should disappear too, or something added later, which must not.
+ * This tests for the FIRST — "does it look like a CSV row?" — rather than trying to
+ * enumerate every way an entry can arrive, because the two errors cost wildly
+ * different amounts. A stale row wrongly kept is visible in the atlas and deletable
+ * by hand. A hand-entered or mined row wrongly deleted is gone: nothing can
+ * re-fetch it.
  *
- * A row that is in neither `csvIds` nor an ingest is a CSV row that has since been
- * removed upstream, and should still disappear.
+ * That asymmetry has already bitten twice, in the same place. The first version
+ * keyed on the dataset NAME, so `ingest.mjs --domain art` (which sets
+ * `origin.dataset: 'art'`, colliding with art.csv) had all 58 of its entries
+ * dropped by a routine re-run. The fix keyed on `origin.wiki || origin.qid`, which
+ * held for wiki ingests but silently excluded the one kind of entry that cannot be
+ * recovered — stdin prose has `wiki: ''` and `qid: null` — and would have excluded
+ * mined events too, which have no QID.
+ *
+ * So: a row is a CSV row only if it names a dataset that a CSV in MAP actually
+ * produces AND carries no marker of having come from anywhere else.
  */
+const CSV_DATASETS = new Set(Object.keys(MAP).map((f) => f.replace(/\.csv$/, '')));
+
+const looksLikeCsvRow = (e) =>
+  CSV_DATASETS.has(e.origin?.dataset || '') &&
+  !e.origin?.manual && !e.origin?.wiki && !e.origin?.qid;
+
 const csvIds = new Set(entries.map((e) => e.id));
-const carried = readEntries().filter((e) =>
-  !csvIds.has(e.id) && (e.origin?.wiki || e.origin?.qid));
+const stored = readEntries();
+const orphans = stored.filter((e) => !csvIds.has(e.id));
+const carried = orphans.filter((e) => !looksLikeCsvRow(e));
+const dropped = orphans.filter((e) => looksLikeCsvRow(e));
 
 const out = [...entries, ...carried].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
 
@@ -205,10 +231,32 @@ console.log(`  with excerpt: ${out.filter((e) => e.excerpt).length}   ` +
             `with image: ${out.filter((e) => e.image).length}   ` +
             `spans: ${out.filter((e) => e.kind === 'span').length}`);
 
+// This script is the only thing in the pipeline that deletes entries, so it says
+// which ones. A silent drop reads as "the CSVs simply hold fewer rows now".
+if(dropped.length){
+  console.log(`\n  ${dropped.length} stored row(s) that no CSV produces any more:`);
+  for(const e of dropped.slice(0, 20)) console.log(`    ${e.id}   ${e.title.slice(0, 40)}`);
+  if(dropped.length > 20) console.log(`    … and ${dropped.length - 20} more`);
+}
+if(carried.length){
+  const byKind = { manual: 0, wiki: 0 };
+  for(const e of carried) e.origin?.manual ? byKind.manual++ : byKind.wiki++;
+  console.log(`\n  carrying over ${carried.length} non-CSV entries ` +
+              `(${byKind.wiki} from a page, ${byKind.manual} hand-entered or mined)`);
+}
+
 if(DRY){
   console.log('\n  --dry: nothing written. Top topics:');
   console.log('  ' + [...topicCount].sort((a, b) => b[1] - a[1]).slice(0, 24)
     .map(([t, n]) => `${t}(${n})`).join(', '));
+} else if(dropped.length && !PRUNE){
+  // Refusing beats warning. A warning scrolls past inside a longer pipeline, and
+  // the rows this would take are gone for good.
+  console.error(`\n  Refusing to write: that would delete the ${dropped.length} row(s) listed above.`);
+  console.error(`\n  If they are CSV rows you removed on purpose:   node datasets/migrate.mjs --prune`);
+  console.error(`  If any was hand-entered or mined, it is only listed because it lacks`);
+  console.error(`  origin.manual = true — set that in entries.jsonl first, or it is lost.`);
+  process.exit(1);
 } else {
   writeEntries(out);
   console.log(`\n  wrote ${PATHS.entries}`);

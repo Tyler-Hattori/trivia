@@ -13,15 +13,83 @@
 
 import { fmtRange, fmtYear } from './scales.js';
 
-export const COLORS = {
-  bg: '#0b0e14',
-  bgAlt: '#0e121a',
-  grid: 'rgba(148,163,184,0.10)',
-  gridMajor: 'rgba(148,163,184,0.20)',
-  text: '#e2e8f0',
-  dim: '#64748b',
-  accent: '#38bdf8',
+/*
+ * Two palettes, because the canvas cannot read CSS variables.
+ *
+ * `COLORS` is mutated in place by `setCanvasTheme` rather than replaced, so every
+ * `COLORS.x` read elsewhere keeps working without threading a theme argument
+ * through the paint functions.
+ *
+ * The per-theme band alphas matter more than they look. A cluster colour is
+ * OKLCH lightness ~0.6, so a 7.5% wash of it reads clearly on near-black and
+ * disappears entirely on white — the light theme needs roughly double.
+ */
+export const PALETTES = {
+  dark: {
+    bg: '#0b0e14',
+    bgAlt: '#0e121a',
+    grid: 'rgba(148,163,184,0.10)',
+    gridMajor: 'rgba(148,163,184,0.20)',
+    text: '#e2e8f0',
+    dim: '#64748b',
+    accent: '#38bdf8',
+    zeroLine: 'rgba(226,232,240,0.28)',
+    hoverRing: 'rgba(226,232,240,0.75)',
+    dimMark: 'rgba(100,116,139,0.22)',
+    dimSpan: 0.12,
+    dimText: 'rgba(148,163,184,0.5)',
+    chipBg: 'rgba(15,20,30,0.86)',
+    chipBgDim: 'rgba(15,20,30,0.45)',
+    labelBg: 'rgba(11,14,20,0.72)',
+    bandFill: 0.075,
+    bandFillFolded: 0.30,
+    bandEdge: 0.30,
+    ink: 0,                 // how far a cluster colour is pushed toward the
+  },                        // background before it is used as text
+  light: {
+    bg: '#ffffff',
+    bgAlt: '#f4f6fa',
+    grid: 'rgba(71,85,105,0.10)',
+    gridMajor: 'rgba(71,85,105,0.22)',
+    text: '#0f172a',
+    dim: '#64748b',
+    accent: '#0369a1',
+    zeroLine: 'rgba(15,23,42,0.30)',
+    hoverRing: 'rgba(15,23,42,0.62)',
+    dimMark: 'rgba(100,116,139,0.28)',
+    dimSpan: 0.16,
+    dimText: 'rgba(100,116,139,0.65)',
+    chipBg: 'rgba(255,255,255,0.94)',
+    chipBgDim: 'rgba(255,255,255,0.66)',
+    labelBg: 'rgba(255,255,255,0.86)',
+    bandFill: 0.085,
+    bandFillFolded: 0.30,
+    bandEdge: 0.20,
+    ink: 0.40,
+  },
 };
+
+export const COLORS = { ...PALETTES.light };
+
+export function setCanvasTheme(name){
+  Object.assign(COLORS, PALETTES[name] || PALETTES.light);
+}
+
+/**
+ * A cluster colour, darkened enough to be read as text.
+ *
+ * The palette is tuned for coloured marks on a dark ground; the same hue at
+ * lightness 0.6 on white is around 3:1, which is not enough for an 11px label.
+ * Mixing toward black by `ink` keeps the hue identifiable and the text legible.
+ */
+export function hueInk(hex){
+  if(!COLORS.ink) return hex;
+  const h = hex.replace('#', '');
+  const n = parseInt(h.length === 3 ? h.split('').map((c) => c + c).join('') : h, 16);
+  const m = 1 - COLORS.ink;
+  const ch = (v) => Math.round(v * m).toString(16).padStart(2, '0');
+  return `#${ch((n >> 16) & 255)}${ch((n >> 8) & 255)}${ch(n & 255)}`;
+}
 
 /** Set up a canvas for the device pixel ratio. Returns the 2D context. */
 export function sizeCanvas(canvas, W, H){
@@ -218,13 +286,16 @@ export function paintFrame(ctx, A, scale, opts){
       const y1 = scale.sy(nd.y1);
       if(y1 < 0 || y0 > H) continue;
       const isCollapsed = collapsed.has(nd.id);
-      ctx.fillStyle = hexToRgba(nd.color, isCollapsed ? 0.22 : 0.075);
+      ctx.fillStyle = hexToRgba(nd.color, isCollapsed ? COLORS.bandFillFolded : COLORS.bandFill);
       ctx.fillRect(0, y0, W, Math.max(1, y1 - y0));
 
       // A hairline at the top edge only. Two adjacent bands then share one line
       // instead of drawing two next to each other.
-      ctx.fillStyle = hexToRgba(nd.color, 0.30);
+      ctx.fillStyle = hexToRgba(nd.color, COLORS.bandEdge);
       ctx.fillRect(0, y0, W, 1);
+      // A folded band is a thin strip, so it gets a bottom edge too — otherwise
+      // two stacked folded clusters read as one.
+      if(isCollapsed) ctx.fillRect(0, Math.max(y0 + 1, y1 - 1), W, 1);
     }
   }
 
@@ -239,7 +310,7 @@ export function paintFrame(ctx, A, scale, opts){
 
   // Year zero, when in view: a genuine landmark, worth one brighter line.
   if(scale.x0 < 0 && scale.x1 > 0){
-    ctx.fillStyle = 'rgba(226,232,240,0.28)';
+    ctx.fillStyle = COLORS.zeroLine;
     ctx.fillRect(Math.round(scale.sx(0)) + 0.5, 0, 1, H);
   }
 
@@ -256,7 +327,7 @@ export function paintFrame(ctx, A, scale, opts){
     const xb = scale.sx(A.x1[i]);
     if(xb - xa < 1.5) continue;
     const y = Math.round(scale.sy(A.y[i])) + 0.5;
-    ctx.fillStyle = hexToRgba(A.color[i], matched ? 0.55 : 0.12);
+    ctx.fillStyle = hexToRgba(A.color[i], matched ? 0.55 : COLORS.dimSpan);
     ctx.fillRect(Math.max(-2, xa), y - 1, Math.min(W + 4, xb - xa), 2);
   }
 
@@ -286,7 +357,7 @@ export function paintFrame(ctx, A, scale, opts){
       const y = scale.sy(A.y[i]);
       const rr = labelled.has(i) ? 1.6 : r;
 
-      ctx.fillStyle = matched ? A.color[i] : 'rgba(100,116,139,0.22)';
+      ctx.fillStyle = matched ? A.color[i] : COLORS.dimMark;
       // A square is materially cheaper than an arc and indistinguishable at these
       // sizes; at 100k points that difference is the frame budget.
       if(rr <= 2) ctx.fillRect(x - rr, y - rr, rr * 2, rr * 2);
@@ -303,14 +374,14 @@ export function paintFrame(ctx, A, scale, opts){
       const matched = !filter || filter.flags[i];
       if(!matched && !dimMode) continue;
 
-      ctx.fillStyle = matched ? 'rgba(15,20,30,0.86)' : 'rgba(15,20,30,0.45)';
+      ctx.fillStyle = matched ? COLORS.chipBg : COLORS.chipBgDim;
       roundRect(ctx, p.x, p.y, p.w, p.h, 4);
       ctx.fill();
 
       ctx.fillStyle = hexToRgba(A.color[i], matched ? 0.9 : 0.25);
       ctx.fillRect(p.x, p.y + 3, 2, p.h - 6);
 
-      ctx.fillStyle = matched ? COLORS.text : 'rgba(148,163,184,0.5)';
+      ctx.fillStyle = matched ? COLORS.text : COLORS.dimText;
       ctx.fillText(clip(ctx, A.title[i], p.w - 12), p.x + 7, p.y + p.h / 2);
 
       // A leader line when the label had to move away from its point.
@@ -337,18 +408,22 @@ export function paintFrame(ctx, A, scale, opts){
     for(const nd of bands){
       const y0 = scale.sy(nd.y0);
       const y1 = scale.sy(nd.y1);
-      if(y1 < 14 || y0 > H - 2) continue;
-      if(y1 - y0 < 15) continue;
+      const isCollapsed = collapsed.has(nd.id);
+      if(y1 < 2 || y0 > H - 2) continue;
+      // An expanded band with no room for a legible label goes without one. A
+      // FOLDED band always keeps its label: the strip is only a dozen pixels tall
+      // and that label is the whole affordance for getting the cluster back.
+      if(!isCollapsed && y1 - y0 < 15) continue;
 
-      const label = collapsed.has(nd.id) ? `▸ ${nd.label}  (${nd.n})` : nd.label;
-      const ty = Math.max(2, y0 + 3);
+      const label = isCollapsed ? `▸ ${nd.label}  (${nd.n})` : nd.label;
+      const ty = clampNum(y0 + (isCollapsed ? (y1 - y0 - 13) / 2 : 3), 2, H - 15);
 
       const w = ctx.measureText(label).width + 12;
-      ctx.fillStyle = 'rgba(11,14,20,0.72)';
+      ctx.fillStyle = COLORS.labelBg;
       roundRect(ctx, 4, ty - 1, w, 15, 3);
       ctx.fill();
 
-      ctx.fillStyle = hexToRgba(nd.color, 1);
+      ctx.fillStyle = hueInk(nd.color);
       ctx.fillText(label, 10, ty + 1);
     }
   }
@@ -363,9 +438,11 @@ export function paintFrame(ctx, A, scale, opts){
     ring(ctx, scale.sx(A.x0[selected]), scale.sy(A.y[selected]), 7, COLORS.accent, 2);
   }
   if(hover >= 0 && hover !== selected && !isHidden(A, hover, collapsed)){
-    ring(ctx, scale.sx(A.x0[hover]), scale.sy(A.y[hover]), 6, 'rgba(226,232,240,0.75)', 1.5);
+    ring(ctx, scale.sx(A.x0[hover]), scale.sy(A.y[hover]), 6, COLORS.hoverRing, 1.5);
   }
 }
+
+const clampNum = (v, a, b) => (v < a ? a : v > b ? b : v);
 
 function ring(ctx, x, y, r, color, lw){
   ctx.strokeStyle = color;

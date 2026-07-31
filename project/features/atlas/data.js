@@ -181,8 +181,40 @@ const hash = (s) => {
  * A span occupies every column it crosses, so a 70-year lifespan is found by a
  * query anywhere along it rather than only where it begins.
  */
+/**
+ * The span the middle of the corpus occupies, as the grid's x range.
+ *
+ * A percentile rather than the extent, so no single outlier can set the resolution
+ * for everything. Returned widened a little, and never narrower than something the
+ * grid can divide.
+ */
+function denseExtent(A){
+  if(!A.n) return A.xExtent;
+  const lo = Float64Array.from(A.x0).sort();
+  const hi = Float64Array.from(A.x1).sort();
+  const k = Math.floor(A.n * 0.01);
+  const a = lo[k];
+  const b = hi[A.n - 1 - k];
+  const pad = Math.max(1, (b - a) * 0.02);
+  return [a - pad, b + pad];
+}
+
 function buildGrid(A){
-  const [xMin, xMax] = A.xExtent;
+  /*
+   * The columns are spread over where the entries actually ARE, not over the full
+   * extent. A uniform grid on the raw extent has its resolution set by the single
+   * oldest entry: one row at −113,000 made a column 899 years wide and packed 99%
+   * of the corpus into six of the 128, so the x half of the grid stopped
+   * discriminating and every query over-selected by several times. Deep-time
+   * entries would end that entirely — at a 4.54-billion-year extent a column is 35
+   * million years and the whole of human history is one of them.
+   *
+   * Trimming is safe rather than approximate: `query` clamps to the column range
+   * and then confirms real bounds per point, so an entry outside the trimmed span
+   * lands in an edge column and is still found — just via a coarser column, which
+   * is the right trade for the few that are out there.
+   */
+  const [xMin, xMax] = denseExtent(A);
   const xSpan = Math.max(1e-6, xMax - xMin);
 
   const cellOf = (i) => {

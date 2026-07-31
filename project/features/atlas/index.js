@@ -26,11 +26,13 @@
 
 import { loadAtlas, runFilter, parseQuery, queryIsEmpty } from './data.js';
 import {
-  makeScale, zoomAt, clampView, fitView, tierFor, depthFor, ticks,
-  STOPS, PPY_MIN, PPY_MAX, coupledYZoom, clamp, fmtYear, fmtRange,
+  makeScale, zoomAt, clampView, fitView, tierFor, depthFor, ticks, collapsedRanges,
+  MODES, DEFAULT_MODE, modeOf, widerMode, domainFor, ppyRange, atEdge, stopsFor,
+  coupledYZoom, clamp, fmtYear, fmtTick, fmtTickRange,
 } from './scales.js';
 import {
-  sizeCanvas, paintFrame, packLabels, visibleBands, hitTest, bandAt, isHidden, COLORS,
+  sizeCanvas, paintFrame, packLabels, visibleBands, hitTest, bandAt, isHidden,
+  COLORS, setCanvasTheme,
 } from './paint.js';
 import { createCardLayer, createTip, esc } from './cards.js';
 import { createDetail } from './detail.js';
@@ -39,8 +41,8 @@ import { CSS } from './styles.js';
 
 const PREFS_KEY = 'atlas:prefs:v1';
 
-const SHELL = (base, css) => `<!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8">
+const SHELL = (base, css, theme) => `<!DOCTYPE html>
+<html lang="en" data-theme="${theme}"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <base href="${base}">
 <title>Atlas — history in embedding space</title>
@@ -59,6 +61,7 @@ const SHELL = (base, css) => `<!DOCTYPE html>
         <button class="clear" title="Clear (Esc)">&times;</button>
         <span class="kbd">/</span>
       </div>
+      <div class="seg" id="modeSeg"></div>
       <div class="seg" id="scaleSeg"></div>
       <div class="grp spacer">
         <button class="btn icon" id="zoomOut" title="Zoom out (&minus;)">&minus;</button>
@@ -66,8 +69,9 @@ const SHELL = (base, css) => `<!DOCTYPE html>
         <button class="btn icon" id="zoomIn" title="Zoom in (+)">+</button>
         <button class="btn" id="fitBtn" title="Fit everything (0)">Fit</button>
         <button class="btn" id="dimBtn" title="Dim non-matches instead of hiding them">Dim</button>
-        <button class="btn" id="railBtn" title="Toggle the cluster rail (r)">Rail</button>
+        <button class="btn" id="railBtn" title="Collapse the cluster sidebar (r)">Rail</button>
         <button class="btn" id="facetBtn" title="Toggle topic filters (f)">Topics</button>
+        <button class="btn icon" id="themeBtn" title="Light / dark theme (t)">&#9683;</button>
         <button class="btn icon" id="helpBtn" title="Keyboard help (?)">?</button>
       </div>
     </div>
@@ -88,17 +92,20 @@ const SHELL = (base, css) => `<!DOCTYPE html>
 <div id="help"><div id="helpBox">
   <h3>Atlas — controls</h3>
   <dl>
-    <dt>wheel / pinch</dt><dd>zoom at the cursor</dd>
+    <dt>scroll / two fingers</dt><dd>pan</dd>
+    <dt>pinch</dt><dd>zoom at the cursor</dd>
+    <dt>&#8963; + wheel</dt><dd>zoom at the cursor, with a mouse</dd>
     <dt>&#8997; + wheel</dt><dd>zoom the topic axis only</dd>
     <dt>&#8679; + wheel</dt><dd>pan through time</dd>
     <dt>drag</dt><dd>pan</dd>
     <dt>&larr; &rarr; &uarr; &darr;</dt><dd>pan &middot; hold &#8679; for a bigger step</dd>
-    <dt>click</dt><dd>open an entry &middot; click a band label to collapse it</dd>
+    <dt>click</dt><dd>open an entry &middot; click a band label to fold the cluster away</dd>
     <dt>hover</dt><dd>preview, at any zoom</dd>
     <dt>/</dt><dd>search</dd>
-    <dt>0</dt><dd>fit everything</dd>
+    <dt>0</dt><dd>fit the whole time range</dd>
     <dt>+ &minus;</dt><dd>zoom</dd>
-    <dt>r &middot; f</dt><dd>rail &middot; topic filters</dd>
+    <dt>m</dt><dd>cycle time range &mdash; civilization, humans, Earth</dd>
+    <dt>r &middot; f &middot; t</dt><dd>sidebar &middot; topic filters &middot; theme</dd>
     <dt>c &middot; p</dt><dd>collapse &middot; pin the selected entry's cluster</dd>
     <dt>j &middot; k</dt><dd>next / previous nearest neighbour</dd>
     <dt>Esc</dt><dd>close, or clear the search</dd>
@@ -107,7 +114,14 @@ const SHELL = (base, css) => `<!DOCTYPE html>
     Horizontal is time, linear. Vertical is position in embedding space: entries near
     each other are about similar things, and colour follows the same ordering, so a
     band of one hue is one family of subjects. Zooming vertically walks down the
-    cluster hierarchy.
+    cluster hierarchy. Folding a cluster squeezes it to a thin strip and gives its
+    height back to everything else, at every zoom.
+  </div>
+  <div class="note">
+    The three time ranges pick how far back the axis reaches &mdash; 3000&nbsp;BC,
+    300,000 years, or the whole 4.54 billion. Each one stays strictly linear, so
+    empty stretches read as the real gaps they are; only the far edge moves. A range
+    that leaves entries behind its left edge says how many in the status line.
   </div>
 </div></div>
 </body></html>`;
@@ -117,8 +131,17 @@ export async function openAtlas({ title = 'Atlas' } = {}){
   const w = window.open('', 'atlas');
   if(!w){ alert('Allow pop-ups to open the atlas.'); return; }
 
+  /*
+   * The theme has to be known before the document is written, or the window
+   * flashes the default theme's background while the atlas loads. Prefs are read
+   * twice for that reason: once here from raw localStorage, and again in
+   * `loadPrefs()` once the atlas is parsed and node ids can be validated.
+   */
+  const theme = readTheme(w);
+  setCanvasTheme(theme);
+
   w.document.open();
-  w.document.write(SHELL(base, CSS));
+  w.document.write(SHELL(base, CSS, theme));
   w.document.close();
   w.focus();
 
@@ -137,9 +160,17 @@ export async function openAtlas({ title = 'Atlas' } = {}){
 
   // ---- state --------------------------------------------------------------
   const V = {
-    x0: A.xExtent[0], ppy: 1, yTop: 0, yz: 1,
+    x0: 0, ppy: 1, yTop: 0, yz: 1,
     W: 100, H: 100,
+    // Which slice of time the x axis covers. `domain` is derived from `mode` plus
+    // the data extent; always go through `setMode()` rather than setting either.
+    mode: DEFAULT_MODE,
+    domain: domainFor(DEFAULT_MODE, A.xExtent),
+    theme,
     collapsed: new Set(),
+    // The collapsed set, reduced to the non-nested y ranges `makeScale` warps by.
+    // Derived state: always go through `syncFolds()`, never assign it directly.
+    folded: [],
     pinned: [],
     query: '',
     topics: new Set(),
@@ -152,7 +183,13 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     selectedNode: null,
   };
 
+  // Whether the camera is still at its defaults, so boot knows to fit. Was a float
+  // comparison against the extent's left edge, which is not a state any more now
+  // that the left edge depends on the mode.
+  let freshCamera = true;
+
   loadPrefs();
+  syncFolds();
 
   let filter = null;
   let scale = null;
@@ -195,16 +232,34 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     onToggleCollapse: (id) => toggleCollapse(id),
     onTogglePin: (id) => togglePin(id),
     onSelectNode: (id) => focusNode(id),
-    onExpandAll: () => { V.collapsed.clear(); mark({ paint: true, rail: true, prefs: true }); },
+    onExpandAll: () => {
+      V.collapsed.clear();
+      syncFolds();
+      mark({ paint: true, rail: true, mini: true, prefs: true });
+    },
     onCollapseTop: () => {
       V.collapsed = new Set((A.byDepth[1] || []));
-      mark({ paint: true, rail: true, prefs: true });
+      syncFolds();
+      mark({ paint: true, rail: true, mini: true, prefs: true });
     },
+    onFold: () => { $('railBtn').onclick(); },
   });
 
-  // ---- scale segment ------------------------------------------------------
-  $('scaleSeg').innerHTML = STOPS
-    .map((s) => `<button data-stop="${s.key}">${s.label}</button>`).join('');
+  // ---- mode + scale segments ----------------------------------------------
+  /*
+   * The mode segment is fixed; the scale ladder is rebuilt on every mode change,
+   * because "Centuries" is a useful stop in a 5,000-year domain and a meaningless
+   * one in a 4.54-billion-year domain.
+   */
+  $('modeSeg').innerHTML = MODES
+    .map((m) => `<button data-mode="${m.key}" title="${esc(m.title)}">${esc(m.label)}</button>`)
+    .join('');
+
+  function renderStops(){
+    $('scaleSeg').innerHTML = stopsFor(V.mode)
+      .map((s) => `<button data-stop="${s.key}">${s.label}</button>`).join('');
+  }
+  renderStops();
 
   // ---- sizing -------------------------------------------------------------
   function measure(){
@@ -267,11 +322,17 @@ export async function openAtlas({ title = 'Atlas' } = {}){
 
     // Visible set from the spatial grid. Widened slightly so a card anchored just
     // off screen still gets placed and does not pop in at the edge.
+    //
+    // The grid is keyed on ATLAS y, while the camera lives in layout y, so the
+    // bounds have to be unwarped. A folded range unwarps to its full original
+    // span, which over-selects — those points are then dropped by `isHidden`, so
+    // the only cost is a slightly longer visible list while a fold is on screen.
     stamp++;
     const padYears = 40 / scale.ppy;
     const padY = 30 / scale.pxPerY;
     A.grid.query(scale.x0 - padYears, scale.x1 + padYears,
-                 Math.max(0, scale.yTop - padY), Math.min(1, scale.yBot + padY),
+                 scale.unwarpY(Math.max(0, scale.yTop - padY)),
+                 scale.unwarpY(Math.min(1, scale.yBot + padY)),
                  visible, seen, stamp);
 
     const prevDepth = depth;
@@ -325,34 +386,108 @@ export async function openAtlas({ title = 'Atlas' } = {}){
       ? `${nMatch.toLocaleString()} of ${A.n.toLocaleString()}`
       : `${A.n.toLocaleString()} entries`;
 
+    const stops = stopsFor(V.mode);
+    const edge = atEdge(V);
     for(const b of $('scaleSeg').children){
-      const s = STOPS.find((x) => x.key === b.dataset.stop);
-      b.classList.toggle('on', s && s.ppy != null && Math.abs(Math.log(scale.ppy / s.ppy)) < 0.28);
+      const s = stops.find((x) => x.key === b.dataset.stop);
+      b.classList.toggle('on', s
+        ? (s.ppy == null ? edge : Math.abs(Math.log(scale.ppy / s.ppy)) < 0.28)
+        : false);
     }
-    $('ppyLab').textContent = `${scale.ppy.toFixed(scale.ppy < 1 ? 2 : 1)} px/yr`;
+    /*
+     * The wider mode's button lights up once you are pulled back to this mode's
+     * edge. The switch stays manual on purpose — an automatic flip changes the
+     * meaning of the whole axis under you, and you cannot tell whether you zoomed
+     * or the map did.
+     */
+    const wider = widerMode(V.mode);
+    for(const b of $('modeSeg').children){
+      b.classList.toggle('on', b.dataset.mode === V.mode);
+      b.classList.toggle('edge', edge && !!wider && b.dataset.mode === wider.key);
+    }
+    $('ppyLab').textContent = ppyLabel(scale.ppy);
     $('dimBtn').classList.toggle('on', V.dimMode);
     $('railBtn').classList.toggle('on', V.railOpen);
     $('facetBtn').classList.toggle('on', V.facetsOpen);
   }
 
+  /**
+   * Recompute the fold ranges the y warp is built from.
+   *
+   * Called by everything that touches `V.collapsed`, and not from `paint()`: the
+   * camera reads `V.folded` in `zoomAt`/`centerOn`, which can run before the next
+   * frame, so it has to be correct the moment the collapse happens.
+   */
+  function syncFolds(){
+    V.folded = collapsedRanges(A, V.collapsed);
+  }
+
+  /*
+   * The year at the centre of the viewport, from the camera rather than from the
+   * painted `scale`.
+   *
+   * `scale` is rebuilt in `paint()`, i.e. on the next animation frame, so two
+   * camera actions in the same tick — set the mode, then jump to a stop — had the
+   * second one reading the first one's stale geometry and computing a centre from
+   * the mode it had just left. That put a Civilization-mode jump 2.2 billion years
+   * out and it clamped to the left edge. `V` is always current.
+   */
+  const midYear = () => V.x0 + (V.W / V.ppy) / 2;
+
   // ---- ruler --------------------------------------------------------------
   function paintRuler(t){
     rulerEl.innerHTML = t.list
       .filter((tk) => tk.px > -60 && tk.px < V.W + 40)
-      .map((tk) => `<div class="tk${tk.major ? ' maj' : ''}" style="left:${Math.round(tk.px)}px">${fmtYear(tk.year)}</div>`)
+      .map((tk) => `<div class="tk${tk.major ? ' maj' : ''}" style="left:${Math.round(tk.px)}px">${fmtTick(tk.year, t.step)}</div>`)
       .join('');
   }
 
+  /*
+   * "0.00 px/yr" is what the old label said for every zoom in Earth mode. Below a
+   * hundredth of a pixel per year the reciprocal is the number that means
+   * something.
+   */
+  function ppyLabel(ppy){
+    if(ppy >= 0.01) return `${ppy.toFixed(ppy < 1 ? 2 : 1)} px/yr`;
+    const ypp = 1 / ppy;
+    if(ypp >= 1e6) return `${(ypp / 1e6).toFixed(ypp >= 1e7 ? 0 : 1)} Myr/px`;
+    if(ypp >= 1e3) return `${(ypp / 1e3).toFixed(ypp >= 1e4 ? 0 : 1)} kyr/px`;
+    return `${Math.round(ypp)} yr/px`;
+  }
+
   // ---- status -------------------------------------------------------------
+  /*
+   * How many entries the current mode puts out of reach. Silent truncation would
+   * read as "that is all there is", which for a mode whose whole job is to leave
+   * deep time out would be a lie. Cached per mode; the answer only changes when
+   * the corpus does.
+   */
+  const outsideCache = new Map();
+
+  function outsideCount(){
+    const key = V.mode;
+    if(outsideCache.has(key)) return outsideCache.get(key);
+    const lo = V.domain[0];
+    let n = 0;
+    // A span counts as reachable if any part of it is: an entry running from
+    // 4000 BC to 2000 BC is visible in Civilization mode.
+    for(let i = 0; i < A.n; i++) if(A.x1[i] < lo) n++;
+    outsideCache.set(key, n);
+    return n;
+  }
+
   function paintStatus(){
+    const step = scale._ticks ? scale._ticks.step : 1;
     const parts = [
-      `${fmtRange(Math.round(scale.x0), Math.round(scale.x1))}`,
+      fmtTickRange(Math.round(scale.x0), Math.round(scale.x1), step),
       `${visible.length} in view`,
       `L${depth}`,
       tier,
     ];
     if(placements.length) parts.push(`${placements.length} labelled`);
     if(V.collapsed.size) parts.push(`${V.collapsed.size} collapsed`);
+    const out = outsideCount();
+    if(out) parts.push(`${out} before ${fmtYear(V.domain[0])}`);
     statusEl.textContent = parts.join('  ·  ');
   }
 
@@ -369,7 +504,9 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     const r = miniCanvas.getBoundingClientRect();
     const MW = Math.max(50, Math.round(r.width));
     const MH = Math.max(20, Math.round(r.height));
-    const key = `${MW}x${MH}|${filter ? filter.count : -1}|${[...V.collapsed].sort().join(',')}`;
+    // The mode is part of the key: the overview spans the active domain, so a mode
+    // change invalidates the bitmap even though nothing about the data moved.
+    const key = `${MW}x${MH}|${V.mode}|${filter ? filter.count : -1}|${[...V.collapsed].sort().join(',')}`;
 
     if(key !== miniKey || !miniCache){
       miniKey = key;
@@ -381,10 +518,11 @@ export async function openAtlas({ title = 'Atlas' } = {}){
       c.fillStyle = COLORS.bgAlt;
       c.fillRect(0, 0, MW, MH);
 
-      const [xa, xb] = A.xExtent;
+      const [xa, xb] = V.domain;
       const sx = (y) => ((y - xa) / Math.max(1, xb - xa)) * MW;
 
       for(let i = 0; i < A.n; i++){
+        if(A.x1[i] < xa) continue;                 // out of this mode's reach
         if(V.collapsed.size && isHidden(A, i, V.collapsed)) continue;
         const matched = !filter || filter.flags[i];
         if(!matched && !V.dimMode) continue;
@@ -403,7 +541,7 @@ export async function openAtlas({ title = 'Atlas' } = {}){
   function updateMiniWindow(){
     const r = miniCanvas.getBoundingClientRect();
     const MW = Math.max(1, r.width);
-    const [xa, xb] = A.xExtent;
+    const [xa, xb] = V.domain;
     const span = Math.max(1, xb - xa);
     const l = ((scale.x0 - xa) / span) * MW;
     const wd = ((scale.x1 - scale.x0) / span) * MW;
@@ -452,9 +590,9 @@ export async function openAtlas({ title = 'Atlas' } = {}){
   function centerOn(i){
     const yearsVisible = V.W / V.ppy;
     V.x0 = A.x0[i] - yearsVisible / 2;
-    const yVisible = 1 / V.yz;
-    V.yTop = A.y[i] - yVisible / 2;
-    Object.assign(V, clampView(V, A.xExtent));
+    // yTop is layout y, the point's own y is atlas y.
+    V.yTop = makeScale(V).warpY(A.y[i]) - (1 / V.yz) / 2;
+    Object.assign(V, clampView(V));
   }
 
   /** Zoom and pan so a cluster fills the view. */
@@ -464,16 +602,32 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     V.selectedNode = id;
 
     const span = Math.max(1, nd.x1 - nd.x0);
-    V.ppy = clamp((V.W * 0.86) / span, PPY_MIN, PPY_MAX);
+    V.ppy = clamp((V.W * 0.86) / span, ...ppyRange(V));
     V.x0 = nd.x0 - (V.W / V.ppy - span) / 2;
 
-    // Fit the band vertically with a little air, rather than adopting the coupled
-    // zoom — the point of clicking a cluster is to see that cluster.
-    const bandSpan = Math.max(1e-4, nd.y1 - nd.y0);
-    V.yz = clamp(1 / (bandSpan * 1.35), 1, 900);
-    V.yTop = nd.y0 - (1 / V.yz - bandSpan) / 2;
+    if(V.collapsed.has(id)){
+      // A folded cluster is a fixed-height strip whose layout span shrinks as you
+      // zoom in, so "fit it to the viewport" has no solution. Centre it instead
+      // and leave the zoom alone; the label is right there to unfold it.
+      const s = makeScale(V);
+      V.yTop = (s.warpY(nd.y0) + s.warpY(nd.y1)) / 2 - (1 / V.yz) / 2;
+    } else {
+      // Fit the band vertically with a little air, rather than adopting the coupled
+      // zoom — the point of clicking a cluster is to see that cluster.
+      //
+      // Twice, because the warp's strip widths depend on the y zoom: measure the
+      // band, pick a zoom, then re-measure under the warp that zoom implies. The
+      // second pass moves things by a pixel or two and the third by nothing.
+      for(let pass = 0; pass < 2; pass++){
+        const s = makeScale(V);
+        const top = s.warpY(nd.y0);
+        const bandSpan = Math.max(1e-4, s.warpY(nd.y1) - top);
+        V.yz = clamp(1 / (bandSpan * 1.35), 1, 900);
+        V.yTop = top - (1 / V.yz - bandSpan) / 2;
+      }
+    }
 
-    Object.assign(V, clampView(V, A.xExtent));
+    Object.assign(V, clampView(V));
     mark({ paint: true, rail: true, prefs: true });
   }
 
@@ -486,6 +640,7 @@ export async function openAtlas({ title = 'Atlas' } = {}){
         if(other !== id && A.ancestorsOf(other).includes(id)) V.collapsed.delete(other);
       }
     }
+    syncFolds();
     mark({ paint: true, rail: true, mini: true, prefs: true });
   }
 
@@ -509,26 +664,78 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     mark({ data: true, paint: true });
   }
 
+  /*
+   * Switch theme. The DOM half is one attribute — `styles.js` has no literal
+   * colours below `:root`, so the whole stylesheet follows. The canvas cannot read
+   * CSS variables, so `setCanvasTheme` swaps the matching palette in `paint.js`,
+   * and the minimap's offscreen cache has to be dropped or the old background
+   * survives as a stale bitmap.
+   */
+  function setTheme(name){
+    V.theme = name === 'dark' ? 'dark' : 'light';
+    D.documentElement.dataset.theme = V.theme;
+    setCanvasTheme(V.theme);
+    // The button shows the theme it will switch TO, which is the only reading of a
+    // single icon that is not ambiguous.
+    $('themeBtn').innerHTML = V.theme === 'light' ? '&#9790;' : '&#9788;';
+    $('themeBtn').title = V.theme === 'light' ? 'Dark theme (t)' : 'Light theme (t)';
+    miniCache = null;
+    mark({ paint: true, mini: true, prefs: true });
+  }
+
+  /** Fit the active mode's whole domain. */
   function fit(){
     measure();
-    Object.assign(V, fitView({ extent: A.xExtent, W: V.W, H: V.H }));
+    Object.assign(V, fitView({ mode: V.mode, domain: V.domain, W: V.W, H: V.H }));
     mark({ paint: true, prefs: true });
   }
 
   function zoom(factor, px = V.W / 2, py = V.H / 2, opts){
-    Object.assign(V, clampView(zoomAt(V, factor, px, py, opts), A.xExtent));
+    Object.assign(V, clampView(zoomAt(V, factor, px, py, opts)));
     mark({ paint: true, prefs: true });
   }
 
+  /*
+   * Change how deep the axis runs.
+   *
+   * The camera is kept where it was, except when you were already pulled all the
+   * way back — then the new mode is fitted. Those are the two reasons anyone
+   * touches this control: "I hit the edge, give me more time" wants the wider
+   * scale on screen, and "I am reading 1750 and want the other ladder" wants to
+   * stay in 1750. Fitting unconditionally would throw away the second, and never
+   * fitting would make the first look like nothing happened, because five thousand
+   * years is invisible inside four billion either way.
+   */
+  function setMode(key){
+    const m = modeOf(key);
+    if(m.key === V.mode) return;
+    measure();
+    const wasFit = atEdge(V);
+    const mid = midYear();
+
+    V.mode = m.key;
+    V.domain = domainFor(m.key, A.xExtent);
+    renderStops();
+
+    if(wasFit){
+      Object.assign(V, fitView({ mode: V.mode, domain: V.domain, W: V.W, H: V.H }));
+    } else {
+      V.x0 = mid - (V.W / V.ppy) / 2;
+      Object.assign(V, clampView(V));
+    }
+    miniCache = null;
+    mark({ paint: true, mini: true, prefs: true });
+  }
+
   function gotoStop(key){
-    const s = STOPS.find((x) => x.key === key);
+    const s = stopsFor(V.mode).find((x) => x.key === key);
     if(!s) return;
     if(s.ppy == null){ fit(); return; }
-    const mid = scale ? (scale.x0 + scale.x1) / 2 : A.xExtent[0];
+    const mid = midYear();
     V.ppy = s.ppy;
     V.yz = coupledYZoom(s.ppy);
     V.x0 = mid - (V.W / V.ppy) / 2;
-    Object.assign(V, clampView(V, A.xExtent));
+    Object.assign(V, clampView(V));
     mark({ paint: true, prefs: true });
   }
 
@@ -537,25 +744,48 @@ export async function openAtlas({ title = 'Atlas' } = {}){
   // ---------------------------------------------------------------------------
 
   // ---- wheel --------------------------------------------------------------
+  /*
+   * A SCROLL PANS. A PINCH ZOOMS. Those are two different gestures and the atlas
+   * used to treat both as zoom, so a two-finger scroll — the way you move around
+   * every other map — flew you in and out instead.
+   *
+   * The browser hands both to `wheel`. The only thing separating them is that a
+   * trackpad pinch (and a ctrl-held mouse wheel, which is the same intent) arrives
+   * with `ctrlKey` set, synthetically and regardless of whether ctrl is down. That
+   * flag is the whole discrimination, so:
+   *
+   *   plain           pan, both axes, 1 px of delta to 1 px of movement
+   *   shift           pan through time — a mouse wheel has no deltaX
+   *   ctrl / cmd      zoom at the cursor (pinch, or a mouse wheel held with ctrl)
+   *   alt             zoom the topic axis only
+   *
+   * Pinch deltas are much smaller per event than a wheel notch and arrive in long
+   * streams, hence the separate ZOOM_RATE — it is the one number to tune here if
+   * pinch feels slow or twitchy.
+   */
+  const ZOOM_RATE = 0.006;
+
   surface.addEventListener('wheel', (e) => {
     e.preventDefault();
     const r = surface.getBoundingClientRect();
     const px = e.clientX - r.left;
     const py = e.clientY - r.top;
+    const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1;
 
-    if(e.shiftKey){
-      V.x0 += (e.deltaY + e.deltaX) / V.ppy;
-      Object.assign(V, clampView(V, A.xExtent));
-      mark({ paint: true, prefs: true });
+    if(e.ctrlKey || e.metaKey || e.altKey){
+      const factor = Math.exp(-e.deltaY * unit * ZOOM_RATE);
+      zoom(factor, px, py, { yOnly: e.altKey && !e.ctrlKey && !e.metaKey });
       return;
     }
 
-    // A trackpad pinch arrives as a wheel event with ctrlKey set; treat it as the
-    // zoom it is, at the same sensitivity as a mouse wheel.
-    const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1;
-    const d = e.deltaY * unit;
-    const factor = Math.exp(-d * 0.0022);
-    zoom(factor, px, py, { yOnly: e.altKey });
+    if(e.shiftKey){
+      V.x0 += ((e.deltaY + e.deltaX) * unit) / V.ppy;
+    } else {
+      V.x0 += (e.deltaX * unit) / V.ppy;
+      V.yTop += (e.deltaY * unit) / scale.pxPerY;
+    }
+    Object.assign(V, clampView(V));
+    mark({ paint: true, prefs: true });
   }, { passive: false });
 
   // ---- drag ---------------------------------------------------------------
@@ -592,7 +822,7 @@ export async function openAtlas({ title = 'Atlas' } = {}){
       if(drag.moved){
         V.x0 = drag.x0 - dx / scale.ppy;
         V.yTop = drag.yTop - dy / scale.pxPerY;
-        Object.assign(V, clampView(V, A.xExtent));
+        Object.assign(V, clampView(V));
         mark({ paint: true });
       }
       return;
@@ -631,9 +861,14 @@ export async function openAtlas({ title = 'Atlas' } = {}){
 
     // Clicking a band's label collapses it; clicking empty band space selects it
     // in the rail, which is the least surprising split of the two intents.
+    //
+    // A folded band is the exception: it is a 15px strip with nothing in it but
+    // its own label, so anywhere on it unfolds. Requiring the label's exact
+    // rectangle would make a fold much harder to undo than to make.
     const nd = bandAt(bands, scale, py);
     if(nd){
-      if(px < 190 && py - scale.sy(nd.y0) < 18) toggleCollapse(nd.id);
+      if(V.collapsed.has(nd.id)) toggleCollapse(nd.id);
+      else if(px < 190 && py - scale.sy(nd.y0) < 18) toggleCollapse(nd.id);
       else { V.selectedNode = nd.id; mark({ rail: true, paint: true }); }
     }
   });
@@ -675,10 +910,10 @@ export async function openAtlas({ title = 'Atlas' } = {}){
   function miniJump(clientX){
     const r = miniCanvas.getBoundingClientRect();
     const f = clamp((clientX - r.left) / r.width, 0, 1);
-    const [xa, xb] = A.xExtent;
+    const [xa, xb] = V.domain;
     const year = xa + f * (xb - xa);
     V.x0 = year - (V.W / V.ppy) / 2;
-    Object.assign(V, clampView(V, A.xExtent));
+    Object.assign(V, clampView(V));
     mark({ paint: true, prefs: true });
   }
 
@@ -692,16 +927,21 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     const b = e.target.closest('[data-stop]');
     if(b) gotoStop(b.dataset.stop);
   });
+  $('modeSeg').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-mode]');
+    if(b) setMode(b.dataset.mode);
+  });
   $('zoomIn').onclick = () => zoom(1.7);
   $('zoomOut').onclick = () => zoom(1 / 1.7);
   $('fitBtn').onclick = fit;
   $('dimBtn').onclick = () => { V.dimMode = !V.dimMode; mark({ paint: true, mini: true, prefs: true }); };
   $('railBtn').onclick = () => {
     V.railOpen = !V.railOpen;
-    rail.el.classList.toggle('hidden', !V.railOpen);
+    rail.setFolded(!V.railOpen);
     mark({ paint: true, prefs: true });
   };
   $('facetBtn').onclick = () => { V.facetsOpen = !V.facetsOpen; mark({ facets: true, paint: true, prefs: true }); };
+  $('themeBtn').onclick = () => setTheme(V.theme === 'dark' ? 'light' : 'dark');
   $('helpBtn').onclick = () => $('help').classList.add('on');
   $('help').onclick = () => $('help').classList.remove('on');
 
@@ -758,9 +998,15 @@ export async function openAtlas({ title = 'Atlas' } = {}){
       case '0': fit(); return;
       case '+': case '=': zoom(1.7); return;
       case '-': case '_': zoom(1 / 1.7); return;
+      case 'm': {
+        const i = MODES.findIndex((x) => x.key === V.mode);
+        setMode(MODES[(i + 1) % MODES.length].key);
+        return;
+      }
       case 'r': $('railBtn').onclick(); return;
       case 'f': $('facetBtn').onclick(); return;
       case 'd': $('dimBtn').onclick(); return;
+      case 't': $('themeBtn').onclick(); return;
       case 'ArrowLeft':  e.preventDefault(); V.x0 -= (V.W * step) / V.ppy; break;
       case 'ArrowRight': e.preventDefault(); V.x0 += (V.W * step) / V.ppy; break;
       case 'ArrowUp':    e.preventDefault(); V.yTop -= (V.H * step) / scale.pxPerY; break;
@@ -787,7 +1033,7 @@ export async function openAtlas({ title = 'Atlas' } = {}){
       default: return;
     }
 
-    Object.assign(V, clampView(V, A.xExtent));
+    Object.assign(V, clampView(V));
     mark({ paint: true, prefs: true });
   });
 
@@ -810,9 +1056,10 @@ export async function openAtlas({ title = 'Atlas' } = {}){
   function savePrefs(){
     try {
       w.localStorage.setItem(PREFS_KEY, JSON.stringify({
-        x0: V.x0, ppy: V.ppy, yTop: V.yTop, yz: V.yz,
+        x0: V.x0, ppy: V.ppy, yTop: V.yTop, yz: V.yz, mode: V.mode,
         collapsed: [...V.collapsed], pinned: V.pinned,
         dimMode: V.dimMode, railOpen: V.railOpen, facetsOpen: V.facetsOpen,
+        theme: V.theme,
       }));
     } catch { /* private mode, or a full quota — not worth failing over */ }
   }
@@ -821,8 +1068,15 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     try {
       const p = JSON.parse(w.localStorage.getItem(PREFS_KEY) || 'null');
       if(!p) return;
-      if(Number.isFinite(p.x0)) V.x0 = p.x0;
-      if(Number.isFinite(p.ppy)) V.ppy = clamp(p.ppy, PPY_MIN, PPY_MAX);
+      // Mode first: it sets the domain the camera below is measured against.
+      if(p.mode && MODES.some((m) => m.key === p.mode)){
+        V.mode = p.mode;
+        V.domain = domainFor(p.mode, A.xExtent);
+      }
+      if(Number.isFinite(p.x0)){ V.x0 = p.x0; freshCamera = false; }
+      // Not clamped here: the ppy floor depends on the viewport, and nothing has
+      // been measured yet. The `clampView` after `measure()` at boot does it.
+      if(Number.isFinite(p.ppy)){ V.ppy = p.ppy; freshCamera = false; }
       if(Number.isFinite(p.yTop)) V.yTop = p.yTop;
       if(Number.isFinite(p.yz)) V.yz = p.yz;
       // Node ids are only meaningful for the tree that produced them. A rebuild
@@ -835,15 +1089,32 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     } catch { /* ignore */ }
   }
 
+  /*
+   * Read just the theme, before the atlas is loaded and before the document is
+   * written. Light unless a previous session chose dark; there is deliberately no
+   * `prefers-color-scheme` fallback, because the atlas is a document you look at
+   * pictures in and white is the right default for that.
+   */
+  function readTheme(win){
+    try {
+      const p = JSON.parse(win.localStorage.getItem(PREFS_KEY) || 'null');
+      return p && p.theme === 'dark' ? 'dark' : 'light';
+    } catch { return 'light'; }
+  }
+
   // ---------------------------------------------------------------------------
   // Go
   // ---------------------------------------------------------------------------
 
-  rail.el.classList.toggle('hidden', !V.railOpen);
+  rail.setFolded(!V.railOpen);
+  setTheme(V.theme);
   measure();
 
-  // A fresh visitor gets the whole atlas; a returning one gets their camera back.
-  if(V.ppy === 1 && V.x0 === A.xExtent[0]) Object.assign(V, fitView({ extent: A.xExtent, W: V.W, H: V.H }));
+  // A fresh visitor gets the whole of the default mode; a returning one gets their
+  // camera back, clamped into the mode they left it in — the ppy floor could not be
+  // applied in `loadPrefs()` because it depends on the viewport width.
+  if(freshCamera) Object.assign(V, fitView({ mode: V.mode, domain: V.domain, W: V.W, H: V.H }));
+  else Object.assign(V, clampView(V));
 
   boot.classList.add('gone');
   $('app').style.visibility = 'visible';
@@ -865,11 +1136,19 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     get filter(){ return filter; },
     get tier(){ return tier; },
     get depth(){ return depth; },
-    select, focusNode, fit, zoom, setQuery, toggleCollapse, togglePin,
+    get mode(){ return V.mode; },
+    get modes(){ return MODES.map((m) => m.key); },
+    get domain(){ return V.domain.slice(); },
+    get ppyRange(){ return ppyRange(V); },
+    get atEdge(){ return atEdge(V); },
+    get outside(){ return outsideCount(); },
+    select, focusNode, fit, zoom, setQuery, toggleCollapse, togglePin, setTheme,
+    setMode, gotoStop,
+    toggleRail: () => $('railBtn').onclick(),
     mark,
     /** Park the camera on a point at a given zoom, for reproducible tests. */
     goto(i, ppy = 40){
-      V.ppy = clamp(ppy, PPY_MIN, PPY_MAX);
+      V.ppy = clamp(ppy, ...ppyRange(V));
       V.yz = coupledYZoom(V.ppy);
       centerOn(i);
       mark({ paint: true });

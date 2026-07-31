@@ -19,7 +19,7 @@
 
 import { fmtRange } from './scales.js';
 import { esc } from './cards.js';
-import { COLORS, roundRect, isHidden } from './paint.js';
+import { COLORS, roundRect, isHidden, hueInk } from './paint.js';
 
 /** How much of the viewport the pinned strip may take before it starts scrolling. */
 export const PIN_MAX_FRACTION = 0.42;
@@ -33,7 +33,38 @@ export const PIN_ROW_MAX = 120;
 export function createRail(root, hooks = {}){
   const el = root.ownerDocument.createElement('div');
   el.className = 'rail';
+  /*
+   * The head is built once and only `.railbody` is rewritten by `sync`. It used to
+   * be one innerHTML assignment covering both, which meant the fold chevron would
+   * have had to re-derive its own state on every tree change — and the head is not
+   * what changes when the tree does.
+   */
+  el.innerHTML =
+    `<div class="railhead">` +
+      `<span>Clusters</span>` +
+      `<button class="btn tiny" data-act="expandAll" title="Expand every cluster">Expand all</button>` +
+      `<button class="btn tiny" data-act="collapseTop" title="Collapse to the broadest groups">Collapse</button>` +
+      `<button class="railfold" data-act="fold" title="Collapse the sidebar (r)">&#171;</button>` +
+    `</div>` +
+    `<div class="railbody"></div>`;
+
   root.appendChild(el);
+
+  const body = el.querySelector('.railbody');
+  const foldBtn = el.querySelector('.railfold');
+
+  /**
+   * Fold the sidebar to a 22px spine.
+   *
+   * Not `display:none`: hidden outright, the only way back is a toolbar button you
+   * have to already know exists. The spine keeps the chevron on the edge where you
+   * clicked it.
+   */
+  function setFolded(f){
+    el.classList.toggle('folded', !!f);
+    foldBtn.innerHTML = f ? '&#187;' : '&#171;';
+    foldBtn.title = f ? 'Show the cluster sidebar (r)' : 'Collapse the sidebar (r)';
+  }
 
   let A = null;
   let lastKey = '';
@@ -88,18 +119,13 @@ export function createRail(root, hooks = {}){
       for(const c of nd.children) walk(c);
     })(0);
 
-    el.innerHTML =
-      `<div class="railhead">` +
-        `<span>Clusters</span>` +
-        `<button class="btn tiny" data-act="expandAll" title="Expand every cluster">Expand all</button>` +
-        `<button class="btn tiny" data-act="collapseTop" title="Collapse to the broadest groups">Collapse</button>` +
-      `</div>` +
-      `<div class="railbody">${rows.join('')}</div>`;
+    body.innerHTML = rows.join('');
   }
 
   el.addEventListener('click', (e) => {
     const act = e.target.closest('[data-act]')?.dataset.act;
 
+    if(act === 'fold'){ hooks.onFold?.(); return; }
     if(act === 'expandAll'){ hooks.onExpandAll?.(); return; }
     if(act === 'collapseTop'){ hooks.onCollapseTop?.(); return; }
 
@@ -115,7 +141,7 @@ export function createRail(root, hooks = {}){
   /** Force a rebuild — used when the atlas itself changes. */
   function invalidate(){ lastKey = ''; }
 
-  return { el, sync, invalidate };
+  return { el, sync, invalidate, setFolded };
 }
 
 // ---------------------------------------------------------------------------
@@ -158,9 +184,9 @@ export function paintPinStrip(ctx, A, scale, { rows, filter, collapsed, dimMode,
     const inner = row.h - pad - 3;
     const toPx = (y) => row.y + pad + ((y - nd.y0) / span) * inner;
 
-    ctx.fillStyle = hexA(nd.color, 0.10);
+    ctx.fillStyle = hexA(nd.color, COLORS.bandFill + 0.03);
     ctx.fillRect(0, row.y, W, row.h);
-    ctx.fillStyle = hexA(nd.color, 0.34);
+    ctx.fillStyle = hexA(nd.color, COLORS.bandEdge);
     ctx.fillRect(0, row.y, W, 1);
 
     // Gridlines, so the strip reads against the same time axis as the map.
@@ -185,20 +211,20 @@ export function paintPinStrip(ctx, A, scale, { rows, filter, collapsed, dimMode,
       if(A.isSpan[i]){
         const xb = scale.sx(A.x1[i]);
         if(xb - x > 1.5){
-          ctx.fillStyle = hexA(A.color[i], matched ? 0.5 : 0.12);
+          ctx.fillStyle = hexA(A.color[i], matched ? 0.5 : COLORS.dimSpan);
           ctx.fillRect(x, y - 1, xb - x, 2);
         }
       }
 
       const r = matched ? 2.3 : 1.6;
-      ctx.fillStyle = matched ? A.color[i] : 'rgba(100,116,139,0.25)';
+      ctx.fillStyle = matched ? A.color[i] : COLORS.dimMark;
       ctx.fillRect(x - r, y - r, r * 2, r * 2);
 
       if(i === selected){
         ctx.strokeStyle = COLORS.accent; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.arc(x, y, 6, 0, 6.2832); ctx.stroke();
       } else if(i === hover){
-        ctx.strokeStyle = 'rgba(226,232,240,0.8)'; ctx.lineWidth = 1.5;
+        ctx.strokeStyle = COLORS.hoverRing; ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.arc(x, y, 5, 0, 6.2832); ctx.stroke();
       }
     }
@@ -208,10 +234,10 @@ export function paintPinStrip(ctx, A, scale, { rows, filter, collapsed, dimMode,
     ctx.font = '600 10.5px ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
     ctx.textBaseline = 'top';
     const w = ctx.measureText(label).width + 12;
-    ctx.fillStyle = 'rgba(11,14,20,0.8)';
+    ctx.fillStyle = COLORS.labelBg;
     roundRect(ctx, 4, row.y + 2, w, 13, 3);
     ctx.fill();
-    ctx.fillStyle = hexA(nd.color, 1);
+    ctx.fillStyle = hueInk(nd.color);
     ctx.fillText(label, 10, row.y + 3.5);
   }
 }

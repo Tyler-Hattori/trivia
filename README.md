@@ -169,7 +169,7 @@ writing anything by hand.
 node datasets/migrate.mjs      # CSVs -> atlas/entries.jsonl (reads CSVs, never writes them)
 node datasets/embed-all.mjs    # fill missing vectors (resumable)
 node datasets/atlas.mjs        # place new entries, keep the map stable
-node datasets/verify.mjs       # 21 invariants
+node datasets/verify.mjs       # 26 invariants
 ```
 
 Use plain `atlas.mjs`, **not `--rebuild`**, unless you mean to re-fit the whole
@@ -188,13 +188,25 @@ cannot see an **edited** title or excerpt. After editing existing rows you need
 node datasets/ingest.mjs --category "Battles of the Napoleonic Wars" --domain war --deep
 node datasets/ingest.mjs --links "List of Impressionist painters" --domain art
 node datasets/ingest.mjs @list.txt --domain science --reshape
+node datasets/ingest.mjs --events "Timeline of natural history" --domain geology --dry
 ```
 
-Ingested entries are distinguished from CSV rows by `origin.wiki` / `origin.qid`,
-**not** by `origin.dataset` — `--domain art` sets `origin.dataset: 'art'`, colliding
-with `art.csv`. `migrate.mjs` used to key its carry-over on the dataset name, which
-meant a routine re-run silently deleted every ingested entry. Keep that distinction
-intact.
+`--events` is the odd one out: it mines **many** dated events from a single page's
+body, which is the only way deep time gets in — the Hadean is a line in a timeline
+article, not a page with an inception date. `--dry` first; it reads prose rather
+than a Wikidata claim, so it is the least trustworthy input the pipeline has.
+`datasets/ATLAS.md` has the details.
+
+**`migrate.mjs` deletes entries, and getting its carry-over rule wrong has cost
+data twice.** It rewrites `entries.jsonl` from the CSVs and carries over everything
+else, so the rule deciding "everything else" is load-bearing. Keying it on
+`origin.dataset` dropped every `--domain art` ingest (`--domain art` *sets*
+`dataset: 'art'`); keying it on `origin.wiki || origin.qid` dropped every
+hand-entered row (`wiki: ''`, `qid: null`) — the one kind nothing can re-fetch. It
+now tests whether a row *looks like a CSV row*, honours `origin.manual: true`, and
+refuses to write at all when it would delete something unless you pass `--prune`.
+Keep it that way round: a stale row kept is visible and fixable, a mined row
+deleted is gone.
 
 ---
 
@@ -206,7 +218,7 @@ in `project/app/init.js` as `window.openAtlas`.
 | file | role |
 |---|---|
 | `data.js` | loads `atlas.json`, typed arrays, spatial grid, topic index, priority |
-| `scales.js` | x/y transforms, the zoom model, tier + depth selection, ticks |
+| `scales.js` | x/y transforms, the zoom model, the three time ranges, tier + depth selection, ticks |
 | `paint.js` | canvas: bands, spans, dots, chips, label packing, hit testing |
 | `cards.js` | pooled DOM image cards + the hover preview |
 | `detail.js` | the detail panel + enlarged image |
@@ -220,6 +232,42 @@ The data it reads is built by `datasets/atlas.mjs`; see `datasets/ATLAS.md`.
 
 - **x is linear, always.** Compressing or eliding empty stretches was offered and
   rejected. Gaps should read as real.
+- **Three time ranges, one linear axis each.** A single axis cannot serve both a
+  5,000-year corpus and the age of the Earth, so a *mode* picks the **domain** and
+  the ladder that suits it — `MODES` in `scales.js`:
+
+  | mode | domain | span |
+  |---|---|---|
+  | `civ` — Civilization | 3000 BC … now | 5,026 yr |
+  | `human` — Humans | 300,000 yr ago … now | 302,026 yr |
+  | `earth` — Earth | 4.54 Ga … now | 4.54 Gyr |
+
+  This does **not** reopen the decision above: inside a mode x stays strictly
+  linear, nothing is warped or elided, and a gap still reads as the real gap it is.
+  Only the far edge moves. If a change here starts to need a piecewise or log x
+  transform, it has become the rejected design wearing a hat.
+- **The zoom-out floor is derived, never hardcoded.** `ppyRange(view)` returns the
+  px-per-year that exactly fits the active domain. A constant floor is only right
+  for the corpus it was measured against: `PPY_MIN = 0.02` was chosen for ~3,500
+  years, one entry at −113,000 pushed the required value to 0.0139, and **Fit
+  silently stopped fitting** — landing on 50,000 years of empty prehistory with one
+  point on screen. Derived, "zoomed all the way out" and "the whole domain is on
+  screen" cannot drift apart.
+- **Only the widest mode stretches to reach the data.** `domainFor()` widens `earth`
+  left if an entry predates it, so nothing is unreachable everywhere. The narrower
+  modes hold their fixed edge and the status line reports what they leave behind
+  (`13 before 3000 BC`) — silent truncation would read as "that is all there is".
+- **Mode changes are manual.** The next-wider button highlights once you are against
+  the current edge, and never acts on its own: an automatic flip redefines the whole
+  axis under you and you cannot tell whether you zoomed or the map did. Switching
+  keeps your place, *unless* you were already zoomed out — then the new range is
+  fitted, because 5,000 years is invisible inside 4.5 billion either way and the
+  toggle would look inert.
+- **Axis labels use a different vocabulary from entry labels.** An entry is always
+  `1066` or `3000 BC` (`fmtYear`). An axis at 250-Myr spacing cannot be, so `fmtTick`
+  picks its unit from the **step**, not the value — every label on one axis shares a
+  unit and the spacing reads as even. `ka`/`Ma`/`Ga` mean *ago*, so a positive year
+  never gets one; the padded right edge is `present`.
 - **y is unitless `[0,1]`** and its zoom is *coupled* to x's by
   `coupledYZoom(ppy) = 1 + ppy^0.62 * 1.35`. Alt+wheel zooms y alone. Linear
   coupling ran vertical zoom away long before the cards appeared.
@@ -234,12 +282,59 @@ The data it reads is built by `datasets/atlas.mjs`; see `datasets/ATLAS.md`.
   or the label scrolls away exactly when you still need it.
 - **Collapse folds the map band *and* hides the rail's children.** One control,
   because it is one intent.
+- **Collapsing warps the y axis; it does not just stop drawing.** A folded cluster
+  used to keep its full height and go dark, so folding a big branch bought a tall
+  empty stripe and no room. `makeYWarp` in `scales.js` squeezes each folded range to
+  a **15px strip** and stretches the rest of the axis back out over the gap. Two y
+  spaces exist because of it: `A.y[i]` is **atlas** y and never changes, while
+  `yTop`/`iy`/the saved prefs are **layout** y. `sy()` takes atlas y and returns
+  pixels, so painting is unaffected; the handful of places that mix the two say so
+  with `warpY`/`unwarpY`. The strip is *pixel*-sized rather than axis-sized, so a
+  fold cannot grow as you zoom in — which makes the warp mildly zoom-dependent, and
+  cursor-anchored zoom drifts a pixel or two beside a strip. That is the cheaper
+  error, and `focusNode` runs its fit twice to settle it.
+- **A scroll pans, a pinch zooms.** Both arrive as `wheel` and the *only* thing
+  separating them is `ctrlKey`, which the browser sets synthetically on a trackpad
+  pinch. Plain wheel pans both axes at 1px of delta to 1px of movement, shift pans
+  time (a mouse wheel has no `deltaX`), ctrl/cmd zooms at the cursor, alt zooms the
+  topic axis. Wheel-as-zoom made a two-finger scroll — the way you move around every
+  other map — fly you in and out instead. `ZOOM_RATE` in `index.js` is the one number
+  to tune if pinch feels wrong: pinch deltas are much smaller per event than a wheel
+  notch and arrive in long streams.
+- **Light is the default theme, and both halves have to move.** `styles.js` holds no
+  literal colour below `:root` — two variable blocks swapped by `data-theme` on
+  `<html>` — because a one-off hex for a hover state is exactly where a second theme
+  leaks. The canvas cannot read CSS variables, so `PALETTES` in `paint.js` is the
+  matching pair and `setCanvasTheme` mutates `COLORS` in place. Band alphas are
+  per-theme, not shared: a cluster colour is OKLCH lightness ~0.6, so a 7.5% wash
+  reads on near-black and vanishes on white. `hueInk()` darkens a cluster colour
+  before it is used as *text*, since the same hue is only ~3:1 on white.
+- **The sidebar folds to a 22px spine, it does not vanish.** Hidden outright, the
+  only way back is a toolbar button you have to already know about; the spine keeps
+  the chevron on the edge you clicked.
 - **Pin lifts a cluster into a top strip sharing the map's x transform**, so you can
   hold "Cubism" pinned and pan four centuries past it. Max 6 pins, ≤42% of viewport.
 
 ### Atlas gotchas
 
 These all cost time at least once.
+
+- **NO BACKTICKS IN A COMMENT INSIDE `styles.js`'s CSS TEMPLATE.** One closes the
+  string and the rest of the stylesheet is parsed as JavaScript, surfacing as
+  `Unexpected identifier` or `Invalid left-hand side expression in postfix operation`
+  (`--bg` read as a decrement) pointing at a line of CSS, with the whole atlas failing
+  to load. **Three separate sessions have lost time to this.** `verify.mjs` now greps
+  for it, so `node datasets/verify.mjs` catches it in a second instead.
+- **A flex item's automatic minimum size beats `flex-basis`.** `.rail` is written
+  `flex:0 0 216px` and was rendering at **466px**, eating a third of the map, because
+  `min-width` defaults to `auto` = min-content and the longest cluster label
+  ("Great Britain · Kingdom · House Of Windsor") is `nowrap`. `.rlabel`'s ellipsis
+  never engaged because the row was never actually constrained. `min-width:0` is the
+  fix and is asserted by QA.
+- **`window.__atlas.view` changes synchronously; `window.__atlas.scale` does not.**
+  `scale` is rebuilt in `paint()` one frame later, so a check that toggles a fold and
+  then measures with `sy()` reads the *old* geometry. Poll on `scale.warp.n`, not on
+  `view.folded.length`. This made a working fold report "folding freed no space".
 
 - **Wikimedia only serves a fixed set of thumbnail widths** — 20, 40, 60, 120, 250,
   330, 500, 960, 1280, 1920, 3840 (`WM_STD_WIDTHS` in `utils/helpers.js`). Since 2025
@@ -270,8 +365,21 @@ These all cost time at least once.
   expression in postfix operation`, because `--bg` read as a decrement. This bit
   twice: once in `styles.js`, once in a page-side probe in `qa-atlas.mjs`.
 - **View prefs persist** in `localStorage` under `atlas:prefs:v1`, including
-  `collapsed` and `pinned`. If the atlas opens in a state you did not expect, that is
-  why. `node datasets/reload.mjs --atlas` clears them.
+  `collapsed`, `pinned` and `mode`. If the atlas opens in a state you did not expect,
+  that is why. `node datasets/reload.mjs --atlas` clears them. Prefs are read **once
+  at open time**, so a test that clears them must do it on the *opener*, before
+  `openAtlas()` — clearing afterwards silently inverted the pin and collapse tests.
+- **`scale` is a frame behind the camera.** It is rebuilt in `paint()`, i.e. on the
+  next animation frame, so two camera actions in one tick had the second reading the
+  first's stale geometry: `setMode('civ')` then `gotoStop()` computed a centre from
+  the mode it had just left, 2.2 billion years out, and clamped to the edge. Read the
+  camera (`V`, or `midYear()`) rather than `scale` when acting.
+- **The spatial grid resolves where the data is, not the full extent.** `denseExtent()`
+  in `data.js` trims to the 1st/99th percentile before dividing into 128 columns.
+  On the raw extent the resolution is set by the single oldest entry — one row at
+  −113,000 made a column 899 years wide and put 99% of the corpus in six of them, so
+  the x half of the grid stopped discriminating. Trimming is safe, not approximate:
+  `query` clamps to the column range and then confirms real bounds per point.
 - **`setPointerCapture` throws** `NotFoundError` when the pointer is already gone
   (synthetic events, fast clicks). Keep it in a try/catch.
 - **The rail must rebuild when zoom changes its depth.** `depthFor()` picks which
@@ -413,15 +521,16 @@ node datasets/serve.mjs
   --remote-debugging-port=9334 --user-data-dir=/tmp/chrome-atlas \
   --window-size=1600,1000 about:blank
 
-node datasets/verify.mjs                      # 21 data invariants, ~1s
-node datasets/qa-atlas.mjs                    # 50 browser checks
+node datasets/verify.mjs                      # 26 data invariants, ~1s
+node datasets/qa-atlas.mjs                    # 87 browser checks
 node datasets/qa-atlas.mjs --shot /tmp/a.png  # + a screenshot
 node datasets/qa-atlas.mjs --keep             # leave the windows open
 ```
 
 `window.__atlas` on the atlas window is a deliberate debug handle, exposing
-`atlas, view, scale, visible, placements, filter, tier, depth` and
-`select/focusNode/fit/zoom/setQuery/toggleCollapse/togglePin/goto`.
+`atlas, view, scale, visible, placements, filter, tier, depth`, the time-range
+readouts `mode, modes, domain, ppyRange, atEdge, outside`, and
+`select/focusNode/fit/zoom/setQuery/toggleCollapse/togglePin/goto/setMode/gotoStop`.
 
 **Drive the view through that handle, not through synthetic wheel events.** Most of
 a scatter plot is empty space, so wheeling at guessed coordinates lands on nothing

@@ -48,6 +48,8 @@ export const PATHS = {
   layout:  path.join(ATLAS_DIR, 'layout.json'),
   atlas:   path.join(ATLAS_DIR, 'atlas.json'),
   details: path.join(ATLAS_DIR, 'details.json'),
+  vocab:     path.join(ATLAS_DIR, 'vocab.bin'),
+  vocabMeta: path.join(ATLAS_DIR, 'vocab.json'),
 };
 
 /** Stored vector width. A Matryoshka prefix of the model's native output. */
@@ -81,7 +83,12 @@ export const ROW_BYTES = 4 + DIM;
  *             Values may be a string or an array of strings.
  *   excerpt   prose, real newlines allowed (JSONL escapes them)
  *   image     absolute URL or ''
- *   origin    {dataset, wiki, qid} — provenance, so a re-ingest can dedupe
+ *   origin    {dataset, wiki, qid} — provenance, so a re-ingest can dedupe.
+ *             Plus an optional `manual: true`, meaning "authored here, not
+ *             derived from one page": hand-entered prose, or an event mined out
+ *             of a page body. Such a row cannot be recreated by re-fetching
+ *             anything, so `migrate.mjs` must never drop it — see the carry-over
+ *             discriminator there.
  */
 export function makeEntry(o = {}){
   return {
@@ -206,7 +213,9 @@ export function entryText(e, maxExcerpt = 700){
   const head = [e.title, e.subtitle].filter(Boolean).join(' — ');
   const topics = (e.topics || []).join(', ');
   const facets = Object.entries(e.facets || {})
-    .filter(([k]) => k !== 'year' && k !== 'years')
+    // A date is `start`/`end`'s job. In the text it only pulls entries together by
+    // calendar coincidence — "24 January" is not what an event is about.
+    .filter(([k]) => !/^(year|years|date|dates)$/.test(k))
     .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
     .join('; ');
   const body = String(e.excerpt || '').replace(/\s+/g, ' ').slice(0, maxExcerpt);
@@ -317,6 +326,55 @@ export function appendVectors(pairs, { model, native } = {}){
     count: meta.ids.length + pairs.length,
     ids: [...meta.ids, ...pairs.map(([id]) => id)],
   }, null, 0) + '\n');
+}
+
+// ---------------------------------------------------------------------------
+// Label vocabulary
+// ---------------------------------------------------------------------------
+//
+// Cluster labels are chosen by embedding a candidate vocabulary and taking the
+// term nearest each node's centroid, so a build needs vectors for words as well
+// as for entries. They are cached because the vocabulary barely moves between
+// builds — a term qualifies by appearing in several entries, so adding a few
+// hundred entries changes a handful of rows. Same int8-plus-scale row format as
+// `vectors.bin`, and for the same reason: a fixed scale over [-1,1] would waste
+// nine tenths of the available levels on L2-normalised input.
+
+/** Write vocabulary vectors. `pairs` is `[term, Float32Array][]`. */
+export function writeVocab(pairs, { model } = {}){
+  fs.mkdirSync(ATLAS_DIR, { recursive: true });
+  const dim = pairs.length ? pairs[0][1].length : DIM;
+  fs.writeFileSync(PATHS.vocab + '.tmp', Buffer.concat(pairs.map(([, v]) => packVector(v))));
+  fs.renameSync(PATHS.vocab + '.tmp', PATHS.vocab);
+  fs.writeFileSync(PATHS.vocabMeta, JSON.stringify({
+    model, dim, count: pairs.length, terms: pairs.map(([t]) => t),
+  }, null, 0) + '\n');
+}
+
+/**
+ * Load cached vocabulary vectors as `{ model, dim, terms, get(term) }`, or null
+ * if absent. A mismatch between the two files is treated as no cache rather than
+ * an error — it costs one re-embed of a few thousand short strings.
+ */
+export function readVocab(){
+  if(!fs.existsSync(PATHS.vocab) || !fs.existsSync(PATHS.vocabMeta)) return null;
+  const meta = JSON.parse(fs.readFileSync(PATHS.vocabMeta, 'utf8'));
+  const dim = meta.dim || DIM;
+  const rowBytes = 4 + dim;
+  const buf = fs.readFileSync(PATHS.vocab);
+  if(Math.floor(buf.length / rowBytes) !== meta.terms.length) return null;
+
+  const index = new Map(meta.terms.map((t, i) => [t, i]));
+  const get = (term) => {
+    const i = index.get(term);
+    if(i === undefined) return null;
+    const off = i * rowBytes;
+    const scale = buf.readFloatLE(off);
+    const out = new Float32Array(dim);
+    for(let d = 0; d < dim; d++) out[d] = buf.readInt8(off + 4 + d) * scale;
+    return out;
+  };
+  return { model: meta.model, dim, terms: meta.terms, get };
 }
 
 export const readJSON = (p, fallback = null) =>

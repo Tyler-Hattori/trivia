@@ -1,6 +1,77 @@
 # Handoff — the atlas rework
 
-Written 2026-07-29. Picks up mid-Phase-2.
+Written 2026-07-29, updated 2026-07-30.
+
+---
+
+## NEXT SESSION: teach `--events` to read tables and narrative prose
+
+The requested next piece of work. Two real pages return nothing, for two
+**different** reasons — both diagnosed, neither fixed.
+
+```bash
+node datasets/ingest.mjs --events "Timeline of English history" --dry   # 0 events
+node datasets/ingest.mjs --events "History of quantum mechanics" --dry  # 0 events
+```
+
+### 1. Tables are invisible to the miner
+
+`mineEvents` (`lib/wiki.mjs:604`) fetches with
+`prop=extracts&explaintext=1`, and **`explaintext` strips wiki tables
+entirely**. For *Timeline of English history* that returns 1,337 characters —
+the intro paragraph and some section headings — while the actual page is
+196,989 characters of HTML holding **22 wikitables and 249 rows**, one event per
+row under `Year | Date | Event`. The miner is not failing to parse the events;
+it never receives them. Hence the misleading `Nothing dated found in 1 lines`.
+
+The fix is a second fetch path. `action=parse&prop=text` returns the rendered
+HTML with the tables intact, and a `Year | Date | Event` row maps onto the
+existing draft shape almost directly — the year column *is* the date, which
+makes it a `mined-line`-grade source (the date plainly governs the row), not a
+prose guess. Worth checking how consistent the column headers are across
+timeline pages before committing to a shape; `Date`/`Year`/`Event`/`Description`
+are the common ones. Note `getJSON` and the whole module are currently
+plaintext-only, so this adds the first HTML parsing in the pipeline — keep it to
+row/cell extraction rather than pulling in a DOM library, per the
+zero-dependency rule.
+
+### 2. Prose mining works, but the yield is poor
+
+*History of quantum mechanics* is the opposite case: the body arrives fine
+(42,383 chars, 258 lines), but the dates sit mid-sentence, so `mined-line` finds
+nothing and the default run reports zero.
+
+```bash
+node datasets/ingest.mjs --events "History of quantum mechanics" --events-prose --dry
+#   11 events (0 dated at the line head, 11 mid-sentence)
+```
+
+So `--events-prose` is *required* for narrative history pages, and 11 events off
+a 258-line article on a subject with dozens of dated milestones is a low catch
+rate. Two things to look at: whether the miner only takes the first date per
+paragraph, and whether `minChars`/`maxChars` (40/700) are rejecting the long
+sentences this kind of writing produces.
+
+Two design points not to lose while doing this:
+
+- **The `--events-prose` trust level is deliberate.** It is off by default
+  because on a non-timeline page it also harvests the publication years of cited
+  studies. If narrative pages become a first-class input, they need their own
+  confidence tier in the `date sources:` tally rather than being folded into
+  `mined-line`.
+- **`--retitle` changes ids**, because ids are built from titles, so a second
+  `--retitle` run over the same page will not recognise its own earlier entries
+  as duplicates. Mine with `--dry`, read it, then run once.
+
+---
+
+Picks up mid-Phase-2.
+
+> **See also `HANDOFF-timeline-modes.md`** — the brief for the next requested
+> feature, a geologic ⇆ human-history mode toggle. It exists because a single entry
+> at −113000 now makes 89% of the linear x axis hold one point, and **Fit shows
+> 1 point**. That file also carries the current loose ends, including a data-loss bug
+> in `migrate.mjs` affecting hand-entered entries.
 
 **Nothing is committed.** All of this is uncommitted working-tree changes on `main`
 (the standing preference is to leave work uncommitted until asked).
@@ -11,7 +82,7 @@ Written 2026-07-29. Picks up mid-Phase-2.
 
 | phase | state |
 |---|---|
-| **1 — the data pipeline** | **Done and verified.** 21/21 invariant checks pass. Usable right now. |
+| **1 — the data pipeline** | **Done and verified.** 26/26 invariant checks pass. Usable right now. |
 | **2 — the atlas renderer** | **Built and verified. 50/50 browser checks pass**, five consecutive runs. |
 | **3 — one unified quiz** | Not started. Design sketch at the bottom. |
 
@@ -38,7 +109,7 @@ node datasets/migrate.mjs            # 8 CSVs -> atlas/entries.jsonl
 node datasets/embed-all.mjs          # fill missing vectors (resumable)
 node datasets/atlas.mjs --rebuild    # re-fit the cluster hierarchy
 node datasets/atlas.mjs              # OR: place new entries, keep the map stable
-node datasets/verify.mjs             # 21 invariant checks, ~1s
+node datasets/verify.mjs             # 26 invariant checks, ~1s
 node datasets/inspect.mjs --near cubism
 
 # adding data — this is the thing to actually use
@@ -47,8 +118,60 @@ node datasets/ingest.mjs --links "List of Impressionist painters" --domain art
 node datasets/ingest.mjs @list.txt --domain science --reshape
 ```
 
-Current store: **2,697 entries**, 227 cluster nodes, depth 3, years −1500…2026.
-1,748 have excerpts; 2,512 have images.
+Current store: **3,787 entries**, 522 cluster nodes, depth 6, years −4.57e9…2026.
+3,194 have excerpts.
+
+### What changed on 2026-07-30
+
+Four things, all in the pipeline. `datasets/ATLAS.md` is the full write-up —
+"How many groups a level has is decided by the data" and "Labels" are new
+sections there.
+
+1. **Labels are chosen by embedding, not word frequency.** Nodes were called
+   `American · Directed · Starring` and `Directed · American · Stars` — two
+   sibling film clusters named after Wikipedia credit-line boilerplate. Cause:
+   c-TF-IDF rewards terms *rare outside* the cluster, which is the inverse of
+   what a broad label needs. Now `harvestVocabulary` collects candidate terms
+   from the corpus, `atlas.mjs` embeds them (cached in `atlas/vocab.bin`), and
+   each node takes the term nearest its centroid. Depth-1 is now
+   `Film · Painting · Political · England · Period · Physics`, narrowing to
+   `Film Noir`, `Post-Impressionism`, `Photoelectric Effect` at the leaves —
+   with no per-level rules, because a broad centroid is simply nearer a broad
+   word. Labels recompute on every build including incremental ones.
+2. **`k` per node is chosen by silhouette, not arithmetic.** It used to be the
+   branching factor that made a balanced tree hit ~12 entries a leaf — always 7
+   for this corpus, whatever it contained, which is why 322 physics entries
+   shared a top-level branch with 525 films. `chooseSplit` now tries every k and
+   keeps the best split. Root picked 6; Physics splits ten ways, Painting two.
+   Depth follows from size, so `maxDepth: 6` is only a backstop. Rebuild cost
+   went 3s → 9s and scales with corpus size — watch it past ~10k entries.
+3. **The lead-text date fallback is guarded.** `[5-9]\d{2}` took any 3-digit
+   number, so "about 560 kilometres" dated the English Channel to AD 560, and
+   six others were wrong the same way. `yearInLead` now rejects a number
+   followed by a unit (including durations) and requires a date cue for bare
+   3-digit years. `origin.dateSource` is stored, so the prose-derived set is
+   answerable after the fact.
+4. **356 excerpts backfilled** via `enrich.mjs art.csv --fields=excerpt`. This
+   was not cosmetic: with 847 art entries carrying no prose, those vectors were
+   degenerate enough that `georges seurat` scored 0.93 semantic coverage over
+   1,020 entries, and the art cluster was called *Impressionism*. Backfilling
+   renamed it *Painting* on its own. **If a cluster is labelled by something
+   oddly specific, check its excerpts before touching the scoring.**
+
+Still open from this work: 593 entries have no excerpt, 527 of them in
+`art.csv`, where `enrich` found a page but the title similarity fell below
+`--min-sim=0.34` and it refused to write prose it was not confident in. The
+proposals are in `art.misses.json` for review. Also unactioned: a curation list
+of 7 entries whose year is a measurement and ~30 places/concepts with no
+meaningful date (Colchester 2021, Celtic languages 1707, History of Ireland 0) —
+ids in `/tmp/curation.txt`, which will not survive a reboot.
+
+Two rough edges: `England`'s first child is `War · Conflict`, holding
+Genocide/Caucasus/Kurdish material that is not English — a placement problem,
+not a labelling one. And `covWeight` in `nameFromCentroids` is coupled to the
+`vocabOk` filter; it was 0.45 while credit verbs were still candidates, and had
+to drop to 0.25 once they were excluded or a leaders cluster came out named
+*Military*. Any change to the vocabulary filter is a reason to re-check it.
 
 New files:
 
@@ -288,12 +411,12 @@ Keep these in mind; three are traps that will recur.
 2. **Look at it with human eyes.** `--shot` now produces an honest picture and the
    map does read well at card/detail zoom — uncropped images, sane label density,
    bands legible. Still open, and still a judgement call:
-   - **Duplicate sibling labels.** 78 of 227 nodes share a label with a sibling, so
-     the rail shows `Byzantine` ×5, `Rome` ×4, `United States` ×4, `Australia` ×3 —
-     rows you cannot tell apart by eye. Labelling picks each node's top topics
-     independently; it needs to prefer a token that *distinguishes a node from its
-     siblings*. This changes labels across the whole map, so it wants your call
-     before anyone does it. `node datasets/inspect.mjs --cross` is the way to look.
+   - ~~**Duplicate sibling labels.**~~ **Largely addressed 2026-07-30** by the
+     labelling rework — a node may not reuse an ancestor's term, so each level
+     is forced to add information. Sibling collisions are no longer excluded
+     outright though (only ancestor ones), so `Comedy Film · Drama Film` and
+     `Drama Film · Comedy Film` still appear as siblings under `Film`. Worth a
+     look with `node datasets/inspect.mjs --tree 2` if it reads badly.
    - **Band labels are occluded by cards.** They stick to the viewport's left edge
      (deliberately), but at detail zoom a card sitting at the left of the viewport
      covers them — visible in the screenshot as a clipped `Post-Impress…` and
@@ -314,10 +437,13 @@ Keep these in mind; three are traps that will recur.
    precomputed `knn` already in `atlas.json` — pick a seed entry or cluster and quiz
    over its neighbourhood, which needs no model in the browser. Question types fall
    out of the fields present: year, creator/subtitle, topic, image.
-6. **Data.** The biggest quality lever is unchanged: 949 entries still have no
-   excerpt, and an entry with no excerpt embeds on its title alone and clusters
-   weakly. `art.csv` is 847 of those. `node datasets/ingest.mjs` on the same subjects,
-   or `enrich.mjs art.csv` for the legacy path.
+6. **Data.** Still the biggest quality lever, now measurably so — see
+   "What changed on 2026-07-30", where backfilling excerpts renamed a whole
+   top-level cluster. 593 entries have no excerpt (down from 949), 527 of them
+   in `art.csv`. `enrich.mjs` has taken those as far as it safely can; the
+   remainder need either `ingest.mjs` on the same subjects (Wikidata-matched, so
+   it does not depend on title similarity) or a pass over
+   `art.misses.json`, which already holds the proposed text.
 
 ## Known rough edges (not bugs, judgement calls)
 
