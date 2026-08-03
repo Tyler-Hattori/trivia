@@ -1,0 +1,782 @@
+[
+  {
+    "dataset": "art",
+    "row": 32,
+    "name": "madonna in the church",
+    "title": "Madonna of Chancellor Rolin",
+    "sim": 0.25,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "The Madonna of Chancellor Rolin is an oil painting by the Early Netherlandish painter Jan van Eyck, dating from around 1435. It is now in the Musée du Louvre, Paris. It was commissioned by Nicolas Rolin chancellor of the Duchy of Burgundy, then aged about 60, whose votive portrait takes up the left side of the picture, for his parish church, Notre-Dame-du-Chastel in Autun, where it remained until the church burnt down in 1793. After a period in Autun Cathedral, it was moved to the Louvre in 1805."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.25 below the gate"
+  },
+  {
+    "dataset": "art",
+    "row": 110,
+    "name": "narcissus at the source",
+    "title": "Narcissus (Caravaggio)",
+    "sim": 0.25,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Narcissus is an oil on canvas painting by the Italian Baroque master Caravaggio, painted c. 1597 – c. 1599. It is housed in the Galleria Nazionale d'Arte Antica, in Rome."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.25 below the gate"
+  },
+  {
+    "dataset": "art",
+    "row": 173,
+    "name": "the birth of venus",
+    "title": "Triumph of Neptune and Amphitrite",
+    "sim": 0.2,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "The Triumph of Neptune and Amphitrite by Nicolas Poussin, painted in 1635 or 1636, is a painting housed in Philadelphia in the Philadelphia Museum of Art. It is in oil on canvas and shows a group of figures in the sea near a beach, with putti flying over their heads."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.2 below the gate"
+  },
+  {
+    "dataset": "art",
+    "row": 221,
+    "name": "blind orion searching for the rising sun",
+    "title": "Orion (mythology)",
+    "sim": 0.14,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "In Greek mythology, Orion was a giant huntsman whom Zeus or Artemis placed among the stars as a constellation. He was venerated as a hero in the region of Boeotia, and there is one etiological passage which says that Orion was responsible for the present shape of the Strait of Sicily."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.14 below the gate"
+  },
+  {
+    "dataset": "art",
+    "row": 263,
+    "name": "portrait of count philipp ludwig wenzel von sinzendorf",
+    "title": "Palais Rothschild",
+    "sim": 0,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Palais Rothschild refers to a number of palaces in Vienna, Austria, which were owned by members of the Austrian branch of the Rothschild banking family. Apart from their sheer size and elegance, they were famous for the huge collections of valuable paintings, statues, furniture, books and armour that they housed, another reflection of the family's vast wealth and prominent position."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
+  },
+  {
+    "dataset": "art",
+    "row": 276,
+    "name": "the grand canal in venice from palazzo flangini to campo san marcuola",
+    "title": "Grand Canal (Venice)",
+    "sim": 0.17,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "The Grand Canal is the largest channel in Venice, Italy, forming one of the major water-traffic corridors in the city."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.17 below the gate"
+  },
+  {
+    "dataset": "art",
+    "row": 283,
+    "name": "diana leaving the bath (diana bathing)",
+    "title": "Diana Bathing (Boucher)",
+    "sim": 0.25,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Diana Bathing or Diana Getting out of her Bath is an oil-on-canvas painting by French artist François Boucher, created in 1742. It depicts the Roman goddess Diana, with a nymph as her companion. The painting was acquired in 1852 by the Louvre, in Paris."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.25 below the gate"
+  },
+  {
+    "dataset": "art",
+    "row": 321,
+    "name": "warwick castle, east front from the courtyard",
+    "title": "Warwick Castle",
+    "sim": 0.29,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Warwick Castle is a medieval castle developed from a wooden fort originally built by William the Conqueror during 1068. The original wooden motte-and-bailey castle overlooking the River Avon was rebuilt in stone during the 12th century. During the Hundred Years War, the facade opposite the town was refortified, resulting in one of the most recognisable examples of 14th-century military architecture. It was used as a stronghold until the early 17th century, when it was granted to Sir Fulke Greville by James I in 1604. Greville converted it to a country house, and it was owned by the Greville family until 1978, when it was bought by the Tussauds Group."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.29 below the gate"
+  },
+  {
+    "dataset": "art",
+    "row": 440,
+    "name": "the polar sea (the sea of ice)",
+    "title": "European and American voyages of scientific exploration",
+    "sim": 0,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "The era of European and American voyages of scientific exploration followed the Age of Discovery and were inspired by a new confidence in science and reason that arose in the Age of Enlightenment. Maritime expeditions in the Age of Discovery were a means of expanding colonial empires, establishing new trade routes and extending diplomatic and trade relations to new territories, but with the Enlightenment scientific curiosity became a new motive for exploration to add to the commercial and political ambitions of the past. See also List of Arctic expeditions and List of Antarctic expeditions."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
+  },
+  {
+    "dataset": "art",
+    "row": 465,
+    "name": "destruction of tyre",
+    "title": "Tyrion Lannister",
+    "sim": 0,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Tyrion Lannister is a fictional character in the A Song of Ice and Fire series of epic fantasy novels by American author George R. R. Martin, and its television adaptation Game of Thrones, where he is portrayed by American actor Peter Dinklage."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
+  },
+  {
+    "dataset": "art",
+    "row": 484,
+    "name": "the plains of heaven",
+    "title": "The Last Judgement (Martin paintings)",
+    "sim": 0.25,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "The Last Judgement is a triptych of oil paintings by the British artist John Martin, created in 1851–1853. The work comprises three separate paintings on a theme of the end of the world, inspired by the Book of Revelation. The paintings, The Plains of Heaven, The Last Judgement, and The Great Day of His Wrath, are generally considered to be among Martin's most important works, and have been described by some art critics as his masterpiece."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.25 below the gate"
+  },
+  {
+    "dataset": "art",
+    "row": 547,
+    "name": "landscape at pontoise",
+    "title": "Pontoise",
+    "sim": 0.33,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Pontoise is a commune north of Paris, France. It is located 28.4 km (17.6 mi) from the centre of Paris, in the \"new town\" of Cergy-Pontoise."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
+  },
+  {
+    "dataset": "art",
+    "row": 620,
+    "name": "le printemps",
+    "title": "The Rite of Spring",
+    "sim": 0,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "The Rite of Spring is a ballet and orchestral concert work by the Russian composer Igor Stravinsky. It was written for the 1913 Paris season of Sergei Diaghilev's Ballets Russes company; the original choreography was by Vaslav Nijinsky with stage designs and costumes by Nicholas Roerich. When first performed at the Théâtre des Champs-Élysées on 29 May 1913, the avant-garde nature of the music and choreography caused a sensation. Many have called the first-night reaction a \"riot\" or \"near-riot\", though this wording did not come about until reviews of later performances in 1924, over a decade later. Although designed as a work for the stage, with specific passages accompanying characters and action, the music achieved equal if not greater recognition as a concert piece and is widely considered to be one of the most influential musical works of the 20th century."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
+  },
+  {
+    "dataset": "art",
+    "row": 628,
+    "name": "mont sainte-victoire and the viaduct of the arc river valley",
+    "title": "Mont Sainte-Victoire (Cézanne)",
+    "sim": 0.3,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Mont Sainte-Victoire is a series of oil paintings by French artist Paul Cézanne, depicting the French mountain Montagne Sainte-Victoire in Provence."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.3 below the gate"
+  },
+  {
+    "dataset": "art",
+    "row": 639,
+    "name": "girl braiding her hair (suzanne valadon)",
+    "title": "Suzanne Valadon",
+    "sim": 0,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Marie-Clémentine \"Suzanne\" Valadon was a French painter who was born at Bessines-sur-Gartempe, Haute-Vienne, France. In 1894, Valadon became the first woman painter admitted to the Société Nationale des Beaux-Arts. She was also the mother of painter Maurice Utrillo."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
+  },
+  {
+    "dataset": "art",
+    "row": 646,
+    "name": "the tub",
+    "title": "Woman in a Tub (Degas)",
+    "sim": 0.25,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Woman in a Tub is one of a suite of pastels on paper created by the French painter Edgar Degas in the 1880s and is in the collection of the Hill-Stead Museum in Connecticut. The suite of pastels all featured nude women \"bathing, washing, drying, wiping themselves, combing their hair or having it combed\" and were created in readiness for the eighth and final Impressionist Exhibition of 1886."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.25 below the gate"
+  },
+  {
+    "dataset": "art",
+    "row": 674,
+    "name": "jeune femme se poudrant (young woman powdering herself)",
+    "title": "Young Woman Powdering Herself (Seurat)",
+    "sim": 0,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Young Woman Powdering Herself is an oil on canvas painting executed between 1889 and 1890 by the French painter Georges Seurat. Considered a leading example of pointillism, it is Seurat’s only single-subject portrait and depicts his mistress, Madeleine Knobloch, sitting at her dressing table."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
+  },
+  {
+    "dataset": "art",
+    "row": 678,
+    "name": "blossoming almond tree",
+    "title": "Almond Blossoms",
+    "sim": 0.33,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Almond Blossoms is a group of several paintings made in 1888 and 1890 by Vincent van Gogh in Arles and Saint-Rémy, southern France of blossoming almond trees. Flowering trees were special to van Gogh. They represented awakening and hope. He enjoyed them aesthetically and found joy in painting flowering trees. The works reflect the influence of Impressionism, Divisionism, and Japanese woodcuts. Almond Blossom was made to celebrate the birth of his nephew and namesake, son of his brother Theo and sister-in-law Jo."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
+  },
+  {
+    "dataset": "art",
+    "row": 722,
+    "name": "lac d'annecy",
+    "title": "Lake Annecy",
+    "sim": 0.33,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Lake Annecy is a perialpine lake in Haute-Savoie in France. It is named after the city of Annecy, which marks the start of the Thiou, Lake Annecy's outflow river."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
+  },
+  {
+    "dataset": "art",
+    "row": 732,
+    "name": "rue saint-honore, dans l'apres-midi. effet de pluie",
+    "title": "Rue Saint-Honoré in the Afternoon. Effect of Rain",
+    "sim": 0.3,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Rue Saint-Honoré in the Afternoon. Effect of Rain is an 1897 oil painting by Camille Pissarro. The work was made towards the end of Pissarro's career, when he abandoned his experiments with Pointillism and returned to a looser Impressionist style. It is part of a series of works that Pissarro made in 1897–98 from a window of the Grand Hôtel du Louvre, looking down across the edge of the Place du Théâtre Français and along the rue Saint-Honoré, portraying the people, carriages and buildings, the trees, fountains and streetlamps, in an early afternoon shower of rain. Other paintings in the series depict a similar scene in morning sunlight, or in the shadows of the evening. The painting measures 81 cm × 65 cm."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.3 below the gate"
+  },
+  {
+    "dataset": "art",
+    "row": 743,
+    "name": "the japanese footbridge",
+    "title": "Water Lilies (Monet series)",
+    "sim": 0,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Water Lilies is a series of approximately 250 oil paintings by French Impressionist Claude Monet (1840–1926). The paintings depict his flower garden at his home in Giverny, and were the main focus of his artistic production during the last 31 years of his life. Many of the works were painted while Monet suffered from cataracts."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
+  },
+  {
+    "dataset": "art",
+    "row": 792,
+    "name": "the poet",
+    "title": "Guernica (Picasso)",
+    "sim": 0,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Guernica is a large 1937 oil painting by Spanish artist Pablo Picasso. It is one of his best-known works, regarded by many art critics as the most moving and powerful anti-war painting in history. It is exhibited in the Museo Reina Sofía in Madrid."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
+  },
+  {
+    "dataset": "art",
+    "row": 806,
+    "name": "the moroccans",
+    "title": "Goldfish (Matisse)",
+    "sim": 0,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Goldfish is a 1912 oil-on-canvas still life painting by French visual artist Henri Matisse. Goldfish, whose centerpiece includes four goldfish, was part of a series that Matisse produced between the spring and early summer of 1912."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
+  },
+  {
+    "dataset": "art",
+    "row": 813,
+    "name": "self-portrait",
+    "title": "Self-Portrait in a Striped T-shirt",
+    "sim": 0.29,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Self-Portrait in a Striped T-shirt (1906) is an oil on canvas painting by Henri Matisse from his Fauvism period, in the collection of Statens Museum for Kunst, Copenhagen, Denmark."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.29 below the gate"
+  },
+  {
+    "dataset": "art",
+    "row": 816,
+    "name": "odalisque",
+    "title": "Odalisque with Raised Arms",
+    "sim": 0.25,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Odalisque With Raised Arms is a painting by Henri Matisse, completed in 1923. The oil on canvas measuring 23 by 26 inches is held in the National Gallery of Art, in Washington D.C. Matisse's style changed and evolved drastically throughout his career, including his wide and varying collection of paintings depicting female nudes. His odalisque paintings were inspired by his trip to Morocco. Many of the female subjects in the Odalisque paintings were modeled after Matisse's main model at the time, Henriette Darricarrère."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.25 below the gate"
+  },
+  {
+    "dataset": "art",
+    "row": 821,
+    "name": "on white ii",
+    "title": "Auf Weiss II (Sur blanc II)",
+    "sim": 0.33,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Auf Weiss II (Sur blanc II), in English: On White II, is a 1923 oil-on-canvas painting by Russian painter Wassily Kandinsky. It was created when the artist was a teacher at the Bauhaus in Weimar. The painting initially hung in the dining room of Wassily and Nina Kandinsky's apartment at Bauhaus Dessau. Since 1976, as a gift from Nina Kandinsky, it has been in the collection of the Musée National d'Art Moderne, in Paris."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
+  },
+  {
+    "dataset": "film",
+    "row": 73,
+    "name": "sunrise",
+    "title": "Sunrise: A Song of Two Humans",
+    "sim": 0.17,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Sunrise: A Song of Two Humans is a 1927 American synchronized sound romantic drama directed by German director F. W. Murnau and starring George O'Brien, Janet Gaynor, and Margaret Livingston. The film's plot follows a married farmer (O'Brien) who falls for a woman vacationing from the city (Livingston), who tries to convince him to murder his wife (Gaynor) in order to be with her. While the film has no audible dialogue, it was released with a synchronized musical score with sound effects using the Movietone sound-on-film process. The story was adapted by Carl Mayer from the short story \"The Excursion to Tilsit\", from the 1917 collection with the same title by Hermann Sudermann."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.17 below the gate"
+  },
+  {
+    "dataset": "film",
+    "row": 137,
+    "name": "gentlemans agreement",
+    "title": "Gentleman's Agreement",
+    "sim": 0.33,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Gentleman's Agreement is a 1947 American drama film based on Laura Z. Hobson's best-selling 1947 novel of the same title, directed by Elia Kazan. The film is about a journalist who pretends to be Jewish to research an exposé on the widespread antisemitism in New York City and the affluent communities of New Canaan and Darien, Connecticut. It was nominated for eight Academy Awards and won three: Best Picture, Best Supporting Actress, and Best Director."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
+  },
+  {
+    "dataset": "film",
+    "row": 111,
+    "name": "sullivans travels",
+    "title": "Sullivan's Travels",
+    "sim": 0.33,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Sullivan's Travels is a 1941 American comedy-drama film written and directed by Preston Sturges. A satire of the film industry, it follows a famous Hollywood comedy director who, longing to make a socially relevant drama, sets out to live as a tramp to gain life experience for his forthcoming film. Along the way he unites with a poor aspiring actress who accompanies him. The title is a reference to Gulliver's Travels, the 1726 novel by satirist Jonathan Swift about another journey of self-discovery."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
+  },
+  {
+    "dataset": "film",
+    "row": 96,
+    "name": "you cant take it with you",
+    "title": "Polari",
+    "sim": 0,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Polari is a form of slang or cant historically used primarily in the United Kingdom among the gay subculture, as well as some actors, circus and fairground performers, professional wrestlers, merchant navy sailors, criminals, and prostitutes."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
+  },
+  {
+    "dataset": "film",
+    "row": 143,
+    "name": "adams rib",
+    "title": "Adam's Rib",
+    "sim": 0.33,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Adam's Rib is a 1949 American romantic comedy-drama film by director George Cukor from a screenplay written by Ruth Gordon and Garson Kanin. It stars Spencer Tracy and Katharine Hepburn as married lawyers who come to oppose each other in court. Judy Holliday co-stars as the third lead in her second credited movie role. Also featured are Tom Ewell, David Wayne, and Jean Hagen. The music was composed by Miklós Rózsa, and the song \"Farewell, Amanda\" was written by Cole Porter."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
+  },
+  {
+    "dataset": "film",
+    "row": 199,
+    "name": "dr strangelove",
+    "title": "Red Alert (novel)",
+    "sim": 0,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Red Alert is a 1958 novel by Peter George about nuclear war. The book provided the underlying narrative structure for Stanley Kubrick's 1964 film Dr. Strangelove or: How I Learned to Stop Worrying and Love the Bomb. Kubrick's film differs significantly from the novel in that the film is a black comedy."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
+  },
+  {
+    "dataset": "film",
+    "row": 196,
+    "name": "8 1/2",
+    "title": "8½",
+    "sim": 0.33,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "8½ is a 1963 Italian avant-garde comedy-drama film directed and co-written by Federico Fellini. The metafictional narrative centers on famous Italian film director Guido Anselmi who suffers from writer's block as he attempts to direct an epic science fiction film. Claudia Cardinale, Anouk Aimée, Sandra Milo, Rossella Falk, Barbara Steele, and Eddra Gale portray the various women in Guido's life. An international co-production between France and Italy, the film was shot in black and white by cinematographer Gianni Di Venanzo and features a score by Nino Rota, with costume and set designs by Piero Gherardi."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
+  },
+  {
+    "dataset": "film",
+    "row": 275,
+    "name": "war games",
+    "title": "WarGames",
+    "sim": 0,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "WarGames is a 1983 American techno-thriller film directed by John Badham, written by Lawrence Lasker and Walter F. Parkes, and starring Matthew Broderick, Dabney Coleman, John Wood and Ally Sheedy. Broderick plays David Lightman, a young computer hacker who unwittingly accesses a United States military supercomputer programmed to simulate, predict and execute nuclear war against the Soviet Union, triggering a false alarm that threatens to start World War III. Martin Brest was originally the film's director, but was fired early into production."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
+  },
+  {
+    "dataset": "film",
+    "row": 247,
+    "name": "a new hope",
+    "title": "Star Wars (film)",
+    "sim": 0,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Star Wars is a 1977 American epic space opera film written and directed by George Lucas. Produced by Lucasfilm Ltd. and distributed by Twentieth Century-Fox, it is the first film in the Star Wars franchise and the fourth chronological chapter of the \"Skywalker Saga\". Set in a fictional galaxy under the rule of the tyrannical Galactic Empire, the film follows a resistance movement, called the Rebel Alliance, that aims to destroy the Empire's ultimate weapon, the Death Star. When the rebel leader Princess Leia is captured by the Galactic Empire, Luke Skywalker acquires stolen architectural plans for the Death Star and sets out to rescue her while learning the ways of a metaphysical power known as \"the Force\" from the Jedi Master Obi-Wan Kenobi. The film stars Mark Hamill, Harrison Ford, Carrie Fisher, Peter Cushing, Alec Guinness, Anthony Daniels, Kenny Baker, Peter Mayhew, David Prowse, and James Earl Jones."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
+  },
+  {
+    "dataset": "film",
+    "row": 348,
+    "name": "schindlers list",
+    "title": "Schindler's List",
+    "sim": 0.33,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Schindler's List is a 1993 American epic historical drama film directed and co-produced by Steven Spielberg and written by Steven Zaillian. It is based on the historical novel Schindler's Ark (1982) by Thomas Keneally. The film follows Oskar Schindler, a German industrialist who saved more than a thousand mostly Polish–Jewish refugees from the Holocaust by employing them in his factories during World War II. It stars Liam Neeson as Schindler, Ralph Fiennes as SS officer Amon Göth, and Ben Kingsley as Schindler's Jewish accountant Itzhak Stern."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
+  },
+  {
+    "dataset": "film",
+    "row": 354,
+    "name": "leon",
+    "title": "Léon: The Professional",
+    "sim": 0.33,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Léon is a 1994 French English-language action-thriller film written and directed by Luc Besson. It stars Jean Reno, Gary Oldman and Natalie Portman in her feature film debut. The plot centers on Léon (Reno), an Italian-American professional hitman who reluctantly takes in twelve-year-old Mathilda Lando (Portman) after her family is murdered by corrupt Drug Enforcement Administration (DEA) agent Norman Stansfield (Oldman). Léon and Mathilda form an unusual relationship as she becomes his protégée and learns the hitman's trade. The film was released in France by Gaumont Buena Vista International on 14 September 1994 and received mostly positive reviews from critics."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
+  },
+  {
+    "dataset": "film",
+    "row": 362,
+    "name": "se7en",
+    "title": "Seven (1995 film)",
+    "sim": 0,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Seven is a 1995 American crime thriller film directed by David Fincher and written by Andrew Kevin Walker. It stars Brad Pitt and Morgan Freeman, with Gwyneth Paltrow and John C. McGinley in supporting roles. Set in an unnamed, crime-ridden city, the narrative follows disenchanted, nearly retired Detective Lieutenant William Somerset and his newly transferred partner David Mills as they try to stop a serial killer from committing a series of murders based on the seven deadly sins."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
+  },
+  {
+    "dataset": "film",
+    "row": 417,
+    "name": "dodgeball",
+    "title": "Dodgeball: A True Underdog Story",
+    "sim": 0.2,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Dodgeball: A True Underdog Story is a 2004 sports comedy film written and directed by Rawson Marshall Thurber, in his directorial debut, and starring Vince Vaughn, Ben Stiller, Christine Taylor, and Rip Torn. The film follows a group of unlikely misfits who enter a Las Vegas dodgeball tournament, needing the prize money to save their cherished gym from being taken over by a corporate health fitness chain."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.2 below the gate"
+  },
+  {
+    "dataset": "film",
+    "row": 397,
+    "name": "oceans eleven",
+    "title": "Ocean's Eleven",
+    "sim": 0.33,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Ocean's Eleven is a 2001 American heist comedy film directed by Steven Soderbergh from a screenplay by Ted Griffin. The first installment in the Ocean's film trilogy, it is a remake of the 1960 Rat Pack film. The film features an ensemble cast including George Clooney, Matt Damon, Andy García, Brad Pitt, Julia Roberts, Casey Affleck, Don Cheadle, Scott Caan, Elliott Gould, Bernie Mac and Carl Reiner. The story follows friends Danny Ocean (Clooney) and Rusty Ryan (Pitt), who plan a heist of $160 million from casino owner Terry Benedict (García), the lover of Ocean's ex-wife Tess (Roberts)."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
+  },
+  {
+    "dataset": "film",
+    "row": 402,
+    "name": "atlantis",
+    "title": "Atlantis: The Lost Empire",
+    "sim": 0.25,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Atlantis: The Lost Empire is a 2001 American animated science fiction adventure film directed by Gary Trousdale and Kirk Wise, produced by Don Hahn, and written by Tab Murphy. Produced by Walt Disney Feature Animation, it stars Michael J. Fox, James Garner, Cree Summer, Don Novello, Phil Morris, Claudia Christian, Jacqueline Obradors, Florence Stanley, David Ogden Stiers, John Mahoney, Jim Varney, Corey Burton and Leonard Nimoy. Set in 1914, the film follows young linguist Milo Thatch (Fox), who gains possession of a sacred book, which he believes will guide him and a crew of mercenaries to the lost city of Atlantis."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.25 below the gate"
+  },
+  {
+    "dataset": "film",
+    "row": 418,
+    "name": "anchorman",
+    "title": "Anchorman: The Legend of Ron Burgundy",
+    "sim": 0.17,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Anchorman: The Legend of Ron Burgundy is a 2004 American satirical comedy film directed by Adam McKay in his directorial debut, produced by Judd Apatow, starring Will Ferrell and Christina Applegate and written by McKay and Ferrell. The first installment in the Anchorman series, the film is a tongue-in-cheek take on the culture of the 1970s, particularly the new Action News format. It portrays a San Diego television station where news anchor Ron Burgundy (Ferrell) clashes with his new co-anchor Veronica Corningstone (Applegate)."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.17 below the gate"
+  },
+  {
+    "dataset": "film",
+    "row": 448,
+    "name": "talladega nights",
+    "title": "Talladega Nights: The Ballad of Ricky Bobby",
+    "sim": 0.29,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Talladega Nights: The Ballad of Ricky Bobby is a 2006 American sports comedy film directed by Adam McKay who co-wrote the film with Will Ferrell. It features Ferrell as the titular Ricky Bobby, an immature yet successful NASCAR driver. The film also features John C. Reilly, Sacha Baron Cohen, Gary Cole, Michael Clarke Duncan, Leslie Bibb, Jane Lynch, and Amy Adams in supporting roles. NASCAR drivers Jamie McMurray and Dale Earnhardt Jr. appear in cameos, as do broadcasting teams from NASCAR on Fox and NASCAR on NBC."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.29 below the gate"
+  },
+  {
+    "dataset": "film",
+    "row": 463,
+    "name": "at worlds end",
+    "title": "Pirates of the Caribbean: At World's End",
+    "sim": 0.25,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Pirates of the Caribbean: At World's End is a 2007 American epic fantasy swashbuckler film directed by Gore Verbinski, produced by Jerry Bruckheimer, and written by Ted Elliott and Terry Rossio. The direct sequel to Pirates of the Caribbean: Dead Man's Chest (2006), it is the third installment in the Pirates of the Caribbean film series, and follows an urgent quest to locate and save Captain Jack Sparrow, trapped on a sea of sand in Davy Jones' Locker, and convene the Brethren Court in a war against the East India Trading Company. In an uneasy alliance, Will Turner, Elizabeth Swann, Hector Barbossa, and the Black Pearl crew rescue Jack and prepare to fight Lord Cutler Beckett, who controls Davy Jones and the Flying Dutchman."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.25 below the gate"
+  },
+  {
+    "dataset": "film",
+    "row": 469,
+    "name": "surfs up",
+    "title": "Surf's Up (film)",
+    "sim": 0.33,
+    "reason": "low-confidence",
+    "proposed": {
+      "excerpt": "Surf's Up is a 2007 American animated mockumentary sports comedy film directed by Ash Brannon and Chris Buck, and written by Brannon, Buck, Don Rhymer and Chris Jenkins. Produced by Sony Pictures Animation, the film features the voices of Shia LaBeouf, Jeff Bridges, Zooey Deschanel, Jon Heder, and James Woods. It is a parody of surfing documentaries, such as The Endless Summer, Step into Liquid, and Riding Giants, with parts of the plot parodying North Shore. Real-life surfers Kelly Slater and Rob Machado have vignettes as their penguin surfer counterparts. To obtain the desired hand-held documentary feel, the film's animation team motion-captured a physical camera operator's moves."
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
+  },
+  {
+    "dataset": "science",
+    "row": 17,
+    "name": "The Wager on the Inverse-Square Force",
+    "title": "1680s",
+    "sim": 0,
+    "reason": "low-confidence",
+    "proposed": {
+      "image": "https://upload.wikimedia.org/wikipedia/commons/5/5b/Van_den_Venne_dodo.jpg"
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
+  },
+  {
+    "dataset": "science",
+    "row": 18,
+    "name": "Newton's Principia",
+    "title": "Philosophiæ Naturalis Principia Mathematica",
+    "sim": 0.25,
+    "reason": "low-confidence",
+    "proposed": {
+      "image": "https://upload.wikimedia.org/wikipedia/commons/3/3e/Newton%27s_Principia_title_page.png"
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.25 below the gate"
+  },
+  {
+    "dataset": "science",
+    "row": 20,
+    "name": "Darby's Coal Smelting of Iron",
+    "title": "The Iron Bridge",
+    "sim": 0.17,
+    "reason": "low-confidence",
+    "proposed": {
+      "image": "https://upload.wikimedia.org/wikipedia/commons/9/92/Iron_Bridge_east_side_in_February_2019_%28cropped%29.jpg"
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.17 below the gate"
+  },
+  {
+    "dataset": "science",
+    "row": 28,
+    "name": "Black's Discovery of Heat Capacity",
+    "title": "Specific heat capacity",
+    "sim": 0.33,
+    "reason": "low-confidence",
+    "proposed": {
+      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Carnot_heat_engine_2.svg/960px-Carnot_heat_engine_2.svg.png"
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
+  },
+  {
+    "dataset": "science",
+    "row": 36,
+    "name": "Rumford's Cannon-Boring Experiment",
+    "title": "Benjamin Thompson",
+    "sim": 0,
+    "reason": "low-confidence",
+    "proposed": {
+      "image": "https://upload.wikimedia.org/wikipedia/commons/5/59/Sir_Benjamin_Thompson%2C_Count_von_Rumford_by_Moritz_Kellerhoven.jpg"
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
+  },
+  {
+    "dataset": "science",
+    "row": 37,
+    "name": "The Wave Theory of Light Confirmed",
+    "title": "Speed of light",
+    "sim": 0.33,
+    "reason": "low-confidence",
+    "proposed": {
+      "image": "https://upload.wikimedia.org/wikipedia/commons/2/2e/Earth_to_Sun_-_en.png"
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
+  },
+  {
+    "dataset": "science",
+    "row": 53,
+    "name": "Glowing Vacuum Discharge Tube",
+    "title": "Crookes tube",
+    "sim": 0.25,
+    "reason": "low-confidence",
+    "proposed": {
+      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Gas_discharge_tube%2C_named_after_William_Crookes%2C_c._1890_-_R%C3%B6ntgen-Ged%C3%A4chtnisst%C3%A4tte_W%C3%BCrzburg_-_W%C3%BCrzburg%2C_Germany_-_DSC04264.jpg/3840px-Gas_discharge_tube%2C_named_after_William_Crookes%2C_c._1890_-_R%C3%B6ntgen-Ged%C3%A4chtnisst%C3%A4tte_W%C3%BCrzburg_-_W%C3%BCrzburg%2C_Germany_-_DSC04264.jpg"
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.25 below the gate"
+  },
+  {
+    "dataset": "science",
+    "row": 55,
+    "name": "Spectral Fingerprints of Elements",
+    "title": "Optical spectrometer",
+    "sim": 0,
+    "reason": "low-confidence",
+    "proposed": {
+      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Spectrometer.svg/960px-Spectrometer.svg.png"
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
+  },
+  {
+    "dataset": "science",
+    "row": 60,
+    "name": "Cathode Rays Named",
+    "title": "Cathode ray",
+    "sim": 0.33,
+    "reason": "low-confidence",
+    "proposed": {
+      "image": "https://upload.wikimedia.org/wikipedia/commons/2/23/Cyclotron_motion_smaller_view.jpg"
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
+  },
+  {
+    "dataset": "science",
+    "row": 84,
+    "name": "Mass Defect as the Source of Nuclear Energy",
+    "title": "Whole number rule",
+    "sim": 0,
+    "reason": "low-confidence",
+    "proposed": {
+      "image": "https://upload.wikimedia.org/wikipedia/commons/c/c6/Francis_William_Aston.jpg"
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
+  },
+  {
+    "dataset": "science",
+    "row": 96,
+    "name": "Anderson Discovers the Positron",
+    "title": "Positron",
+    "sim": 0.25,
+    "reason": "low-confidence",
+    "proposed": {
+      "image": "https://upload.wikimedia.org/wikipedia/commons/5/5a/PositronDiscovery.png"
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.25 below the gate"
+  },
+  {
+    "dataset": "science",
+    "row": 99,
+    "name": "How Nuclear Fusion Powers the Sun",
+    "title": "Nuclear fusion",
+    "sim": 0.33,
+    "reason": "low-confidence",
+    "proposed": {
+      "image": "https://upload.wikimedia.org/wikipedia/commons/1/1a/EAST_Tokamak_plasma_image3.jpg"
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
+  },
+  {
+    "dataset": "science",
+    "row": 100,
+    "name": "The Discovery of Nuclear Fission",
+    "title": "Lise Meitner",
+    "sim": 0,
+    "reason": "low-confidence",
+    "proposed": {
+      "image": "https://upload.wikimedia.org/wikipedia/commons/7/7b/Lise_Meitner_NatGeo.jpg"
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
+  },
+  {
+    "dataset": "science",
+    "row": 102,
+    "name": "The Creation of Plutonium",
+    "title": "Manhattan Project",
+    "sim": 0,
+    "reason": "low-confidence",
+    "proposed": {
+      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Time%2C_3-22_p.m%2C_December_2%2C_1942._Place%2C_Racquets_Court_under_West_Stands_of_Stagg_Field%2C_University_of_Chicago...._-_NARA_-_542144.tif/lossy-page1-1920px-Time%2C_3-22_p.m%2C_December_2%2C_1942._Place%2C_Racquets_Court_under_West_Stands_of_Stagg_Field%2C_University_of_Chicago...._-_NARA_-_542144.tif.jpg"
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
+  },
+  {
+    "dataset": "science",
+    "row": 106,
+    "name": "The First Atomic Bombs",
+    "title": "Trinity (nuclear test)",
+    "sim": 0,
+    "reason": "low-confidence",
+    "proposed": {
+      "image": "https://upload.wikimedia.org/wikipedia/commons/8/8d/Trinity_shot_color.jpg"
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
+  }
+]

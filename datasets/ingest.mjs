@@ -23,9 +23,14 @@
  *     --events <page>             mine MANY dated events out of one page's body,
  *                                 from its tables and its dated lines;
  *                                 repeatable. This is how deep time gets in
- *     --events-prose              also mine mid-sentence dates (noisier)
+ *     --events-prose              also KEEP the mid-sentence dates (noisier).
+ *                                 They are always mined and counted; without
+ *                                 this flag they are reported and discarded
  *     --retitle                   let the LLM name each mined event
  *     --reshape                   rewrite excerpts in house voice (local LLM)
+ *     --allow-thin                keep entries whose excerpt stays under 300
+ *                                 chars. They embed on their title alone; by
+ *                                 default they are reported and skipped
  *     --tag-topics                let the LLM propose topics too
  *     --min-year / --max-year     drop anything outside the range
  *     --dry                       report only, write nothing
@@ -57,8 +62,13 @@ import {
   readEntries, appendEntries, readVectors, appendVectors, writeEntries,
   makeEntry, entryId, entryText, truncateNormalize, DIM, PATHS, readJSON,
 } from './lib/store.mjs';
-import { describe, describeMany, categoryMembers, pageLinks, mineEvents } from './lib/wiki.mjs';
+import {
+  describe, describeMany, categoryMembers, pageLinks, mineEvents,
+  leadText, resolveTitle, INDEX_TITLE, MIN_EXCERPT,
+} from './lib/wiki.mjs';
+import { mapPool, sleep } from './wikilib.mjs';
 import { embed, generate, ensureUp, EMBED_MODEL, WRITE_MODEL } from './lib/ollama.mjs';
+import { STYLE, styleReject } from './lib/style.mjs';
 import { nearestLeaf } from './lib/cluster.mjs';
 import { parseYears, isCirca } from './lib/years.mjs';
 
@@ -89,6 +99,7 @@ const OPT = {
   eventsProse: has('--events-prose'),
   retitle:  has('--retitle'),
   reshape:  has('--reshape'),
+  allowThin: has('--allow-thin'),
   tagTopics: has('--tag-topics'),
   minYear:  val('--min-year') != null ? Number(val('--min-year')) : -Infinity,
   maxYear:  val('--max-year') != null ? Number(val('--max-year')) : Infinity,
@@ -294,12 +305,21 @@ if(inputs.length){
  * are not pages with inception dates — they are lines inside a "Timeline of…"
  * article. `mineEvents` reads the body instead; see lib/wiki.mjs.
  *
- * Two sources, reported separately because they warrant different scrutiny:
- * `mined-table` is a row under a column headed "Year", `mined-line` a line that
- * begins with its date, `mined-prose` a date found inside a sentence and the only
- * one that needs reading before it is written.
+ * Two tiers, and `--events-prose` gates which of them is KEPT, not which is
+ * looked for. `mined-table` (a row under a column headed "Year") and
+ * `mined-line` (a line beginning with its date) are always written;
+ * `mined-prose` (a date inside a sentence) is always mined, always counted, and
+ * written only with the flag.
  *
- * --limit caps each page separately here, rather than capping a list of titles.
+ * The gate used to sit on the mining, which meant a page that states its dates
+ * mid-sentence reported "nothing found" and you re-fetched it to discover why.
+ * One run now tells you the shape of the page. On a real timeline the prose
+ * count is a rounding error; on an ordinary article it is the whole yield and
+ * mostly commentary, which is the number you want in front of you before
+ * deciding.
+ *
+ * --limit caps each page separately here, rather than capping a list of titles,
+ * and applies to each tier separately so prose cannot eat the budget.
  */
 if(OPT.events.length){
   const minedSeen = new Set();
@@ -307,7 +327,7 @@ if(OPT.events.length){
     process.stdout.write(`  mining "${page}"… `);
     let r;
     try {
-      r = await mineEvents(page, { limit: OPT.limit, prose: OPT.eventsProse });
+      r = await mineEvents(page, { limit: OPT.limit });
     } catch(e){
       console.log('failed');
       console.error(`\n  ${e.message}`);
@@ -316,28 +336,39 @@ if(OPT.events.length){
     if(!r){ console.log('no such page'); rejected.push([page, 'no such page']); continue; }
 
     // The same event is listed on more than one timeline page, so dedupe across
-    // pages in this run as well as within each one.
-    const fresh = r.drafts.filter((d) => {
+    // pages in this run as well as within each one. Strict drafts are offered
+    // the key first, so a discarded prose draft can never mask a real one.
+    const dedupe = (list) => list.filter((d) => {
       const key = `${d.start}|${d.title.toLowerCase()}`;
       if(minedSeen.has(key)) return false;
       minedSeen.add(key);
       return true;
     });
+    const fresh = dedupe(r.drafts);
+    const freshProse = dedupe(r.prose);
+
     drafts.push(...fresh);
+    if(OPT.eventsProse) drafts.push(...freshProse);
     for(const [title, why] of r.skipped) rejected.push([title, why]);
 
     const n = (src) => fresh.filter((d) => d._dateSource === src).length;
-    console.log(`${r.page}: ${fresh.length} events ` +
-                `(${n('mined-table')} from tables, ${n('mined-line')} dated at a line head, ` +
-                `${n('mined-prose')} mid-sentence)` +
+    const kept = fresh.length + (OPT.eventsProse ? freshProse.length : 0);
+    console.log(`${r.page}: ${kept} events ` +
+                `(${n('mined-table')} from tables, ${n('mined-line')} dated at a line head` +
+                `${OPT.eventsProse ? `, ${freshProse.length} mid-sentence` : ''})` +
                 `${r.drafts.length >= OPT.limit ? `  — hit --limit ${OPT.limit}` : ''}`);
     console.log(`    read ${r.tally.tables} tables (${r.tally.rows} rows) and ${r.scanned} lines of text` +
                 `${r.tally.tablesSkipped ? `; skipped ${r.tally.tablesSkipped} tables with no date column` : ''}`);
     if(r.tally.noHtml) console.log(`    the page's HTML did not load, so NO tables were read — re-run`);
     if(r.skipped.length) console.log(`    ${r.skipped.length} skipped as unreadable dates`);
-    if(!r.drafts.length){
-      console.log(`    Nothing dated found. If the page writes its dates mid-sentence rather`);
-      console.log(`    than in a table or at the head of a line, try --events-prose.`);
+    if(!OPT.eventsProse && freshProse.length){
+      console.log(`    ${freshProse.length} more dates sit mid-sentence and were NOT kept. That tier is` +
+                  ` noisier —`);
+      console.log(`    on an ordinary article it is mostly commentary and cited publication years.`);
+      console.log(`    Add --events-prose to include them; add --dry first to read them.`);
+    }
+    if(!fresh.length && !freshProse.length){
+      console.log(`    Nothing dated found anywhere on this page.`);
     }
   }
   console.log('');
@@ -456,25 +487,210 @@ for(const d of drafts){
 }
 
 // ---------------------------------------------------------------------------
+// The excerpt gate — give every entry enough prose to embed on
+// ---------------------------------------------------------------------------
+
+/*
+ * A mined event arrives with the sentence it was mined from as its excerpt, and
+ * on a timeline page that is often a fragment: "First trilobites." is seventeen
+ * characters. `entryText` then embeds it on little more than its title, and the
+ * entry lands wherever short text lands — which is the same failure that put 612
+ * unrelated world leaders in one cluster, arriving by a different route.
+ *
+ * `MIN_EXCERPT` (300, measured — see lib/wiki.mjs) is the floor. Below it, look up
+ * the event's SUBJECT and append that page's lead as context.
+ *
+ * Where the subject comes from, in order of trust:
+ *
+ *   1. `_links` — the `/wiki/…` targets in the row's own HTML. An editor already
+ *      decided that "trilobites" means Trilobite. This cannot pick the wrong page,
+ *      only fail to find one.
+ *   2. A search on the cleaned title, for prose-mined events, which come from
+ *      `explaintext` and therefore have no links at all.
+ *
+ * Two rules that are not optional, both learned the expensive way:
+ *
+ *   APPEND, NEVER REPLACE. The mined sentence is the only thing that distinguishes
+ *   this entry from every other event about trilobites. Swap it for the Trilobite
+ *   lead and a page's worth of events collapse onto one point — the same defect
+ *   `misses.mjs` found in art.csv, where Pissarro's biography was proposed as the
+ *   excerpt for 32 different paintings.
+ *
+ *   CAP THE REUSE. Even appended, one lead shared by ten entries dominates all ten
+ *   vectors. A page may supply context to `CONTEXT_REUSE` entries per run, and the
+ *   overflow is reported rather than dropped silently.
+ */
+const CONTEXT_REUSE = 3;
+const CONTEXT_CHARS = 600;
+
+/*
+ * Which of a row's links is the row actually ABOUT?
+ *
+ * Document order is the obvious choice and it is wrong often enough to matter:
+ * "Roman General Julius Caesar invades for the first time" links Roman first, so
+ * first-wins attaches the Roman Republic's lead to an entry about Caesar. The
+ * context is then plausible, long, and about the wrong subject — the one failure
+ * of this gate that nothing downstream can detect.
+ *
+ * Scored by word overlap with the row's own title, comparing five-character
+ * prefixes so "trilobites" still matches Trilobite. The small length penalty
+ * stops a long page title from winning on volume alone; ties keep document order,
+ * which is the sensible fallback when nothing overlaps.
+ */
+const words = (s) => String(s).toLowerCase().normalize('NFKD')
+  .replace(/[^a-z0-9 ]+/g, ' ').split(/\s+/).filter((w) => w.length > 2);
+
+function rankLinks(links, title){
+  const t = words(title);
+  return links
+    .map((l, i) => {
+      const lw = words(l);
+      let hit = 0;
+      for(const a of lw) if(t.some((b) => a.slice(0, 5) === b.slice(0, 5))) hit++;
+      return { l, i, score: hit - lw.length * 0.15 };
+    })
+    .sort((a, b) => (b.score - a.score) || (a.i - b.i))
+    .map((x) => x.l);
+}
+
+/** A title with the timeline scaffolding taken off, for searching. */
+const subjectOf = (t) => String(t)
+  .replace(/^(?:the\s+)?(?:first|last|earliest|final|beginning|start|end)\s+(?:of\s+(?:the\s+)?)?/i, '')
+  .replace(/\s*\([^)]*\)\s*$/, '')
+  .replace(/[.,;:]+$/, '')
+  .trim();
+
+/*
+ * The longest proper-noun phrase in a row, which is usually what it is about.
+ *
+ * Prose-mined rows have no links to follow, and searching the whole sentence is
+ * actively harmful: "The Nectarian Era begins on Earth" returns *Timeline of
+ * Earth* — the very page the row was mined from. Measured on one page, every one
+ * of 12 unfillable rows failed exactly that way. A capitalised phrase is a much
+ * better query: "Late Heavy Bombardment", "Canadian Shield", "Nectarian Era".
+ *
+ * Rows whose subject is lowercase ("the sun enters main sequence") have no proper
+ * noun to find and fall through to `subjectOf`, then to being skipped. That is the
+ * intended outcome — a wrong context page is worse than no entry.
+ *
+ * TWO WORDS MINIMUM, and this is the rule that makes the difference. A single
+ * capitalised word plucked out of a sentence is a guess, and measured over one
+ * page every wrong match came from one: *Evidence of life* → **Evidence**,
+ * *Lifetime of the Last universal ancestor* → **Lifetime**, *earliest evidence for
+ * life* → **Carboniferous** — a period 3.9 billion years adrift. Every multi-word
+ * extraction was correct: Canadian Shield, Late Heavy Bombardment, Acasta Gneiss,
+ * Nuvvuagittuq Greenstone Belt, Hadrian's Wall. Rejected single words fall through
+ * to `subjectOf`, which searches the whole title and does better on exactly these
+ * — "Evidence of life" finds *Earliest known life forms*.
+ *
+ * Validating the candidate by cosine instead was tried and does not work: the row
+ * and the wrong page share their surface wording, so *Lifetime* scores 0.542
+ * against its row while the correct *Late Heavy Bombardment* scores 0.415. No
+ * threshold separates them. The failure is ontological, not semantic — a generic
+ * concept page rather than the entity — and an embedding cannot see that.
+ */
+const CAPS = /[A-Z][A-Za-z'’-]+(?:\s+(?:of|the|and|de|van)\s+[A-Z][A-Za-z'’-]+|\s+[A-Z][A-Za-z'’-]+)*/g;
+const LEADING_STOP = /^(?:the|a|an|first|last|earliest|final|possible|probable|oldest|evidence|approximate|beginning|start|end)\s+/i;
+
+function properNoun(title){
+  const hits = (String(title).match(CAPS) || [])
+    .map((h) => h.replace(LEADING_STOP, '').trim())
+    .filter((h) => h.length > 3 && !/^\d+$/.test(h) && h.split(/\s+/).length >= 2);
+  return hits.sort((a, b) => b.length - a.length)[0] || null;
+}
+
+/** The article a draft was mined FROM — never a useful context page for it. */
+const sourceTitleOf = (d) => {
+  try {
+    return decodeURIComponent(String(d.origin?.wiki || '').split('/wiki/')[1] || '').replace(/_/g, ' ');
+  } catch { return ''; }
+};
+
+const thin = candidates.filter((d) => String(d.excerpt || '').trim().length < MIN_EXCERPT);
+const thickened = [];
+const stillThin = [];
+
+if(thin.length){
+  console.log(`\n  ${thin.length} of ${candidates.length} drafts are under ${MIN_EXCERPT} characters` +
+              ` and would embed on their titles.`);
+  const used = new Map();                       // page title -> how many entries used it
+  let fromLink = 0, fromSearch = 0, overflow = 0;
+
+  await mapPool(thin, 3, async (d) => {
+    await sleep(50);
+    const tried = [];
+    const src = sourceTitleOf(d);
+    /*
+     * Links first, in relevance order. Searches only when there were none —
+     * a row that carries links has already told us the answer, and a search
+     * alongside them can only introduce a worse candidate.
+     *
+     * `resolveTitle`, not a bare search: it confirms an exact page before
+     * spending a search, which is how "trilobites" reaches Trilobite by redirect
+     * rather than by whatever the search engine ranks first.
+     */
+    const queries = d._links?.length ? [] : [...new Set([properNoun(d.title), subjectOf(d.title)].filter(Boolean))];
+
+    for(const cand of [...rankLinks(d._links || [], d.title), ...queries.map((q) => ({ q }))]){
+      let page = typeof cand === 'string' ? cand : await resolveTitle(cand.q);
+      if(!page || INDEX_TITLE.test(page) || page === src) continue;
+      if(tried.includes(page)) continue;
+      tried.push(page);
+
+      const n = used.get(page) || 0;
+      if(n >= CONTEXT_REUSE){ overflow++; continue; }
+
+      const lead = await leadText(page, CONTEXT_CHARS);
+      if(!lead || lead.length < 120) continue;
+
+      used.set(page, n + 1);
+      d.excerpt = `${String(d.excerpt || '').trim()}\n\n${lead}`.trim();
+      d._context = page;
+      if(typeof cand === 'string') fromLink++; else fromSearch++;
+      thickened.push(d);
+      return;
+    }
+    stillThin.push(d);
+  });
+
+  console.log(`  filled ${thickened.length}: ${fromLink} by following the row's own wiki link,` +
+              ` ${fromSearch} by searching the subject`);
+  if(overflow){
+    console.log(`  ${overflow} skipped a context page already used ${CONTEXT_REUSE}x this run` +
+                ` — shared prose makes shared vectors`);
+  }
+}
+
+/*
+ * What to do with what is still thin.
+ *
+ * Dropped by default. The whole point of the gate is that an entry which embeds on
+ * its title is worse than absent: it does not simply fail to cluster, it lands
+ * somewhere and pulls a real cluster's centroid toward nothing. `--allow-thin`
+ * keeps them for the cases where having the date on the map matters more.
+ */
+if(stillThin.length){
+  console.log(`  ${stillThin.length} could not be filled` +
+              `${OPT.allowThin ? ' — kept anyway (--allow-thin)' : ' and are being SKIPPED'}:`);
+  for(const d of stillThin.slice(0, 8)){
+    console.log(`      ${String(d.excerpt || '').trim().length}c  ${d.title.slice(0, 56)}`);
+  }
+  if(stillThin.length > 8) console.log(`      … and ${stillThin.length - 8} more`);
+  if(!OPT.allowThin){
+    const drop = new Set(stillThin);
+    for(const d of stillThin) rejected.push([d.title, `excerpt under ${MIN_EXCERPT} chars, no subject page found`]);
+    for(let i = candidates.length - 1; i >= 0; i--) if(drop.has(candidates[i])) candidates.splice(i, 1);
+    console.log(`      Add --allow-thin to keep them regardless.`);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Optional: house-voice reshape
 // ---------------------------------------------------------------------------
 
-/**
- * The project's excerpt style, as a system prompt. Wikipedia leads are accurate
- * but written as encyclopedia openings — heavy on parenthetical dates, native
- * spellings and disambiguation. This turns one into the flowing two-paragraph
- * prose the datasets use.
- */
-const STYLE = `You rewrite encyclopedia text into a house style for a history timeline.
-
-RULES
-- Flowing prose in complete sentences. Never clipped fragments like "Cold War end. Gulf War. Single term."
-- One or two paragraphs, 40-120 words total. Separate paragraphs with a blank line.
-- Paragraph one: what the thing is and why it matters. Paragraph two (optional): its consequence or context.
-- Drop parenthetical birth/death dates, IPA, native-script names and "not to be confused with".
-- Keep every fact from the source. Invent nothing. If the source is thin, write less.
-- No opening throat-clearing ("This article is about..."), no lists, no headings, no markdown.
-- Past tense for events. Do not begin with the subject's name in bold.`;
+// STYLE and styleReject live in lib/style.mjs, because excerpts.mjs reshapes
+// with the same brief and two copies of a style guide is how one corpus ends up
+// in two voices.
 
 if(OPT.reshape && candidates.length){
   await ensureUp();
@@ -489,9 +705,9 @@ if(OPT.reshape && candidates.length){
         `Rewrite this into the house style.\n\nTITLE: ${d.title}\nDATE: ${d.yearText}\n\n${d.excerpt}`,
         { system: STYLE, temperature: 0.3 },
       );
-      // Guard against a model that ignored the brief and returned something
-      // shorter than a sentence or wildly longer than asked.
-      if(out && out.length > 60 && out.length < d.excerpt.length * 2.2) d.excerpt = out;
+      // Keep the accurate encyclopedia text whenever the rewrite is one of the
+      // recognisable local-model failures. See styleReject in lib/style.mjs.
+      if(!styleReject(out, d.excerpt.length)) d.excerpt = String(out).trim();
     } catch(e){
       process.stdout.write(`\n  reshape failed for ${d.title}: ${e.message}\n`);
     }
@@ -565,10 +781,19 @@ const srcCount = new Map();
 for(const d of candidates) srcCount.set(d._dateSource || 'none', (srcCount.get(d._dateSource || 'none') || 0) + 1);
 if(srcCount.size) console.log(`  date sources: ${[...srcCount].map(([k, v]) => `${k}:${v}`).join('  ')}`);
 
+/*
+ * Which page lent each entry its context, so a `--dry` run can be READ before it
+ * is committed. A wrong context page is the one failure of the gate that is
+ * invisible afterwards: the entry looks healthy, it is 700 characters long, and
+ * 600 of them are about the wrong subject.
+ */
+const ctxOf = new Map(candidates.filter((d) => d._context).map((d) => [d.title, d._context]));
+
 for(const e of fresh.slice(0, OPT.dry ? 40 : 12)){
+  const ctx = ctxOf.get(e.title);
   console.log(`    ${String(e.yearText || e.start).padStart(11)}  ${e.title.slice(0, 42).padEnd(44)}` +
               `${e.image ? 'img ' : '    '}${e.excerpt ? `${e.excerpt.length}c ` : 'NO TEXT '}` +
-              `${e.topics.slice(0, 3).join(', ')}`);
+              `${ctx ? `+ctx:${ctx.slice(0, 28)}` : e.topics.slice(0, 3).join(', ')}`);
 }
 if(fresh.length > 12 && !OPT.dry) console.log(`    … and ${fresh.length - 12} more`);
 

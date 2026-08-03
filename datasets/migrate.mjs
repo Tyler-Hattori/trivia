@@ -74,9 +74,19 @@ const MAP = {
     topics: ['occupation', 'country'], facets: { occupation: 'occupation', country: 'country' },
     domains: ['people', 'biography'],
   },
+  /*
+   * `role` is Wikidata P39 normalised to a category noun by roles.mjs, and it is
+   * carried in BOTH topics and facets for the same reason people.csv carries
+   * `occupation` in both: topics reach the embedded text and weigh 6 in the
+   * token bag, facets weigh 4 and are what `vocabTokens` passes through
+   * verbatim. It is there because the label vocabulary is harvested from the
+   * corpus, and before this column the corpus contained no word for what a
+   * leader IS — only which country and which party. See roles.mjs.
+   */
   'leaders.csv': {
     title: 'name', subtitle: 'country', years: 'years', kind: 'span',
-    topics: ['country', 'house/party'], facets: { country: 'country', party: 'house/party' },
+    topics: ['country', 'house/party', 'role'],
+    facets: { country: 'country', party: 'house/party', role: 'role' },
     domains: ['leaders', 'politics', 'reign'],
   },
   'philosophy.csv': {

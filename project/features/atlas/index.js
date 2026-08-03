@@ -64,6 +64,7 @@ const SHELL = (base, css, theme) => `<!DOCTYPE html>
       <div class="seg" id="modeSeg"></div>
       <div class="seg" id="scaleSeg"></div>
       <div class="grp spacer">
+        <div class="seg" id="axisSeg" title="Which axis the zoom controls move"></div>
         <button class="btn icon" id="zoomOut" title="Zoom out (&minus;)">&minus;</button>
         <span id="ppyLab"></span>
         <button class="btn icon" id="zoomIn" title="Zoom in (+)">+</button>
@@ -96,6 +97,8 @@ const SHELL = (base, css, theme) => `<!DOCTYPE html>
     <dt>pinch</dt><dd>zoom at the cursor</dd>
     <dt>&#8963; + wheel</dt><dd>zoom at the cursor, with a mouse</dd>
     <dt>&#8997; + wheel</dt><dd>zoom the topic axis only</dd>
+    <dt>&#8679; + pinch</dt><dd>zoom the time axis only</dd>
+    <dt>&#8660;&#8661; &#8660; &#8661;</dt><dd>which axis the &plus;&thinsp;&minus; controls zoom</dd>
     <dt>&#8679; + wheel</dt><dd>pan through time</dd>
     <dt>drag</dt><dd>pan</dd>
     <dt>&larr; &rarr; &uarr; &darr;</dt><dd>pan &middot; hold &#8679; for a bigger step</dd>
@@ -167,6 +170,8 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     mode: DEFAULT_MODE,
     domain: domainFor(DEFAULT_MODE, A.xExtent),
     theme,
+    // Which axis the zoom controls drive: 'both', 'x' (time) or 'y' (topics).
+    zoomAxis: 'both',
     collapsed: new Set(),
     // The collapsed set, reduced to the non-nested y ranges `makeScale` warps by.
     // Derived state: always go through `syncFolds()`, never assign it directly.
@@ -260,6 +265,34 @@ export async function openAtlas({ title = 'Atlas' } = {}){
       .map((s) => `<button data-stop="${s.key}">${s.label}</button>`).join('');
   }
   renderStops();
+
+  /*
+   * The zoom axis.
+   *
+   * Both axes were always zoomable apart — `zoomAt` has taken `xOnly`/`yOnly`
+   * since it was written — but the only way in was alt+wheel, listed in the help
+   * panel and therefore invisible. This scopes the ordinary controls to one axis
+   * instead. Switching back to Both re-couples y to x, which is the way out.
+   *
+   * Not persisted: a sticky zoom mode is exactly the kind of leaked pref that made
+   * the QA suite fail against a view nobody had set (see ATLAS.md).
+   */
+  const AXES = [
+    { key: 'both', label: '&#8660;&#8661;', title: 'Zoom both axes together' },
+    { key: 'x',    label: '&#8660;',        title: 'Zoom time only — a wider or narrower span of years, topics unchanged' },
+    { key: 'y',    label: '&#8661;',        title: 'Zoom topics only — more or less of the cluster tree, years unchanged' },
+  ];
+  $('axisSeg').innerHTML = AXES
+    .map((a) => `<button data-axis="${a.key}" title="${esc(a.title)}">${a.label}</button>`)
+    .join('');
+
+  /** The `xOnly`/`yOnly` pair the current axis setting implies. */
+  const axisOpts = () => ({ xOnly: V.zoomAxis === 'x', yOnly: V.zoomAxis === 'y' });
+
+  function setZoomAxis(key){
+    V.zoomAxis = AXES.some((a) => a.key === key) ? key : 'both';
+    mark({ paint: true });
+  }
 
   // ---- sizing -------------------------------------------------------------
   function measure(){
@@ -404,6 +437,9 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     for(const b of $('modeSeg').children){
       b.classList.toggle('on', b.dataset.mode === V.mode);
       b.classList.toggle('edge', edge && !!wider && b.dataset.mode === wider.key);
+    }
+    for(const b of $('axisSeg').children){
+      b.classList.toggle('on', b.dataset.axis === V.zoomAxis);
     }
     $('ppyLab').textContent = ppyLabel(scale.ppy);
     $('dimBtn').classList.toggle('on', V.dimMode);
@@ -758,6 +794,13 @@ export async function openAtlas({ title = 'Atlas' } = {}){
    *   shift           pan through time — a mouse wheel has no deltaX
    *   ctrl / cmd      zoom at the cursor (pinch, or a mouse wheel held with ctrl)
    *   alt             zoom the topic axis only
+   *   shift + pinch   zoom time only
+   *
+   * The last two override the toolbar's axis setting rather than combining with
+   * it. A modifier held down is a statement about this gesture, and a gesture that
+   * did something different depending on a control elsewhere in the window would
+   * be the worst of both — so an unmodified zoom follows the toolbar, and a
+   * modified one means exactly what it says.
    *
    * Pinch deltas are much smaller per event than a wheel notch and arrive in long
    * streams, hence the separate ZOOM_RATE — it is the one number to tune here if
@@ -774,7 +817,11 @@ export async function openAtlas({ title = 'Atlas' } = {}){
 
     if(e.ctrlKey || e.metaKey || e.altKey){
       const factor = Math.exp(-e.deltaY * unit * ZOOM_RATE);
-      zoom(factor, px, py, { yOnly: e.altKey && !e.ctrlKey && !e.metaKey });
+      const pinch = e.ctrlKey || e.metaKey;
+      const opts = e.altKey && !pinch ? { yOnly: true }
+        : e.shiftKey && pinch ? { xOnly: true }
+        : axisOpts();
+      zoom(factor, px, py, opts);
       return;
     }
 
@@ -931,8 +978,13 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     const b = e.target.closest('[data-mode]');
     if(b) setMode(b.dataset.mode);
   });
-  $('zoomIn').onclick = () => zoom(1.7);
-  $('zoomOut').onclick = () => zoom(1 / 1.7);
+  $('axisSeg').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if(b) setZoomAxis(b.dataset.axis);
+  });
+
+  $('zoomIn').onclick = () => zoom(1.7, V.W / 2, V.H / 2, axisOpts());
+  $('zoomOut').onclick = () => zoom(1 / 1.7, V.W / 2, V.H / 2, axisOpts());
   $('fitBtn').onclick = fit;
   $('dimBtn').onclick = () => { V.dimMode = !V.dimMode; mark({ paint: true, mini: true, prefs: true }); };
   $('railBtn').onclick = () => {
@@ -996,8 +1048,8 @@ export async function openAtlas({ title = 'Atlas' } = {}){
       case '/': e.preventDefault(); qInput.focus(); qInput.select(); return;
       case '?': $('help').classList.toggle('on'); return;
       case '0': fit(); return;
-      case '+': case '=': zoom(1.7); return;
-      case '-': case '_': zoom(1 / 1.7); return;
+      case '+': case '=': zoom(1.7, V.W / 2, V.H / 2, axisOpts()); return;
+      case '-': case '_': zoom(1 / 1.7, V.W / 2, V.H / 2, axisOpts()); return;
       case 'm': {
         const i = MODES.findIndex((x) => x.key === V.mode);
         setMode(MODES[(i + 1) % MODES.length].key);

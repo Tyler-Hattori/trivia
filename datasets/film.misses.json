@@ -3,7 +3,9 @@
     "row": 139,
     "name": "ladri di biciclete",
     "query": "ladri di biciclete 1948 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 73,
@@ -13,7 +15,9 @@
     "reason": "low-confidence",
     "proposed": {
       "excerpt": "Sunrise: A Song of Two Humans is a 1927 American synchronized sound romantic drama directed by German director F. W. Murnau and starring George O'Brien, Janet Gaynor, and Margaret Livingston. The film's plot follows a married farmer (O'Brien) who falls for a woman vacationing from the city (Livingston), who tries to convince him to murder his wife (Gaynor) in order to be with her. While the film has no audible dialogue, it was released with a synchronized musical score with sound effects using the Movietone sound-on-film process. The story was adapted by Carl Mayer from the short story \"The Excursion to Tilsit\", from the 1917 collection with the same title by Hermann Sudermann."
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.17 below the gate"
   },
   {
     "row": 137,
@@ -23,7 +27,9 @@
     "reason": "low-confidence",
     "proposed": {
       "excerpt": "Gentleman's Agreement is a 1947 American drama film based on Laura Z. Hobson's best-selling 1947 novel of the same title, directed by Elia Kazan. The film is about a journalist who pretends to be Jewish to research an exposé on the widespread antisemitism in New York City and the affluent communities of New Canaan and Darien, Connecticut. It was nominated for eight Academy Awards and won three: Best Picture, Best Supporting Actress, and Best Director."
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
   },
   {
     "row": 111,
@@ -33,7 +39,9 @@
     "reason": "low-confidence",
     "proposed": {
       "excerpt": "Sullivan's Travels is a 1941 American comedy-drama film written and directed by Preston Sturges. A satire of the film industry, it follows a famous Hollywood comedy director who, longing to make a socially relevant drama, sets out to live as a tramp to gain life experience for his forthcoming film. Along the way he unites with a poor aspiring actress who accompanies him. The title is a reference to Gulliver's Travels, the 1726 novel by satirist Jonathan Swift about another journey of self-discovery."
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
   },
   {
     "row": 96,
@@ -43,7 +51,9 @@
     "reason": "low-confidence",
     "proposed": {
       "excerpt": "Polari is a form of slang or cant historically used primarily in the United Kingdom among the gay subculture, as well as some actors, circus and fairground performers, professional wrestlers, merchant navy sailors, criminals, and prostitutes."
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
   },
   {
     "row": 143,
@@ -53,7 +63,9 @@
     "reason": "low-confidence",
     "proposed": {
       "excerpt": "Adam's Rib is a 1949 American romantic comedy-drama film by director George Cukor from a screenplay written by Ruth Gordon and Garson Kanin. It stars Spencer Tracy and Katharine Hepburn as married lawyers who come to oppose each other in court. Judy Holliday co-stars as the third lead in her second credited movie role. Also featured are Tom Ewell, David Wayne, and Jean Hagen. The music was composed by Miklós Rózsa, and the song \"Farewell, Amanda\" was written by Cole Porter."
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
   },
   {
     "row": 199,
@@ -63,7 +75,9 @@
     "reason": "low-confidence",
     "proposed": {
       "excerpt": "Red Alert is a 1958 novel by Peter George about nuclear war. The book provided the underlying narrative structure for Stanley Kubrick's 1964 film Dr. Strangelove or: How I Learned to Stop Worrying and Love the Bomb. Kubrick's film differs significantly from the novel in that the film is a black comedy."
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
   },
   {
     "row": 196,
@@ -73,67 +87,89 @@
     "reason": "low-confidence",
     "proposed": {
       "excerpt": "8½ is a 1963 Italian avant-garde comedy-drama film directed and co-written by Federico Fellini. The metafictional narrative centers on famous Italian film director Guido Anselmi who suffers from writer's block as he attempts to direct an epic science fiction film. Claudia Cardinale, Anouk Aimée, Sandra Milo, Rossella Falk, Barbara Steele, and Eddra Gale portray the various women in Guido's life. An international co-production between France and Italy, the film was shot in black and white by cinematographer Gianni Di Venanzo and features a score by Nino Rota, with costume and set designs by Piero Gherardi."
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
   },
   {
     "row": 213,
     "name": "the jungle book",
     "query": "the jungle book 1967 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 214,
     "name": "once upon a time in the west",
     "query": "once upon a time in the west 1968 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 215,
     "name": "bullitt",
     "query": "bullitt 1968 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 216,
     "name": "the odd couple",
     "query": "the odd couple 1968 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 210,
     "name": "the producers",
     "title": "The Producers (1967 film)",
-    "reason": "no-summary"
+    "reason": "no-summary",
+    "verdict": "no-source",
+    "verdictWhy": "no-summary"
   },
   {
     "row": 217,
     "name": "funny girl",
     "query": "funny girl 1968 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 218,
     "name": "butch cassidy and the sundance kid",
     "query": "butch cassidy and the sundance kid 1969 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 219,
     "name": "easy rider",
     "query": "easy rider 1969 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 220,
     "name": "the wild bunch",
     "query": "the wild bunch 1969 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 224,
     "name": "m*a*s*h",
     "query": "m*a*s*h 1970 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 275,
@@ -143,7 +179,9 @@
     "reason": "low-confidence",
     "proposed": {
       "excerpt": "WarGames is a 1983 American techno-thriller film directed by John Badham, written by Lawrence Lasker and Walter F. Parkes, and starring Matthew Broderick, Dabney Coleman, John Wood and Ally Sheedy. Broderick plays David Lightman, a young computer hacker who unwittingly accesses a United States military supercomputer programmed to simulate, predict and execute nuclear war against the Soviet Union, triggering a false alarm that threatens to start World War III. Martin Brest was originally the film's director, but was fired early into production."
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
   },
   {
     "row": 247,
@@ -153,7 +191,9 @@
     "reason": "low-confidence",
     "proposed": {
       "excerpt": "Star Wars is a 1977 American epic space opera film written and directed by George Lucas. Produced by Lucasfilm Ltd. and distributed by Twentieth Century-Fox, it is the first film in the Star Wars franchise and the fourth chronological chapter of the \"Skywalker Saga\". Set in a fictional galaxy under the rule of the tyrannical Galactic Empire, the film follows a resistance movement, called the Rebel Alliance, that aims to destroy the Empire's ultimate weapon, the Death Star. When the rebel leader Princess Leia is captured by the Galactic Empire, Luke Skywalker acquires stolen architectural plans for the Death Star and sets out to rescue her while learning the ways of a metaphysical power known as \"the Force\" from the Jedi Master Obi-Wan Kenobi. The film stars Mark Hamill, Harrison Ford, Carrie Fisher, Peter Cushing, Alec Guinness, Anthony Daniels, Kenny Baker, Peter Mayhew, David Prowse, and James Earl Jones."
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
   },
   {
     "row": 276,
@@ -163,7 +203,9 @@
     "reason": "low-confidence",
     "proposed": {
       "excerpt": "Rumble Fish is a 1983 film."
-    }
+    },
+    "verdict": "index-page",
+    "verdictWhy": "\"Rumble Fish (disambiguation)\" is an index or disambiguation page, not a subject"
   },
   {
     "row": 348,
@@ -173,7 +215,9 @@
     "reason": "low-confidence",
     "proposed": {
       "excerpt": "Schindler's List is a 1993 American epic historical drama film directed and co-produced by Steven Spielberg and written by Steven Zaillian. It is based on the historical novel Schindler's Ark (1982) by Thomas Keneally. The film follows Oskar Schindler, a German industrialist who saved more than a thousand mostly Polish–Jewish refugees from the Holocaust by employing them in his factories during World War II. It stars Liam Neeson as Schindler, Ralph Fiennes as SS officer Amon Göth, and Ben Kingsley as Schindler's Jewish accountant Itzhak Stern."
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
   },
   {
     "row": 354,
@@ -183,7 +227,9 @@
     "reason": "low-confidence",
     "proposed": {
       "excerpt": "Léon is a 1994 French English-language action-thriller film written and directed by Luc Besson. It stars Jean Reno, Gary Oldman and Natalie Portman in her feature film debut. The plot centers on Léon (Reno), an Italian-American professional hitman who reluctantly takes in twelve-year-old Mathilda Lando (Portman) after her family is murdered by corrupt Drug Enforcement Administration (DEA) agent Norman Stansfield (Oldman). Léon and Mathilda form an unusual relationship as she becomes his protégée and learns the hitman's trade. The film was released in France by Gaumont Buena Vista International on 14 September 1994 and received mostly positive reviews from critics."
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
   },
   {
     "row": 362,
@@ -193,7 +239,9 @@
     "reason": "low-confidence",
     "proposed": {
       "excerpt": "Seven is a 1995 American crime thriller film directed by David Fincher and written by Andrew Kevin Walker. It stars Brad Pitt and Morgan Freeman, with Gwyneth Paltrow and John C. McGinley in supporting roles. Set in an unnamed, crime-ridden city, the narrative follows disenchanted, nearly retired Detective Lieutenant William Somerset and his newly transferred partner David Mills as they try to stop a serial killer from committing a series of murders based on the seven deadly sins."
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
   },
   {
     "row": 417,
@@ -203,7 +251,9 @@
     "reason": "low-confidence",
     "proposed": {
       "excerpt": "Dodgeball: A True Underdog Story is a 2004 sports comedy film written and directed by Rawson Marshall Thurber, in his directorial debut, and starring Vince Vaughn, Ben Stiller, Christine Taylor, and Rip Torn. The film follows a group of unlikely misfits who enter a Las Vegas dodgeball tournament, needing the prize money to save their cherished gym from being taken over by a corporate health fitness chain."
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.2 below the gate"
   },
   {
     "row": 397,
@@ -213,7 +263,9 @@
     "reason": "low-confidence",
     "proposed": {
       "excerpt": "Ocean's Eleven is a 2001 American heist comedy film directed by Steven Soderbergh from a screenplay by Ted Griffin. The first installment in the Ocean's film trilogy, it is a remake of the 1960 Rat Pack film. The film features an ensemble cast including George Clooney, Matt Damon, Andy García, Brad Pitt, Julia Roberts, Casey Affleck, Don Cheadle, Scott Caan, Elliott Gould, Bernie Mac and Carl Reiner. The story follows friends Danny Ocean (Clooney) and Rusty Ryan (Pitt), who plan a heist of $160 million from casino owner Terry Benedict (García), the lover of Ocean's ex-wife Tess (Roberts)."
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
   },
   {
     "row": 402,
@@ -223,7 +275,9 @@
     "reason": "low-confidence",
     "proposed": {
       "excerpt": "Atlantis: The Lost Empire is a 2001 American animated science fiction adventure film directed by Gary Trousdale and Kirk Wise, produced by Don Hahn, and written by Tab Murphy. Produced by Walt Disney Feature Animation, it stars Michael J. Fox, James Garner, Cree Summer, Don Novello, Phil Morris, Claudia Christian, Jacqueline Obradors, Florence Stanley, David Ogden Stiers, John Mahoney, Jim Varney, Corey Burton and Leonard Nimoy. Set in 1914, the film follows young linguist Milo Thatch (Fox), who gains possession of a sacred book, which he believes will guide him and a crew of mercenaries to the lost city of Atlantis."
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.25 below the gate"
   },
   {
     "row": 418,
@@ -233,7 +287,9 @@
     "reason": "low-confidence",
     "proposed": {
       "excerpt": "Anchorman: The Legend of Ron Burgundy is a 2004 American satirical comedy film directed by Adam McKay in his directorial debut, produced by Judd Apatow, starring Will Ferrell and Christina Applegate and written by McKay and Ferrell. The first installment in the Anchorman series, the film is a tongue-in-cheek take on the culture of the 1970s, particularly the new Action News format. It portrays a San Diego television station where news anchor Ron Burgundy (Ferrell) clashes with his new co-anchor Veronica Corningstone (Applegate)."
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.17 below the gate"
   },
   {
     "row": 448,
@@ -243,7 +299,9 @@
     "reason": "low-confidence",
     "proposed": {
       "excerpt": "Talladega Nights: The Ballad of Ricky Bobby is a 2006 American sports comedy film directed by Adam McKay who co-wrote the film with Will Ferrell. It features Ferrell as the titular Ricky Bobby, an immature yet successful NASCAR driver. The film also features John C. Reilly, Sacha Baron Cohen, Gary Cole, Michael Clarke Duncan, Leslie Bibb, Jane Lynch, and Amy Adams in supporting roles. NASCAR drivers Jamie McMurray and Dale Earnhardt Jr. appear in cameos, as do broadcasting teams from NASCAR on Fox and NASCAR on NBC."
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.29 below the gate"
   },
   {
     "row": 463,
@@ -253,7 +311,9 @@
     "reason": "low-confidence",
     "proposed": {
       "excerpt": "Pirates of the Caribbean: At World's End is a 2007 American epic fantasy swashbuckler film directed by Gore Verbinski, produced by Jerry Bruckheimer, and written by Ted Elliott and Terry Rossio. The direct sequel to Pirates of the Caribbean: Dead Man's Chest (2006), it is the third installment in the Pirates of the Caribbean film series, and follows an urgent quest to locate and save Captain Jack Sparrow, trapped on a sea of sand in Davy Jones' Locker, and convene the Brethren Court in a war against the East India Trading Company. In an uneasy alliance, Will Turner, Elizabeth Swann, Hector Barbossa, and the Black Pearl crew rescue Jack and prepare to fight Lord Cutler Beckett, who controls Davy Jones and the Flying Dutchman."
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.25 below the gate"
   },
   {
     "row": 469,
@@ -263,216 +323,288 @@
     "reason": "low-confidence",
     "proposed": {
       "excerpt": "Surf's Up is a 2007 American animated mockumentary sports comedy film directed by Ash Brannon and Chris Buck, and written by Brannon, Buck, Don Rhymer and Chris Jenkins. Produced by Sony Pictures Animation, the film features the voices of Shia LaBeouf, Jeff Bridges, Zooey Deschanel, Jon Heder, and James Woods. It is a parody of surfing documentaries, such as The Endless Summer, Step into Liquid, and Riding Giants, with parts of the plot parodying North Shore. Real-life surfers Kelly Slater and Rob Machado have vignettes as their penguin surfer counterparts. To obtain the desired hand-held documentary feel, the film's animation team motion-captured a physical camera operator's moves."
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
   },
   {
     "row": 476,
     "name": "ponyo",
     "title": "Ponyo",
-    "reason": "no-summary"
+    "reason": "no-summary",
+    "verdict": "no-source",
+    "verdictWhy": "no-summary"
   },
   {
     "row": 479,
     "name": "bedtime stories",
     "query": "bedtime stories 2008 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 478,
     "name": "the hurt locker",
     "title": "The Hurt Locker",
-    "reason": "no-summary"
+    "reason": "no-summary",
+    "verdict": "no-source",
+    "verdictWhy": "no-summary"
   },
   {
     "row": 477,
     "name": "wall e",
     "title": "WALL-E",
-    "reason": "no-summary"
+    "reason": "no-summary",
+    "verdict": "no-source",
+    "verdictWhy": "no-summary"
   },
   {
     "row": 480,
     "name": "synecdoche new york",
     "query": "synecdoche new york 2008 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 482,
     "name": "the hangover",
     "query": "the hangover 2009 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 481,
     "name": "inglorious basterds",
     "query": "inglorious basterds 2009 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 483,
     "name": "fantastic mr fox",
     "query": "fantastic mr fox 2009 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 484,
     "name": "up",
     "query": "up 2009 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 485,
     "name": "hachi",
     "query": "hachi 2009 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 488,
     "name": "megamind",
     "query": "megamind 2010 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 487,
     "name": "how to train your dragon",
     "query": "how to train your dragon 2010 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 486,
     "name": "500 days of summer",
     "query": "500 days of summer 2009 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 489,
     "name": "the other guys",
     "query": "the other guys 2010 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 490,
     "name": "she's out of my league",
     "query": "she's out of my league 2010 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 493,
     "name": "easy a",
     "query": "easy a 2010 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 491,
     "name": "the social network",
     "query": "the social network 2010 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 492,
     "name": "deathly hallows part 1",
     "query": "deathly hallows part 1 2010 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 494,
     "name": "kick ass",
     "query": "kick ass 2010 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 495,
     "name": "secretariat",
     "query": "secretariat 2010 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 498,
     "name": "moneyball",
     "query": "moneyball 2011 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 497,
     "name": "iron man 2",
     "query": "iron man 2 2010 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 499,
     "name": "crazy, stupid, love",
     "query": "crazy, stupid, love 2011 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 496,
     "name": "the king's speech",
     "query": "the king's speech 2010 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 500,
     "name": "deathly hallows part 2",
     "query": "deathly hallows part 2 2011 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 501,
     "name": "the artist",
     "query": "the artist 2011 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 504,
     "name": "rango",
     "query": "rango 2011 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 503,
     "name": "get smart",
     "query": "get smart 2011 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 502,
     "name": "the help",
     "query": "the help 2011 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 571,
     "name": "spiderman: into the spiderverse",
     "query": "spiderman: into the spiderverse 2018 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 609,
     "name": "the holdovers",
     "query": "the holdovers 2023 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 610,
     "name": "the zone of interest",
     "query": "the zone of interest 2023 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 614,
     "name": "saturday night",
     "query": "saturday night 2024 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 599,
     "name": "glass onion",
     "query": "glass onion 2022 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 615,
     "name": "deadpool & wolverine",
     "query": "deadpool & wolverine 2024 film",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   }
 ]

@@ -80,8 +80,14 @@ const NOT_AN_ENTRY = new Set([
   'Q1457673',      // Wikimedia portal
 ]);
 
-/** Title shapes that are indexes rather than subjects. */
-const INDEX_TITLE = /^(list|lists|index|outline|glossary|timeline|chronology|bibliography|filmography|discography)\s+of\b|^(category|template|portal|draft|help|wikipedia|module):/i;
+/**
+ * Title shapes that are indexes rather than subjects.
+ *
+ * Exported because `misses.mjs` rejects the same shapes, and a second copy of
+ * this list is how "List of works by Leonardo da Vinci" ends up proposed as the
+ * excerpt for a painting.
+ */
+export const INDEX_TITLE = /^(list|lists|index|outline|glossary|timeline|chronology|bibliography|filmography|discography)\s+of\b|^(category|template|portal|draft|help|wikipedia|module):|\((?:disambiguation)\)$/i;
 
 const yearFromTime = (t) => {
   const m = String(t || '').match(/^([+-])(\d+)/);
@@ -186,7 +192,78 @@ async function categoriesFor(title){
  * entry, dated from its own claims. `mineEvents` drops that parameter on purpose,
  * because a "Timeline of…" page is a hundred entries whose dates are in the body.
  */
-async function leadText(title, maxChars = 1500){
+/*
+ * The excerpt length below which an entry embeds badly.
+ *
+ * Measured, not guessed. Sweeping the truncation `entryText` applies against how
+ * often an entry's 10 nearest neighbours share its Wikidata-derived role, on 192
+ * leaders across 4 roles:
+ *
+ *     150 chars  75.3%      600 chars  76.1%
+ *     300 chars  76.6%      700 chars  76.8%
+ *     450 chars  75.8%      900 chars  76.9%
+ *
+ * Flat above 300 and falling off below it. 700 is the peak and is already what
+ * `entryText` truncates to, so the useful threshold is not "aim for 700" but
+ * "clear 300" — which any Wikipedia lead does about three times over. Below this
+ * an entry embeds mostly on its title, which is how a 17-character timeline row
+ * ends up next to nothing it belongs with.
+ */
+export const MIN_EXCERPT = 300;
+
+/*
+ * Encyclopedia apparatus, removed mechanically.
+ *
+ * A Wikipedia lead opens with a dense parenthetical that is nothing but
+ * apparatus: `Tiberius Julius Caesar Augustus ( ty-BEER-ee-əs; 16 November 42 BC
+ * – 16 March AD 37) was…`, `Jacob Abraham Camille Pissarro ( piss-AR-oh; French:
+ * [kamij pisaʁo]; 10 July 1830 – 13 November 1903) was…`. It is noise in an
+ * excerpt and it is noise in a vector.
+ *
+ * Matched by CONTENT, not position: a parenthetical qualifies if it carries a
+ * date range, IPA, a pronunciation respelling, or a `Language:` gloss. A
+ * parenthetical that is ordinary prose is left alone.
+ *
+ * Lives here rather than in the one script that first needed it because
+ * `era-excerpts.mjs` needs exactly the same cleaning on paragraphs that are not
+ * leads — and a second copy of a regex list is how the two title-casers drifted.
+ */
+const IPA = /[ɑɒæɓʙβɔɕçɗɖðʤəɘɚɛɜɝɞɟʄɡɠɢʛɦɧħɥʜɨɪʝɭɬɫɮʟɱɯɰŋɳɲɴøɵɸθœɶʘɹɺɾɻʀʁɽʂʃʈʧʉʊʋⱱʌɣɤʍχʎʏʑʐʒʔʡʕʢǀǁǂǃˈˌːˑ̃]/;
+const GLOSS = /^(?:born|née|nee|Latin|Greek|Ancient Greek|Arabic|Hebrew|Persian|Chinese|Japanese|Russian|Sanskrit|Turkish|Old English|German|French|Italian|Spanish|pronounced|IPA|lit\.?|literally|romanized|transliterated|Classical Latin)\b/i;
+const DATERANGE = /\b\d{1,4}\s*(?:BC|BCE|AD|CE)?\s*[–—-]\s*(?:c\.\s*)?\d{1,4}\b|\b\d{1,2}\s+\w+\s+\d{1,4}\b/;
+
+export function stripApparatus(text){
+  let out = '';
+  let depth = 0, buf = '';
+  for(const ch of String(text || '')){
+    if(ch === '('){
+      if(depth === 0){ depth = 1; buf = ''; continue; }
+      depth++; buf += ch; continue;
+    }
+    if(ch === ')' && depth > 0){
+      depth--;
+      if(depth === 0){
+        const inner = buf.trim();
+        const junk = !inner || IPA.test(inner) || GLOSS.test(inner) || DATERANGE.test(inner) ||
+                     /^[\s;,·]*$/.test(inner);
+        if(!junk) out += `(${inner})`;
+        buf = '';
+        continue;
+      }
+      buf += ch; continue;
+    }
+    if(depth > 0) buf += ch; else out += ch;
+  }
+  if(depth > 0) out += buf;                       // unbalanced: keep what we have
+  return out
+    .replace(/\[[^\]]*\]/g, '')                   // bracketed IPA / citations
+    .replace(/\s+([,.;:])/g, '$1')                // space left before punctuation
+    .replace(/,\s*,/g, ',')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+}
+
+export async function leadText(title, maxChars = 1500){
   const d = await getJSON(
     `${WP}/w/api.php?format=json&action=query&prop=extracts&explaintext=1&exintro=1&redirects=1&titles=${encodeURIComponent(title)}`,
   );
@@ -505,8 +582,15 @@ export async function pageLinks(title, { limit = 500 } = {}){
  *
  * A table row is the most trustworthy shape there is — a column headed "Year"
  * says outright that the cell is a date and that the row is what it dates — so
- * tables are mined by default and get their own tier, `mined-table`. Prose stays
- * behind `--events-prose`.
+ * tables are mined by default and get their own tier, `mined-table`.
+ *
+ * Prose is now always mined and returned separately, in `prose` rather than
+ * `drafts`. The gate that `--events-prose` operates moved from mining to
+ * writing: the flag decides whether the caller keeps the loose tier, not whether
+ * this function looks for it. That is what lets one `--dry` run tell you the
+ * shape of a page. Mining both costs a second walk over lines already in memory
+ * and no extra request — the old arrangement made you re-fetch the page to find
+ * out that it was prose-shaped.
  */
 
 /** Sections that are apparatus, not content. */
@@ -575,14 +659,17 @@ const clean = (s) => String(s)
 /**
  * Every dated event `page`'s body yields, as draft entries in `describe()`'s shape.
  *
- * Two confidence levels, reported separately because they deserve different
- * scrutiny:
+ * Returns `{ drafts, prose, ... }` — two arrays, because the two confidence
+ * levels deserve different scrutiny and the caller opts into the looser one:
  *
- *   `mined-line`   the line BEGINS with its date, which is what a timeline entry
- *                  looks like. The date unambiguously belongs to the text after it.
- *   `mined-prose`  a date found inside a sentence. The sentence may be about
- *                  something else and merely mention the year, so these are the
- *                  ones to read in `--dry` before writing.
+ *   `drafts`  `mined-table`, a row under a column headed "Year", and
+ *             `mined-line`, a line that BEGINS with its date. In both the date
+ *             unambiguously belongs to the text beside it.
+ *   `prose`   `mined-prose`, a date found inside a sentence. The sentence may be
+ *             about something else and merely mention the year — on *Cubism*
+ *             this tier returns 105 candidates of which roughly half are
+ *             art-historical commentary rather than events. Read them before
+ *             writing them.
  *
  * Returns null when the page does not exist.
  */
@@ -645,6 +732,34 @@ const decodeEntities = (s) => String(s).replace(
     if(hex) return String.fromCodePoint(parseInt(hex, 16));
     return ENTITIES[name.toLowerCase()] ?? all;
   });
+
+/*
+ * The `/wiki/…` targets inside a cell, in the order they appear.
+ *
+ * This is the one piece of a mined event worth more than the sentence itself.
+ * A timeline row reads "First trilobites." — seventeen characters, which embeds
+ * to almost nothing — but the row's HTML says
+ * `<a href="/wiki/Trilobite">trilobites</a>`, and that link is an editor's own
+ * disambiguation of what the row is about. Guessing the subject from the text
+ * means a search that can return the wrong page; following the link cannot.
+ *
+ * `cellText` runs after this and throws the markup away, so the extraction has to
+ * happen on the raw cell. Namespaced links are skipped: a File: or Category: link
+ * is apparatus, not a subject.
+ */
+const NS_LINK = /^(?:file|image|category|template|portal|help|wikipedia|special|talk|module|s|wikt):/i;
+
+export function cellLinks(html){
+  const out = [];
+  for(const m of String(html || '').matchAll(/<a\b[^>]*href="\/wiki\/([^"#?]+)"/gi)){
+    let t;
+    try { t = decodeURIComponent(m[1]); } catch { t = m[1]; }
+    t = decodeEntities(t).replace(/_/g, ' ').trim();
+    if(!t || NS_LINK.test(t) || INDEX_TITLE.test(t)) continue;
+    if(!out.includes(t)) out.push(t);
+  }
+  return out;
+}
 
 /** One table cell's HTML as plain text. */
 const cellText = (html) => clean(decodeEntities(String(html)
@@ -892,7 +1007,7 @@ function topicFrom(heading){
  */
 const DATED_MIN_CHARS = 12;
 
-export async function mineEvents(page, { limit = 400, minChars = 40, maxChars = 700, prose = false } = {}){
+export async function mineEvents(page, { limit = 400, minChars = 40, maxChars = 700 } = {}){
   const title = await resolveTitle(page);
   if(!title) return null;
 
@@ -910,6 +1025,15 @@ export async function mineEvents(page, { limit = 400, minChars = 40, maxChars = 
 
   const url = `${WP}/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`;
   const drafts = [];
+  /*
+   * Prose drafts are collected apart from the strict ones and returned apart,
+   * because the caller decides whether to keep them but this function no longer
+   * decides whether to look. Two separate arrays rather than one tagged list so
+   * that `limit` and the dedupe below cannot let the noisy tier crowd out the
+   * trustworthy one — see the second pass at the bottom.
+   */
+  const prose = [];
+  let sink = drafts;
   const skipped = [];
   const seen = new Set();
   let section = '';
@@ -922,8 +1046,8 @@ export async function mineEvents(page, { limit = 400, minChars = 40, maxChars = 
    * apart in how they are guarded, deduped or dated. `date` is `findDate`'s shape;
    * `text` is what the title is made from and `excerpt` is what is stored.
    */
-  const push = ({ text, excerpt, date, source, topic, facets, floor = minChars }) => {
-    if(drafts.length >= limit) return;
+  const push = ({ text, excerpt, date, source, topic, facets, floor = minChars, links }) => {
+    if(sink.length >= limit) return;
     const name = titleFrom(text);
     if(name.length < 3 || text.replace(DANGLING, '').length < floor) return;
     if(excerpt.length > maxChars) return;
@@ -958,7 +1082,7 @@ export async function mineEvents(page, { limit = 400, minChars = 40, maxChars = 
     seen.add(key);
 
     const span = end != null && end !== start;
-    drafts.push({
+    sink.push({
       title: name,
       subtitle: '',
       excerpt,
@@ -977,6 +1101,9 @@ export async function mineEvents(page, { limit = 400, minChars = 40, maxChars = 
       origin: { wiki: url, qid: null, manual: true },
       _dateSource: source,
       _mined: title,
+      // Subject candidates for `thicken` in ingest.mjs. Underscore-prefixed, so
+      // `makeEntry` drops it and it never reaches the store.
+      _links: links || [],
     });
   };
 
@@ -1031,32 +1158,59 @@ export async function mineEvents(page, { limit = 400, minChars = 40, maxChars = 
         text: what, excerpt: what, date, source: 'mined-table', topic: section,
         facets: fine && fine !== when ? { date: fine } : {},
         floor: DATED_MIN_CHARS,
+        links: cellLinks(row.cells[roles.text] || ''),
       });
     }
   }
 
-  // -- running text ---------------------------------------------------------
-  section = '';
-  let scanned = 0;
-  for(const raw of body.split('\n')){
-    const line = clean(raw);
-    if(!line) continue;
+  /*
+   * -- running text ---------------------------------------------------------
+   *
+   * Two passes over the same lines, and the order is the point.
+   *
+   * The strict pass runs to completion first, so `seen` is complete before a
+   * single prose draft is considered. Interleaved — which is what a single pass
+   * does — a loose match on line 5 claims the `start|title` key and silently
+   * blocks the line-anchored statement of the same event on line 800. That draft
+   * is then dropped again at write time for being prose, and the event vanishes
+   * from a run that never asked for prose at all.
+   *
+   * `limit` likewise applies per tier, because `sink` swaps between the passes.
+   * A page's trustworthy events can no longer be crowded out of the budget by
+   * sentences the caller may well discard.
+   */
+  const eachLine = (fn) => {
+    section = '';
+    let n = 0;
+    for(const raw of body.split('\n')){
+      const line = clean(raw);
+      if(!line) continue;
+      const head = line.match(/^(=+)\s*(.*?)\s*\1$/);
+      if(head){ section = head[2]; continue; }
+      if(SKIP_SECTION.test(section)) continue;
+      n++;
+      fn(line);
+    }
+    return n;
+  };
 
-    const head = line.match(/^(=+)\s*(.*?)\s*\1$/);
-    if(head){ section = head[2]; continue; }
-    if(SKIP_SECTION.test(section)) continue;
-
-    scanned++;
+  const anchoredOf = new Map();
+  const scanned = eachLine((line) => {
     const anchored = findDate(line, { anchored: true });
-    if(anchored){ addChunk(line, anchored, 'mined-line'); continue; }
-    if(!prose) continue;
+    anchoredOf.set(line, anchored);
+    if(anchored) addChunk(line, anchored, 'mined-line');
+  });
+
+  sink = prose;
+  eachLine((line) => {
+    if(anchoredOf.get(line)) return;             // the strict pass already took it
     for(const sent of sentences(line)){
       const date = findDate(sent, { loose: true });
       if(date) addChunk(sent, date, 'mined-prose');
     }
-  }
+  });
 
-  return { page: title, drafts, skipped, scanned, tally };
+  return { page: title, drafts, prose, skipped, scanned, tally };
 }
 
 /** Describe many pages with polite concurrency. */

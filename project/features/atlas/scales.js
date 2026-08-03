@@ -349,6 +349,11 @@ export function zoomAt(view, factor, px, py, { yOnly = false, xOnly = false } = 
     next.x0 = yearAt - px / next.ppy;
   }
 
+  /*
+   * `xOnly` leaves the topic axis exactly where it is, so the coupling is off
+   * until the next unrestricted zoom recomputes yz from ppy — which is what
+   * "both" means and is the way back to a coupled view.
+   */
   if(!xOnly){
     next.yz = yOnly
       ? clamp(view.yz * factor, YZ_MIN, YZ_MAX)

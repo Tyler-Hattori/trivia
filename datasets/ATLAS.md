@@ -68,8 +68,10 @@ node datasets/ingest.mjs --category "Battles of the Napoleonic Wars" --domain wa
 # every article linked from a list page
 node datasets/ingest.mjs --links "List of Impressionist painters" --domain art
 
-# many dated events out of ONE page's body — how deep time gets in
+# many dated events out of ONE page — how deep time gets in. Reads the page's
+# tables and its dated lines; add --events-prose for a narrative history article
 node datasets/ingest.mjs --events "Timeline of natural history" --domain geology --dry
+node datasets/ingest.mjs --events "Timeline of English history" --domain politics --dry
 
 # a file of titles or URLs, one per line, # for comments
 node datasets/ingest.mjs @my-list.txt --domain science
@@ -94,8 +96,8 @@ Useful flags:
 | `--topics a,b` | extra topics for everything in the run. These *are* embedded |
 | `--deep` | `--category` also descends one level into subcategories |
 | `--limit N` | cap the input list (default 500). With `--events`, caps each page |
-| `--events <page>` | mine many dated events out of one page's body. Repeatable |
-| `--events-prose` | also mine dates found mid-sentence. Noisier — see below |
+| `--events <page>` | mine many dated events out of one page's tables and dated lines. Repeatable |
+| `--events-prose` | also **keep** the dates found mid-sentence. They are always mined and counted; without this they are reported and discarded. Noisier — see below |
 | `--retitle` | let the local LLM name each mined event |
 | `--reshape` | rewrite excerpts into the project's voice with the local LLM |
 | `--tag-topics` | let the local LLM propose topic tags |
@@ -162,17 +164,96 @@ node datasets/ingest.mjs --events "Cretaceous–Paleogene extinction event" --ev
 `--dry` first, always. This path reads prose rather than a structured claim, so it
 is the least trustworthy input the pipeline has, and the report is how you check it.
 
-**Two confidence levels**, tallied separately in `date sources:`:
+**Three confidence levels**, tallied separately in `date sources:`:
 
 | source | shape | trust |
 |---|---|---|
+| `mined-table` | a row under a column headed `Year` | highest: the header says outright that the cell is a date and the row is what it dates |
 | `mined-line` | the line **begins** with its date — `541 Ma – The Cambrian explosion…` | high: the date plainly governs the text after it |
 | `mined-prose` | a date found inside a sentence | low: the sentence may merely mention a year |
 
-Prose mining is **off** unless you pass `--events-prose`, because on a page that is
-not a timeline it also collects the publication years of cited studies. On a
-timeline article it adds almost nothing — 173 of 187 events on `Timeline of Earth`
-are line-headed.
+Prose is **always mined and always counted; `--events-prose` decides whether it is
+kept.** The flag gates writing, not looking. Without it the run reports how many
+mid-sentence dates it found and discards them:
+
+```
+mining "Cubism"… Cubism: 0 events (0 from tables, 0 dated at a line head)
+    read 0 tables (0 rows) and 74 lines of text
+    105 more dates sit mid-sentence and were NOT kept. That tier is noisier —
+    on an ordinary article it is mostly commentary and cited publication years.
+    Add --events-prose to include them; add --dry first to read them.
+```
+
+That is the whole point: one run tells you the shape of the page. The gate used to
+sit on the mining, so a prose-shaped article reported "nothing found" and you
+re-fetched it to learn why. Mining both costs a second walk over lines already in
+memory and no extra request.
+
+Keep the tier opt-in, though. On `Cubism` those 105 candidates are roughly half
+real events and half art-historical commentary (`1911 Douglas Cooper's restrictive
+use of these`). On a genuine timeline it adds almost nothing — 173 of 187 events on
+`Timeline of Earth` are line-headed, and 3 sit mid-sentence.
+
+Two things this arrangement had to get right, both invisible when wrong:
+
+- **The strict pass runs to completion before any prose is considered.** Dedupe is
+  by `start|title`, so interleaved — which is what one pass does — a loose match
+  early in the article claims the key and silently blocks the line-anchored
+  statement of the same event later on. That draft is then discarded again for
+  being prose, and the event disappears from a run that never asked for prose.
+- **`--limit` applies per tier**, so a page's trustworthy events can no longer be
+  crowded out of the budget by sentences the caller is about to throw away.
+
+### Tables and prose are separate sources, and each was broken separately
+
+A page states its events either in tables or in narrative, and this is not a
+matter of degree. Two real pages returned **nothing**, for unrelated reasons:
+
+```
+Timeline of English history    22 wikitables, one event per row     → was 0, now 180
+History of quantum mechanics   225 lines of narrative paragraphs    → was 0, now 49
+```
+
+**Tables were never fetched.** `prop=extracts&explaintext=1` strips wiki tables
+entirely, so *Timeline of English history* arrived as 1,337 characters of intro and
+headings out of 197,000. The miner was not failing to parse those rows; it never
+received them, and `Nothing dated found in 1 lines` was the only symptom. There is
+now a second fetch, `action=parse&prop=text`, and the only HTML parsing in the
+pipeline — regex, not a DOM library, per the zero-dependency rule.
+
+Three things about it worth knowing before touching it:
+
+- **Only `wikitable`s are read.** That class is what MediaWiki puts on a content
+  table and withholds from navboxes, infoboxes and maintenance banners. Across six
+  timeline articles the filter was exact: every `wikitable` was rows of events,
+  every other table was apparatus. A table whose header names no date column is
+  skipped **and counted** in the report, not guessed at positionally.
+- **`rowspan` is resolved into a real grid, and has to be.** A year cell spanning
+  several event rows is how these tables avoid repeating a date — 274 of them on
+  *Timeline of Chinese history*. The rows underneath carry one fewer `<td>`, so read
+  positionally they shift left and the Date column's value lands in Year.
+- **`Year | Date | Event` headed 90 of 91 usable tables** across six articles (the
+  odd one out being `Events`). Matching is on synonyms anyway. The second date
+  column is the finer grain within the year, and it goes to `facets.date` rather
+  than `yearText` — "24 January AD 41" parses to the year 24, and `verify.mjs`
+  requires the stored text to re-parse to the stored year. `store.mjs` keeps a
+  `date` facet out of the embedded text, where it would cluster entries by calendar
+  coincidence.
+
+**Prose arrived fine but the grammar refused it.** Not the length limits and not
+the one-date-per-paragraph rule — both were checked and neither was firing. Of 397
+sentences on *History of quantum mechanics*, 41 carried a year and `findDate` took
+12, because a bare year mid-sentence needs a preposition in front of it and
+narrative history writes "his 1912 paper", "won the 1918 Nobel Prize", "the
+planetary model of the atom (1911)", "throughout the 1920s". `findDate(s, {loose:
+true})` accepts those and **only** `--events-prose` passes it.
+
+What keeps the loose grammar honest is the number itself: it requires a bare
+**4-digit** year in 1000–2099, so `400 members` and `663 km` cannot reach it at
+all, and a unit lookahead handles `1500 metres` and `2000 people`. It is still
+looser than the default, and an author-prominent citation — `Smith (1923)` — is
+structurally identical to a real parenthetical date. That residual is why the tier
+is opt-in and reported separately.
 
 ### The date forms it reads
 
@@ -198,13 +279,51 @@ Three decisions in there are worth knowing:
   `3,400 Ma`, `3.400 Ma` and `0.315 Ma`; the second is a mistyped thousands
   separator and the third a real decimal. A zero integer part settles one, and the
   age of the Earth settles another (`66.038 Ma` must be a decimal — 66,038 Ma
-  predates the universe). What survives both tests really is ambiguous.
+  predates the universe). What survives both tests really is ambiguous. The same
+  refusal covers a bare `90,000` in a Year column: on *Timeline of Japanese
+  history* it means 90,000 years ago, and read literally it is a date 88,000 years
+  in the future. Nothing in the page or in arithmetic settles it.
+
+### The era is often stated once, above the rows
+
+*Timeline of ancient Greece* writes all 189 of its datable lines as bare numbers —
+`777: Cumae is founded by Chalcis` — and names the era once, in the heading above
+them: `Archaic Period (785–481 BC)`. Read literally **every entry on that page
+lands in the wrong millennium**, and twenty come out as spans running backwards.
+
+So an unambiguously-BC heading (or page title) supplies the era for a bare year
+under it, and the `BC` is written into `yearText` so the card says what the page
+means and the text still re-parses to the stored year. A heading naming *both* eras
+(`Han dynasty (206 BC – 220 AD)`) settles nothing and is ignored, which is right —
+those pages date their rows explicitly, and an explicit era on the row always wins.
+
+Two range shapes are fixed in `years.mjs` for the same reason, both of which used
+to produce a backwards span:
+
+| written | means | why |
+|---|---|---|
+| `1601–03` | 1601–1603 | the far half is abbreviated against the near half |
+| `180–10 AD` | 180 BC – AD 10 | a range marked AD that descends straddles the era boundary |
+
+And a last line of defence: a draft whose span still runs backwards is **refused
+and reported**, because at that point the date is one this code has misread and
+`verify.mjs` asserts the store holds none.
 
 ### Titles
 
 Without `--retitle` a title comes from the event's own words, cut at the first
 strong break: `541 Ma – The Cambrian explosion begins, when…` becomes *"The
 Cambrian explosion begins"*. Serviceable, occasionally a truncated sentence.
+
+The date is cut out of the title **only when it leads**, which is when it is
+punctuation rather than grammar. `1066 – the Norman conquest` wants it gone; excising
+1877 from "Boltzmann suggested in 1877 that…" leaves *"suggested in that"*. So
+mid-sentence the date stays where the author put it, which is most of what
+`--events-prose` produces.
+
+A prose title can still be anaphoric — *"These theories"*, *"He also pioneered…"* —
+because the sentence's subject is in the previous one. Two of 49 on the quantum
+mechanics page. That is what `--retitle` is for.
 
 `--retitle` asks the local model for a name instead, which is markedly better
 (*"Formation of the First Known Mineral"* over *"The first known mineral is found
@@ -337,7 +456,7 @@ touching the scoring.
 ## Checking your work
 
 ```
-node datasets/verify.mjs                  # 26 invariant checks, ~1s
+node datasets/verify.mjs                  # 28 invariant checks, ~1s
 node datasets/inspect.mjs                 # the tree, top level
 node datasets/inspect.mjs --tree 2        # two levels deep
 node datasets/inspect.mjs --near cubism   # nearest neighbours — the real test

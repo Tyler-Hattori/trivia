@@ -7,7 +7,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Galileo_Galilei_%281564-1642%29_RMG_BHC2700.tiff/lossy-page1-1920px-Galileo_Galilei_%281564-1642%29_RMG_BHC2700.tiff.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Galileo Galilei\" is this row's scientist"
   },
   {
     "row": 2,
@@ -17,7 +19,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/VFPt_charges_plus_minus_thumb.svg/250px-VFPt_charges_plus_minus_thumb.svg.png"
-    }
+    },
+    "verdict": "reused-page",
+    "verdictWhy": "\"Electric charge\" is also proposed for 1 other row(s)"
   },
   {
     "row": 8,
@@ -27,7 +31,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/3/35/Evangelista_Torricelli_by_Lorenzo_Lippi_%28circa_1647%2C_Galleria_Silvano_Lodi_%26_Due%29.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Evangelista Torricelli\" is this row's scientist"
   },
   {
     "row": 11,
@@ -37,7 +43,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Anselmus-van-Hulle-Hommes-illustres_MG_0539.tif/lossy-page1-1920px-Anselmus-van-Hulle-Hommes-illustres_MG_0539.tif.jpg"
-    }
+    },
+    "verdict": "reused-page",
+    "verdictWhy": "\"Otto von Guericke\" is also proposed for 1 other row(s)"
   },
   {
     "row": 12,
@@ -47,7 +55,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Anselmus-van-Hulle-Hommes-illustres_MG_0539.tif/lossy-page1-1920px-Anselmus-van-Hulle-Hommes-illustres_MG_0539.tif.jpg"
-    }
+    },
+    "verdict": "reused-page",
+    "verdictWhy": "\"Otto von Guericke\" is also proposed for 1 other row(s)"
   },
   {
     "row": 10,
@@ -57,7 +67,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/e/e4/Psidial.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Pascal (unit)\" is this row's scientist"
   },
   {
     "row": 16,
@@ -67,7 +79,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/a/a7/Denis_Papin.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Denis Papin\" is this row's scientist"
   },
   {
     "row": 17,
@@ -77,7 +91,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/5/5b/Van_den_Venne_dodo.jpg"
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
   },
   {
     "row": 14,
@@ -87,7 +103,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/f/f7/Portrait_of_Sir_Isaac_Newton%2C_1689_%28brightened%29.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Isaac Newton\" is this row's scientist"
   },
   {
     "row": 19,
@@ -97,7 +115,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/c/cf/Thomas_Savery.gif"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Thomas Savery\" is this row's scientist"
   },
   {
     "row": 18,
@@ -107,7 +127,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/3/3e/Newton%27s_Principia_title_page.png"
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.25 below the gate"
   },
   {
     "row": 22,
@@ -117,7 +139,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/VFPt_charges_plus_minus_thumb.svg/250px-VFPt_charges_plus_minus_thumb.svg.png"
-    }
+    },
+    "verdict": "reused-page",
+    "verdictWhy": "\"Electric charge\" is also proposed for 1 other row(s)"
   },
   {
     "row": 20,
@@ -127,7 +151,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/9/92/Iron_Bridge_east_side_in_February_2019_%28cropped%29.jpg"
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.17 below the gate"
   },
   {
     "row": 24,
@@ -137,7 +163,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/c/cd/Portr%C3%A4t_des_Daniel_Bernoulli_-_edit1.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Daniel Bernoulli\" is this row's scientist"
   },
   {
     "row": 26,
@@ -147,7 +175,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/5/59/Maurice-Quentin_de_La_Tour_-_Abb%C3%A9_Nollet_-_HUW_5_-_Bavarian_State_Painting_Collections.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Jean-Antoine Nollet\" is this row's scientist"
   },
   {
     "row": 28,
@@ -157,7 +187,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Carnot_heat_engine_2.svg/960px-Carnot_heat_engine_2.svg.png"
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
   },
   {
     "row": 31,
@@ -167,7 +199,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/5/53/Joseph-montgolfier.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Montgolfier brothers\" is this row's scientist"
   },
   {
     "row": 36,
@@ -177,13 +211,17 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/5/59/Sir_Benjamin_Thompson%2C_Count_von_Rumford_by_Moritz_Kellerhoven.jpg"
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
   },
   {
     "row": 35,
     "name": "Lavoisier and Conservation of Mass",
     "title": "Conservation of mass",
-    "reason": "nothing-to-fill"
+    "reason": "nothing-to-fill",
+    "verdict": "no-source",
+    "verdictWhy": "nothing-to-fill"
   },
   {
     "row": 37,
@@ -193,7 +231,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/2/2e/Earth_to_Sun_-_en.png"
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
   },
   {
     "row": 38,
@@ -203,7 +243,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/0/00/John_Dalton_by_Thomas_Phillips%2C_1835.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"John Dalton\" is this row's scientist"
   },
   {
     "row": 42,
@@ -213,7 +255,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/4/40/Amadeo_Avogadro.png"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Amedeo Avogadro\" is this row's scientist"
   },
   {
     "row": 41,
@@ -223,7 +267,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/8/8e/Robert_Fulton%2C_1806%2C_London%2C_England%2C_painted_by_Benjamin_West%2C_American%2C_1738-1820_Fenimore_Art_Museum%2C_Cooperstown%2C_N.Y._N0218.1961.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Robert Fulton\" is this row's scientist"
   },
   {
     "row": 40,
@@ -233,7 +279,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/d/da/Richard_Trevithick_portrait.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Richard Trevithick\" is this row's scientist"
   },
   {
     "row": 43,
@@ -243,13 +291,17 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/4/41/Joseph_v_Fraunhofer.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Joseph von Fraunhofer\" is this row's scientist"
   },
   {
     "row": 39,
     "name": "The Ideal Gas Law",
     "title": "Gay-Lussac's law",
-    "reason": "nothing-to-fill"
+    "reason": "nothing-to-fill",
+    "verdict": "no-source",
+    "verdictWhy": "nothing-to-fill"
   },
   {
     "row": 46,
@@ -259,7 +311,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/0/0f/Joule_James_sitting.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"James Prescott Joule\" is this row's scientist"
   },
   {
     "row": 45,
@@ -269,7 +323,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/8/80/Sadi_Carnot.jpeg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Nicolas Léonard Sadi Carnot\" is this row's scientist"
   },
   {
     "row": 47,
@@ -279,7 +335,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/c/c7/Hermann_von_Helmholtz.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Hermann von Helmholtz\" is this row's scientist"
   },
   {
     "row": 44,
@@ -289,7 +347,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/3/3d/C.A._Jensen_-_Portrait_of_the_Physicist_Hans_Christian_%C3%98rsted_-_KMS8176_-_Statens_Museum_for_Kunst.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Hans Christian Ørsted\" is this row's scientist"
   },
   {
     "row": 48,
@@ -299,7 +359,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/1/11/Sir_William_Thomson%2C_Baron_Kelvin_by_T._%26_R._Annan_%26_Sons.jpg"
-    }
+    },
+    "verdict": "reused-page",
+    "verdictWhy": "\"Lord Kelvin\" is also proposed for 1 other row(s)"
   },
   {
     "row": 49,
@@ -309,7 +371,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/7/73/Armand_Hippolyte_Louis_Fizeau_by_Eug%C3%A8ne_Pirou_-_Original.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Hippolyte Fizeau\" is this row's scientist"
   },
   {
     "row": 52,
@@ -319,7 +383,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/1/11/Sir_William_Thomson%2C_Baron_Kelvin_by_T._%26_R._Annan_%26_Sons.jpg"
-    }
+    },
+    "verdict": "reused-page",
+    "verdictWhy": "\"Lord Kelvin\" is also proposed for 1 other row(s)"
   },
   {
     "row": 50,
@@ -329,7 +395,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/9/9e/Foucault_portre_crop.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Léon Foucault\" is this row's scientist"
   },
   {
     "row": 53,
@@ -339,7 +407,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Gas_discharge_tube%2C_named_after_William_Crookes%2C_c._1890_-_R%C3%B6ntgen-Ged%C3%A4chtnisst%C3%A4tte_W%C3%BCrzburg_-_W%C3%BCrzburg%2C_Germany_-_DSC04264.jpg/3840px-Gas_discharge_tube%2C_named_after_William_Crookes%2C_c._1890_-_R%C3%B6ntgen-Ged%C3%A4chtnisst%C3%A4tte_W%C3%BCrzburg_-_W%C3%BCrzburg%2C_Germany_-_DSC04264.jpg"
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.25 below the gate"
   },
   {
     "row": 55,
@@ -349,7 +419,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Spectrometer.svg/960px-Spectrometer.svg.png"
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
   },
   {
     "row": 60,
@@ -359,7 +431,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/2/23/Cyclotron_motion_smaller_view.jpg"
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
   },
   {
     "row": 57,
@@ -369,13 +443,17 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/f/fe/Gustav_Robert_Kirchhoff.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Gustav Kirchhoff\" is this row's scientist"
   },
   {
     "row": 62,
     "name": "The Balmer Formula",
     "title": "Balmer series",
-    "reason": "nothing-to-fill"
+    "reason": "nothing-to-fill",
+    "verdict": "no-source",
+    "verdictWhy": "nothing-to-fill"
   },
   {
     "row": 65,
@@ -385,7 +463,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/HEINRICH_HERTZ.JPG/3840px-HEINRICH_HERTZ.JPG"
-    }
+    },
+    "verdict": "reused-page",
+    "verdictWhy": "\"Heinrich Hertz\" is also proposed for 1 other row(s)"
   },
   {
     "row": 63,
@@ -395,7 +475,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/HEINRICH_HERTZ.JPG/3840px-HEINRICH_HERTZ.JPG"
-    }
+    },
+    "verdict": "reused-page",
+    "verdictWhy": "\"Heinrich Hertz\" is also proposed for 1 other row(s)"
   },
   {
     "row": 67,
@@ -405,7 +487,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Wilhelm_Conrad_R%C3%B6ntgen_%281888-1900%29%2C_88374_p.jpg/3840px-Wilhelm_Conrad_R%C3%B6ntgen_%281888-1900%29%2C_88374_p.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Wilhelm Röntgen\" is this row's scientist"
   },
   {
     "row": 70,
@@ -415,7 +499,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/c/c1/J.J_Thomson.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"J. J. Thomson\" is this row's scientist"
   },
   {
     "row": 68,
@@ -425,7 +511,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/d/db/Pierre_Curie_by_Dujardin_c1906.jpg"
-    }
+    },
+    "verdict": "reused-page",
+    "verdictWhy": "\"Pierre Curie\" is also proposed for 1 other row(s)"
   },
   {
     "row": 69,
@@ -435,7 +523,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/f/f8/Sir_Ernest_Rutherford_LCCN2014716719_-_restoration1.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Ernest Rutherford\" is this row's scientist"
   },
   {
     "row": 71,
@@ -445,67 +535,89 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/d/db/Pierre_Curie_by_Dujardin_c1906.jpg"
-    }
+    },
+    "verdict": "reused-page",
+    "verdictWhy": "\"Pierre Curie\" is also proposed for 1 other row(s)"
   },
   {
     "row": 76,
     "name": "Einstein Explains the Photoelectric Effect",
     "query": "Einstein Explains the Photoelectric Effect Albert Einstein",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 75,
     "name": "Radioactivity Solves the Age of the Earth",
     "query": "Radioactivity Solves the Age of the Earth Ernest Rutherford",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 74,
     "name": "Frequency Threshold of Photoemission",
     "query": "Frequency Threshold of Photoemission Philipp Lenard",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 73,
     "name": "Planck's Energy Quanta",
     "query": "Planck's Energy Quanta Max Planck",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 72,
     "name": "Gamma Rays Detected",
     "title": "Gamma ray",
-    "reason": "no-summary"
+    "reason": "no-summary",
+    "verdict": "no-source",
+    "verdictWhy": "no-summary"
   },
   {
     "row": 78,
     "name": "Alpha Particles Are Helium Nuclei",
     "query": "Alpha Particles Are Helium Nuclei Ernest Rutherford",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 79,
     "name": "The Gold Foil Experiment and the Nucleus",
     "query": "The Gold Foil Experiment and the Nucleus Geiger and Marsden",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 77,
     "name": "Special Relativity",
     "query": "Special Relativity Albert Einstein",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 80,
     "name": "Millikan's Oil Drop Experiment",
     "query": "Millikan's Oil Drop Experiment Robert Millikan",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 81,
     "name": "The Concept of Isotopes",
     "query": "The Concept of Isotopes Frederick Soddy",
-    "reason": "no-search-hit"
+    "reason": "no-search-hit",
+    "verdict": "no-source",
+    "verdictWhy": "no-search-hit"
   },
   {
     "row": 84,
@@ -515,31 +627,41 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/c/c6/Francis_William_Aston.jpg"
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
   },
   {
     "row": 85,
     "name": "Electron Shells and Chemistry",
     "title": "Electron shell",
-    "reason": "nothing-to-fill"
+    "reason": "nothing-to-fill",
+    "verdict": "no-source",
+    "verdictWhy": "nothing-to-fill"
   },
   {
     "row": 89,
     "name": "Schrodinger's Wave Equation",
     "title": "Schrödinger equation",
-    "reason": "nothing-to-fill"
+    "reason": "nothing-to-fill",
+    "verdict": "no-source",
+    "verdictWhy": "nothing-to-fill"
   },
   {
     "row": 88,
     "name": "Heisenberg's Matrix Mechanics",
     "title": "Matrix mechanics",
-    "reason": "nothing-to-fill"
+    "reason": "nothing-to-fill",
+    "verdict": "no-source",
+    "verdictWhy": "nothing-to-fill"
   },
   {
     "row": 91,
     "name": "Davisson-Germer Electron Diffraction",
     "title": "Davisson–Germer experiment",
-    "reason": "nothing-to-fill"
+    "reason": "nothing-to-fill",
+    "verdict": "no-source",
+    "verdictWhy": "nothing-to-fill"
   },
   {
     "row": 93,
@@ -549,7 +671,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/5/50/Paul_Dirac%2C_1933.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Paul Dirac\" is this row's scientist"
   },
   {
     "row": 90,
@@ -559,7 +683,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/e/ee/Werner_Heisenberg_Portrait_%283x4_cropped%29.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Werner Heisenberg\" is this row's scientist"
   },
   {
     "row": 94,
@@ -569,7 +695,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/4/43/Pauli.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Wolfgang Pauli\" is this row's scientist"
   },
   {
     "row": 95,
@@ -579,7 +707,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/b/b8/James_Chadwick.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"James Chadwick\" is this row's scientist"
   },
   {
     "row": 96,
@@ -589,13 +719,17 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/5/5a/PositronDiscovery.png"
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.25 below the gate"
   },
   {
     "row": 98,
     "name": "Yukawa and the Strong Force",
     "title": "Yukawa potential",
-    "reason": "nothing-to-fill"
+    "reason": "nothing-to-fill",
+    "verdict": "no-source",
+    "verdictWhy": "nothing-to-fill"
   },
   {
     "row": 97,
@@ -605,7 +739,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/7/79/Joliot-curie.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Irène Joliot-Curie\" is this row's scientist"
   },
   {
     "row": 99,
@@ -615,7 +751,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/1/1a/EAST_Tokamak_plasma_image3.jpg"
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0.33 below the gate"
   },
   {
     "row": 100,
@@ -625,7 +763,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/7/7b/Lise_Meitner_NatGeo.jpg"
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
   },
   {
     "row": 102,
@@ -635,7 +775,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Time%2C_3-22_p.m%2C_December_2%2C_1942._Place%2C_Racquets_Court_under_West_Stands_of_Stagg_Field%2C_University_of_Chicago...._-_NARA_-_542144.tif/lossy-page1-1920px-Time%2C_3-22_p.m%2C_December_2%2C_1942._Place%2C_Racquets_Court_under_West_Stands_of_Stagg_Field%2C_University_of_Chicago...._-_NARA_-_542144.tif.jpg"
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
   },
   {
     "row": 101,
@@ -645,19 +787,25 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/2/20/Leo_Szilard-cropped.png"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Leo Szilard\" is this row's scientist"
   },
   {
     "row": 103,
     "name": "The Manhattan Project Begins",
     "title": "The Manhattan Projects",
-    "reason": "nothing-to-fill"
+    "reason": "nothing-to-fill",
+    "verdict": "no-source",
+    "verdictWhy": "nothing-to-fill"
   },
   {
     "row": 104,
     "name": "Muon Time Dilation Detected",
     "title": "Time dilation",
-    "reason": "nothing-to-fill"
+    "reason": "nothing-to-fill",
+    "verdict": "no-source",
+    "verdictWhy": "nothing-to-fill"
   },
   {
     "row": 105,
@@ -667,7 +815,9 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/d/d4/Enrico_Fermi_1943-49.jpg"
-    }
+    },
+    "verdict": "creator-page",
+    "verdictWhy": "\"Enrico Fermi\" is this row's scientist"
   },
   {
     "row": 106,
@@ -677,12 +827,16 @@
     "reason": "low-confidence",
     "proposed": {
       "image": "https://upload.wikimedia.org/wikipedia/commons/8/8d/Trinity_shot_color.jpg"
-    }
+    },
+    "verdict": "review",
+    "verdictWhy": "unique candidate page, sim 0 below the gate"
   },
   {
     "row": 109,
     "name": "Flying Atomic Clocks Confirm Time Dilation",
     "title": "Time dilation",
-    "reason": "nothing-to-fill"
+    "reason": "nothing-to-fill",
+    "verdict": "no-source",
+    "verdictWhy": "nothing-to-fill"
   }
 ]

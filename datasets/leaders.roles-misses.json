@@ -1,0 +1,923 @@
+[
+  {
+    "row": 42,
+    "name": "Florian",
+    "country": "rome",
+    "candidates": [
+      "Florian",
+      "Flórián Albert",
+      "Florian Wirtz"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 57,
+    "name": "Julian",
+    "country": "rome",
+    "candidates": [
+      "Julian",
+      "JULIAN",
+      "Julian calendar"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 77,
+    "name": "Romulus Augustulus",
+    "country": "western rome",
+    "candidates": [
+      "Romulus Augustulus",
+      "Orestes (father of Romulus Augustulus)",
+      "Julius Nepos"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 87,
+    "name": "Maurice",
+    "country": "eastern rome/byzantine",
+    "candidates": [
+      "Maurice",
+      "Maurice Gibb",
+      "Michael Caine"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 106,
+    "name": "Staurakios",
+    "country": "eastern rome/byzantine",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 105,
+    "name": "Nicephorus I",
+    "country": "eastern rome/byzantine",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 104,
+    "name": "Irene",
+    "country": "eastern rome/byzantine",
+    "candidates": [
+      "Irene",
+      "Irene Cara",
+      "Irene (singer)"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 108,
+    "name": "Leo V",
+    "country": "eastern rome/byzantine",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 107,
+    "name": "Michael I",
+    "country": "eastern rome/byzantine",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 110,
+    "name": "Theophilus",
+    "country": "eastern rome/byzantine",
+    "candidates": [
+      "Theophilus",
+      "Theophilus (biblical)",
+      "Wolfgang Amadeus Mozart"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 123,
+    "name": "Zoe",
+    "country": "eastern rome/byzantine",
+    "candidates": [
+      "Zoe",
+      "Zoe Saldaña",
+      "Zoë Bleu"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 138,
+    "name": "Alexios II",
+    "country": "eastern rome/byzantine",
+    "candidates": [
+      "Byzantine Empire"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 158,
+    "name": "Mao Zedong",
+    "country": "china",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 156,
+    "name": "Sun Yat-sen",
+    "country": "china",
+    "candidates": [
+      "Sun Yat-sen",
+      "Sun Yat-sen University",
+      "Sun Yat-sen Mausoleum"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 157,
+    "name": "Chiang Kai-shek",
+    "country": "china",
+    "candidates": [
+      "Chiang Kai-shek",
+      "Chiang Kai-shek rifle",
+      "Chiang Kai-shek College"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 159,
+    "name": "Deng Xiaoping",
+    "country": "china",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 216,
+    "name": "Joseph Stalin",
+    "country": "soviet union",
+    "candidates": [
+      "Joseph Stalin",
+      "Death and state funeral of Joseph Stalin",
+      "Joseph Stalin Museum"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 215,
+    "name": "Vladimir Lenin",
+    "country": "soviet union",
+    "candidates": [
+      "Vladimir Lenin",
+      "Death and state funeral of Vladimir Lenin",
+      "Lenin's Mausoleum"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 217,
+    "name": "Nikita Khrushchev",
+    "country": "soviet union",
+    "candidates": [
+      "Sergei Khrushchev"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 221,
+    "name": "Mikhail Gorbachev",
+    "country": "soviet union",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 222,
+    "name": "Boris Yeltsin",
+    "country": "russia",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 220,
+    "name": "Konstantin Chernenko",
+    "country": "soviet union",
+    "candidates": [
+      "Konstantin Chernenko",
+      "Anna Chernenko",
+      "Mikhail Gorbachev"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 223,
+    "name": "Vladimir Putin",
+    "country": "russia",
+    "candidates": [
+      "Russia under Vladimir Putin"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 285,
+    "name": "John I",
+    "country": "portugal",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 284,
+    "name": "Felipe VI",
+    "country": "spain",
+    "candidates": [
+      "Felipe VI",
+      "Abdication of Juan Carlos I",
+      "List of titles and honours of Felipe VI"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 283,
+    "name": "Juan Carlos I",
+    "country": "spain",
+    "candidates": [
+      "Juan Carlos I",
+      "Abdication of Juan Carlos I",
+      "Spanish ship Juan Carlos I"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 290,
+    "name": "Sebastian",
+    "country": "portugal",
+    "candidates": [
+      "Sebastian",
+      "Sebastian (French musician)",
+      "San Sebastián"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 307,
+    "name": "Américo Thomás",
+    "country": "portugal",
+    "candidates": [
+      "Thomas Americo",
+      "Amerigo Vespucci",
+      "David Ortiz"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 314,
+    "name": "Otto II",
+    "country": "holy roman empire",
+    "candidates": [
+      "Otto II, Holy Roman Emperor",
+      "Otto the Great",
+      "Otto II, Count of Habsburg"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 321,
+    "name": "Lothair II",
+    "country": "holy roman empire",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 322,
+    "name": "Conrad III",
+    "country": "holy roman empire",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 323,
+    "name": "Frederick I Barbarossa",
+    "country": "holy roman empire",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 353,
+    "name": "Joseph II",
+    "country": "holy roman empire",
+    "candidates": [
+      "Dissolution of the Holy Roman Empire"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 370,
+    "name": "Mahmud II",
+    "country": "ottoman empire",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 371,
+    "name": "Abdul Mejid I",
+    "country": "ottoman empire",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 369,
+    "name": "Mustafa IV",
+    "country": "ottoman empire",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 374,
+    "name": "Abdul Hamid II",
+    "country": "ottoman empire",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 373,
+    "name": "Murad V",
+    "country": "ottoman empire",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 372,
+    "name": "Abdul Aziz",
+    "country": "ottoman empire",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 428,
+    "name": "Felipe Calderón",
+    "country": "mexico",
+    "candidates": [
+      "Felipe Calderón",
+      "Mexican drug war",
+      "National Action Party (Mexico)"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 429,
+    "name": "Enrique Peña Nieto",
+    "country": "mexico",
+    "candidates": [
+      "Enrique Peña Nieto",
+      "Security policy of the Enrique Peña Nieto administration",
+      "President of Mexico"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 430,
+    "name": "Andrés Manuel López Obrador",
+    "country": "mexico",
+    "candidates": [
+      "Andrés Manuel López Obrador",
+      "Presidency of Andrés Manuel López Obrador",
+      "Andrés Manuel López Beltrán"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 463,
+    "name": "Luiz Inácio Lula da Silva II",
+    "country": "brazil",
+    "candidates": [
+      "Neymar",
+      "List of international presidential trips made by Luiz Inácio Lula da Silva",
+      "1998 Brazilian general election"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 494,
+    "name": "Mauricio Macri",
+    "country": "argentina",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 497,
+    "name": "Alexander Mackenzie",
+    "country": "canada",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 495,
+    "name": "Alberto Fernández",
+    "country": "argentina",
+    "candidates": [
+      "Alberto Fernández",
+      "Presidency of Alberto Fernández",
+      "Javier Milei"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 502,
+    "name": "Robert Borden",
+    "country": "canada",
+    "candidates": [
+      "Robert Borden",
+      "Prime Minister of Canada",
+      "George Lopez (TV series)"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 529,
+    "name": "Harold Holt",
+    "country": "australia",
+    "candidates": [
+      "Harold Holt",
+      "Disappearance of Harold Holt",
+      "Harold Holt Memorial Swimming Centre"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 528,
+    "name": "Ben Chifley",
+    "country": "australia",
+    "candidates": [
+      "Ben Chifley",
+      "Ben Chifley's House",
+      "Chifley government"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 549,
+    "name": "Sigismund II Augustus",
+    "country": "poland",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 548,
+    "name": "Sigismund I",
+    "country": "poland",
+    "candidates": [
+      "Sigismund I the Old",
+      "Sigismund II Augustus",
+      "Sigismund III Vasa"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 544,
+    "name": "Louis I",
+    "country": "poland",
+    "candidates": [
+      "Louis I",
+      "Louis the Pious",
+      "Louis Philippe I"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 550,
+    "name": "Stephen Báthory",
+    "country": "poland",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 609,
+    "name": "Sebastian Kurz",
+    "country": "austria",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 610,
+    "name": "Karl Nehammer",
+    "country": "austria",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 608,
+    "name": "Christian Kern",
+    "country": "austria",
+    "candidates": [
+      "Christian Kern",
+      "Christian Stocker",
+      "2017 Austrian legislative election"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 624,
+    "name": "Georgios Papademetrious",
+    "country": "greece",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 641,
+    "name": "Farouk I",
+    "country": "egypt",
+    "candidates": [
+      "Farouk of Egypt",
+      "Mohamed Ali Farouk",
+      "King of Egypt and the Sudan"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 651,
+    "name": "Emmanouil Papas",
+    "country": "greece",
+    "candidates": [
+      "Emmanouil Pappas (village)",
+      "Pappas",
+      "Macedonia (Greece)"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 652,
+    "name": "Petros Mavromichalis",
+    "country": "greece",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 653,
+    "name": "Ibrahim Pasha (Ottoman)",
+    "country": "ottoman empire",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 654,
+    "name": "Osman Pasha",
+    "country": "ottoman empire",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 656,
+    "name": "Ali Pasha of Ioannina",
+    "country": "ottoman empire",
+    "candidates": [
+      "Ali Pasha of Yanina",
+      "Veli Pasha",
+      "Pashalik of Yanina"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 661,
+    "name": "Piri Reis",
+    "country": "ottoman empire",
+    "candidates": [
+      "Piri Reis",
+      "Piri Reis map",
+      "Reis-class submarine"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 682,
+    "name": "Sardar Vallabhbhai Patel",
+    "country": "india",
+    "candidates": [
+      "Vallabhbhai Patel",
+      "Sardar Vallabhbhai Patel Sports Enclave",
+      "Sardar Vallabhbhai Patel National Police Academy"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 702,
+    "name": "Sri Aurobindo",
+    "country": "india",
+    "candidates": [
+      "Sri Aurobindo",
+      "Sri Aurobindo Ashram",
+      "Sri Aurobindo College"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 705,
+    "name": "Muhammad Ali Jinnah",
+    "country": "pakistan",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 704,
+    "name": "Bhagat Singh",
+    "country": "india",
+    "candidates": [
+      "Bhagat Singh",
+      "Ustaad Bhagat Singh",
+      "The Legend of Bhagat Singh"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 706,
+    "name": "Liaquat Ali Khan",
+    "country": "pakistan",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 707,
+    "name": "Khawaja Nazimuddin",
+    "country": "pakistan",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 711,
+    "name": "Chudhry Muhammad Ali",
+    "country": "pakistan",
+    "candidates": [
+      "Chowdhury"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 755,
+    "name": "Guangwu",
+    "country": "china",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 754,
+    "name": "Wang Mang",
+    "country": "china",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 756,
+    "name": "Ming Yongle",
+    "country": "china",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 758,
+    "name": "Wanli",
+    "country": "china",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 757,
+    "name": "Jiajing",
+    "country": "china",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 776,
+    "name": "Salah Jadid",
+    "country": "syria",
+    "candidates": [
+      "Salah Jadid",
+      "Ba'athist Syria",
+      "Corrective Movement (Syria)"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 796,
+    "name": "Ottoman Pashas",
+    "country": "ottoman empire",
+    "candidates": [
+      "Three Pashas",
+      "1913 Ottoman coup d'état",
+      "Pasha"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 797,
+    "name": "Toussaint Louverture",
+    "country": "haiti",
+    "candidates": [
+      "Toussaint Louverture",
+      "Toussaint Louverture International Airport",
+      "Toussaint Louverture (film)"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 798,
+    "name": "Jean-Jacques Dessalines",
+    "country": "haiti",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 799,
+    "name": "Henry Christophe",
+    "country": "haiti",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 800,
+    "name": "François Duvalier",
+    "country": "haiti",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 817,
+    "name": "Arturo Prat",
+    "country": "chile",
+    "candidates": [
+      "Arturo Prat",
+      "Arturo Prat University",
+      "Captain Arturo Prat Base"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 825,
+    "name": "Post-Dictatorship Era Argentina",
+    "country": "argentina",
+    "candidates": [
+      "National Reorganization Process",
+      "Post–Cold War era",
+      "History of Argentina"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 824,
+    "name": "Military Era Brazil",
+    "country": "brazil",
+    "candidates": [
+      "Military dictatorship in Brazil",
+      "Pornography in Brazil",
+      "Brazilian Armed Forces"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 829,
+    "name": "Kim Jong-il",
+    "country": "north korea",
+    "candidates": [
+      "Kim Jong Il",
+      "Kim Jong Un",
+      "Kim Jong-suk"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 847,
+    "name": "Bhumibol Adulyadej (Rama IX)",
+    "country": "thailand",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 846,
+    "name": "Ananda Mahidol (Rama VIII)",
+    "country": "thailand",
+    "candidates": [
+      "Ananda Mahidol",
+      "Mahidol Adulyadej",
+      "Srinagarindra"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 845,
+    "name": "Prajadhipok (Rama VII)",
+    "country": "thailand",
+    "candidates": [
+      "Prajadhipok",
+      "Ananda Mahidol",
+      "Mani Xenier Bunnag"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 882,
+    "name": "Isoroku Yamamoto",
+    "country": "japan",
+    "candidates": [
+      "Isoroku Yamamoto",
+      "Isoroku (film)",
+      "Isoroku Yamamoto's sleeping giant quote"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 900,
+    "name": "Gordon Brown",
+    "country": "great britain",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 901,
+    "name": "David Cameron",
+    "country": "great britain",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 902,
+    "name": "Theresa May",
+    "country": "great britain",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 903,
+    "name": "Boris Johnson",
+    "country": "great britain",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 904,
+    "name": "Liz Truss",
+    "country": "great britain",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 905,
+    "name": "Rishi Sunak",
+    "country": "great britain",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 919,
+    "name": "Hans Dieters",
+    "country": "belgium",
+    "candidates": [
+      "Hansi Flick",
+      "Hans-Dieter",
+      "Hans Dieter Pötsch"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 931,
+    "name": "Franjo Tuđman",
+    "country": "croatia",
+    "candidates": [
+      "Franjo Tuđman",
+      "Zagreb Airport",
+      "Franjo Tuđman Bridge (Dubrovnik)"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 950,
+    "name": "Jonas Gahr Støre",
+    "country": "norway",
+    "candidates": [
+      "Jonas Gahr Støre",
+      "Støre cabinet",
+      "Dear Jonas"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 952,
+    "name": "Ulf Kristersson",
+    "country": "sweden",
+    "candidates": [
+      "Ulf Kristersson",
+      "Kristersson cabinet",
+      "List of international prime ministerial trips made by Ulf Kristersson"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 951,
+    "name": "Stefan Löfven",
+    "country": "sweden",
+    "candidates": [
+      "Stefan Löfven",
+      "Löfven III cabinet",
+      "Löfven I cabinet"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 969,
+    "name": "Donald Trump II",
+    "country": "united states",
+    "candidates": [
+      "Donald Trump Jr.",
+      "Trump family",
+      "Second presidency of Donald Trump"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 981,
+    "name": "Bülent Ecevit II",
+    "country": "turkey",
+    "candidates": [
+      "History of the Republican People's Party",
+      "Republican People's Party",
+      "40th government of Turkey"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 979,
+    "name": "Nikolay Natchev",
+    "country": "bulgaria",
+    "candidates": [
+      "Xerotyphlops vermicularis",
+      "Manouria",
+      "Veleka River"
+    ],
+    "reason": "no-person-with-office"
+  },
+  {
+    "row": 1000,
+    "name": "Claudia Sheinbaum",
+    "country": "mexico",
+    "reason": "no-search-hit"
+  },
+  {
+    "row": 999,
+    "name": "Andrés Manuel López Obrador II",
+    "country": "mexico",
+    "candidates": [
+      "Andrés Manuel López Obrador",
+      "Presidency of Andrés Manuel López Obrador",
+      "Desafuero of Andrés Manuel López Obrador"
+    ],
+    "reason": "no-person-with-office"
+  }
+]

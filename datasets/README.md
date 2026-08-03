@@ -54,6 +54,9 @@ and reserve a model only for judgment.
 | script | what it does | cost |
 |---|---|---|
 | `enrich.mjs` | Fills empty `excerpt`/`image` cells from the Wikipedia REST API | **$0** (no LLM) |
+| `misses.mjs` | Triages `*.misses.json` so a model only sees what needs judgement | **$0** (no LLM) |
+| `roles.mjs` | Fills a `role` column on `leaders.csv` from Wikidata P39 | **$0** (no LLM) |
+| `excerpts.mjs` | Rewrites a whole `excerpt` column: Wikipedia lead + local-model reshape | **$0** (local LLM) |
 | `suggest.mjs` | Proposes new entries + new dataset ideas from Wikipedia/Wikidata | **$0** (no LLM) |
 | `imgcheck.mjs` | HEAD-checks every image URL as the browser will request it | **$0** (no LLM) |
 | `build_thumbnails.js` | Pre-existing local thumbnail cache builder (unchanged) | $0 |
@@ -101,9 +104,245 @@ style, run the rows listed in `<dataset>.enrich-log.json` through **Haiku** in
 batches (~20/call) with the style rules as a cached system prompt. Never use Opus
 for this. Optional — raw extracts are already accurate and usable as-is.
 
-**Phase 2 — Claude for judgment only.** Handle the rows in `<dataset>.misses.json`
-(no match / low-confidence), and curate the new entries proposed by `suggest.mjs`.
-Deciding *what belongs* is the part scripts can't do.
+**Phase 2 — Claude for judgment only.** Run `misses.mjs` first — it decides
+mechanically what can be decided, and on the current files that is **91% of them**
+(670 rows in, 60 out). Then handle what survives, and curate the new entries
+proposed by `suggest.mjs`. Deciding *what belongs* is the part scripts can't do;
+deciding that Pissarro's biography is not a description of 32 different paintings
+is not.
+
+---
+
+## `misses.mjs` — triage the rejects before paying for them
+
+```
+node misses.mjs                    # all *.misses.json
+node misses.mjs --write            # record the verdicts in place
+node misses.mjs --review work.json # emit just the undecided rows
+```
+
+Read as a worklist, `art.misses.json` looks like 341 excerpts waiting to be
+approved. It is not: those 341 proposals come from **107 distinct Wikipedia
+pages**. Camille Pissarro's biography is proposed for 32 different paintings,
+Élisabeth Vigée Le Brun's for 22, Renoir's for 18.
+
+The cause is structural. These rows are individual artworks with no article of
+their own ("a plaza in caracas"), so `wpSearch` returned the nearest thing there
+was — the artist. Accepting the proposals would write one identical excerpt across
+32 entries, which is **worse than leaving them blank**: identical prose makes
+identical vectors, and the atlas would then cluster those paintings by the accident
+of sharing a painter's bio rather than by anything about the paintings.
+
+| verdict | test | what to do |
+|---|---|---|
+| `reused-page` | the page is proposed for another row too | rejected, free |
+| `creator-page` | the page **is** the row's artist/director/scientist | rejected, free |
+| `index-page` | a list, outline or disambiguation page — same `INDEX_TITLE` test `describe()` uses, imported from `lib/wiki.mjs` rather than restated | rejected, free |
+| `no-source` | `no-search-hit` / `no-summary` | needs `ingest.mjs` (Wikidata-matched, so it does not depend on title similarity) or hand entry |
+| `review` | a unique, plausible page that merely scored under `--min-sim` | **the only rows worth judging** |
+
+```
+670 rows in  ->  60 need judgement  (357 rejected mechanically, 253 have no source)
+91% decided without a model.
+```
+
+The survivors are a genuine mix, which is the point — `schindlers list` →
+*Schindler's List* and `8 1/2` → *8½* are correct matches that `titleSim` cannot
+see through the punctuation, while `you cant take it with you` → *Polari* and
+`destruction of tyre` → *Tyrion Lannister* are not.
+
+Nothing here writes a CSV. This tool decides what to look at; filling the cells
+stays with `enrich.mjs` and `ingest.mjs`.
+
+---
+
+## `roles.mjs` — a `role` column for `leaders.csv`, from Wikidata P39
+
+```
+node roles.mjs --dry            # report only
+node roles.mjs                  # write the column
+node roles.mjs --force          # redo rows that already have one
+```
+
+The atlas names a cluster with the vocabulary term nearest its centroid, and that
+vocabulary is **harvested from the corpus** — a term needs six entries to be a
+candidate at all. So the corpus can only name a cluster with words the corpus
+uses.
+
+The 612-entry cluster of world political leaders came out labelled
+`President · United States`, true of about 11% of its members. Rescoring it showed
+why: `politician` has the **highest cosine to that centroid of any term in the
+corpus** (0.700) and finishes 46th, because it appears in 20 of 4,126 entries and
+the generality term is computed from literal document frequency. `leader` appears
+in 69. `head of state` never clears the six-entry floor. The words were missing,
+not mis-ranked — every leader carried exactly two facets, `country` and `party`,
+which is rich enough for good fine-grained labels and silent on what any of these
+people *were*.
+
+Two things this has to get right, both found the hard way:
+
+- **Do not put the country in the search query.** Copying `enrich.mjs`'s
+  `name + extra` pattern cost 110 rows: `Marcus Aurelius rome` ranks *Equestrian
+  statue of Marcus Aurelius* first, `Septimius Severus rome` ranks *Arch of
+  Septimius Severus*. A monument is not a person.
+- **The row's year span picks both the person and the office.** `Constantine II of
+  Greece` (1964–73) and `Constantine II (emperor)` (337–40) are both humans holding
+  real offices; only one overlaps a row dated 337. The same P580/P582 test stops a
+  career politician's `Member of the 32nd Parliament` beating `Prime Minister`.
+
+The office is stored **normalised to its head noun** — `President of Mexico` →
+`president` — because the specific office lands in a handful of entries and never
+clears the frequency floor. The country is already its own facet.
+
+Writes `leaders.roles-log.json` and `leaders.roles-misses.json`. Office labels
+that fall through `ROLE_PATTERNS` are reported with counts, so the table can grow.
+
+---
+
+## `excerpts.mjs` — rewrite a whole excerpt column
+
+```
+node excerpts.mjs leaders.csv --dry --limit 5
+node excerpts.mjs leaders.csv
+node excerpts.mjs leaders.csv --no-reshape     # raw Wikipedia leads, no model
+```
+
+`enrich.mjs` only fills a **blank** cell, and all 999 `leaders.csv` excerpts are
+already full — of the fragment style the project explicitly does not want
+(`"Cold War end. Gulf War. Single term."`). Median **77 characters**, against 250
+in `people.csv` and 420 in `science.csv`, which are the bar.
+
+That gap is functional, not cosmetic. `entryText` in `lib/store.mjs` feeds the
+excerpt to EmbeddingGemma, so a 77-character excerpt makes a weak vector — which is
+why 612 unrelated world leaders landed in one cluster in the first place.
+
+Two steps, both free:
+
+1. **Fetch the lead** (`exintro`, plain text — the several paragraphs, not the REST
+   summary's one sentence). Accurate, sourced, already flowing prose.
+   `--no-reshape` stops here and the result is usable.
+2. **Reshape** with `qwen3:8b` through Ollama, using the shared brief in
+   `lib/style.mjs`. Local, so free.
+
+The page comes from `leaders.roles-log.json` when it exists, because `roles.mjs`
+already resolved each row to a page **and verified it against the row's own year
+span** — a far stronger match than title similarity, inherited for nothing. Rows
+the log misses fall back to a bare-name search and are counted separately.
+
+**The fetched lead is the floor.** A reshape that trips `styleReject`
+(`lib/style.mjs`) is discarded and the encyclopedia text kept, so the local model
+can improve the voice but never make a row worse. Rejection reasons are tallied at
+the end — refusals, visible `<think>` reasoning, and text that grew more than 2.2×
+its source, which is a model that stopped summarising and started composing.
+
+---
+
+## `era-excerpts.mjs` — excerpts for rows that are WORKS, not subjects
+
+```
+node era-excerpts.mjs art.csv --dry --limit 12
+node era-excerpts.mjs art.csv
+node era-excerpts.mjs art.csv --no-own-page    # force the era path, for testing
+node era-excerpts.mjs art.csv --only pissarro  # one creator, for tuning
+```
+
+`art.csv` had **527 rows with no excerpt across 106 artists** — Pissarro 48,
+Renoir 27, Poussin 25, Vigée Le Brun 24. It is the one dataset that cannot be
+backfilled by search, because its rows are artworks with no article of their own,
+so every search returns the *artist* and one biography gets written into 48 cells.
+`misses.mjs` caught that and refused to write, which is why they stayed blank.
+
+Identical excerpts are identical vectors. Those 48 paintings would have collapsed
+onto one point and clustered by the accident of sharing a painter.
+
+**Two tiers, in order of trust.**
+
+1. **The work's own page**, when it has one — 97 of 527 did. Gated on three things
+   that must all hold: the lead names the creator, the page is not the creator's
+   own page, and the titles overlap. The creator check is the one that matters —
+   it is a fact, where the earlier attempt to validate by cosine could not work
+   (a wrong generic page scored **0.542** against its row while the correct entity
+   page scored **0.415**; the failure is ontological and an embedding cannot see
+   ontology).
+2. **Era context** — paragraphs of the creator's article scored by how near their
+   years sit to the row's year, behind a one-line opener naming the work, its
+   movement and its date. Pissarro in 1870 is the Franco-Prussian War and Norwood;
+   in 1885 it is meeting Seurat and Signac. Same page, different decade, different
+   vector.
+
+Result: **494 filled, median 570 chars, era fit median 1 year off, p90 7 years**,
+and the 6 rows that found nothing within 25 years are named in the run output.
+
+### What it is worth, measured
+
+Mean pairwise cosine over Pissarro's 60 paintings, embedded three ways:
+
+| | excerpt channel alone | full embedded text |
+|---|---|---|
+| before (48 of 60 blank) | 0.742 | 0.820 |
+| naive: one artist bio for all | **1.0000** | 0.814 |
+| era-anchored | **0.669** | 0.797 |
+
+The middle row is the bug, and it is exactly as bad as predicted: an identical
+excerpt is an identical vector, so those 48 paintings would have been one point.
+Era-anchoring beats it, and beats leaving the cells blank.
+
+**But read the right-hand column before celebrating.** In the text that is actually
+embedded the same three conditions run 0.820 / 0.814 / 0.797 — a far smaller
+spread, because `entryText` also carries `artist` and `movement` as facets and
+those are identical across every Pissarro. The shared facets dominate the vector
+and mask most of the excerpt's effect, which is why the naive fill's 1.0 collapse
+came out as a barely-worse 0.814 overall. The excerpt fix is the largest gain
+available in the channel it controls; it is not, on its own, enough to spread one
+artist's output across the map. Genuinely separating them needs per-work fact —
+Wikidata collection, medium and depicted subject — which is not built.
+
+**Works from the same season may share an era paragraph, and that is correct.**
+An earlier version handed each reuse a sliding window of the same paragraph purely
+so the strings would differ; that manufactured difference corresponding to nothing
+about either painting, and opened excerpts mid-thought. What separates two rows is
+the opener, which is real per-work fact. If they ever need to be genuinely
+distinct, the lever is Wikidata — a painting with no article often still has an
+item carrying its collection, medium and depicted subject. Not built.
+
+### Four traps, each of which cost a run
+
+- **`[5-9]\d\d` is not a year.** A `$500` in a paragraph that also said 2009 gave
+  it a **1,509-year span**, and a span that wide brackets *every* target — so a
+  section on Nazi-era restitution scored a perfect era match against a canvas from
+  1856. The floor is now 1000. Same lesson as `yearInLead`, where "about 560
+  kilometres" became AD 560.
+- **Distance is to the nearest individual year, not the nearest edge of the
+  min..max span.** Same failure, second door in.
+- **Provenance, market and legacy sections are vetoed, not penalised.** They are
+  systematically attractive to a year-matcher and systematically wrong, because
+  they cite each painting's creation year while discussing what happened to it
+  afterwards. No weight can fix a section that earns `d=0` honestly.
+- **`titleSim` is the wrong metric for matching a person.** It divides by the
+  longer name, so it scored the correct `rembrandt van rijn` → *Rembrandt* at
+  0.33 — below the floor meant to catch `casper david friedrich` → *Joseph
+  Koerner*, the art historian who wrote the book about him. Counting shared words
+  of 4+ characters instead is indifferent to name length, and separates
+  `louis-michel van loo` from *Jean-Baptiste van Loo*, which share only "van" and
+  "loo".
+
+Every one of those produced fluent, well-formed prose about the wrong thing.
+That is the failure mode of this whole script and why the run prints an **era fit**
+line rather than just a count.
+
+### Outputs
+
+```
+art.era-articles.json   creator articles, cached
+art.era-leads.json      candidate leads, cached
+art.era-log.json        per row: tier, page, sections, paragraphs, years off
+art.era-misses.json     rows left blank, with the reason
+art.csv.pre-era         pre-run snapshot (the .bak was already stale)
+```
+
+Safe to kill and re-run: the CSV is checkpointed, and paragraph **use counts are
+rebuilt from the log**, so a resumed run does not hand the popular paragraphs out
+a second time.
 
 ---
 
@@ -164,6 +403,8 @@ Wikipedia lead is better than what is there, which for `leaders` it is).
   URL, and confidence. **This is the Phase 1 reshape worklist.**
 - `<dataset>.misses.json` — rows skipped: no search hit, no summary, or
   **low-confidence** matches (with the proposed value, for you to accept/reject).
+  Run `misses.mjs` over this before reading it — most of it is provably wrong and
+  can be rejected for free. See above.
 
 ### Reading the log (spot-check quality)
 

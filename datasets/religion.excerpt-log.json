@@ -1,0 +1,92 @@
+[
+  {
+    "row": 2,
+    "name": "Composition of the Vedas",
+    "title": "Vedas",
+    "pageFrom": "search",
+    "reshaped": false,
+    "was": 141,
+    "now": 871,
+    "url": "https://en.wikipedia.org/wiki/Vedas"
+  },
+  {
+    "row": 3,
+    "name": "The Exodus and Ten Commandments",
+    "title": "Ten Commandments",
+    "pageFrom": "search",
+    "reshaped": false,
+    "was": 130,
+    "now": 884,
+    "url": "https://en.wikipedia.org/wiki/Ten_Commandments"
+  },
+  {
+    "row": 4,
+    "name": "Teachings of Zoroaster",
+    "title": "Zoroastrianism",
+    "pageFrom": "search",
+    "reshaped": false,
+    "was": 119,
+    "now": 812,
+    "url": "https://en.wikipedia.org/wiki/Zoroastrianism"
+  },
+  {
+    "row": 5,
+    "name": "Enlightenment of the Buddha",
+    "title": "Buddhahood",
+    "pageFrom": "search",
+    "reshaped": false,
+    "was": 126,
+    "now": 778,
+    "url": "https://en.wikipedia.org/wiki/Buddhahood"
+  },
+  {
+    "row": 6,
+    "name": "Teachings of Confucius",
+    "title": "Confucius",
+    "pageFrom": "search",
+    "reshaped": false,
+    "was": 131,
+    "now": 850,
+    "url": "https://en.wikipedia.org/wiki/Confucius"
+  },
+  {
+    "row": 7,
+    "name": "Crucifixion of Jesus",
+    "title": "Crucifixion of Jesus",
+    "pageFrom": "search",
+    "reshaped": false,
+    "was": 126,
+    "now": 831,
+    "url": "https://en.wikipedia.org/wiki/Crucifixion_of_Jesus"
+  },
+  {
+    "row": 8,
+    "name": "The Hijra of Muhammad",
+    "title": "Muhammad",
+    "pageFrom": "search",
+    "reshaped": false,
+    "was": 128,
+    "now": 820,
+    "url": "https://en.wikipedia.org/wiki/Muhammad"
+  },
+  {
+    "row": 9,
+    "name": "The Great Schism",
+    "title": "East–West Schism",
+    "pageFrom": "search",
+    "reshaped": false,
+    "was": 130,
+    "now": 809,
+    "url": "https://en.wikipedia.org/wiki/East%E2%80%93West_Schism"
+  },
+  {
+    "row": 10,
+    "name": "The Protestant Reformation",
+    "title": "Reformation",
+    "pageFrom": "search",
+    "reshaped": false,
+    "was": 132,
+    "now": 823,
+    "url": "https://en.wikipedia.org/wiki/Reformation"
+  }
+]

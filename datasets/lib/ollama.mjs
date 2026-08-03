@@ -100,18 +100,35 @@ export async function embed(texts, model = EMBED_MODEL){
   }
 }
 
-/** One-shot completion. `format:'json'` constrains output to valid JSON. */
-export async function generate(prompt, { model = WRITE_MODEL, system, json = false, temperature = 0.2 } = {}){
+/**
+ * One-shot completion. `format:'json'` constrains output to valid JSON.
+ *
+ * `numCtx` is a memory dial, not a quality one, and it is the one worth knowing
+ * about: Ollama reserves a KV cache of `num_ctx * OLLAMA_NUM_PARALLEL` tokens
+ * when it loads the model, on top of the weights. At the 8192 default served
+ * four ways that is 32k tokens of cache for an 8B model, which is what pushed
+ * this machine into swap during a long `excerpts.mjs` run. Callers whose prompts
+ * are short should say so — a transform that peaks near 800 tokens has nothing to
+ * gain from 8192 and pays for it in resident memory the whole time.
+ *
+ * `keepAlive` is how long the model stays loaded after the request ('30s', '1m').
+ * Set it on the last stage of a long batch and the ~4.5 GB comes back on its own.
+ */
+export async function generate(prompt, {
+  model = WRITE_MODEL, system, json = false, temperature = 0.2,
+  numCtx = 8192, keepAlive,
+} = {}){
   const d = await post('/api/generate', {
     model,
     prompt,
     system,
     stream: false,
     ...(json ? { format: 'json' } : {}),
+    ...(keepAlive ? { keep_alive: keepAlive } : {}),
     // qwen3 interleaves <think> blocks unless thinking is off; they are pure
     // token cost here because every call is a short structured transform.
     think: false,
-    options: { temperature, num_ctx: 8192 },
+    options: { temperature, num_ctx: numCtx },
   });
   return String(d.response || '').trim();
 }

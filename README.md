@@ -2,15 +2,19 @@
 
 A static site (no build step, no npm) that renders `datasets/*.csv` as:
 
-- **The atlas** — the main view. A zoomable map where **x is time** and **y is
-  semantic similarity**, derived from local embeddings. Related things sit at the
-  same height whatever century they are from.
-- **Quiz** — field-guessing drills over the same rows.
+- **The atlas** — a zoomable map where **x is time** and **y is semantic
+  similarity**, derived from local embeddings. Related things sit at the same
+  height whatever century they are from.
+- **The quiz** — one quiz over the whole corpus, filtered by picking a node of
+  the atlas's own cluster tree.
 
-The atlas is fed by a compiled store (`datasets/atlas/`), not by the CSVs directly;
+The home screen is those two buttons and nothing else.
+
+Both read the same compiled store (`datasets/atlas/`), not the CSVs directly;
 `datasets/ATLAS.md` is the authority on that pipeline and **you should read it before
-touching any of it**. The quiz is still config-driven from
-`project/core/settings.js`, where adding a dataset is a CSV plus one array entry.
+touching any of it**. That sharing is the point rather than an economy: "quiz me on
+this cluster" is only a question you can ask because the atlas already computed the
+clusters, so a rebuild of the map is a rebuild of the quiz.
 
 ```
 index.html                 app shell (Tailwind via CDN)
@@ -20,7 +24,8 @@ project/
   data/csv.js              header-driven CSV parser (one record per line)
   utils/normalize.js       raw row -> item (via DATASETS[].map)
   utils/helpers.js         thumbUrl(); year parsing re-exported from datasets/lib/years.mjs
-  features/quiz_engine.js  quiz
+  features/quiz/           THE QUIZ — questions.js derives what to ask; index.js runs it
+  features/quiz_engine.js  the old per-dataset CSV quiz — UNLINKED, nothing routes to it
   features/atlas/          THE ATLAS RENDERER (see below)
   features/timeline/       the old lane timeline — superseded, pending deletion
   ui/                      home, header, quiz, stats
@@ -29,11 +34,12 @@ datasets/atlas/            the compiled store the browser fetches
 thumbnails/                optional pre-built local thumbnail cache
 ```
 
-> **Status.** The atlas replaces the lane timeline. The lane engine still works and
-> is still reachable from the home page as "Old lane timeline", but its five known
-> bugs were deliberately not patched — they are solved structurally in the atlas.
-> Its sections below are kept only until `project/features/timeline/` is deleted.
-> See `HANDOFF.md` for what is done and what is next.
+> **Status.** The atlas replaces the lane timeline and the unified quiz replaces the
+> eight per-dataset ones. Both superseded features are still on disk and still work,
+> but **nothing in the UI routes to either** — the home screen is two buttons. The
+> lane engine's five known bugs were deliberately not patched; they are solved
+> structurally in the atlas. Those sections below are kept only until
+> `project/features/timeline/` is deleted. See `HANDOFF.md` for what is next.
 
 ## Running it
 
@@ -169,7 +175,7 @@ writing anything by hand.
 node datasets/migrate.mjs      # CSVs -> atlas/entries.jsonl (reads CSVs, never writes them)
 node datasets/embed-all.mjs    # fill missing vectors (resumable)
 node datasets/atlas.mjs        # place new entries, keep the map stable
-node datasets/verify.mjs       # 26 invariants
+node datasets/verify.mjs       # 28 invariants
 ```
 
 Use plain `atlas.mjs`, **not `--rebuild`**, unless you mean to re-fit the whole
@@ -189,13 +195,27 @@ node datasets/ingest.mjs --category "Battles of the Napoleonic Wars" --domain wa
 node datasets/ingest.mjs --links "List of Impressionist painters" --domain art
 node datasets/ingest.mjs @list.txt --domain science --reshape
 node datasets/ingest.mjs --events "Timeline of natural history" --domain geology --dry
+node datasets/ingest.mjs --events "Timeline of English history" --domain politics --dry
 ```
 
-`--events` is the odd one out: it mines **many** dated events from a single page's
-body, which is the only way deep time gets in — the Hadean is a line in a timeline
+`--events` is the odd one out: it mines **many** dated events from a single page,
+which is the only way deep time gets in — the Hadean is a line in a timeline
 article, not a page with an inception date. `--dry` first; it reads prose rather
 than a Wikidata claim, so it is the least trustworthy input the pipeline has.
-`datasets/ATLAS.md` has the details.
+
+It reads a page **two ways, and needs to**: `wikitable` rows and dated lines of
+running text. The split is not a matter of degree — *Timeline of English history* is
+22 tables of one event per row and *History of quantum mechanics* is narrative
+paragraphs, and both returned zero events until each path was built. Tables and
+line-headed text are mined by default and tallied as `mined-table` and
+`mined-line`. Mid-sentence dates (`mined-prose`) are **always mined and counted but
+only kept with `--events-prose`** — the flag gates writing, not looking, so one
+`--dry` run tells you the shape of a page instead of reporting "nothing found" and
+making you re-fetch it. They stay opt-in because on an article that is not a
+timeline roughly half of them are commentary and cited publication years — 105 such
+candidates on *Cubism*. `datasets/ATLAS.md` has the details, including the `rowspan`
+trap, why the strict pass must complete before any prose is considered, and how the
+era is recovered when a page states it once in a section heading.
 
 **`migrate.mjs` deletes entries, and getting its carry-over rule wrong has cost
 data twice.** It rewrites `entries.jsonl` from the CSVs and carries over everything
@@ -406,6 +426,71 @@ These all cost time at least once.
 
 ---
 
+## The quiz
+
+```
+project/features/quiz/
+  questions.js   what an entry can be asked, and whether an answer is right
+  index.js       cluster picker, run state, rendering
+```
+
+One quiz over `datasets/atlas/atlas.json` + `details.json`, loaded through the
+atlas's own `loadAtlas`. There are no per-dataset quizzes any more.
+
+**The question is derived from the entry, not from a config.** That is the whole
+substance of `questions.js`, and it exists because the old quiz asked every row for
+the same fixed column list out of `settings.js` — a list that for `art.csv` ended in
+`excerpt`, so it put a text box on screen and waited for 600 characters of Wikipedia
+to be typed from memory. The rules:
+
+- **The excerpt is never a question**, at any length.
+- **A field with no value is never a question.**
+- **`title` is asked only when the image IS the work.** Not merely "has an image":
+  an `england` entry for Port Isaac carries a stock photograph of the village, which
+  identifies nothing. A creator facet (`artist`, `director`, `creator`, `author`) is
+  what says the picture is a reproduction of the thing being asked about; otherwise
+  the title is shown as the prompt.
+- **A span is asked for both ends**, a point for one year.
+- **The categorical questions are whichever facets the entry actually carries**, so
+  a painting is asked artist and movement and a leader country and role.
+- **There is no topic question.** `migrate.mjs` puts a leader's country, party and
+  role into `topics` as well as `facets`, so the answer was a free copy of a box
+  already on screen; and where it was not a copy it was "name any bucket this
+  belongs to", with no way to know which of several the grader held.
+- **One question is enough**, as long as the prompt names the subject. A mined
+  timeline event carries a title and a date and nothing else, and "in what year
+  did this happen" is exactly the question it exists to support. A two-field
+  minimum combined with dropping `topic` silently halved the corpus, 4,126 to
+  2,266, and every casualty was one of those.
+
+**The excerpt is shown once the answers are revealed.** Both halves of that are
+deliberate: before grading its first sentence gives away every answer, and after
+grading it is the only thing on screen that teaches you anything.
+
+Filtering is by cluster — any node of the tree, taking every entry beneath it — plus
+the atlas's own query language handed straight to `runFilter`, so `ds:film`,
+`topic:surrealism`, `1750-1800` and `has:image` all work in the quiz too.
+
+### Grading
+
+Free text. Four rules worth not undoing, each of which has a test in `qa-quiz.mjs`:
+
+- **A surname alone is correct.** "renoir" is what anyone looking at a Renoir types.
+- **Whole-word containment only.** The old rule was
+  `guess.includes(answer) || answer.includes(guess)`, which marked a single letter
+  correct against every answer containing it — typing `a` scored.
+- **A hyphen between two digits is a separator, not a minus sign.** `-?\d+` read
+  the range `1837-1901` as 1837 and *minus* 1901, so a correctly typed reign was
+  marked wrong.
+- **Deep time is graded on magnitude and a relative tolerance.** The entry states
+  itself as "c. 4,570 Ma"; demanding the sign would fail every honest answer.
+
+`ł`, `ø`, `ß` and friends are transliterated before comparison — NFKD does not
+decompose them, so `Chełmoński` was being split into the two words "che" and
+"monski" and no keyboard-typeable spelling could match it.
+
+---
+
 ## The old lane timeline (superseded)
 
 > Kept for reference until `project/features/timeline/` and the
@@ -525,6 +610,9 @@ node datasets/verify.mjs                      # 26 data invariants, ~1s
 node datasets/qa-atlas.mjs                    # 87 browser checks
 node datasets/qa-atlas.mjs --shot /tmp/a.png  # + a screenshot
 node datasets/qa-atlas.mjs --keep             # leave the windows open
+
+node datasets/qa-quiz.mjs                     # 42 checks: home + quiz + grader
+node datasets/qa-quiz.mjs --shot /tmp/q.png
 ```
 
 `window.__atlas` on the atlas window is a deliberate debug handle, exposing
