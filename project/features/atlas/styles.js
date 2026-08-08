@@ -408,10 +408,27 @@ a{color:var(--accent)}
 .lbclose:hover{color:var(--text);background:var(--raise)}
 
 /* ---------- ruler ---------- */
+/*
+ * #ruler is a sibling of #mid, so it spans the full width INCLUDING the rail,
+ * while tick positions come from the scale, whose origin is #surface's left edge
+ * — after the rail. Positioning ticks directly in #ruler therefore offset every
+ * year label from its entries by the rail's width, and folding the rail
+ * (216px to 22px) moved the labels 194px sideways.
+ *
+ * Ticks live in #rtrack instead, whose left edge is synced to #surface's every
+ * frame. padding-left on #ruler cannot do this job: an absolutely positioned
+ * child resolves its left offset against the containing block's PADDING EDGE, so
+ * padding shifts nothing. #rtrack also re-clips, so a tick scrolled off the left
+ * of the map cannot draw over the rail.
+ *
+ * (No backticks in this comment. It is inside a template literal; one here ends
+ * the string and the rest of the stylesheet parses as JavaScript. Fourth time.)
+ */
 #ruler{
   flex:0 0 auto;height:22px;position:relative;overflow:hidden;
   background:var(--panel);border-bottom:1px solid var(--line);
 }
+#rtrack{position:absolute;top:0;bottom:0;right:0;overflow:hidden}
 #ruler .tk{
   position:absolute;top:0;bottom:0;padding-left:5px;font-size:10px;
   color:var(--faint);border-left:1px solid var(--line);

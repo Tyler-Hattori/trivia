@@ -571,6 +571,64 @@ check('the sidebar folds from its own edge', railFold.folded > 0 && railFold.fol
 check('the folded sidebar keeps a way back', railFold.spineVisible && railFold.reopened === railFold.open,
   `chevron still hittable, reopens to ${Math.round(railFold.reopened)}px`);
 
+/*
+ * ---- the ruler stays over the map --------------------------------------
+ *
+ * #ruler is a sibling of #mid, so it spans the full width INCLUDING the rail,
+ * while tick x's come from the scale, whose origin is #surface's left edge. Ticks
+ * positioned straight into #ruler were therefore offset from their entries by the
+ * rail's width — and folding the rail (216px to 22px) slid every year label 194px
+ * sideways against the marks it dates. They now live in #rtrack, whose left edge
+ * is synced to #surface in measure().
+ *
+ * Asserted two ways, because the offsets can agree while the scale is wrong.
+ * `trackOffset === surfaceOffset` is the layout; inverting the atlas's own scale
+ * at a tick's screen x and comparing with the year the tick PRINTS is the thing
+ * a reader actually cares about.
+ */
+const rulerAlign = await evaluate(atlas, `(async()=>{
+  const frame=()=>new Promise(res=>requestAnimationFrame(()=>requestAnimationFrame(res)));
+  const probe=()=>{
+    const ruler=document.getElementById('ruler'), track=document.getElementById('rtrack');
+    const surf=document.getElementById('surface');
+    if(!track) return {err:'no #rtrack'};
+    const tk=[...track.querySelectorAll('.tk')];
+    if(tk.length<3) return {err:'too few ticks'};
+    const sr=surf.getBoundingClientRect(), rr=ruler.getBoundingClientRect();
+    const tr=track.getBoundingClientRect();
+    const X=window.__atlas, t=tk[Math.floor(tk.length/2)];
+    const year=X.view.x0 + (t.getBoundingClientRect().left - sr.left)/X.scale.ppy;
+    const raw=String(t.textContent).trim();
+    const mag=parseFloat(raw.replace(/[^0-9.]/g,''))||0;
+    const mult=/\\bka\\b/i.test(raw)?1e3:/\\bMa\\b/i.test(raw)?1e6:/\\bGa\\b/i.test(raw)?1e9:1;
+    const printed=/BC|ka|Ma|Ga/i.test(raw) ? -(mag*mult)
+                : /present/i.test(raw) ? new Date().getFullYear() : mag;
+    return {
+      surfaceOffset: Math.round(sr.left-rr.left),
+      trackOffset:   Math.round(tr.left-rr.left),
+      label: raw,
+      driftPx: Math.round(Math.abs(year-printed)*X.scale.ppy),
+    };
+  };
+  const open=probe();
+  document.querySelector('.rail .railfold').click(); await frame(); await frame();
+  const folded=probe();
+  document.querySelector('.rail .railfold').click(); await frame(); await frame();
+  return {open, folded};
+})()`, { userGesture: true });
+
+check('the ruler starts at the map, sidebar open',
+  rulerAlign.open.trackOffset === rulerAlign.open.surfaceOffset,
+  `track ${rulerAlign.open.trackOffset}px == map ${rulerAlign.open.surfaceOffset}px`);
+check('the ruler starts at the map, sidebar folded',
+  rulerAlign.folded.trackOffset === rulerAlign.folded.surfaceOffset,
+  `track ${rulerAlign.folded.trackOffset}px == map ${rulerAlign.folded.surfaceOffset}px`);
+check('folding the sidebar does not slide the year labels',
+  rulerAlign.open.driftPx <= 1 && rulerAlign.folded.driftPx <= 1,
+  `"${rulerAlign.open.label}" drift ${rulerAlign.open.driftPx}px open, ` +
+  `"${rulerAlign.folded.label}" ${rulerAlign.folded.driftPx}px folded ` +
+  `(map edge ${rulerAlign.open.surfaceOffset}px -> ${rulerAlign.folded.surfaceOffset}px)`);
+
 // ---- theme -------------------------------------------------------------
 /*
  * The canvas cannot read CSS variables, so a theme switch has to move BOTH halves.

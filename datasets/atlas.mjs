@@ -326,6 +326,9 @@ const atlas = {
     leaf:     Array.from(leafOf),
     kind:     rows.map((e) => (e.kind === 'span' ? 1 : 0)),
     circa:    rows.map((e) => (e.circa ? 1 : 0)),
+    // A span whose right edge is the present rather than an end date, so the
+    // renderer can cap it open instead of squaring it off at the current year.
+    openEnded:  rows.map((e) => (e.openEnded ? 1 : 0)),
     image:    rows.map((e) => e.image),
     yearText: rows.map((e) => e.yearText),
     dataset:  rows.map((e) => e.origin?.dataset || ''),

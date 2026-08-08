@@ -472,17 +472,39 @@ const prospectiveId = (d) => entryId({
   origin: { dataset: OPT.domains[0] || 'ingest' },
 });
 
+/*
+ * The gates below test against what the STORE held when the run started. They
+ * also have to test against what this run has already accepted, or a qid seen
+ * twice within one run passes twice.
+ *
+ * That is what happened. `haveQid` was built from `existing` and never grew, so
+ * two source pages both linking Harald Hardrada each produced an entry; the id
+ * collided, the `~N` suffix below dutifully made it unique, and the store gained
+ * a second Harald. 65 rows across 58 QIDs arrived that way — every one of them
+ * same-dataset, including the two identical Proterozoic eons sitting on top of
+ * each other in the atlas.
+ *
+ * A QID is the identity. Two rows carrying one is always a duplicate, whatever
+ * the slug says — note `england:northumbria:653` and `england:northumbria:654`,
+ * which are the same eon-equivalent article dated a year apart by two pages and
+ * so never collided on id at all.
+ */
+const seenQid = new Map(haveQid);
+const seenId = new Set(haveId);
+
 const candidates = [];
 for(const d of drafts){
   if(d._reject){ rejected.push([d.title, d._reject]); continue; }
   if(d.start == null){ rejected.push([d.title, 'no date found']); continue; }
   if(d.start < OPT.minYear || d.start > OPT.maxYear){ rejected.push([d.title, `year ${d.start} out of range`]); continue; }
-  if(d.origin.qid && haveQid.has(d.origin.qid)){ rejected.push([d.title, `already present as ${haveQid.get(d.origin.qid).id}`]); continue; }
+  if(d.origin.qid && seenQid.has(d.origin.qid)){ rejected.push([d.title, `already present as ${seenQid.get(d.origin.qid).id}`]); continue; }
   // Skipped for mined events, whose page URL is the source article, not the entry.
   if(!d._mined && d.origin.wiki && haveWiki.has(d.origin.wiki)){ rejected.push([d.title, 'already present (same page)']); continue; }
-  if(!d.origin.qid && haveId.has(prospectiveId(d))){
+  if(!d.origin.qid && seenId.has(prospectiveId(d))){
     rejected.push([d.title, `already present as ${prospectiveId(d)}`]); continue;
   }
+  if(d.origin.qid) seenQid.set(d.origin.qid, { id: prospectiveId(d) });
+  seenId.add(prospectiveId(d));
   candidates.push(d);
 }
 
@@ -744,7 +766,31 @@ if(OPT.tagTopics && candidates.length){
 const fresh = [];
 const idSeen = new Set(haveId);
 
+/*
+ * Nothing may be dated after the present.
+ *
+ * A backstop, not a parser. Five rows once reached the store past 2026 — three
+ * BC ranges whose era token the grammar dropped, and two percentages the miner
+ * read as the far half of a range. Both holes are closed in `years.mjs`, and
+ * both were invisible until someone noticed the x axis ran to the year 3200:
+ * a single bad row sets `xExtent`, so the whole atlas gets a millennium of dead
+ * space and every span looks like it overshoots the present.
+ *
+ * Refusing outright rather than clamping. A future date means the date was
+ * misread, so the *year* is wrong, not merely out of range — clamping to 2026
+ * would keep a confidently wrong entry and hide the parser bug that made it.
+ * `--events-prose` in particular is documented as the noisy tier; this is where
+ * that noise is meant to stop.
+ */
+const THIS_YEAR = new Date().getFullYear();
+const future = [];
+
 for(const d of candidates){
+  const latest = Math.max(d.start ?? -Infinity, d.end ?? -Infinity);
+  if(Number.isFinite(latest) && latest > THIS_YEAR){
+    future.push(d);
+    continue;
+  }
   const entry = makeEntry({
     title: d.title,
     subtitle: d.subtitle,
@@ -776,6 +822,19 @@ for(const d of candidates){
 // ---------------------------------------------------------------------------
 
 console.log(`  ${fresh.length} new · ${rejected.length} skipped\n`);
+
+/*
+ * Named, not just counted. A future date is always a parser bug, and the whole
+ * value of catching it here is having the sentence that produced it in hand.
+ */
+if(future.length){
+  console.log(`  ${future.length} refused for a date after ${THIS_YEAR} — the date was misread:`);
+  for(const d of future.slice(0, 10)){
+    console.log(`    ${String(d.yearText || `${d.start}..${d.end}`).padStart(22)}  ${String(d.title).slice(0, 60)}`);
+  }
+  if(future.length > 10) console.log(`    …and ${future.length - 10} more`);
+  console.log('');
+}
 
 const srcCount = new Map();
 for(const d of candidates) srcCount.set(d._dateSource || 'none', (srcCount.get(d._dateSource || 'none') || 0) + 1);

@@ -78,7 +78,7 @@ const SHELL = (base, css, theme) => `<!DOCTYPE html>
     </div>
     <div class="cmdrow" id="facets"></div>
   </header>
-  <div id="ruler"></div>
+  <div id="ruler"><div id="rtrack"></div></div>
   <div id="mid">
     <div id="railHost"></div>
     <div id="stage">
@@ -186,6 +186,8 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     selected: -1,
     hover: -1,
     selectedNode: null,
+    // Distance from the ruler's left edge to the map's. Set by measure().
+    RX: -1,
   };
 
   // Whether the camera is still at its defaults, so boot knows to fit. Was a float
@@ -217,6 +219,7 @@ export async function openAtlas({ title = 'Atlas' } = {}){
   const pinWrap = $('pinWrap');
   const pinCanvas = $('pinCanvas');
   const rulerEl = $('ruler');
+  const rtrackEl = $('rtrack');
   const miniCanvas = $('miniCanvas');
   const miniWin = $('miniWin');
   const statusEl = $('status');
@@ -299,6 +302,15 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     const r = surface.getBoundingClientRect();
     V.W = Math.max(50, Math.round(r.width));
     V.H = Math.max(50, Math.round(r.height));
+
+    /*
+     * The ruler spans the full width but tick x's are measured from the map's
+     * left edge, so the tick track has to start where #surface does. Folding the
+     * rail changes that distance, and nothing else recomputes it — this is the
+     * one place both boxes are read in the same frame.
+     */
+    const rx = Math.round(r.left - rulerEl.getBoundingClientRect().left);
+    if(rx !== V.RX){ V.RX = rx; rtrackEl.style.left = `${rx}px`; }
   }
 
   // ---------------------------------------------------------------------------
@@ -472,7 +484,7 @@ export async function openAtlas({ title = 'Atlas' } = {}){
 
   // ---- ruler --------------------------------------------------------------
   function paintRuler(t){
-    rulerEl.innerHTML = t.list
+    rtrackEl.innerHTML = t.list
       .filter((tk) => tk.px > -60 && tk.px < V.W + 40)
       .map((tk) => `<div class="tk${tk.major ? ' maj' : ''}" style="left:${Math.round(tk.px)}px">${fmtTick(tk.year, t.step)}</div>`)
       .join('');

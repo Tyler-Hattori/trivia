@@ -587,16 +587,36 @@ const vocabOk = (t) => {
 };
 
 /**
- * The token set an entry contributes to the label vocabulary: curated topics and
- * facet values verbatim, plus unigrams and bigrams from its title, subtitle and
- * excerpt. Bigrams matter — "film noir", "abstract expressionism" and "world war"
- * are the labels you actually want, and none survives as two unigrams.
+ * The token set an entry contributes to the label vocabulary: curated topics,
+ * domains and facet values verbatim, plus unigrams and bigrams from its title,
+ * subtitle and excerpt. Bigrams matter — "film noir", "abstract expressionism"
+ * and "world war" are the labels you actually want, and none survives as two
+ * unigrams.
+ *
+ * ## Domains are a LABEL input and not an embedding input
+ *
+ * Two different questions get the same tag and only one of them should.
+ *
+ * `entryText` in `lib/store.mjs` excludes `domains` on purpose, and must keep
+ * excluding them: a domain is perfectly correlated with the source file, so in
+ * the vector it carries no information *within* a domain while forcing a large
+ * constant gap *between* domains, and the hierarchy just re-derives the original
+ * CSVs. `verify.mjs` asserts that exclusion.
+ *
+ * None of that argues against domains as label CANDIDATES, and they were missing
+ * from this set — so `nameFromCentroids`, which produces every label you see,
+ * could not offer "us history" or "visual art" no matter how squarely a cluster
+ * sat on one. The vocabulary is only a list of words a centroid may be matched
+ * against; adding one moves no point on the map. A domain still has to earn a
+ * label on cosine, coverage and generality like any other term, which is the
+ * right bar: broad enough to name a depth-1 node, too broad to win at a leaf.
  */
 export function vocabTokens(entry){
   const out = new Set();
   const push = (t) => { t = String(t).trim().toLowerCase().replace(/\s+/g, ' '); if(vocabOk(t)) out.add(t); };
 
   for(const t of entry.topics || []) push(t);
+  for(const t of entry.domains || []) push(t);
   for(const v of Object.values(entry.facets || {})){
     for(const one of (Array.isArray(v) ? v : [v])) push(one);
   }
@@ -769,6 +789,30 @@ export function labelNodes(nodes, entries, { terms = 3, vocab = null } = {}){
  *                Compared in log space so it is scale-free.
  *   ancestors    a node may not reuse any term one of its ancestors used, so
  *                every level down is forced to add information.
+ *   siblings     no two children of one parent may LEAD with the same term.
+ *
+ * ## Why siblings need their own rule
+ *
+ * The ancestor rule constrains the tree vertically and says nothing across it,
+ * so two sibling centroids whose nearest vocabulary term happened to be the same
+ * word both took it. The depth-1 row read
+ *
+ *     Painting | History | History | King | Politician | Film
+ *
+ * — two clusters with one name between them, which is worse than a vague name
+ * because it makes the rail's own rows indistinguishable. Seven such collisions
+ * existed across the tree, including two "Kingdom Of England · King Henry" and
+ * two "Drama Film · Comedy Film".
+ *
+ * Only the LEAD term is contested. That is enough to guarantee distinct labels
+ * (they differ in their first component) while leaving the trailing terms free —
+ * forbidding a shared term outright would push two genuinely adjacent art
+ * clusters off "painting" and onto whatever ranked next, which is usually worse
+ * than the repetition it prevents.
+ *
+ * Contested terms go to the cluster that scores highest for them rather than to
+ * whichever node the traversal reached first, so the runner-up is the one that
+ * moves on to its second choice.
  */
 function nameFromCentroids(nodes, entries, vocab, opts = {}){
   // `covWeight` was 0.45 while the vocabulary still contained credit-line verbs,
@@ -785,70 +829,135 @@ function nameFromCentroids(nodes, entries, vocab, opts = {}){
   const byDepth = [...nodes].sort((a, b) => a.depth - b.depth);
   const ancestorTerms = new Map();
 
+  /*
+   * Sibling groups, in nondecreasing depth order.
+   *
+   * Every child of a node sits at its parent's depth plus one, so walking the
+   * depth-sorted list and appending each node to its parent's bucket yields the
+   * buckets themselves in depth order. That ordering is load-bearing: a group is
+   * scored against `ancestorTerms`, which its parent's group must have filled in
+   * already.
+   */
+  const groups = [];
+  const groupOf = new Map();
   for(const node of byDepth){
-    const inherited = node.parent >= 0 ? new Set(ancestorTerms.get(node.parent) || []) : new Set();
-    const rows = node.rows && node.rows.length ? node.rows : collectRows(nodes, node.id);
+    let g = groupOf.get(node.parent);
+    if(!g){ g = []; groupOf.set(node.parent, g); groups.push(g); }
+    g.push(node);
+  }
 
-    // The root is every entry, so its centroid is the mean of the whole corpus
-    // and the nearest term to it is whichever domain happens to be largest. That
-    // is not a description of anything, and — because a child may not reuse an
-    // ancestor's term — naming it would rob the one cluster the term does
-    // describe. Left unnamed and contributing nothing to the ancestor set.
-    if(node.depth === 0){
-      ancestorTerms.set(node.id, inherited);
-      continue;
+  for(const group of groups){
+    // ---- score every sibling, then name them together --------------------
+    const pending = [];
+    for(const node of group){
+      const inherited = node.parent >= 0 ? new Set(ancestorTerms.get(node.parent) || []) : new Set();
+      const rows = node.rows && node.rows.length ? node.rows : collectRows(nodes, node.id);
+
+      // The root is every entry, so its centroid is the mean of the whole corpus
+      // and the nearest term to it is whichever domain happens to be largest. That
+      // is not a description of anything, and — because a child may not reuse an
+      // ancestor's term — naming it would rob the one cluster the term does
+      // describe. Left unnamed and contributing nothing to the ancestor set.
+      if(node.depth === 0){
+        ancestorTerms.set(node.id, inherited);
+        continue;
+      }
+
+      if(!node.centroid || !rows.length){
+        ancestorTerms.set(node.id, inherited);
+        continue;
+      }
+
+      // In-cluster document frequency, for the coverage term.
+      const inCluster = new Map();
+      for(const r of rows){
+        for(const t of tokens[r]) inCluster.set(t, (inCluster.get(t) || 0) + 1);
+      }
+
+      const size = rows.length;
+      const targetLogDf = Math.log(size / N);
+
+      const scored = [];
+      for(let i = 0; i < vterms.length; i++){
+        const t = vterms[i];
+        if(inherited.has(t)) continue;
+
+        // Both sides are unit length, so a dot product is the cosine.
+        let cos = 0;
+        const off = i * vdim;
+        for(let d = 0; d < vdim; d++) cos += node.centroid[d] * vm[off + d];
+
+        const coverage = (inCluster.get(t) || 0) / size;
+        const generality = -Math.abs(Math.log((df.get(t) || 1) / N) - targetLogDf);
+
+        scored.push([t, cos + covWeight * coverage + genWeight * generality]);
+      }
+      if(!scored.length){ ancestorTerms.set(node.id, inherited); continue; }
+      scored.sort((a, b) => b[1] - a[1]);
+
+      // Shallow nodes get one broad word; depth buys detail. A three-part name at
+      // the top of the tree is the thing this rework set out to remove.
+      const want = node.depth <= 1 ? 1 : node.depth === 2 ? 2 : Math.min(3, maxTerms);
+
+      pending.push({ node, inherited, scored, want });
     }
 
-    if(!node.centroid || !rows.length){
-      ancestorTerms.set(node.id, inherited);
-      continue;
+    /*
+     * Hand out lead terms across the group, best claim first.
+     *
+     * Scores are comparable between siblings because each is a cosine against the
+     * same unit-length vocabulary plus two bounded corrections, so the node that
+     * ranks a contested word highest is the node it describes best. The runner-up
+     * falls through to its next candidate rather than losing its name.
+     */
+    const claimedLead = new Set();
+    const leads = new Map();
+    const bids = [];
+    for(const p of pending){
+      // 24 deep is well past where a lead candidate is still plausible, and it
+      // caps the sort at a size independent of how large the vocabulary grows.
+      for(const [t, s] of p.scored.slice(0, 24)) bids.push([s, p, t]);
+    }
+    // Term as the final tie-break, so an exact score draw resolves the same way
+    // on every rebuild instead of following the sort's implementation.
+    bids.sort((a, b) => b[0] - a[0] || a[2].localeCompare(b[2]));
+    for(const [, p, t] of bids){
+      if(leads.has(p.node.id) || claimedLead.has(t)) continue;
+      leads.set(p.node.id, t);
+      claimedLead.add(t);
     }
 
-    // In-cluster document frequency, for the coverage term.
-    const inCluster = new Map();
-    for(const r of rows){
-      for(const t of tokens[r]) inCluster.set(t, (inCluster.get(t) || 0) + 1);
+    /*
+     * A node can still be leadless: in a wide group every one of its top 24 went
+     * to a higher bidder. Scan its whole ranking for the best word no sibling
+     * leads with. Skipping this step is what would let the duplicate back in —
+     * an unled node falls through to the generic pick below, which does not
+     * consult `claimedLead` at all.
+     */
+    for(const p of pending){
+      if(leads.has(p.node.id)) continue;
+      const t = p.scored.find(([term]) => !claimedLead.has(term));
+      if(t){ leads.set(p.node.id, t[0]); claimedLead.add(t[0]); }
     }
 
-    const size = rows.length;
-    const targetLogDf = Math.log(size / N);
+    for(const { node, inherited, scored, want } of pending){
+      // Substring dedup *within* one label, so it never reads "Film · The Film".
+      // Against ancestors the test is exact match only: a parent called "Film"
+      // must still leave "Film Noir" available to a child, which is precisely the
+      // narrowing the hierarchy is supposed to show.
+      const picked = [];
+      const lead = leads.get(node.id);
+      if(lead) picked.push(lead);
+      for(const [t] of scored){
+        if(picked.length >= want) break;
+        if(picked.some((p) => p.includes(t) || t.includes(p))) continue;
+        picked.push(t);
+      }
 
-    const scored = [];
-    for(let i = 0; i < vterms.length; i++){
-      const t = vterms[i];
-      if(inherited.has(t)) continue;
-
-      // Both sides are unit length, so a dot product is the cosine.
-      let cos = 0;
-      const off = i * vdim;
-      for(let d = 0; d < vdim; d++) cos += node.centroid[d] * vm[off + d];
-
-      const coverage = (inCluster.get(t) || 0) / size;
-      const generality = -Math.abs(Math.log((df.get(t) || 1) / N) - targetLogDf);
-
-      scored.push([t, cos + covWeight * coverage + genWeight * generality]);
+      if(picked.length) node.label = picked.map(titleCase).join(' · ');
+      node.semanticTerms = picked;
+      ancestorTerms.set(node.id, new Set([...inherited, ...picked]));
     }
-    if(!scored.length){ ancestorTerms.set(node.id, inherited); continue; }
-    scored.sort((a, b) => b[1] - a[1]);
-
-    // Shallow nodes get one broad word; depth buys detail. A three-part name at
-    // the top of the tree is the thing this rework set out to remove.
-    const want = node.depth <= 1 ? 1 : node.depth === 2 ? 2 : Math.min(3, maxTerms);
-
-    // Substring dedup *within* one label, so it never reads "Film · The Film".
-    // Against ancestors the test is exact match only: a parent called "Film"
-    // must still leave "Film Noir" available to a child, which is precisely the
-    // narrowing the hierarchy is supposed to show.
-    const picked = [];
-    for(const [t] of scored){
-      if(picked.length >= want) break;
-      if(picked.some((p) => p.includes(t) || t.includes(p))) continue;
-      picked.push(t);
-    }
-
-    if(picked.length) node.label = picked.map(titleCase).join(' · ');
-    node.semanticTerms = picked;
-    ancestorTerms.set(node.id, new Set([...inherited, ...picked]));
   }
 
   return nodes;

@@ -48,8 +48,23 @@ export function createDetail(root, hooks = {}){
       .map((id) => A.nodes[id])
       .filter((nd) => nd && nd.depth > 0);
 
-    const years = A.isSpan[i] ? fmtRange(A.x0[i], A.x1[i]) : fmtYear(A.x0[i]);
-    const yearText = A.yearText[i] && A.yearText[i] !== years ? A.yearText[i] : years;
+    /*
+     * An open-ended span prints as "745 –", with nothing after the dash.
+     *
+     * Its stored end is today's date standing in for an absent one, so printing
+     * that year asserts an ending the source does not claim. "– present" would be
+     * the obvious substitute and is just as wrong the other way: it is true of the
+     * Phanerozoic and false of the Vikings, and the flag cannot tell them apart —
+     * all it knows is that no end was recorded. The open interval says exactly
+     * that and nothing more, and it matches the fading tail the bar is drawn with.
+     */
+    const years = A.isSpan[i]
+      ? (A.openEnded[i] ? `${fmtYear(A.x0[i])} –` : fmtRange(A.x0[i], A.x1[i]))
+      : fmtYear(A.x0[i]);
+    // The stored yearText carries the same substituted end ("745-2026"), so it
+    // cannot stand in here either.
+    const yearText = A.openEnded[i] ? years
+      : (A.yearText[i] && A.yearText[i] !== years ? A.yearText[i] : years);
 
     const neighbours = (A.knn[i] || []).slice(0, 6);
 
@@ -70,7 +85,9 @@ export function createDetail(root, hooks = {}){
       <div class="dbody">
         <h2>${esc(A.title[i])}</h2>
         ${A.subtitle[i] ? `<div class="dsub">${esc(A.subtitle[i])}</div>` : ''}
-        <div class="dyear">${esc(yearText)}${A.circa[i] ? ' <span class="approx">approx.</span>' : ''}</div>
+        <div class="dyear">${esc(yearText)}${
+          A.openEnded[i] ? ' <span class="approx">no end recorded</span>' : ''
+        }${A.circa[i] ? ' <span class="approx">approx.</span>' : ''}</div>
 
         ${d.excerpt
           ? `<div class="dex">${d.excerpt.split(/\n\n+/).map((p) => `<p>${esc(p)}</p>`).join('')}</div>`

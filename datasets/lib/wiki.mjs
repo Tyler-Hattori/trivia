@@ -358,6 +358,20 @@ export async function describe(input){
   let start = null, end = null, kind = 'point', dateSource = null;
 
   let imprecise = false;
+  /*
+   * Whether the end year is the subject's or merely today's.
+   *
+   * An absent P582 means the end is not recorded, and substituting the current
+   * year is the only way to give the span a right edge to draw to. But the
+   * substitution is indistinguishable from a real end date once stored, so
+   * Phanerozoic, Animal, Fungus and the Age of Earth all drew as bars stopping
+   * dead at 2026, in the same shape as a reign that genuinely ended there.
+   * Recorded, so the renderer can cap those spans open instead.
+   *
+   * Not named `ongoing`: an absent P582 usually does mean unfinished, but it also
+   * catches things Wikidata simply never dated the end of — Vikings, Olmecs.
+   */
+  let openEnded = false;
 
   for(const rule of DATE_CLAIMS){
     if(rule.span){
@@ -366,7 +380,8 @@ export async function describe(input){
       const b = timeRange(claimValues(claims, rule.span[1])[0]);
       if(a){
         start = a.lo;
-        end = b ? b.hi : new Date().getFullYear();   // still ongoing / still alive
+        end = b ? b.hi : new Date().getFullYear();   // no end recorded / still alive
+        openEnded = !b;
         kind = 'span';
         imprecise = a.imprecise || !!b?.imprecise;
         dateSource = rule.span.join('+');
@@ -443,7 +458,7 @@ export async function describe(input){
     subtitle: creators[0] || wd?.description || summary.description || '',
     excerpt: lead || summary.extract || '',
     image,
-    start, end, kind,
+    start, end, kind, openEnded,
     yearText: start == null ? '' : yearText,
     // A claim coarser than one year is approximate by definition. detail.js renders
     // this as "approx." next to the date, so the widened range is not read as exact.

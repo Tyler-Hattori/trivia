@@ -314,8 +314,24 @@ export function paintFrame(ctx, A, scale, opts){
     ctx.fillRect(Math.round(scale.sx(0)) + 0.5, 0, 1, H);
   }
 
-  // ---- spans ------------------------------------------------------------
-  // Drawn before dots so a dot marks the start of its own span.
+  /*
+   * ---- spans -------------------------------------------------------------
+   * Drawn before dots so a dot marks the start of its own span.
+   *
+   * A span that has not ended gets a fading tail rather than a squared-off right
+   * edge. Its stored end is the current year — the only number available for a
+   * thing that is still going — and drawn plainly that is a lie the eye reads
+   * literally: the Phanerozoic, Animal and Fungus all appeared to terminate in
+   * 2026, in the same shape as a reign that genuinely ended. At full zoom-out
+   * they are the widest bars on the map, so it was also the most conspicuous
+   * thing on it, which is why they read as spans running past the present.
+   *
+   * A gradient rather than an arrowhead: the bar is 2px tall and these are often
+   * thousands of pixels long, so a glyph at the end is invisible unless you have
+   * already scrolled to it, while a tail is legible at any zoom and needs no
+   * legend. The fade is over the last 40px of the bar, or its final third when
+   * it is shorter than that, so a narrow openEnded span still shows the taper.
+   */
   ctx.lineWidth = 1;
   for(const i of visible){
     if(!A.isSpan[i]) continue;
@@ -327,8 +343,28 @@ export function paintFrame(ctx, A, scale, opts){
     const xb = scale.sx(A.x1[i]);
     if(xb - xa < 1.5) continue;
     const y = Math.round(scale.sy(A.y[i])) + 0.5;
-    ctx.fillStyle = hexToRgba(A.color[i], matched ? 0.55 : COLORS.dimSpan);
-    ctx.fillRect(Math.max(-2, xa), y - 1, Math.min(W + 4, xb - xa), 2);
+    const alpha = matched ? 0.55 : COLORS.dimSpan;
+
+    // Clamped to the viewport before measuring the tail, or an openEnded span
+    // whose end is off-screen fades somewhere nobody can see while the visible
+    // part draws flat.
+    const x0 = Math.max(-2, xa);
+    const x1 = Math.min(W + 4, xb);
+    if(x1 <= x0) continue;
+
+    if(A.openEnded[i] && x1 < W + 4){
+      const fade = Math.min(40, (x1 - x0) / 3);
+      const g = ctx.createLinearGradient(x1 - fade, 0, x1, 0);
+      g.addColorStop(0, hexToRgba(A.color[i], alpha));
+      g.addColorStop(1, hexToRgba(A.color[i], 0));
+      ctx.fillStyle = hexToRgba(A.color[i], alpha);
+      ctx.fillRect(x0, y - 1, (x1 - fade) - x0, 2);
+      ctx.fillStyle = g;
+      ctx.fillRect(x1 - fade, y - 1, fade, 2);
+    } else {
+      ctx.fillStyle = hexToRgba(A.color[i], alpha);
+      ctx.fillRect(x0, y - 1, x1 - x0, 2);
+    }
   }
 
   // ---- dots -------------------------------------------------------------

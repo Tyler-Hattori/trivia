@@ -70,6 +70,39 @@ check('spans run forwards', () => {
   assert(!bad.length, `${bad.length} end-before-start, e.g. ${bad[0]?.id} (${bad[0]?.yearText})`);
 });
 
+/*
+ * The atlas's x extent is a max over every row, so one misread date moves the
+ * whole axis. Five rows once ran past the present — three BC ranges that lost
+ * their era token and two percentages read as the far half of a range — and the
+ * visible symptom was a time axis reaching the year 3200 with a millennium of
+ * empty space on the right. Cheaper to assert than to notice.
+ */
+check('nothing is dated after the present', () => {
+  const now = new Date().getFullYear();
+  const bad = entries.filter((e) => Math.max(e.start ?? -Infinity, e.end ?? -Infinity) > now);
+  assert(!bad.length,
+    `${bad.length} past ${now}, e.g. ${bad[0]?.id} (${bad[0]?.yearText}) -> ${bad[0]?.start}..${bad[0]?.end}`);
+});
+
+/*
+ * A QID identifies a thing, so two rows holding one are the same thing twice.
+ * They are invisible in aggregate — the count looks right — and obvious on the
+ * map, where the pair draws as one mark you cannot select and inflates whatever
+ * cluster it lands in. `ingest.mjs` only deduped against the store as it was at
+ * startup, so a QID reached twice within a single run passed both times.
+ */
+check('no QID appears twice', () => {
+  const byQid = new Map();
+  for(const e of entries){
+    const q = e.origin?.qid;
+    if(!q) continue;
+    byQid.set(q, [...(byQid.get(q) || []), e.id]);
+  }
+  const dupes = [...byQid].filter(([, ids]) => ids.length > 1);
+  assert(!dupes.length,
+    `${dupes.length} QIDs held by more than one entry, e.g. ${dupes[0]?.[0]} -> ${dupes[0]?.[1].join(', ')}`);
+});
+
 check('yearText still parses to the stored start', () => {
   const bad = entries.filter((e) => {
     if(!e.yearText) return false;
@@ -133,6 +166,13 @@ check('the year parser reads deep time', () => {
     ['1899-01',                            1899,        1901],       // …across the century
     ['180–10 AD',                          -180,        10],          // straddles the era
     ['between 1850 and 1900',              1850,        1900],
+    // Both ends hedged with the era stated once at the close — how an
+    // archaeological culture is dated. Read as bare "c. 3200" this filed
+    // Neolithic Greece under AD 3200.
+    ['c. 3200 – c. 2650 BC',               -3200,       -2650],
+    // Three digits is not an abbreviated year. Carrying the leading digit turned
+    // a percentage the miner mistook for a date into the year 2170.
+    ['1913 to 170',                        1913,        170],
   ];
   for(const [text, start, end] of cases){
     const got = parseYears(text);

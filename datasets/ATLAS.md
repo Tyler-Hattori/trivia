@@ -456,12 +456,13 @@ touching the scoring.
 ## Checking your work
 
 ```
-node datasets/verify.mjs                  # 28 invariant checks, ~1s
+node datasets/verify.mjs                  # 30 invariant checks, ~1s
 node datasets/inspect.mjs                 # the tree, top level
 node datasets/inspect.mjs --tree 2        # two levels deep
 node datasets/inspect.mjs --near cubism   # nearest neighbours — the real test
 node datasets/inspect.mjs --leaf 113      # one cluster's members, in y order
 node datasets/inspect.mjs --cross         # do clusters cross source files?
+node datasets/dedupe.mjs --dry            # one-off: drop rows sharing a QID
 ```
 
 `--near` is the check that catches bad data fastest. If an entry's nearest
@@ -486,6 +487,18 @@ claims and both would fail silently:
 100% one source file, the embedding has re-derived the old CSVs and the atlas is
 a swimlane chart with extra steps.
 
+Two more that were added after each caught a bug already in the store:
+
+- **nothing is dated after the present** — the x extent is a max over every row,
+  so one misread date moves the whole axis. Five rows once ran past 2026 and the
+  only visible symptom was a time axis reaching the year 3200 with a millennium
+  of dead space on the right.
+- **no QID appears twice** — `ingest.mjs` deduped only against the store as it
+  stood when the run started, so a QID reached twice within one run passed both
+  times and the `~N` id-collision suffix quietly made room for it. 65 rows across
+  58 QIDs. `dedupe.mjs` cleared the ones already stored; the gate is fixed, so it
+  should never need running again.
+
 ---
 
 ## The data model
@@ -498,6 +511,8 @@ a swimlane chart with extra steps.
   "title": "Les Demoiselles D'Avignon",
   "subtitle": "pablo picasso",
   "yearText": "1907", "start": 1907, "end": 1907, "kind": "point", "circa": false,
+  // "openEnded": true on a span whose end year is not recorded — see below
+  "openEnded": false,
   "domains": ["art", "visual art"],
   "topics": ["cubism", "proto-cubism"],
   "facets": { "artist": "pablo picasso", "movement": "cubism" },
@@ -524,6 +539,27 @@ constant separation *between* domains. The hierarchy dutifully re-derived the
 eight original CSVs — exactly the category-per-row structure this rework exists
 to escape. Left out, a Picasso painting can sit beside Picasso the person and
 beside Cubism as a movement.
+
+**Domains ARE a label input, and were missing from it.** Keeping them out of
+`entryText` is right and `verify.mjs` enforces it; keeping them out of
+`vocabTokens` was an oversight. Labels come from `nameFromCentroids`, which
+matches a node's centroid against a harvested vocabulary — and that vocabulary
+took topics, facets and prose but not domains, so "us history" and "visual art"
+could never be offered no matter how squarely a cluster sat on one. Adding a word
+to the vocabulary moves no point on the map; adding it to `entryText` moves every
+point. They are separate decisions and only the second one is dangerous.
+
+**`openEnded` — the end year is not recorded.** An absent Wikidata P582 (and the
+word "present" on the CSV route) leaves a span with no right edge, and the only
+number available to draw to is the current year. Stored plainly that is
+indistinguishable from a real end date, so the Phanerozoic, Animal and Fungus all
+drew as bars stopping dead at 2026 in the same shape as a reign that genuinely
+ended there — the most conspicuous marks on the map, and the reason spans looked
+like they overshot the present. Flagged, they get a fading tail instead and the
+detail panel prints `745 –` rather than inventing an ending. Deliberately *not*
+called `ongoing`: most of the 109 really are unfinished, but Vikings, Ancient Rome
+and Olmecs are in there because Wikidata never dated their end, not because they
+are still going.
 
 **Multi-value by construction.** `topics` is a list, so a cell reading
 `"science fiction / horror"` becomes two topics and the entry belongs to both.

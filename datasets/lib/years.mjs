@@ -208,9 +208,16 @@ export function parseYears(v, now = new Date().getFullYear()){
      * Never when the far half names its era: "180–10 AD" abbreviates nothing, and
      * anything else that still runs backwards afterwards is a date this parser has
      * not understood, which the caller is expected to refuse rather than store.
+     *
+     * The far half must be one or two digits. Nobody abbreviates a year to three
+     * — "1913 to 170" is not a reign written short, it is two unrelated numbers
+     * the miner glued together, and carrying the leading digit produced 2170. Cap
+     * the rule at the widths the convention actually uses and the malformed input
+     * falls through still running backwards, which `findDate` now catches.
      */
     const digits = (p) => (String(p).match(/\d+/) || [''])[0].length;
-    if(start > 0 && end > 0 && end < start && !adEnd && digits(parts[1]) < digits(parts[0])){
+    if(start > 0 && end > 0 && end < start && !adEnd &&
+       digits(parts[1]) <= 2 && digits(parts[1]) < digits(parts[0])){
       const place = 10 ** digits(parts[1]);
       end = start - (start % place) + end;
       if(end < start) end += place;
@@ -288,7 +295,7 @@ const SEP   = String.raw`\s*(?:to|and|–|—|-|/)\s*`;
 const TOL = String.raw`\s*(?:±|\+\/-|\+-)\s*\d+(?:[.,]\d+)?(?:\s*(?:${SCALE}))?`;
 
 /** One number plus its unit: "4,567 ± 3 Ma", "305 kya", "44 BC". */
-const DATED = `(?:${NUM})(?:${TOL})?\\s*(?:${SCALE}|${ERA})(?![A-Za-z])(?:${TOL})?`;
+const DATED = `(?:${HEDGE})?(?:${NUM})(?:${TOL})?\\s*(?:${SCALE}|${ERA})(?![A-Za-z])(?:${TOL})?`;
 
 /**
  * A number carrying an era token or a relative unit. Unambiguous anywhere.
@@ -297,10 +304,26 @@ const DATED = `(?:${NUM})(?:${TOL})?\\s*(?:${SCALE}|${ERA})(?![A-Za-z])(?:${TOL}
  * ("320 kya – 305 kya", "27 BC - 14 AD"). The two-sided form is tried first,
  * because the alternation is ordered and the one-sided pattern would otherwise
  * match just the first half and leave the second date sitting in the entry's title.
+ *
+ * ## The far side may carry its own hedge
+ *
+ * An archaeological range hedges both ends — "c. 3200 – c. 2650 BC" is the
+ * standard way to write a culture's dates, and it was the one shape neither form
+ * accepted. The two-sided form wanted an era token on the near half, which is
+ * absent; the one-sided form reached the "c." in front of 2650, failed on a
+ * non-digit, and gave up on the range. What matched instead was DATE_BARE's
+ * "c. 3200" alone — a bare positive number, so the trailing BC never reached
+ * `parseYears` and Neolithic Greece was filed under AD 3200, 1,174 years past the
+ * present and the reason the atlas's x extent ended at 3200.
+ *
+ * Allowing HEDGE inside the range (and inside DATED, for the two-sided case)
+ * lets the whole expression match, and `parseYears` already knows how to push a
+ * trailing era back onto an unmarked near half.
  */
 const DATE_UNIT =
   `(?:${HEDGE})?(?:${DATED}${SEP}${DATED}` +
-  `|(?:${NUM})(?:${TOL})?(?:${SEP}(?:${NUM})(?:${TOL})?)?\\s*(?:${SCALE}|${ERA})(?![A-Za-z])(?:${TOL})?)`;
+  `|(?:${NUM})(?:${TOL})?(?:${SEP}(?:${HEDGE})?(?:${NUM})(?:${TOL})?)?` +
+  `\\s*(?:${SCALE}|${ERA})(?![A-Za-z])(?:${TOL})?)`;
 
 /*
  * What follows a bare year may not be more of the same number.
@@ -318,33 +341,18 @@ const DATE_UNIT =
  */
 const NOT_MID_NUMBER = String.raw`(?!\d|[,.]\d)`;
 
-/**
- * A bare 3-4 digit year, or a range of them: "1066", "1914–1918", "1920s".
- *
- * The optional `s` is a decade, and it has to be consumed rather than left
- * behind: "1920s" matched as "1920" put a stray "s" at the head of the title.
- * `\b` keeps it from eating the s of an adjoining word.
- */
-const YEAR_OR_DECADE = String.raw`\d{3,4}(?:s\b)?`;
-const DATE_BARE = `(?:${HEDGE})?${YEAR_OR_DECADE}(?:${SEP}${YEAR_OR_DECADE})?${NOT_MID_NUMBER}`;
-
-/*
- * A bare number is only a date in the right position. At the head of a timeline
- * line it plainly is one; mid-sentence it needs a preposition in front of it, or
- * "It has 400 members and covers 12 states" yields the year 400. Requiring the
- * preposition costs a few real dates and buys immunity from a whole class of
- * quantity-mistaken-for-year, which is the failure that produces a confident entry
- * in the wrong millennium.
- */
-const DATE_PREP = String.raw`(?<=\b(?:in|by|since|during|until|from|around|about|circa|c\.?)\s)`;
-
 /*
  * Units that mean the number in front of them is a measurement.
  *
- * Lives here rather than in `wiki.mjs`, which had the only copy, because two
+ * Lives here rather than in `wiki.mjs`, which had the only copy, because three
  * consumers now need it: `yearInLead` reads it as "what follows this number",
- * and the loose grammar below reads it as a lookahead. A second copy of a list
- * like this is how "560 kilometres" became the year 560 in the first place.
+ * and both the bare and the loose grammars below read it as a lookahead. A
+ * second copy of a list like this is how "560 kilometres" became the year 560 in
+ * the first place.
+ *
+ * Declared above `DATE_BARE` rather than beside the loose grammar because these
+ * are plain template strings spliced at module load, so a use before the
+ * declaration is a TDZ throw and not a forward reference.
  */
 const UNIT_SRC =
   'k?m|mi|ft|yd|nmi|ha|kg|lb|t|%|°|km2|m2|km²|m²|' +
@@ -359,6 +367,42 @@ const UNIT_SRC =
 
 /** A number immediately followed by a unit is a measurement, not a year. */
 export const UNIT_AFTER = new RegExp(`^\\s*(?:${UNIT_SRC})\\b`, 'i');
+
+/*
+ * `%` has no word boundary after it, so `\b` fails and the guard never fires on
+ * the one unit written as a symbol. That is what let "in 1913 to 170%" read as a
+ * range ending in the year 170 — which the abbreviation rule in `parseYears`
+ * then carried up to 2170, putting an entry 144 years into the future and
+ * dragging the atlas's whole x extent out with it.
+ */
+const NOT_UNIT = `(?!\\s*(?:(?:${UNIT_SRC})\\b|[%°]))`;
+
+/**
+ * A bare 3-4 digit year, or a range of them: "1066", "1914–1918", "1920s".
+ *
+ * The optional `s` is a decade, and it has to be consumed rather than left
+ * behind: "1920s" matched as "1920" put a stray "s" at the head of the title.
+ * `\b` keeps it from eating the s of an adjoining word.
+ *
+ * Both sides carry the unit guard. Without it on the far side a percentage or a
+ * count reads as the end of a range — the regex is happy to take "1913 to 170"
+ * out of "from 66% of GDP in 1913 to 170% in 1919". With it the range simply
+ * fails to match and the pattern backtracks to the bare "1913", which is the
+ * right answer for that sentence anyway.
+ */
+const YEAR_OR_DECADE = String.raw`\d{3,4}(?:s\b)?`;
+const DATE_BARE =
+  `(?:${HEDGE})?${YEAR_OR_DECADE}${NOT_UNIT}(?:${SEP}${YEAR_OR_DECADE}${NOT_UNIT})?${NOT_MID_NUMBER}`;
+
+/*
+ * A bare number is only a date in the right position. At the head of a timeline
+ * line it plainly is one; mid-sentence it needs a preposition in front of it, or
+ * "It has 400 members and covers 12 states" yields the year 400. Requiring the
+ * preposition costs a few real dates and buys immunity from a whole class of
+ * quantity-mistaken-for-year, which is the failure that produces a confident entry
+ * in the wrong millennium.
+ */
+const DATE_PREP = String.raw`(?<=\b(?:in|by|since|during|until|from|around|about|circa|c\.?)\s)`;
 
 /*
  * The loose grammar, for `--events-prose` only.
@@ -378,7 +422,6 @@ export const UNIT_AFTER = new RegExp(`^\\s*(?:${UNIT_SRC})\\b`, 'i');
  * years of cited work.
  */
 const YEAR4 = String.raw`(?<![\d,.])(?:1\d{3}|20\d{2})`;
-const NOT_UNIT = `(?!\\s*(?:${UNIT_SRC})\\b)`;
 
 const DATE_LOOSE = [
   // "(1911)", "(1914–1918)" — how a history article dates the thing it just
@@ -420,9 +463,33 @@ export function findDate(s, { anchored = false, loose = false } = {}){
     'i');
   const m = re.exec(String(s ?? ''));
   if(!m) return null;
-  const text = m[0].trim();
-  const { start, end } = parseYears(text);
+  let text = m[0].trim();
+  let { start, end } = parseYears(text);
   if(start == null) return null;
+
+  /*
+   * A mined range that runs backwards is a misread, not a date.
+   *
+   * `parseYears` repairs the two backwards forms that are real conventions — the
+   * era-boundary "180–10 AD" and the abbreviated "1601–03". Anything still
+   * descending after those have had their turn is the grammar having stitched
+   * two numbers into a range that was never one: "from 41 persons per square
+   * mile in 1829 to 114 in 1912" yielded 1829–114. Stored, it became a span
+   * ending in 2114.
+   *
+   * Keep the leading date rather than discarding the match. The first half of
+   * these is reliably a real year — it is what the preposition vouched for — and
+   * dropping the sentence outright would lose an event over a trailing statistic.
+   */
+  if(end != null && end < start){
+    const head = text.split(new RegExp(SEP, 'i'))[0].trim();
+    const one = parseYears(head);
+    if(one.start == null) return null;
+    text = head;
+    ({ start, end } = one);
+    if(end != null && end < start) return null;
+  }
+
   return { text, index: m.index + m[0].length - m[0].trimStart().length, start, end };
 }
 

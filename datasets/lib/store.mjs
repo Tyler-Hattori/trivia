@@ -100,6 +100,21 @@ export function makeEntry(o = {}){
     end:      o.end ?? null,
     kind:     o.kind || 'point',
     circa:    !!o.circa,
+    /*
+     * No end year is recorded, so the stored `end` is today standing in for one.
+     *
+     * Named for what is known rather than what is guessed. The obvious name was
+     * `ongoing`, and it would have been a claim the data does not support: of the
+     * 109 spans this flags, most really are unfinished — living people, extant
+     * taxa, active conflicts — but Vikings, Ancient Rome and Olmecs are in there
+     * too, and they are flagged because Wikidata has no P582 for them, not
+     * because they are still going. Open-ended is true of all of them.
+     *
+     * Also inferred from the text, because the CSV route never had a structured
+     * end claim to be absent — it wrote "1990-present" and `parseYears` replaced
+     * the word with the current year, losing the distinction just as thoroughly.
+     */
+    openEnded: !!o.openEnded || /\b(present|current|now|incumbent|ongoing)\b/i.test(o.yearText || ''),
     domains:  dedupeLower(o.domains || []),
     topics:   dedupeLower(o.topics || []),
     facets:   o.facets || {},
@@ -159,7 +174,7 @@ export function readEntries(){
 /** Serialise one entry to a single line, with keys in a stable order. */
 export function entryLine(e){
   const ordered = {};
-  for(const k of ['id','title','subtitle','yearText','start','end','kind','circa',
+  for(const k of ['id','title','subtitle','yearText','start','end','kind','circa','openEnded',
                   'domains','topics','facets','excerpt','image','origin','addedAt']){
     ordered[k] = e[k];
   }

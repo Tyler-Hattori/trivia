@@ -78,6 +78,9 @@ export function buildModel(raw){
     leaf: Int32Array.from(P.leaf),
     isSpan: Uint8Array.from(P.kind),
     circa: Uint8Array.from(P.circa),
+    // Absent from a store built before spans recorded it; an all-zero fallback
+    // just means nothing gets the open cap, which is the old behaviour.
+    openEnded: Uint8Array.from(P.openEnded || P.kind.map(() => 0)),
 
     nodes: raw.nodes,
   };
