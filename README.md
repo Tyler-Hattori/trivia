@@ -334,6 +334,27 @@ The data it reads is built by `datasets/atlas.mjs`; see `datasets/ATLAS.md`.
   the chevron on the edge you clicked.
 - **Pin lifts a cluster into a top strip sharing the map's x transform**, so you can
   hold "Cubism" pinned and pan four centuries past it. Max 6 pins, ≤42% of viewport.
+- **Fame is a highlight, not a filter.** `A.fame` (Wikidata sitelinks, log-scaled —
+  see `datasets/ATLAS.md`) feeds `A.prio` and drives a restrained highlight above
+  `FAME_HI` in `paint.js`: a larger dot, a hairline ring, a bold chip label. Kept to
+  bigger-mark-plus-ring rather than a glow or a colour change, to match the
+  filled-not-stroked, one-hairline aesthetic everywhere else on the canvas. An entry
+  with no QID (a mined event, a hand-entered row) just gets fame 0, same treatment as
+  an entry with no image.
+- **Free-text search has a semantic fallback, and "no results" is no longer
+  guaranteed for it.** Typing embeds the query through `/api/embed-query` (same
+  local EmbeddingGemma model, served by `datasets/serve.mjs`) and scores it by
+  cosine similarity against the vectors the atlas already ships, so a phrase with no
+  literal token overlap against any entry ("guy who invented the telephone") can
+  still find one. There is no similarity threshold that cleanly separates
+  "genuinely related" from "nothing better available" — measured, gibberish like
+  `zzzznotathing` scores *higher* against its best match (0.58) than the real term
+  `cubism` does against its own (0.557), an artifact of embedding-space anisotropy,
+  not a bug in the number. So semantic match is an OR added to literal matching,
+  never a replacement, and it fails soft: if Ollama is unreachable the fetch just
+  fails and plain substring search stands unchanged. A structured filter (`ds:`,
+  `topic:`, a year range) is untouched by this and is the only search left that can
+  show a true empty result.
 
 ### Atlas gotchas
 

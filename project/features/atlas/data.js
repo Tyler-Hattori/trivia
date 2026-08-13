@@ -46,8 +46,53 @@ export async function loadAtlas({ base = '', onProgress = () => {} } = {}){
     .then((d) => { A.details = d; return d; })
     .catch(() => { A.details = {}; return {}; });
 
+  /*
+   * Same non-fatal background-load shape as details.json, for semantic
+   * search. `vectors.bin`'s row order is NOT `atlas.json`'s point order — it's
+   * whatever order entries were embedded in, id-keyed via `vectors.json` — so
+   * `A.vecRowOf` is the join, built once here rather than per query. Absent
+   * entirely (fetch failure, or a store built before this existed) just means
+   * search stays plain substring matching; nothing above this depends on it.
+   */
+  A.vecRowOf = null;
+  A.vectorsBuf = null;
+  A.vectorsDim = 0;
+  A.vectorsPromise = Promise.all([
+    fetch(`${base}datasets/atlas/vectors.bin`).then((r) => (r.ok ? r.arrayBuffer() : null)),
+    fetch(`${base}datasets/atlas/vectors.json`).then((r) => (r.ok ? r.json() : null)),
+  ]).then(([buf, meta]) => {
+    if(!buf || !meta || !meta.ids?.length) return;
+    A.vectorsBuf = buf;
+    A.vectorsDim = meta.dim;
+    A.vecRowOf = new Map(meta.ids.map((id, i) => [id, i]));
+  }).catch(() => {});
+
   onProgress('indexing…');
   return A;
+}
+
+/**
+ * Cosine similarity between point `i`'s stored embedding and a query vector.
+ * Both sides are unit-normalised by construction (entries at embed time,
+ * queries by `truncateNormalize` server-side), so a plain dot product IS the
+ * cosine similarity — no separate magnitude division needed.
+ *
+ * Returns null when vectors haven't loaded yet, or this point has none (a
+ * mined event or an entry added before `vectors.bin` existed for it) — the
+ * caller treats null as "no semantic opinion", not as a mismatch.
+ */
+export function cosineToQuery(A, i, queryVec){
+  if(!A.vecRowOf) return null;
+  const row = A.vecRowOf.get(A.id[i]);
+  if(row == null) return null;
+  const dim = A.vectorsDim;
+  const rowBytes = 4 + dim;
+  const dv = new DataView(A.vectorsBuf, row * rowBytes, 4);
+  const scale = dv.getFloat32(0, true);
+  const i8 = new Int8Array(A.vectorsBuf, row * rowBytes + 4, dim);
+  let dot = 0;
+  for(let d = 0; d < dim; d++) dot += i8[d] * scale * queryVec[d];
+  return dot;
 }
 
 /** Turn the columnar payload into typed arrays plus indexes. */
@@ -81,6 +126,10 @@ export function buildModel(raw){
     // Absent from a store built before spans recorded it; an all-zero fallback
     // just means nothing gets the open cap, which is the old behaviour.
     openEnded: Uint8Array.from(P.openEnded || P.kind.map(() => 0)),
+    // How well-known an entry is, [0,1], from Wikidata sitelinks. Absent from
+    // a store built before fame existed; an all-zero fallback just means
+    // nothing gets the highlight, same fallback shape as openEnded above.
+    fame: Float32Array.from(P.fame || P.kind.map(() => 0)),
 
     nodes: raw.nodes,
   };
@@ -131,6 +180,11 @@ export function buildModel(raw){
     if(A.image[i]) p += 60;
     if(A.isSpan[i]) p += 20;                       // spans carry more information
     p += Math.min(30, (A.title[i]?.length || 0) / 2);
+    // Real-world notability. 250 at fame=1 is deliberately short of the
+    // exemplar bonus (400): a maximally famous entry competes hard for a
+    // label slot but doesn't automatically outrank a cluster's own
+    // representative.
+    p += A.fame[i] * 250;
     // A deterministic tiebreak, so equal-scoring points have a stable order
     // rather than depending on array position alone.
     p += (hash(A.id[i]) % 1000) / 1000;
@@ -327,7 +381,7 @@ export const queryIsEmpty = (q) =>
  * `null` means "no filter active", which callers treat as everything matching —
  * that distinction lets paint skip the lookup entirely in the common case.
  */
-export function runFilter(A, { query, topics, datasets, mode }){
+export function runFilter(A, { query, topics, datasets, mode, semanticMatches }){
   const q = parseQuery(query);
   const hasFacet = (topics && topics.size) || (datasets && datasets.size);
   if(queryIsEmpty(q) && !hasFacet) return null;
@@ -347,7 +401,11 @@ export function runFilter(A, { query, topics, datasets, mode }){
     }
     if(q.text.length){
       const hay = A.haystack[i];
-      if(!q.text.every((needle) => hay.includes(needle))) continue;
+      // Semantic match is an OR, never an AND: it only ever adds points a
+      // literal substring search missed (a generic phrase with no token
+      // overlap against any entry), it can't hide one substring already found.
+      const literal = q.text.every((needle) => hay.includes(needle));
+      if(!literal && !semanticMatches?.has(i)) continue;
     }
 
     // Sidebar facets are OR within a facet, AND across facets — the behaviour

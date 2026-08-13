@@ -275,6 +275,11 @@ check('y is inside [0,1]', () => {
   for(let i = 0; i < N; i++) assert(P.y[i] >= 0 && P.y[i] <= 1, `point ${P.id[i]} at y=${P.y[i]}`);
 });
 
+check('fame is inside [0,1]', () => {
+  if(!P.fame) return 'no fame column (pre-fame build)';
+  for(let i = 0; i < N; i++) assert(P.fame[i] >= 0 && P.fame[i] <= 1, `point ${P.id[i]} at fame=${P.fame[i]}`);
+});
+
 check('every point sits inside its own leaf band', () => {
   for(let i = 0; i < N; i++){
     const nd = nodes[P.leaf[i]];

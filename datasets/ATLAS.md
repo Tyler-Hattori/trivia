@@ -456,13 +456,14 @@ touching the scoring.
 ## Checking your work
 
 ```
-node datasets/verify.mjs                  # 30 invariant checks, ~1s
+node datasets/verify.mjs                  # 31 invariant checks, ~1s
 node datasets/inspect.mjs                 # the tree, top level
 node datasets/inspect.mjs --tree 2        # two levels deep
 node datasets/inspect.mjs --near cubism   # nearest neighbours — the real test
 node datasets/inspect.mjs --leaf 113      # one cluster's members, in y order
 node datasets/inspect.mjs --cross         # do clusters cross source files?
 node datasets/dedupe.mjs --dry            # one-off: drop rows sharing a QID
+node datasets/fame-backfill.mjs --dry     # one-off: sitelinks for pre-fame entries
 ```
 
 `--near` is the check that catches bad data fastest. If an entry's nearest
@@ -518,6 +519,9 @@ Two more that were added after each caught a bug already in the store:
   "facets": { "artist": "pablo picasso", "movement": "cubism" },
   "excerpt": "…",
   "image": "https://…",
+  // number of language Wikipedias with an article on this entity, or null with
+  // no QID to ask — see "Fame" below. Raw here; atlas.mjs normalises it.
+  "sitelinks": 187,
   "origin": { "dataset": "art", "wiki": "https://…", "qid": "Q…" },
   // hand-entered and mined rows also carry  "manual": true
   "addedAt": "2026-07-28"
@@ -578,6 +582,80 @@ and throw away the distances the entire atlas is built on.
 
 ---
 
+## Fame — a free notability signal
+
+Some entries are common knowledge and some are not, and the atlas had no way to
+tell the two apart — every point's label priority came from structural signals
+(cluster exemplar, has an image, is a span) with no notion of real-world fame.
+Wikidata already answers this for free: `sitelinks`, the number of language
+Wikipedias with an article on an entity, is fetched in the same `wbgetentities`
+call `describe()` already makes (`lib/wiki.mjs`), so a new ingest costs nothing
+extra. Chosen over Wikipedia pageviews on purpose — this is a *historical*
+timeline, and sitelinks reward durable, cross-cultural notability where
+pageviews would reward whatever is in this week's news cycle.
+
+The raw count is stored on the entry (`sitelinks`, null with no QID to ask) and
+normalised at build time in `atlas.mjs` into a `fame` column, `[0,1]`, log-scaled:
+
+```js
+fame = log1p(sitelinks) / log1p(maxSitelinksInCorpus)
+```
+
+Log-scaled because sitelink counts are extremely right-skewed — most entries
+carry a handful, a few (mostly countries, which sit near the ceiling with 400+)
+carry hundreds. Linear scaling would flatten almost the whole corpus to ~0 and
+only the outliers would ever register. The atlas frontend folds `fame` into its
+label-priority score and renders a restrained highlight above a threshold — see
+the root `README.md`'s atlas design decisions.
+
+**Backfilling entries that predate this field:**
+
+```
+node datasets/fame-backfill.mjs --dry     # report only
+node datasets/fame-backfill.mjs           # fetch + write entries.jsonl
+node datasets/atlas.mjs && node datasets/verify.mjs
+```
+
+Modeled on `imgfix.mjs`'s read → batched-fetch → write shape. Only mutates
+existing rows in place — nothing is added or removed — so `migrate.mjs`'s
+carry-over/deletion logic never comes into it. An entry with no QID (a mined
+timeline event, a hand-entered row) is left with `sitelinks: null` → `fame: 0`;
+there is no notability signal available for those regardless.
+
+---
+
+## Semantic search
+
+`datasets/serve.mjs` — the dev server that is otherwise a pure static file
+server — has one route, `GET /api/embed-query?q=...`: it embeds the query text
+with the same local EmbeddingGemma model every entry was embedded with
+(`lib/ollama.mjs`'s `embed()`), truncates and renormalises it to the stored
+256-dim width (`truncateNormalize`, `lib/store.mjs`), and returns it as JSON.
+That is the entire server-side piece — the browser already fetches
+`vectors.bin` + `vectors.json` as static files and does the cosine similarity
+itself, joining by id (vectors.bin's row order is append-order, **not**
+`atlas.json`'s point order, so the join can never be positional).
+
+The route is short-timeout and fail-soft on purpose: a 503 if Ollama is down or
+the embed call hangs past a few seconds, and the frontend treats anything but
+200 as "semantic unavailable" and falls back to plain substring matching with
+no user-visible error. This is an enhancement layered on top of search that
+already works, not a replacement for it.
+
+**There is no similarity threshold that reliably separates "genuinely related"
+from "nothing better available."** Nearest-neighbour search always returns a
+nearest neighbour. Measured against this corpus: gibberish (`zzzznotathing`)
+scores 0.58 against its best match, *higher* than the real term `cubism` scores
+against its own best match (0.557) — an artifact of embedding-space anisotropy,
+not a miscalibrated number. So the browser treats a semantic hit as an OR
+added to literal substring matching, never a replacement, and a "hopeless"
+free-text search is now expected to surface a loose semantic neighbour rather
+than nothing. Only a structured filter (`ds:`, `topic:`, a year range) can still
+show a genuinely empty result, and `qa-atlas.mjs` checks that distinction
+rather than "free text can return zero," which no longer holds.
+
+---
+
 ## The old CSVs
 
 `migrate.mjs` converts all eight into `entries.jsonl`. It reads them and never
@@ -617,7 +695,10 @@ in one pass and places the result on the map.
 Unchanged from before, and now easier to honour:
 
 - **Retrieval is not a model's job.** Wikipedia and Wikidata APIs fetch. Free.
-- **Embedding is local.** EmbeddingGemma, on your machine, no per-token cost.
+  Sitelink counts for the fame signal are the same story — one more field on a
+  call already being made, or a batched `wbgetentities` lookup in the backfill.
+- **Embedding is local.** EmbeddingGemma, on your machine, no per-token cost —
+  true at ingest time and, since `/api/embed-query`, true at search time too.
 - **A generative model is for judgement only** — house-voice reshaping
   (`--reshape`) and topic proposals (`--tag-topics`), both local, both optional.
 - **Claude is for what scripts cannot do**: deciding what belongs, resolving the

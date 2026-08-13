@@ -305,6 +305,12 @@ for(const id of leaves) for(const r of nodes[id].rows) leafOf[r] = id;
 // and every extra digit is bytes on the wire for no visible gain.
 const r5 = (v) => Math.round(v * 1e5) / 1e5;
 
+// Log-scaled, because sitelink counts are extremely right-skewed — most
+// entries carry a handful, a few carry hundreds. Linear scaling would flatten
+// almost the whole corpus to ~0 and only the outliers would ever register.
+const maxSitelinks = Math.max(1, ...rows.map((e) => e.sitelinks || 0));
+const fameOf = (e) => Math.log1p(e.sitelinks || 0) / Math.log1p(maxSitelinks);
+
 const atlas = {
   version: 2,
   model: vec.model,
@@ -333,6 +339,9 @@ const atlas = {
     yearText: rows.map((e) => e.yearText),
     dataset:  rows.map((e) => e.origin?.dataset || ''),
     topics:   rows.map((e) => e.topics),
+    // How well-known this entry is, [0,1], from Wikidata sitelinks. Never
+    // embedded — like `dataset`, it's metadata about the entry, not the entry.
+    fame:     rows.map((e) => r5(fameOf(e))),
     knn:      neighbours,
   },
 

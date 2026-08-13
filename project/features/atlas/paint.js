@@ -192,6 +192,11 @@ class Occupancy {
 
 const occ = new Occupancy();
 
+// Above this, an entry is famous enough to earn a highlight: a bigger dot, a
+// thin ring, a bold label. One number to tune if the highlight fires too
+// often or too rarely once real fame data is loaded.
+const FAME_HI = 0.7;
+
 /** Card geometry per tier. Heights are worst case for the text they hold. */
 export const CARD = {
   chip: { w: 0,   h: 20, gap: 3 },      // width is measured from the title
@@ -249,7 +254,7 @@ export function packLabels(A, scale, visible, tier, { collapsed, budget = 220, m
     if(!occ.free(x - g, y - g, w + g * 2, h + g * 2)) continue;
     occ.mark(x - g, y - g, w + g * 2, h + g * 2);
 
-    placements.push({ i, x, y, w, h, px, py, tier });
+    placements.push({ i, x, y, w, h, px, py, tier, famous: A.fame[i] > FAME_HI });
   }
 
   return placements;
@@ -391,7 +396,8 @@ export function paintFrame(ctx, A, scale, opts){
 
       const x = scale.sx(A.x0[i]);
       const y = scale.sy(A.y[i]);
-      const rr = labelled.has(i) ? 1.6 : r;
+      const famous = matched && A.fame[i] > FAME_HI;
+      const rr = labelled.has(i) ? 1.6 : (famous ? r * 1.7 : r);
 
       ctx.fillStyle = matched ? A.color[i] : COLORS.dimMark;
       // A square is materially cheaper than an arc and indistinguishable at these
@@ -401,9 +407,28 @@ export function paintFrame(ctx, A, scale, opts){
     }
   }
 
+  /*
+   * A thin ring around every famous, matched dot, in its own pass after both
+   * dot passes: it has to composite over dimmed dots correctly and must not
+   * double-draw once per pass. Restrained on purpose — a bigger dot and a
+   * hairline ring, not a glow, to match the rest of the canvas's filled-not-
+   * stroked, one-hairline aesthetic.
+   */
+  for(const i of visible){
+    if(!filter || !filter.flags[i]){ continue; }
+    if(A.fame[i] <= FAME_HI) continue;
+    if(collapsed.size && isHidden(A, i, collapsed)) continue;
+    const x = scale.sx(A.x0[i]);
+    const y = scale.sy(A.y[i]);
+    const rr = (labelled.has(i) ? 1.6 : r * 1.7) + 3;
+    ring(ctx, x, y, rr, hexToRgba(A.color[i], 0.55), 1);
+  }
+
   // ---- chips ------------------------------------------------------------
   if(tier === 'chip'){
-    ctx.font = '11px ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
+    const REGULAR = '11px ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
+    const FAMOUS = '600 11px ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
+    ctx.font = REGULAR;
     ctx.textBaseline = 'middle';
     for(const p of placements){
       const i = p.i;
@@ -417,6 +442,7 @@ export function paintFrame(ctx, A, scale, opts){
       ctx.fillStyle = hexToRgba(A.color[i], matched ? 0.9 : 0.25);
       ctx.fillRect(p.x, p.y + 3, 2, p.h - 6);
 
+      ctx.font = matched && p.famous ? FAMOUS : REGULAR;
       ctx.fillStyle = matched ? COLORS.text : COLORS.dimText;
       ctx.fillText(clip(ctx, A.title[i], p.w - 12), p.x + 7, p.y + p.h / 2);
 

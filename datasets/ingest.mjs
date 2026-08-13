@@ -804,6 +804,7 @@ for(const d of candidates){
     facets: d.facets || {},
     excerpt: d.excerpt,
     image: d.image,
+    sitelinks: d.sitelinks,
     // Spread, so `manual` (and anything else provenance grows) survives. Listing
     // the fields by hand is what silently stripped it the first time.
     origin: { ...d.origin, dataset: OPT.domains[0] || 'ingest' },

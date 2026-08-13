@@ -25,6 +25,9 @@ import { stat, readFile } from 'node:fs/promises';
 import { extname, join, normalize, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { ensureUp, embed } from './lib/ollama.mjs';
+import { truncateNormalize, DIM } from './lib/store.mjs';
+
 const ROOT = normalize(join(fileURLToPath(new URL('.', import.meta.url)), '..'));
 const argv = process.argv.slice(2);
 const arg = (n) => (argv.includes(n) ? argv[argv.indexOf(n) + 1] : null);
@@ -68,6 +71,29 @@ const server = createServer(async (req, res) => {
     });
     res.end(body);
   };
+
+  /*
+   * Semantic search's only server-side piece: embed the query text with the
+   * same local model every entry was embedded with, so the browser can score
+   * cosine similarity against the vectors it already fetches statically
+   * (vectors.bin + vectors.json, served like any other file below). Kept
+   * short-timeout and fail-soft — this is an enhancement over plain substring
+   * search, and the frontend treats anything but 200 as "unavailable" and
+   * carries on without it.
+   */
+  if (req.method === 'GET' && (req.url || '').startsWith('/api/embed-query')) {
+    const q = new URL(req.url, 'http://x').searchParams.get('q') || '';
+    if (!q.trim()) return send(400, JSON.stringify({ error: 'missing q' }), 'application/json; charset=utf-8');
+    try {
+      const timeout = (ms) => new Promise((_, rej) => setTimeout(() => rej(new Error('timed out')), ms));
+      await Promise.race([ensureUp(), timeout(3000)]);
+      const [vec] = await Promise.race([embed([q]), timeout(8000)]);
+      const norm = truncateNormalize(vec, DIM);
+      return send(200, JSON.stringify(Array.from(norm)), 'application/json; charset=utf-8');
+    } catch (e) {
+      return send(503, JSON.stringify({ error: String(e.message || e) }), 'application/json; charset=utf-8');
+    }
+  }
 
   let path = resolve(req.url || '/');
   if (!path) return send(403, 'forbidden');

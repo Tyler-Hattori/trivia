@@ -24,7 +24,7 @@
  *      what is offered; `packLabels` fills the space that is actually free.
  */
 
-import { loadAtlas, runFilter, parseQuery, queryIsEmpty } from './data.js';
+import { loadAtlas, runFilter, parseQuery, queryIsEmpty, cosineToQuery } from './data.js';
 import {
   makeScale, zoomAt, clampView, fitView, tierFor, depthFor, ticks, collapsedRanges,
   MODES, DEFAULT_MODE, modeOf, widerMode, domainFor, ppyRange, atEdge, stopsFor,
@@ -331,6 +331,11 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     if(dirty.data){
       filter = runFilter(A, {
         query: V.query, topics: V.topics, datasets: V.datasets, mode: V.dimMode ? 'dim' : 'hide',
+        // Only apply a semantic result set if it was computed for the query
+        // still live in the box — the async embed step can resolve after the
+        // user has kept typing, and a stale set would reintroduce matches for
+        // a query nobody is looking at any more.
+        semanticMatches: semanticForQuery === V.query ? semanticMatches : null,
       });
       nodeCounts = filter ? countByNode() : null;
       dirty.data = false;
@@ -709,6 +714,52 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     V.query = s;
     qInput.value = s;
     qInput.parentElement.classList.toggle('filled', !!s);
+    mark({ data: true, paint: true });
+    triggerSemanticSearch(s);
+  }
+
+  /*
+   * Semantic search fallback for generic phrases with no literal token overlap
+   * against any entry ("guy who invented the telephone" vs. "Alexander Graham
+   * Bell"). Entirely additive and fail-soft: substring search above has
+   * already run synchronously by the time this resolves, so if Ollama is
+   * down, the fetch fails, or vectors never loaded, nothing regresses — the
+   * user just gets what substring matching already found.
+   *
+   * `semanticForQuery` records which query string `semanticMatches` answers,
+   * so a response that arrives after the user kept typing is simply ignored
+   * rather than reintroducing matches for an abandoned query (checked again
+   * in `frame()`, since this can resolve well after the keystroke that fired it).
+   */
+  let semanticMatches = null;
+  let semanticForQuery = '';
+  const SEMANTIC_MIN_SIM = 0.35;
+  const SEMANTIC_TOP_K = 40;
+
+  async function triggerSemanticSearch(raw){
+    const text = parseQuery(raw).text.join(' ');
+    if(!text){ semanticMatches = null; semanticForQuery = raw; return; }
+
+    await A.vectorsPromise;
+    if(!A.vecRowOf) return;   // never loaded — stay substring-only, silently
+
+    let vec;
+    try {
+      const res = await w.fetch(`/api/embed-query?q=${encodeURIComponent(text)}`);
+      if(!res.ok) return;
+      vec = await res.json();
+    } catch { return; }
+
+    if(V.query !== raw) return;   // superseded by a later keystroke
+
+    const scored = [];
+    for(let i = 0; i < A.n; i++){
+      const sim = cosineToQuery(A, i, vec);
+      if(sim != null && sim > SEMANTIC_MIN_SIM) scored.push([i, sim]);
+    }
+    scored.sort((a, b) => b[1] - a[1]);
+    semanticMatches = new Set(scored.slice(0, SEMANTIC_TOP_K).map((pair) => pair[0]));
+    semanticForQuery = raw;
     mark({ data: true, paint: true });
   }
 

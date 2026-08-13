@@ -796,8 +796,21 @@ const s5 = await search('has:image');
 check('has:image filters to entries with pictures', s5.matched > 0 && s5.matched < CORPUS,
   `"has:image" -> ${s5.count}`);
 
+/*
+ * Semantic search changed what "hopeless" means for free text. Embedding a
+ * query and ranking by cosine similarity always returns a nearest neighbour —
+ * there is no threshold that cleanly separates "genuinely related" from
+ * "nothing better available" (measured: gibberish like "zzzznotathing" scores
+ * *higher*, 0.58, against its best match than the real term "cubism" does
+ * against its own, 0.557 — an artifact of embedding-space anisotropy, not a
+ * bug in the threshold). So a free-text query can no longer guarantee zero
+ * matches; only a structured filter that names something absent can.
+ */
 const s6 = await search('zzzznotathing');
-check('a hopeless search shows the empty state', s6.matched === 0 && s6.empty, s6.count);
+check('a hopeless free-text search still finds a semantic neighbour', s6.matched > 0, s6.count);
+
+const s7 = await search('ds:zzznotarealdataset');
+check('a structured filter with no matches shows the empty state', s7.matched === 0 && s7.empty, s7.count);
 
 await search('');
 

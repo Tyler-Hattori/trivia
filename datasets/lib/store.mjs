@@ -83,6 +83,10 @@ export const ROW_BYTES = 4 + DIM;
  *             Values may be a string or an array of strings.
  *   excerpt   prose, real newlines allowed (JSONL escapes them)
  *   image     absolute URL or ''
+ *   sitelinks number of language Wikipedias with an article on this entity, or
+ *             null when there is no QID to ask. A free notability signal, kept
+ *             raw here; `atlas.mjs` normalises it into `fame` on the built
+ *             points, the same relationship `y` has to the entry text.
  *   origin    {dataset, wiki, qid} — provenance, so a re-ingest can dedupe.
  *             Plus an optional `manual: true`, meaning "authored here, not
  *             derived from one page": hand-entered prose, or an event mined out
@@ -120,6 +124,7 @@ export function makeEntry(o = {}){
     facets:   o.facets || {},
     excerpt:  o.excerpt || '',
     image:    o.image || '',
+    sitelinks: o.sitelinks ?? null,
     origin:   { dataset: '', wiki: '', qid: null, ...(o.origin || {}) },
     addedAt:  o.addedAt || null,
   };
@@ -175,7 +180,7 @@ export function readEntries(){
 export function entryLine(e){
   const ordered = {};
   for(const k of ['id','title','subtitle','yearText','start','end','kind','circa','openEnded',
-                  'domains','topics','facets','excerpt','image','origin','addedAt']){
+                  'domains','topics','facets','excerpt','image','sitelinks','origin','addedAt']){
     ordered[k] = e[k];
   }
   return JSON.stringify(ordered);

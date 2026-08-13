@@ -143,14 +143,38 @@ const claimQids = (claims, prop) =>
 
 /** Full claim set for one QID. */
 async function wdEntity(qid){
-  const d = await getJSON(`${WD}/w/api.php?format=json&action=wbgetentities&props=claims|labels|descriptions&languages=en&ids=${qid}`);
+  const d = await getJSON(`${WD}/w/api.php?format=json&action=wbgetentities&props=claims|labels|descriptions|sitelinks&languages=en&ids=${qid}`);
   const e = d?.entities?.[qid];
   if(!e) return null;
   return {
     claims: e.claims || {},
     label: e.labels?.en?.value || null,
     description: e.descriptions?.en?.value || null,
+    // How many language Wikipedias (and sister projects) have an article on this
+    // entity — a free, durable notability signal. Chosen over pageviews because
+    // this is a *historical* timeline: sitelinks reward cross-cultural staying
+    // power, pageviews reward whatever's in the news cycle this week.
+    sitelinks: e.sitelinks ? Object.keys(e.sitelinks).length : 0,
   };
+}
+
+/**
+ * Sitelink counts for many QIDs at once, batched 50 per request like
+ * `labelsFor`. Used by the fame backfill, which otherwise would burn one
+ * request per already-known entry.
+ */
+export async function sitelinksFor(qids){
+  const out = new Map();
+  const uniq = [...new Set(qids)].filter(Boolean);
+  for(let i = 0; i < uniq.length; i += 50){
+    const chunk = uniq.slice(i, i + 50);
+    const d = await getJSON(`${WD}/w/api.php?format=json&action=wbgetentities&props=sitelinks&ids=${chunk.join('|')}`);
+    for(const [qid, e] of Object.entries(d?.entities || {})){
+      out.set(qid, e.sitelinks ? Object.keys(e.sitelinks).length : 0);
+    }
+    for(const q of chunk) if(!out.has(q)) out.set(q, 0);
+  }
+  return out;
 }
 
 /** Resolve QIDs -> English labels, batched, cached across a run. */
@@ -465,6 +489,7 @@ export async function describe(input){
     circa: imprecise || (isCirca(lead || '') && dateSource === 'lead-text'),
     topics,
     facets,
+    sitelinks: wd?.sitelinks ?? 0,
     origin: {
       wiki: `${WP}/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`,
       qid: summary.qid || null,
