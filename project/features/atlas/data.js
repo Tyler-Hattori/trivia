@@ -95,6 +95,24 @@ export function cosineToQuery(A, i, queryVec){
   return dot;
 }
 
+/**
+ * Turn a `/api/recluster` response into a per-point y array, indexed the same
+ * way as `A.y` — `NaN` for a point outside the response (not part of the
+ * subset, or its vector was missing server-side).
+ *
+ * One join, reused by both the live main-canvas focus and a pinned snapshot of
+ * it, so "which points does this focus cover, and where" is answered the same
+ * way in both places.
+ */
+export function focusYArray(A, response){
+  const y = new Float64Array(A.n).fill(NaN);
+  response.points.id.forEach((id, k) => {
+    const i = A.idIndex.get(id);
+    if(i != null) y[i] = response.points.y[k];
+  });
+  return y;
+}
+
 /** Turn the columnar payload into typed arrays plus indexes. */
 export function buildModel(raw){
   const P = raw.points;
@@ -208,6 +226,13 @@ export function buildModel(raw){
   A.topicsByCount = [...A.topicIndex].map(([t, a]) => [t, a.length]).sort((p, q) => q[1] - p[1]);
 
   A.datasets = [...new Set(A.dataset)].filter(Boolean).sort();
+
+  // id -> point index. Same join idea as `A.vecRowOf` above, for a different
+  // pairing: focus mode's server response is keyed by entry id (it has no idea
+  // what position an entry holds in this array), so this is what turns that
+  // response back into something indexable in the same order as everything else.
+  A.idIndex = new Map();
+  for(let i = 0; i < n; i++) A.idIndex.set(A.id[i], i);
 
   // ---- search ------------------------------------------------------------
   // A lowercased haystack per point. Built once; `indexOf` over 2,700 short

@@ -27,6 +27,7 @@ import { fileURLToPath } from 'node:url';
 
 import { ensureUp, embed } from './lib/ollama.mjs';
 import { truncateNormalize, DIM } from './lib/store.mjs';
+import { reclusterSubset } from './lib/reclusterApi.mjs';
 
 const ROOT = normalize(join(fileURLToPath(new URL('.', import.meta.url)), '..'));
 const argv = process.argv.slice(2);
@@ -93,6 +94,36 @@ const server = createServer(async (req, res) => {
     } catch (e) {
       return send(503, JSON.stringify({ error: String(e.message || e) }), 'application/json; charset=utf-8');
     }
+  }
+
+  /*
+   * "Focus mode"'s only server-side piece: re-cluster a search's matched
+   * entries into their own small hierarchy (see reclusterApi.mjs), so the
+   * browser can lay them out by their own mutual similarity instead of their
+   * position in the corpus-wide one. Unlike /api/embed-query above, this has no
+   * external dependency (no Ollama call — labelling falls back to c-TF-IDF), so
+   * fail-soft here just means "malformed input" or "too many ids," not
+   * "a model server is down."
+   */
+  if (req.method === 'POST' && (req.url || '').startsWith('/api/recluster')) {
+    const MAX_BODY = 512 * 1024;   // 2000 ids at ~40 chars each is well under this
+    let body = '';
+    let tooBig = false;
+    req.on('data', (chunk) => {
+      body += chunk;
+      if (body.length > MAX_BODY) { tooBig = true; req.destroy(); }
+    });
+    req.on('end', () => {
+      if (tooBig) return send(413, JSON.stringify({ error: 'request too large' }), 'application/json; charset=utf-8');
+      try {
+        const { ids } = JSON.parse(body || '{}');
+        const result = reclusterSubset(ids);
+        return send(200, JSON.stringify(result), 'application/json; charset=utf-8');
+      } catch (e) {
+        return send(400, JSON.stringify({ error: String(e.message || e) }), 'application/json; charset=utf-8');
+      }
+    });
+    return;
   }
 
   let path = resolve(req.url || '/');

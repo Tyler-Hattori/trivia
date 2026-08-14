@@ -139,7 +139,7 @@ a{color:var(--accent)}
 
 .searchbox{position:relative;display:flex;align-items:center;min-width:270px;flex:1;max-width:480px}
 .searchbox input{
-  width:100%;padding:5px 52px 5px 26px;border:1px solid var(--line);border-radius:7px;
+  width:100%;padding:5px 68px 5px 26px;border:1px solid var(--line);border-radius:7px;
   background:var(--bg);color:var(--text);font-size:12px;
 }
 .searchbox input:focus{outline:none;border-color:var(--accent2)}
@@ -151,6 +151,11 @@ a{color:var(--accent)}
 .searchbox .clear{position:absolute;right:26px;color:var(--faint);font-size:13px;display:none}
 .searchbox.filled .clear{display:block}
 .searchbox.filled .kbd{display:none}
+/* Only offered once free text is actually organizing the map into its own
+   focused view — pinning anything before then would freeze nothing. */
+.searchbox .pinfocus{position:absolute;right:44px;color:var(--faint);font-size:11px;display:none}
+.searchbox .pinfocus:hover{color:var(--accent2)}
+.searchbox.focused .pinfocus{display:block}
 
 #ppyLab{font-size:11px;color:var(--faint);min-width:84px;text-align:center;font-variant-numeric:tabular-nums}
 
@@ -253,6 +258,9 @@ a{color:var(--accent)}
 #pinBar{
   position:absolute;right:6px;top:3px;display:flex;gap:4px;z-index:4;
 }
+/* One chip per pinned row: a fold toggle beside its unpin ✕, grouped tighter
+   than the gap #pinBar leaves between separate pins' chips. */
+.pinchip{display:flex;gap:2px}
 
 #surface{position:absolute;inset:0;cursor:grab}
 #surface.dragging{cursor:grabbing}

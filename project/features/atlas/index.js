@@ -24,7 +24,7 @@
  *      what is offered; `packLabels` fills the space that is actually free.
  */
 
-import { loadAtlas, runFilter, parseQuery, queryIsEmpty, cosineToQuery } from './data.js';
+import { loadAtlas, runFilter, parseQuery, queryIsEmpty, cosineToQuery, focusYArray } from './data.js';
 import {
   makeScale, zoomAt, clampView, fitView, tierFor, depthFor, ticks, collapsedRanges,
   MODES, DEFAULT_MODE, modeOf, widerMode, domainFor, ppyRange, atEdge, stopsFor,
@@ -32,11 +32,11 @@ import {
 } from './scales.js';
 import {
   sizeCanvas, paintFrame, packLabels, visibleBands, hitTest, bandAt, isHidden,
-  COLORS, setCanvasTheme,
+  COLORS, setCanvasTheme, paintFocusBandFill, paintFocusBandLabels,
 } from './paint.js';
 import { createCardLayer, createTip, esc } from './cards.js';
 import { createDetail } from './detail.js';
-import { createRail, pinLayout, paintPinStrip, pinHitTest, pinRowAt, membersOf } from './rail.js';
+import { createRail, pinLayout, paintPinStrip, pinHitTest, pinRowAt, membersOf, rowGeometry } from './rail.js';
 import { CSS } from './styles.js';
 
 const PREFS_KEY = 'atlas:prefs:v1';
@@ -58,6 +58,7 @@ const SHELL = (base, css, theme) => `<!DOCTYPE html>
         <span class="mag">&#9906;</span>
         <input id="q" type="text" autocomplete="off" spellcheck="false"
                placeholder="Search — or 1750-1800, ds:art, topic:cubism, has:image">
+        <button class="pinfocus" title="Pin this search's focused view, then search something else">&#9670;</button>
         <button class="clear" title="Clear (Esc)">&times;</button>
         <span class="kbd">/</span>
       </div>
@@ -208,6 +209,20 @@ export async function openAtlas({ title = 'Atlas' } = {}){
   let pins = { rows: [], height: 0 };
   let nodeCounts = null;
 
+  // ---- focus mode ----------------------------------------------------------
+  // See maybeTriggerFocus()/triggerFocusRecluster() below for what these hold
+  // and why. Not part of `V`: none of it is camera state, and none of it is
+  // meant to persist across a reload (see savePrefs()'s note on query-pins).
+  const FOCUS_MAX_IDS = 1500;      // client priority cap, below the server's hard 2000
+  const FOCUS_MIN_COUNT = 3;       // below this there's nothing worth clustering
+  let focusTree = null, focusIds = [], focusY = null;
+  let focusForKey = '', focusToken = 0, focusPending = false, focusTruncated = 0;
+  // Focus mode's OWN camera on the y axis — separate from V.yTop/V.yz so those
+  // stay untouched for the snap-back-on-clear trick (see paint()'s comment).
+  // Reset to fitted (0/1) whenever a query gains or loses its focus tree, so
+  // every fresh search starts fitted rather than inheriting the last one's zoom.
+  let focusYTop = 0, focusYz = 1;
+
   // Reusable buffers for the spatial query, so a pan allocates nothing.
   const seen = new Int32Array(A.n);
   let stamp = 0;
@@ -338,6 +353,7 @@ export async function openAtlas({ title = 'Atlas' } = {}){
         semanticMatches: semanticForQuery === V.query ? semanticMatches : null,
       });
       nodeCounts = filter ? countByNode() : null;
+      maybeTriggerFocus();
       dirty.data = false;
       dirty.rail = true;
       dirty.mini = true;
@@ -366,30 +382,56 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     pins = pinLayout(V.pinned, V.H);
     pinWrap.classList.toggle('on', pins.rows.length > 0);
 
-    scale = makeScale(V);
+    const focused = focusActive();
+
+    /*
+     * Focus mode's whole "transform": `assignY` (server-side) always normalises
+     * a fresh tree to span the full [0,1], so showing it fitted is just "the
+     * camera at yTop 0, yz 1" (already YZ_MIN — fully zoomed out) with the
+     * cluster-collapse warp switched off, since a global fold range is
+     * meaningless against a focus-y. `V.yTop`/`V.yz` themselves are never
+     * written here, so clearing the query snaps back to the exact camera the
+     * user had.
+     */
+    scale = makeScale(focused ? { ...V, yTop: focusYTop, yz: focusYz, folded: [] } : V);
     const t = ticks(scale);
     scale._ticks = t;
 
-    // Visible set from the spatial grid. Widened slightly so a card anchored just
-    // off screen still gets placed and does not pop in at the edge.
-    //
-    // The grid is keyed on ATLAS y, while the camera lives in layout y, so the
-    // bounds have to be unwarped. A folded range unwarps to its full original
-    // span, which over-selects — those points are then dropped by `isHidden`, so
-    // the only cost is a slightly longer visible list while a fold is on screen.
     stamp++;
-    const padYears = 40 / scale.ppy;
-    const padY = 30 / scale.pxPerY;
-    A.grid.query(scale.x0 - padYears, scale.x1 + padYears,
-                 scale.unwarpY(Math.max(0, scale.yTop - padY)),
-                 scale.unwarpY(Math.min(1, scale.yBot + padY)),
-                 visible, seen, stamp);
+    if(focused){
+      // The subset is already bounded (≤ FOCUS_MAX_IDS) and flat, so a linear
+      // scan beats building/rebuilding a spatial grid for it — the grid also
+      // keys on GLOBAL atlas-y, which cannot usefully cull by focus-y anyway.
+      const padYears = 40 / scale.ppy;
+      visible.length = 0;
+      for(const i of focusIds){
+        if(Number.isNaN(focusY[i])) continue;
+        if(A.x1[i] < scale.x0 - padYears || A.x0[i] > scale.x1 + padYears) continue;
+        visible.push(i);
+      }
+    } else {
+      // Visible set from the spatial grid. Widened slightly so a card anchored
+      // just off screen still gets placed and does not pop in at the edge.
+      //
+      // The grid is keyed on ATLAS y, while the camera lives in layout y, so the
+      // bounds have to be unwarped. A folded range unwarps to its full original
+      // span, which over-selects — those points are then dropped by `isHidden`,
+      // so the only cost is a slightly longer visible list while a fold is on
+      // screen.
+      const padYears = 40 / scale.ppy;
+      const padY = 30 / scale.pxPerY;
+      A.grid.query(scale.x0 - padYears, scale.x1 + padYears,
+                   scale.unwarpY(Math.max(0, scale.yTop - padY)),
+                   scale.unwarpY(Math.min(1, scale.yBot + padY)),
+                   visible, seen, stamp);
+    }
 
     const prevDepth = depth;
     depth = depthFor(A, scale);
     // The rail renders the tree down to `depth`, so a zoom that changes the depth
     // must rebuild it. Without this the rail silently showed a stale level and only
-    // caught up when some other action happened to set the flag.
+    // caught up when some other action happened to set the flag. The rail lists
+    // the GLOBAL tree regardless of focus, so this still runs while focused.
     if(depth !== prevDepth) dirty.rail = true;
     bands = visibleBands(A, depth, V.collapsed);
     tier = tierFor(scale.ppy);
@@ -402,12 +444,28 @@ export async function openAtlas({ title = 'Atlas' } = {}){
       collapsed: V.collapsed,
       budget: tier === 'detail' ? 90 : tier === 'card' ? 200 : 320,
       measure: measureText,
+      yArr: focused ? focusY : undefined,
     });
 
+    // Focus bands' fill is drawn before paintFrame (skipClear:true so it isn't
+    // erased), same layering as the map's own bands under its own dots; their
+    // labels are drawn after, same layering as the map's own band labels on top
+    // of everything else. The GLOBAL bands (`bands`) are suppressed entirely
+    // while focused — they're computed against atlas-y and would be nonsense
+    // against focus-y.
+    if(focused){
+      ctx.fillStyle = COLORS.bg;
+      ctx.fillRect(0, 0, V.W, V.H);
+      paintFocusBandFill(ctx, scale, focusTree.nodes, V.W, V.H);
+    }
+
     paintFrame(ctx, A, scale, {
-      bands, visible, filter, collapsed: V.collapsed, tier, placements,
+      bands: focused ? [] : bands, visible, filter, collapsed: V.collapsed, tier, placements,
       hover: V.hover, selected: V.selected, dimMode: V.dimMode, ticks: t,
+      yArr: focused ? focusY : undefined, skipClear: focused,
     });
+
+    if(focused) paintFocusBandLabels(ctx, scale, focusTree.nodes, V.W, V.H);
 
     cardLayer.sync(A, placements, {
       filter, dimMode: V.dimMode, selected: V.selected, hover: V.hover, details: A.details,
@@ -422,12 +480,23 @@ export async function openAtlas({ title = 'Atlas' } = {}){
       });
     }
     // Outside the guard: when the last pin goes, the bar must empty too.
-    $('pinBar').innerHTML = pins.rows
-      .map((r) => `<button class="btn tiny" data-unpin="${r.id}" title="Unpin ${esc(A.nodes[r.id].label)}">✕</button>`)
-      .join('');
+    $('pinBar').innerHTML = pins.rows.map((r, k) => {
+      const geo = rowGeometry(A, r.spec);
+      const label = geo ? geo.label : '?';
+      return `<span class="pinchip">` +
+        `<button class="btn tiny" data-pincollapse="${k}" title="${r.spec.collapsed ? 'Expand' : 'Collapse'} ${esc(label)}">${r.spec.collapsed ? '▸' : '▾'}</button>` +
+        `<button class="btn tiny" data-unpin="${k}" title="Unpin ${esc(label)}">✕</button>` +
+      `</span>`;
+    }).join('');
+
+    $('q').parentElement.classList.toggle('focused', focused);
+    $('dimBtn').disabled = focused;
+    $('dimBtn').title = focused
+      ? 'Dim has no effect while a search is focusing the map — non-matches are already hidden'
+      : 'Dim non-matches instead of hiding them';
 
     paintRuler(t);
-    paintStatus();
+    paintStatus(focused);
     updateMiniWindow();
 
     const nMatch = filter ? filter.count : A.n;
@@ -529,7 +598,7 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     return n;
   }
 
-  function paintStatus(){
+  function paintStatus(focused){
     const step = scale._ticks ? scale._ticks.step : 1;
     const parts = [
       fmtTickRange(Math.round(scale.x0), Math.round(scale.x1), step),
@@ -539,8 +608,22 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     ];
     if(placements.length) parts.push(`${placements.length} labelled`);
     if(V.collapsed.size) parts.push(`${V.collapsed.size} collapsed`);
-    const out = outsideCount();
-    if(out) parts.push(`${out} before ${fmtYear(V.domain[0])}`);
+    // Corpus-wide "how many the mode leaves behind" reads oddly once focused —
+    // what matters then is how many of THIS topic's matches it leaves behind,
+    // which can differ a lot from the corpus-wide figure (and did: an "england"
+    // focus with 13 of 517 matches predating 3000 BC, against a corpus-wide 453).
+    if(focused){
+      let outFocus = 0;
+      for(const i of focusIds) if(A.x1[i] < V.domain[0]) outFocus++;
+      if(outFocus) parts.push(`${outFocus} of the matches before ${fmtYear(V.domain[0])}`);
+    } else {
+      const out = outsideCount();
+      if(out) parts.push(`${out} before ${fmtYear(V.domain[0])}`);
+    }
+    // "No silent caps": the same convention as `outsideCount()` above — a
+    // truncated focus set says so rather than quietly showing a partial answer.
+    if(focusPending) parts.push('reclustering…');
+    else if(focused && focusTruncated) parts.push(`showing top ${focusIds.length.toLocaleString()} of ${(focusIds.length + focusTruncated).toLocaleString()} matches`);
     statusEl.textContent = parts.join('  ·  ');
   }
 
@@ -698,10 +781,25 @@ export async function openAtlas({ title = 'Atlas' } = {}){
   }
 
   function togglePin(id){
-    const k = V.pinned.indexOf(id);
+    const k = V.pinned.findIndex((p) => p.kind === 'node' && p.id === id);
     if(k >= 0) V.pinned.splice(k, 1);
-    else if(V.pinned.length < 6) V.pinned.push(id);
+    else if(V.pinned.length < 6) V.pinned.push({ kind: 'node', id, collapsed: false });
     mark({ paint: true, rail: true, prefs: true });
+  }
+
+  /** Unpin whichever spec — node or focus — currently sits at this array index. */
+  function unpinAt(k){
+    if(k < 0 || k >= V.pinned.length) return;
+    V.pinned.splice(k, 1);
+    mark({ paint: true, rail: true, prefs: true });
+  }
+
+  /** Fold/unfold one pinned row without removing it — see rail.js's pinLayout. */
+  function togglePinCollapseAt(k){
+    const spec = V.pinned[k];
+    if(!spec) return;
+    spec.collapsed = !spec.collapsed;
+    mark({ paint: true, prefs: true });
   }
 
   function toggleTopic(t){
@@ -764,6 +862,117 @@ export async function openAtlas({ title = 'Atlas' } = {}){
   }
 
   /*
+   * "Focus mode": while a free-text query matches a modest, non-trivial set of
+   * entries, the main canvas repositions them by their OWN mutual similarity
+   * (a fresh tree from `POST /api/recluster`) instead of their place in the
+   * corpus-wide hierarchy — see datasets/ATLAS.md for why a topic spanning
+   * several domains (e.g. "England": monarchs, wars, art) reads as scattered
+   * points there. Fails soft to today's global-y dim/hide on any error, the
+   * same way semantic search degrades to substring-only when Ollama is down.
+   *
+   * A structured-only query (`ds:art`, a bare year range, a facet click with no
+   * typed text) never reaches this — `hasText` below gates on `parseQuery`'s
+   * own free-text tokens, so browsing by facet alone never fires a request or
+   * reorganises anything.
+   */
+  const focusKey = () => `${V.query}|${[...V.topics].sort()}|${[...V.datasets].sort()}`;
+  const focusActive = () => !!focusTree && focusForKey === focusKey();
+
+  /** A pseudo-view over the focus camera, for reusing zoomAt/clampView unchanged. */
+  const focusCamView = () => (
+    { x0: V.x0, ppy: V.ppy, yTop: focusYTop, yz: focusYz, W: V.W, H: V.H, mode: V.mode, domain: V.domain, folded: [] }
+  );
+  function clampFocusY(){
+    const v = clampView(focusCamView());
+    focusYTop = v.yTop; focusYz = v.yz;
+  }
+
+  function maybeTriggerFocus(){
+    const hasText = parseQuery(V.query).text.length > 0;
+    if(!hasText || !filter || filter.count < FOCUS_MIN_COUNT){
+      if(focusTree || focusPending){
+        // Bump the token even though nothing is being sent: an in-flight fetch
+        // for the query being abandoned must not repopulate focusTree once it
+        // resolves. Without this, clearing the box mid-fetch left the token
+        // unchanged and a late response for an already-abandoned query won a
+        // race against the clear.
+        focusToken++;
+        focusTree = null; focusY = null; focusForKey = ''; focusPending = false;
+        focusYTop = 0; focusYz = 1;
+        mark({ paint: true, rail: true, mini: true });
+      }
+      return;
+    }
+    const key = focusKey();
+    if(key === focusForKey) return;                  // already have (or are fetching) the answer
+    triggerFocusRecluster(key);
+  }
+
+  /*
+   * `focusToken` guards this the way `semanticForQuery` guards semantic search,
+   * but as an incrementing counter rather than a string re-check: two in-flight
+   * fetches for two different queries can both transiently be "the request that
+   * was last sent," so only an exact identity check — not "does this answer the
+   * current V.query" — safely tells a superseded response apart from the live one.
+   */
+  async function triggerFocusRecluster(key){
+    const ids = [];
+    for(let i = 0; i < A.n; i++) if(filter.flags[i]) ids.push(i);
+
+    // Truncate by the same priority signal packLabels' own card budget uses,
+    // rather than silently sending only the first N in array order.
+    let sendIds = ids, truncated = 0;
+    if(ids.length > FOCUS_MAX_IDS){
+      sendIds = ids.slice().sort((a, b) => A.prio[b] - A.prio[a]).slice(0, FOCUS_MAX_IDS);
+      truncated = ids.length - FOCUS_MAX_IDS;
+    }
+
+    const myToken = ++focusToken;
+    focusPending = true;
+    mark({ paint: true });
+
+    try {
+      const res = await w.fetch('/api/recluster', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ ids: sendIds.map((i) => A.id[i]) }),
+      });
+      if(myToken !== focusToken) return;              // superseded while the request was in flight
+      if(!res.ok){ focusTree = null; focusY = null; focusForKey = key; return; }
+      const data = await res.json();
+      if(myToken !== focusToken) return;               // superseded while parsing the response
+
+      focusTree = data;
+      focusIds = sendIds;
+      focusY = focusYArray(A, data);
+      focusForKey = key;
+      focusTruncated = truncated;
+      focusYTop = 0; focusYz = 1;
+    } catch {
+      if(myToken === focusToken){ focusTree = null; focusY = null; focusForKey = key; }
+    } finally {
+      if(myToken === focusToken){
+        focusPending = false;
+        mark({ paint: true, rail: true, mini: true });
+      }
+    }
+  }
+
+  /**
+   * Freeze the current focused view into a pinned strip, so the search box is
+   * free to look up something else without losing it. Snapshots everything the
+   * pin needs (tree, member ids, their focus-y) independently of the live
+   * `focusTree`/`V.query` — nothing breaks if the user keeps typing immediately.
+   */
+  function pinFocus(){
+    if(!focusActive() || V.pinned.length >= 6) return;
+    V.pinned.push({
+      kind: 'focus', query: V.query, tree: focusTree, ids: focusIds.slice(),
+      y: focusY.slice(), collapsed: false,
+    });
+    mark({ paint: true, rail: true, prefs: true });
+  }
+
+  /*
    * Switch theme. The DOM half is one attribute — `styles.js` has no literal
    * colours below `:root`, so the whole stylesheet follows. The canvas cannot read
    * CSS variables, so `setCanvasTheme` swaps the matching palette in `paint.js`,
@@ -790,7 +999,16 @@ export async function openAtlas({ title = 'Atlas' } = {}){
   }
 
   function zoom(factor, px = V.W / 2, py = V.H / 2, opts){
-    Object.assign(V, clampView(zoomAt(V, factor, px, py, opts)));
+    if(focusActive()){
+      // x is shared with the global camera even while focused; y is not — see
+      // focusCamView()'s comment.
+      const next = clampView(zoomAt(focusCamView(), factor, px, py, opts));
+      V.x0 = next.x0; V.ppy = next.ppy;
+      focusYTop = next.yTop; focusYz = next.yz;
+      Object.assign(V, clampView(V));
+    } else {
+      Object.assign(V, clampView(zoomAt(V, factor, px, py, opts)));
+    }
     mark({ paint: true, prefs: true });
   }
 
@@ -892,7 +1110,12 @@ export async function openAtlas({ title = 'Atlas' } = {}){
       V.x0 += ((e.deltaY + e.deltaX) * unit) / V.ppy;
     } else {
       V.x0 += (e.deltaX * unit) / V.ppy;
-      V.yTop += (e.deltaY * unit) / scale.pxPerY;
+      if(focusActive()){
+        focusYTop += (e.deltaY * unit) / scale.pxPerY;
+        clampFocusY();
+      } else {
+        V.yTop += (e.deltaY * unit) / scale.pxPerY;
+      }
     }
     Object.assign(V, clampView(V));
     mark({ paint: true, prefs: true });
@@ -904,11 +1127,12 @@ export async function openAtlas({ title = 'Atlas' } = {}){
   surface.addEventListener('pointerdown', (e) => {
     if(e.button !== 0) return;
     const r = surface.getBoundingClientRect();
+    const focus = focusActive();
     drag = {
       id: e.pointerId,
       sx: e.clientX, sy: e.clientY,
       px: e.clientX - r.left, py: e.clientY - r.top,
-      x0: V.x0, yTop: V.yTop,
+      x0: V.x0, yTop: focus ? focusYTop : V.yTop, focus,
       moved: false,
     };
     // Throws NotFoundError if the pointer is already gone — which happens with
@@ -931,7 +1155,12 @@ export async function openAtlas({ title = 'Atlas' } = {}){
       }
       if(drag.moved){
         V.x0 = drag.x0 - dx / scale.ppy;
-        V.yTop = drag.yTop - dy / scale.pxPerY;
+        if(drag.focus){
+          focusYTop = drag.yTop - dy / scale.pxPerY;
+          clampFocusY();
+        } else {
+          V.yTop = drag.yTop - dy / scale.pxPerY;
+        }
         Object.assign(V, clampView(V));
         mark({ paint: true });
       }
@@ -939,8 +1168,10 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     }
 
     // Hover. The spatial query already ran this frame, so this is a scan over
-    // what is on screen, not over the corpus.
-    const i = hitTest(A, scale, visible, placements, px, py, { collapsed: V.collapsed });
+    // what is on screen, not over the corpus. yArr must match what paint() drew
+    // dots at, or every hit test misses against the visible dots while focused.
+    const i = hitTest(A, scale, visible, placements, px, py,
+      { collapsed: V.collapsed, yArr: focusActive() ? focusY : undefined });
     if(i !== V.hover){
       V.hover = i;
       mark({ paint: true });
@@ -966,8 +1197,16 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     const px = e.clientX - r.left;
     const py = e.clientY - r.top;
 
-    const i = hitTest(A, scale, visible, placements, px, py, { collapsed: V.collapsed });
+    const focused = focusActive();
+    const i = hitTest(A, scale, visible, placements, px, py,
+      { collapsed: V.collapsed, yArr: focused ? focusY : undefined });
     if(i >= 0){ select(i, { open: true }); return; }
+
+    // `bands` is the GLOBAL atlas-y tree — meaningless against focus-y (see
+    // paint()'s note on suppressing it while focused), and focus mode has no
+    // click-to-collapse of its own yet, so skip this rather than mis-hitting an
+    // unrelated global cluster under the cursor.
+    if(focused) return;
 
     // Clicking a band's label collapses it; clicking empty band space selects it
     // in the rail, which is the least surprising split of the two intents.
@@ -1002,17 +1241,25 @@ export async function openAtlas({ title = 'Atlas' } = {}){
   pinCanvas.addEventListener('click', (e) => {
     const r = pinCanvas.getBoundingClientRect();
     const i = pinHitTest(A, scale, pins.rows, e.clientX - r.left, e.clientY - r.top, { collapsed: V.collapsed });
-    if(i >= 0) select(i, { open: true });
-    else {
-      const row = pinRowAt(pins.rows, e.clientY - r.top);
-      if(row) focusNode(row.id);
-    }
+    if(i >= 0){ select(i, { open: true }); return; }
+
+    const row = pinRowAt(pins.rows, e.clientY - r.top);
+    if(!row) return;
+    // Anywhere on a COLLAPSED row unfolds it — same precedent as a folded map
+    // band. An OPEN node-pin's empty space still jumps the main map there
+    // (today's behaviour, unchanged); an open focus-pin has no map position to
+    // jump to, so its empty space is a no-op.
+    if(row.spec.collapsed) togglePinCollapseAt(pins.rows.indexOf(row));
+    else if(row.spec.kind === 'node') focusNode(row.spec.id);
   });
 
   $('pinBar').addEventListener('click', (e) => {
+    const c = e.target.closest('[data-pincollapse]');
+    if(c){ e.stopPropagation(); togglePinCollapseAt(Number(c.dataset.pincollapse)); return; }
     const b = e.target.closest('[data-unpin]');
-    if(b){ e.stopPropagation(); togglePin(Number(b.dataset.unpin)); }
+    if(b){ e.stopPropagation(); unpinAt(Number(b.dataset.unpin)); }
   });
+
 
   // ---- minimap ------------------------------------------------------------
   let miniDrag = false;
@@ -1089,6 +1336,7 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     qTimer = w.setTimeout(() => setQuery(qInput.value), 110);
   });
   D.querySelector('.searchbox .clear').onclick = () => setQuery('');
+  D.querySelector('.searchbox .pinfocus').onclick = () => pinFocus();
 
   // ---- keyboard -----------------------------------------------------------
   D.addEventListener('keydown', (e) => {
@@ -1124,8 +1372,16 @@ export async function openAtlas({ title = 'Atlas' } = {}){
       case 't': $('themeBtn').onclick(); return;
       case 'ArrowLeft':  e.preventDefault(); V.x0 -= (V.W * step) / V.ppy; break;
       case 'ArrowRight': e.preventDefault(); V.x0 += (V.W * step) / V.ppy; break;
-      case 'ArrowUp':    e.preventDefault(); V.yTop -= (V.H * step) / scale.pxPerY; break;
-      case 'ArrowDown':  e.preventDefault(); V.yTop += (V.H * step) / scale.pxPerY; break;
+      case 'ArrowUp':
+        e.preventDefault();
+        if(focusActive()) focusYTop -= (V.H * step) / scale.pxPerY;
+        else V.yTop -= (V.H * step) / scale.pxPerY;
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        if(focusActive()) focusYTop += (V.H * step) / scale.pxPerY;
+        else V.yTop += (V.H * step) / scale.pxPerY;
+        break;
       case 'c':
         if(V.selected >= 0) toggleCollapse(A.leaf[V.selected]);
         else if(V.selectedNode != null) toggleCollapse(V.selectedNode);
@@ -1148,6 +1404,7 @@ export async function openAtlas({ title = 'Atlas' } = {}){
       default: return;
     }
 
+    if(focusActive()) clampFocusY();
     Object.assign(V, clampView(V));
     mark({ paint: true, prefs: true });
   });
@@ -1172,7 +1429,10 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     try {
       w.localStorage.setItem(PREFS_KEY, JSON.stringify({
         x0: V.x0, ppy: V.ppy, yTop: V.yTop, yz: V.yz, mode: V.mode,
-        collapsed: [...V.collapsed], pinned: V.pinned,
+        collapsed: [...V.collapsed],
+        // Query-pins don't persist — see loadPrefs()'s note — so this is the
+        // same wire format (a flat array of node ids) prefs have always used.
+        pinned: V.pinned.filter((p) => p.kind === 'node').map((p) => p.id),
         dimMode: V.dimMode, railOpen: V.railOpen, facetsOpen: V.facetsOpen,
         theme: V.theme,
       }));
@@ -1197,7 +1457,17 @@ export async function openAtlas({ title = 'Atlas' } = {}){
       // Node ids are only meaningful for the tree that produced them. A rebuild
       // renumbers, so drop anything out of range rather than pinning nonsense.
       V.collapsed = new Set((p.collapsed || []).filter((id) => A.nodes[id]));
-      V.pinned = (p.pinned || []).filter((id) => A.nodes[id]).slice(0, 6);
+      /*
+       * Node ids are only meaningful for the tree that produced them — dropped
+       * if a rebuild renumbered past them, same as `collapsed` above. A focus
+       * (query) pin is never in this saved list to begin with: its tree's node
+       * ids are meaningless outside the response that produced them, restoring
+       * one means firing a network request during boot (against the "loads
+       * incredibly quickly" requirement), and the corpus can drift between
+       * sessions anyway — so there's no saved "focus" pin to reconstruct here.
+       */
+      V.pinned = (p.pinned || []).filter((id) => A.nodes[id]).slice(0, 6)
+        .map((id) => ({ kind: 'node', id, collapsed: false }));
       V.dimMode = p.dimMode !== false;
       V.railOpen = p.railOpen !== false;
       V.facetsOpen = !!p.facetsOpen;
@@ -1257,8 +1527,12 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     get ppyRange(){ return ppyRange(V); },
     get atEdge(){ return atEdge(V); },
     get outside(){ return outsideCount(); },
+    get focused(){ return focusActive(); },
+    get focusTree(){ return focusTree; },
+    get focusPending(){ return focusPending; },
+    get focusTruncated(){ return focusTruncated; },
     select, focusNode, fit, zoom, setQuery, toggleCollapse, togglePin, setTheme,
-    setMode, gotoStop,
+    setMode, gotoStop, pinFocus, unpinAt, togglePinCollapseAt,
     toggleRail: () => $('railBtn').onclick(),
     mark,
     /** Park the camera on a point at a given zoom, for reproducible tests. */

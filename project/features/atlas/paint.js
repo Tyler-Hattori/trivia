@@ -215,8 +215,13 @@ export const CARD = {
  *
  * `budget` caps how many DOM cards can exist, which is what keeps the frame flat
  * when a dense region fills the screen.
+ *
+ * `yArr` optionally replaces `A.y` as the source of each point's vertical
+ * position — a typed-array pointer swap, not a per-point accessor call, so
+ * focus mode (which has its own y per point, see index.js) costs nothing extra
+ * here beyond which array gets read.
  */
-export function packLabels(A, scale, visible, tier, { collapsed, budget = 220, measure } = {}){
+export function packLabels(A, scale, visible, tier, { collapsed, budget = 220, measure, yArr } = {}){
   const placements = [];
   if(tier === 'dot') return placements;
 
@@ -224,6 +229,7 @@ export function packLabels(A, scale, visible, tier, { collapsed, budget = 220, m
 
   const spec = CARD[tier] || CARD.chip;
   const inSet = new Set(visible);
+  const Y = yArr || A.y;
 
   for(const i of A.prioOrder){
     if(placements.length >= budget) break;
@@ -231,7 +237,7 @@ export function packLabels(A, scale, visible, tier, { collapsed, budget = 220, m
     if(collapsed && isHidden(A, i, collapsed)) continue;
 
     const px = scale.sx(A.x0[i]);
-    const py = scale.sy(A.y[i]);
+    const py = scale.sy(Y[i]);
 
     let w = spec.w, h = spec.h;
     if(tier === 'chip'){
@@ -273,13 +279,22 @@ export function packLabels(A, scale, visible, tier, { collapsed, budget = 220, m
 export function paintFrame(ctx, A, scale, opts){
   const {
     bands, visible, filter, collapsed, tier, placements,
-    hover = -1, selected = -1, dimMode = true, showBandFill = true,
+    hover = -1, selected = -1, dimMode = true, showBandFill = true, yArr,
+    // Set by focus mode, which clears the canvas and paints its own bands'
+    // fill *before* calling this (see paintFocusBandFill in index.js's
+    // paint()) so its wash sits under the dots the same way the map's own
+    // band fill does. Clearing again here would erase that wash.
+    skipClear = false,
   } = opts;
 
   const { W, H } = scale;
+  // See `packLabels`'s note on `yArr` — same swap, same reason.
+  const Y = yArr || A.y;
 
-  ctx.fillStyle = COLORS.bg;
-  ctx.fillRect(0, 0, W, H);
+  if(!skipClear){
+    ctx.fillStyle = COLORS.bg;
+    ctx.fillRect(0, 0, W, H);
+  }
 
   // ---- cluster bands ----------------------------------------------------
   // Filled, never stroked. An outlined band plus an outlined card produced the
@@ -347,7 +362,7 @@ export function paintFrame(ctx, A, scale, opts){
     const xa = scale.sx(A.x0[i]);
     const xb = scale.sx(A.x1[i]);
     if(xb - xa < 1.5) continue;
-    const y = Math.round(scale.sy(A.y[i])) + 0.5;
+    const y = Math.round(scale.sy(Y[i])) + 0.5;
     const alpha = matched ? 0.55 : COLORS.dimSpan;
 
     // Clamped to the viewport before measuring the tail, or an openEnded span
@@ -395,7 +410,7 @@ export function paintFrame(ctx, A, scale, opts){
       if(!matched && !dimMode) continue;
 
       const x = scale.sx(A.x0[i]);
-      const y = scale.sy(A.y[i]);
+      const y = scale.sy(Y[i]);
       const famous = matched && A.fame[i] > FAME_HI;
       const rr = labelled.has(i) ? 1.6 : (famous ? r * 1.7 : r);
 
@@ -419,7 +434,7 @@ export function paintFrame(ctx, A, scale, opts){
     if(A.fame[i] <= FAME_HI) continue;
     if(collapsed.size && isHidden(A, i, collapsed)) continue;
     const x = scale.sx(A.x0[i]);
-    const y = scale.sy(A.y[i]);
+    const y = scale.sy(Y[i]);
     const rr = (labelled.has(i) ? 1.6 : r * 1.7) + 3;
     ring(ctx, x, y, rr, hexToRgba(A.color[i], 0.55), 1);
   }
@@ -496,11 +511,60 @@ export function paintFrame(ctx, A, scale, opts){
    * carried their own border plus a focus outline, which is what read as two
    * outlines; here selection is a halo and there is only ever one edge.
    */
-  if(selected >= 0 && !isHidden(A, selected, collapsed)){
-    ring(ctx, scale.sx(A.x0[selected]), scale.sy(A.y[selected]), 7, COLORS.accent, 2);
+  if(selected >= 0 && !isHidden(A, selected, collapsed) && !Number.isNaN(Y[selected])){
+    ring(ctx, scale.sx(A.x0[selected]), scale.sy(Y[selected]), 7, COLORS.accent, 2);
   }
-  if(hover >= 0 && hover !== selected && !isHidden(A, hover, collapsed)){
-    ring(ctx, scale.sx(A.x0[hover]), scale.sy(A.y[hover]), 6, COLORS.hoverRing, 1.5);
+  if(hover >= 0 && hover !== selected && !isHidden(A, hover, collapsed) && !Number.isNaN(Y[hover])){
+    ring(ctx, scale.sx(A.x0[hover]), scale.sy(Y[hover]), 6, COLORS.hoverRing, 1.5);
+  }
+}
+
+/*
+ * A focus tree's own depth-1 nodes, drawn as bands — the "organized into named
+ * groups" half of focus mode's payoff, so a reclustered search reads as
+ * sub-groups ("Battles," "Monarchs," …) rather than an unexplained scatter.
+ *
+ * Split into fill and labels, called on either side of `paintFrame` (fill
+ * before, so dots and spans layer on top of the wash exactly like the map's
+ * own bands do; labels after, so they stay on top of everything else the same
+ * way the map's own band labels do). Deliberately separate from
+ * `visibleBands`/`paintFrame`'s band path rather than reusing it: a focus
+ * tree's node ids restart at 0 and collide with real global node ids, so
+ * sharing any `V.collapsed`-keyed surface with them would risk a focus band
+ * reading as folded because an unrelated global node happens to share its
+ * small integer id. No per-band collapse here in v1 — every focus band is
+ * always expanded.
+ */
+const focusBandsOf = (nodes) => (nodes?.[0]?.children || []).map((id) => nodes[id]).filter(Boolean);
+
+export function paintFocusBandFill(ctx, scale, nodes, W, H){
+  for(const nd of focusBandsOf(nodes)){
+    const y0 = scale.sy(nd.y0);
+    const y1 = scale.sy(nd.y1);
+    if(y1 < 0 || y0 > H) continue;
+    ctx.fillStyle = hexToRgba(nd.color, COLORS.bandFill);
+    ctx.fillRect(0, y0, W, Math.max(1, y1 - y0));
+    ctx.fillStyle = hexToRgba(nd.color, COLORS.bandEdge);
+    ctx.fillRect(0, y0, W, 1);
+  }
+}
+
+export function paintFocusBandLabels(ctx, scale, nodes, W, H){
+  ctx.font = '600 11px ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
+  ctx.textBaseline = 'top';
+  for(const nd of focusBandsOf(nodes)){
+    const y0 = scale.sy(nd.y0);
+    const y1 = scale.sy(nd.y1);
+    if(y1 < 2 || y0 > H - 2 || y1 - y0 < 15) continue;
+
+    const label = `${nd.label}  (${nd.n})`;
+    const ty = clampNum(y0 + 3, 2, H - 15);
+    const w = ctx.measureText(label).width + 12;
+    ctx.fillStyle = COLORS.labelBg;
+    roundRect(ctx, 4, ty - 1, w, 15, 3);
+    ctx.fill();
+    ctx.fillStyle = hueInk(nd.color);
+    ctx.fillText(label, 10, ty + 1);
   }
 }
 
@@ -549,17 +613,18 @@ function clip(ctx, text, maxW){
  * the nearest point within `radius` wins — generous enough to be forgiving at
  * dot zoom, where marks are two pixels wide.
  */
-export function hitTest(A, scale, visible, placements, mx, my, { collapsed, radius = 11 } = {}){
+export function hitTest(A, scale, visible, placements, mx, my, { collapsed, radius = 11, yArr } = {}){
   for(let k = placements.length - 1; k >= 0; k--){
     const p = placements[k];
     if(mx >= p.x && mx <= p.x + p.w && my >= p.y && my <= p.y + p.h) return p.i;
   }
 
+  const Y = yArr || A.y;
   let best = -1, bestD = radius * radius;
   for(const i of visible){
     if(collapsed?.size && isHidden(A, i, collapsed)) continue;
     const dx = scale.sx(A.x0[i]) - mx;
-    const dy = scale.sy(A.y[i]) - my;
+    const dy = scale.sy(Y[i]) - my;
     const d = dx * dx + dy * dy;
     if(d < bestD){ bestD = d; best = i; }
 
@@ -567,7 +632,7 @@ export function hitTest(A, scale, visible, placements, mx, my, { collapsed, radi
     if(A.isSpan[i]){
       const xa = scale.sx(A.x0[i]), xb = scale.sx(A.x1[i]);
       if(mx >= xa && mx <= xb){
-        const dy2 = Math.abs(scale.sy(A.y[i]) - my);
+        const dy2 = Math.abs(scale.sy(Y[i]) - my);
         if(dy2 < 5 && dy2 * dy2 < bestD){ bestD = dy2 * dy2; best = i; }
       }
     }
