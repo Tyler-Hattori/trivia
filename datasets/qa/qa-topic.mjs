@@ -41,6 +41,23 @@ for(const row of idx.topics){
   }
   check('index row matches the file', row.count === T.items.filter((it) => it.onTimeline).length);
 
+  // The Learn view's text: the article's own words, decoded, and not repeated.
+  const key = T.items.filter((it) => it.key);
+  const withCtx = key.filter((it) => it.context).length;
+  check('most key items have an in-article sentence', withCtx >= key.length * 0.75, `${withCtx}/${key.length}`);
+  check('every chapter with entries has an intro', T.chapters.every((c) => !c.count || c.intro),
+    T.chapters.filter((c) => c.count && !c.intro).map((c) => c.title).join(', '));
+  const texts = [T.intro, ...T.chapters.map((c) => c.intro), ...T.items.map((it) => it.context)].filter(Boolean);
+  check('no HTML entities or tags left in article text', !texts.some((s) => /&#?\w+;|<\/?[a-z]/i.test(s)),
+    texts.find((s) => /&#?\w+;|<\/?[a-z]/i.test(s))?.slice(0, 80));
+  const seenCtx = new Set(); let dup = 0;
+  for(const it of T.items) if(it.context){ const k = `${it.chapter}|${it.context}`; if(seenCtx.has(k)) dup++; seenCtx.add(k); }
+  check('no two entries in a chapter share a context sentence', dup === 0, `${dup} repeats`);
+  check('related ids all resolve, never self', T.items.every((it) => (it.related || []).every((r) => ids.has(r) && r !== it.id)));
+  check('no place/group/concept is key without a main-article hatnote',
+    !key.some((it) => ['place', 'group', 'concept'].includes(it.type) && !it.hat),
+    key.filter((it) => ['place', 'group', 'concept'].includes(it.type) && !it.hat).map((it) => it.title).join(', '));
+
   // Layout: in every lane, no two cards overlap, at several zooms and both modes.
   for(const show of ['key', 'all']){
     const items = T.items.filter((it) => it.onTimeline && (show === 'all' || it.key));

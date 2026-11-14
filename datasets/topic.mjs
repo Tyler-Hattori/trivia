@@ -99,7 +99,8 @@ async function fetchArticle(page){
   return { title: d.parse.title, html: d.parse.text };
 }
 
-const decode = (s) => s.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ');
+const decode = (s) => s.replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(+n)).replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
+  .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ');
 const stripTags = (s) => decode(s.replace(/<[^>]+>/g, '')).replace(/\[\d+\]/g, '').trim();
 
 /**
@@ -132,10 +133,80 @@ function parseSections(html){
     const prose = [...s.body.matchAll(/<(p|li)\b[^>]*>([\s\S]*?)<\/\1>/g)].map((m) => m[2]).join('\n');
     for(const a of prose.matchAll(/<a href="\/wiki\/([^"#?]+)"/g)) s.links.push({ target: a[1], weight: 1, hat: false });
     for(const l of s.links) l.target = decodeURIComponent(l.target).replace(/_/g, ' ');
+    s.paras = [...s.body.matchAll(/<(p|li)\b[^>]*>([\s\S]*?)<\/\1>/g)]
+      .map((m) => ({ tag: m[1], ...proseText(m[2]) }))
+      .filter((p) => p.text.length > 30);
     s.links = s.links.filter((l) => !/^[A-Z][a-z]+( talk)?:/.test(l.target) || /^[A-Z][a-z]+:[^ ]/.test(l.target) === false);
     s.links = s.links.filter((l) => !/^(File|Category|Help|Wikipedia|Template|Portal|Special|Talk):/i.test(l.target));
   }
   return kept;
+}
+
+/**
+ * A paragraph's plain text, with the position of every /wiki/ link in it, so a
+ * link can be traced back to the sentence that mentions it.
+ */
+function proseText(html){
+  html = html.replace(/<sup\b[^>]*>[\s\S]*?<\/sup>/g, '')          // footnote markers, [citation needed]
+    .replace(/<span[^>]*class="[^"]*(?:IPA|nowrap)[^"]*"[^>]*>[\s\S]*?<\/span>/g, (m) => (/IPA/.test(m) ? '' : m))
+    .replace(/<(style|ul|ol|table)\b[\s\S]*?<\/\1>/g, '');            // nested lists are their own paragraphs
+  let text = '';
+  const links = [];
+  for(const m of html.matchAll(/<a\s[^>]*href="\/wiki\/([^"#?]+)"[^>]*>([\s\S]*?)<\/a>|<br\s*\/?>|<[^>]+>|[^<]+/g)){
+    if(m[1] != null){
+      const target = decodeURIComponent(m[1]).replace(/_/g, ' ');
+      const t = stripTags(m[2]);
+      links.push({ target, at: text.length + 1, len: t.length });
+      text += t;
+    } else if(m[0].startsWith('<')){
+      if(/^<br/.test(m[0])) text += ' ';
+    } else text += decode(m[0]);
+  }
+  // Collapse whitespace while keeping link offsets aligned.
+  let out = '', map = [];
+  for(let i = 0; i < text.length; i++){
+    const ws = /\s/.test(text[i]);
+    if(ws && (out === '' || out.endsWith(' '))){ map.push(out.length); continue; }
+    map.push(out.length); out += ws ? ' ' : text[i];
+  }
+  map.push(out.length);
+  for(const l of links) l.at = map[Math.min(map.length - 1, Math.max(0, l.at - 1))];
+  return { text: out.trim(), links };
+}
+
+/** Abbreviations whose full stop does not end a sentence. */
+// A lone capital is an initial ("J. R. R. Tolkien"), except I, V and X, which
+// end a regnal name as often as not ("…Edward VI and Mary I. The religious…").
+const ABBR = /(?:\b(?:c|ca|fl|r|d|b|St|Mr|Mrs|Dr|Jr|Sr|vs|viz|i\.e|e\.g|Gen|Col|Capt|Lt|Rev|No|Vol|pp?|ed|cf|al)|\b[A-HJ-UWYZ])$/;
+
+/** Split a paragraph into sentences: [{ text, from, to }], offsets into `text`. */
+function sentences(text){
+  const out = [];
+  let from = 0;
+  for(const m of text.matchAll(/[.!?]["”’')\]]*(?=\s+["“‘(]?[A-Z0-9])/g)){
+    if(m[0][0] === '.' && ABBR.test(text.slice(Math.max(0, m.index - 6), m.index))) continue;
+    const to = m.index + m[0].length;
+    out.push({ from, to });
+    from = to;
+    while(from < text.length && /\s/.test(text[from])) from++;
+  }
+  if(from < text.length) out.push({ from, to: text.length });
+  return out.map((x) => ({ ...x, text: text.slice(x.from, x.to).trim() })).filter((x) => x.text);
+}
+
+/** The first sentences of some paragraphs, up to about `max` characters. */
+function opening(paras, max){
+  let out = '';
+  for(const p of paras){
+    for(const s of sentences(p.text)){
+      if(out && out.length + s.text.length > max) return out;
+      out += (out ? ' ' : '') + s.text;
+      if(out.length > max * 0.6) return out;
+    }
+    if(out.length > max * 0.4) return out;
+    if(out) out += '\n\n';
+  }
+  return out.trim();
 }
 
 /**
@@ -298,6 +369,64 @@ chapters.forEach((c, ci) => {
 });
 mention.delete(art.title);   // the article linking to itself
 
+/*
+ * Where the article says it. For every link: the sentence it sits in, by
+ * chapter, so an entry can be shown the way THIS article talks about it
+ * ("Julius Caesar invaded in 55 and 54 BC…") rather than through its own
+ * Wikipedia lead, which is about Caesar, not about England.
+ *
+ * Co-mentions — two links in the same sentence or paragraph — become each
+ * entry's "related" list: Hastings, Harold Godwinson and William the Conqueror
+ * are linked from the same lines.
+ */
+const contexts = new Map();   // canonical title -> [{ ch, sub, text }]
+const cooc = new Map();       // canonical title -> Map(canonical title -> weight)
+const bump = (a, b, w) => {
+  if(a === b) return;
+  let m = cooc.get(a); if(!m) cooc.set(a, (m = new Map()));
+  m.set(b, (m.get(b) || 0) + w);
+};
+function harvest(sec, ch){
+  const sub = sec.level > 2 ? sec.title : null;
+  // A "Main article: Elizabethan era" hatnote means the section IS about it, so
+  // the section's opening is its context.
+  const hatOpen = opening((sec.paras || []).filter((p) => p.tag === 'p'), 320);
+  if(hatOpen) for(const l of sec.links.filter((x) => x.hat)){
+    const t = canon(l.target);
+    const list = contexts.get(t) || contexts.set(t, []).get(t);
+    // Low score: a fallback for entries the prose never names, since the same
+    // opening is also the context of whatever its first sentence links.
+    if(!list.some((c) => c.text === hatOpen)) list.push({ ch, sub, text: hatOpen, score: -1 });
+  }
+  for(const p of sec.paras || []){
+    const sents = sentences(p.text);
+    const at = p.links.map((l) => ({ t: canon(l.target), at: l.at, k: sents.findIndex((x) => l.at >= x.from && l.at < x.to) }));
+    for(const { t, k, at: pos } of at){
+      if(k < 0) continue;
+      let text = sents[k].text;
+      const sn = sents[k];
+      // How much the sentence is ABOUT this link: near the start (the subject),
+      // few other links competing, a date in it. Used to pick the best of
+      // several mentions; the first is often a passing one ("his brother Henry").
+      const lead = 1 - Math.min(1, (pos - sn.from) / Math.max(40, sn.to - sn.from));
+      const others = at.filter((x) => x.k === k).length - 1;
+      const score = 2 * lead - 0.25 * Math.min(4, others) + (/\b\d{3,4}\b/.test(sn.text) ? 0.6 : 0) + (sub && t.toLowerCase().includes(sub.toLowerCase().split(' ')[0]) ? 0.5 : 0);
+      // A short sentence leans on its neighbour ("He was crowned in 1066.").
+      if(text.length < 80 && sents[k + 1]) text += ' ' + sents[k + 1].text;
+      if(text.length > 420) text = text.slice(0, 420).replace(/\s+\S*$/, '') + '…';
+      const list = contexts.get(t) || contexts.set(t, []).get(t);
+      if(list.length < 12 && !list.some((c) => c.text === text)) list.push({ ch, sub, text, score });
+    }
+    const seen = [...new Set(at.map((x) => x.t))];
+    // Same paragraph is weak evidence (a long paragraph links everything);
+    // same sentence is strong.
+    if(seen.length <= 12) for(const a of seen) for(const b of seen) bump(a, b, 1);
+    for(let i = 0; i < at.length; i++) for(let j = 0; j < at.length; j++) if(at[i].k === at[j].k && at[i].t !== at[j].t) bump(at[i].t, at[j].t, 3);
+  }
+}
+harvest(lead, null);
+chapters.forEach((c, ci) => c.sections.forEach((sec) => harvest(sec, ci)));
+
 // --- optional: fill gaps in the store first -------------------------------
 const slug = slugify(OPT.name || art.title);
 const domain = slug;
@@ -349,7 +478,7 @@ const fameMax = Math.log1p(Math.max(1, ...entries.map((e) => e.sitelinks || 0)))
 for(const [t, m] of mention){
   const e = findEntry(t);
   if(!e) continue;
-  items.set(e.id, { e, m, via: 'link' });
+  items.set(e.id, { e, m, via: 'link', t });
 }
 for(const p of eventPages){
   for(const e of entries){
@@ -358,8 +487,9 @@ for(const p of eventPages){
 }
 
 const taxo = loadTaxonomy();
-const out = [...items.values()].map(({ e, m, via }) => ({
+const out = [...items.values()].map(({ e, m, via, t }) => ({
   id: e.id,
+  canon: t || null,
   title: e.title,
   subtitle: e.subtitle || '',
   yearText: e.yearText || '',
@@ -430,6 +560,16 @@ for(const it of out){
     !(it.openEnded && it.type !== 'person');
 }
 
+// --- in-context sentence & related entries ------------------------------------
+const idOfCanon = new Map(out.filter((it) => it.canon).map((it) => [it.canon, it.id]));
+const relatable = new Set(out.filter((it) => it.onTimeline && it.type !== 'concept').map((it) => it.id));
+for(const it of out){
+  const co = it.canon ? cooc.get(it.canon) : null;
+  // Only things worth stepping to: on the timeline, not a concept ("Latin").
+  it.related = co ? [...co].map(([t, w]) => [idOfCanon.get(t), w]).filter(([id]) => id && id !== it.id && relatable.has(id))
+    .sort((a, b) => b[1] - a[1]).slice(0, 6).map(([id]) => id) : [];
+}
+
 // --- importance & key selection --------------------------------------------
 // Periods are already drawn as the chapter bands, so in the KEY set they yield to
 // what happened and who did it.
@@ -456,6 +596,15 @@ if(mined.length){
   }
 }
 
+/*
+ * Unknown fame is not zero fame. Entries from the old CSVs (Elizabeth I, Edward
+ * I, Vespasian) have no Wikidata id, so no sitelink count; scoring them 0 left
+ * Elizabeth I out of Key while Francis Drake was in. Give them the median.
+ */
+const knownFame = out.filter((it) => it.via === 'link' && it.fame > 0).map((it) => it.fame).sort((a, b) => a - b);
+const medFame = knownFame[Math.floor(knownFame.length / 2)] || 0.5;
+for(const it of out) if(it.via === 'link' && !it.fame){ it.fame = medFame; it.fameGuessed = true; }
+
 const maxW = Math.max(1, ...out.map((it) => it.weight));
 for(const it of out){
   const mention = Math.log1p(it.weight) / Math.log1p(maxW) + (it.hat ? 0.25 : 0) + (it.lead ? 0.15 : 0);
@@ -479,6 +628,23 @@ for(const it of out){
   it.importance = +imp.toFixed(4);
 }
 
+/*
+ * Context: the best-scoring sentence in the entry's own chapter; else in the
+ * chapter that mentions it most; else anywhere in the body; else the lead.
+ * Most important first, and no two entries of a chapter share a sentence:
+ * "There were renewed Scandinavian attacks…" links both Cnut and the Norman
+ * Conquest, and read twice in a row it says nothing about the second.
+ */
+const usedCtx = new Map();   // chapter -> Set of texts
+for(const it of [...out].sort((a, b) => b.importance - a.importance)){
+  const used = usedCtx.get(it.chapter) || usedCtx.set(it.chapter, new Set()).get(it.chapter);
+  const list = (it.canon ? contexts.get(it.canon) || [] : []).filter((c) => !used.has(c.text));
+  const best = (f) => list.filter(f).sort((a, b) => b.score - a.score)[0];
+  const pick = best((c) => c.ch === it.chapter) || best((c) => c.ch === it.chapterOfMention) || best((c) => c.ch != null) || best(() => true);
+  it.context = pick?.text || '';
+  if(pick){ it.sub = pick.sub || null; used.add(pick.text); }
+}
+
 // Key events: proportional to each chapter's share, at least 4 per chapter, so
 // a thin chapter still reads and the Tudors do not crowd out the Anglo-Saxons.
 const onTl = out.filter((it) => it.onTimeline);
@@ -487,16 +653,29 @@ for(const it of onTl) (byCh.get(it.chapter) || byCh.set(it.chapter, []).get(it.c
 for(const [, arr] of byCh){
   arr.sort((a, b) => b.importance - a.importance);
   const quota = Math.max(4, Math.round(OPT.key * arr.length / Math.max(1, onTl.length)));
-  arr.forEach((it, k) => { it.key = k < quota; });
+  /*
+   * Places, groups and concepts are context, not things that happened. They
+   * took Key slots on fame alone: *Greater Manchester*, *Merseyside* and the
+   * *European Union* were all Key in England because the lead mentions them.
+   * They stay Key only when a section is ABOUT them (a "Main article" hatnote).
+   */
+  const eligible = arr.filter((it) => !['place', 'group', 'concept'].includes(it.type) || it.hat);
+  const keyIds = new Set(eligible.slice(0, quota).map((it) => it.id));
+  arr.forEach((it) => { it.key = keyIds.has(it.id); });
 }
 for(const it of out) if(!it.onTimeline) it.key = false;
 
 // --- chapter output -----------------------------------------------------------
 const PALETTE = ['#8a6d3b', '#a0522d', '#6b8e23', '#2f6f73', '#4a6fa5', '#7b5ea7', '#a3477a', '#b5543c', '#5b7c3a', '#3d6e8f', '#8c6239', '#566573'];
+const proseParas = (sec) => (sec?.paras || []).filter((p) => p.tag === 'p');
 const chOut = chapters.map((c, i) => ({
   id: i,
   title: c.title,
-  subsections: c.subsections,
+  // The chapter's own opening, from the article: the narrative that the
+  // entries hang off. If the heading goes straight into a subsection, that
+  // subsection's opening stands in.
+  intro: opening(proseParas(c.sections[0]), 650) || opening(proseParas(c.sections[1]), 650),
+  subsections: c.sections.slice(1).map((sec) => ({ title: sec.title, intro: opening(proseParas(sec), 280) })),
   from: c.from ?? null,
   to: c.to ?? null,
   overlaps: !!c.overlaps,
@@ -515,6 +694,7 @@ const topic = {
   keyTarget: OPT.key,
   built: new Date().toISOString().slice(0, 10),
   chronological,
+  intro: opening(proseParas(lead), 700),
   chapters: chOut,
   items: out,
 };
@@ -551,7 +731,10 @@ function updateIndex(t){
   const row = {
     slug: t.slug, title: t.title, source: t.source, events: t.events, keyTarget: t.keyTarget,
     built: t.built, count: t.items.filter((it) => it.onTimeline).length, key: t.items.filter((it) => it.key).length,
-    chapters: t.chapters.length, from: Math.min(...t.items.filter((it) => it.onTimeline).map((it) => it.start)),
+    // The first chapter's start, not the oldest entry: one Palaeolithic link
+    // made England read "4,000,000 BC – 2026".
+    chapters: t.chapters.length,
+    from: t.chapters.find((c) => c.from != null)?.from ?? Math.min(...t.items.filter((it) => it.onTimeline).map((it) => it.start)),
     to: Math.max(...t.items.filter((it) => it.onTimeline).map((it) => it.end ?? it.start)), cover,
   };
   idx.topics = [...idx.topics.filter((x) => x.slug !== t.slug), row].sort((a, b) => a.title.localeCompare(b.title));

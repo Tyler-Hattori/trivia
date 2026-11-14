@@ -12,7 +12,16 @@
  *           quiz/questions.js, minus year questions for places and concepts —
  *           "What year: Trinovantes?" is not a question.
  *
- * The pool honours the topic page's Key/All and chapter filters.
+ * The pool honours the topic page's Essentials/Everything, chapter and subject
+ * filters.
+ *
+ * ## Memory
+ *
+ * Every answer is recorded per entry in localStorage (`topic:mastery:<slug>`):
+ * right and wrong counts and whether the LAST answer was right. Questions are
+ * drawn weighted towards what you have missed or never seen, so a session
+ * spends its time on what you do not know yet. "Known" (the ticks and progress
+ * bars on the Learn page) means the last answer was right.
  */
 
 import { questionsFor, gradeField } from '../quiz/questions.js';
@@ -27,15 +36,57 @@ const pick = (a) => a[rnd(a.length)];
 const shuffle = (a) => { for(let i = a.length - 1; i > 0; i--){ const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
 let Q = null;   // quiz state, kept across redraws of the same topic
+let keysBound = false;
 
-export function renderQuiz(host, T, { show, chapters, subjects = new Set() }){
+// --- memory ------------------------------------------------------------------
+
+const memKey = (slug) => `topic:mastery:${slug}`;
+export function loadMastery(slug){
+  try { return JSON.parse(localStorage.getItem(memKey(slug))) || {}; } catch { return {}; }
+}
+/** Known = answered at least once, and right the last time. */
+export const isKnown = (m) => !!m && m.last === 1;
+
+function remember(ids, ok){
+  const m = loadMastery(Q.T.slug);
+  for(const id of [].concat(ids)){
+    const x = m[id] || { r: 0, w: 0, last: 0 };
+    if(ok) x.r++; else x.w++;
+    x.last = ok ? 1 : 0;
+    x.at = Date.now();
+    m[id] = x;
+  }
+  localStorage.setItem(memKey(Q.T.slug), JSON.stringify(m));
+  Q.mem = m;
+  Q.opts.onAnswer?.();
+}
+
+/** Weighted pick: missed entries most, unseen next, known ones rarely. */
+function pickWeighted(pool){
+  const w = pool.map((it) => {
+    const m = Q.mem[it.id];
+    if(!m) return 3;
+    if(m.last === 0) return 5;
+    return m.w > 0 ? 1.2 : 0.5;
+  });
+  let r = Math.random() * w.reduce((a, b) => a + b, 0);
+  for(let i = 0; i < pool.length; i++){ r -= w[i]; if(r <= 0) return pool[i]; }
+  return pool[pool.length - 1];
+}
+
+export function renderQuiz(host, T, opts){
+  const { show, chapters, subjects = new Set() } = opts;
   const key = `${T.slug}|${show}|${[...chapters].sort()}|${[...subjects].sort()}`;
   if(!Q || Q.key !== key){
     Q = { key, T, mode: Q?.mode || 'order', right: 0, total: 0, streak: 0, cur: null, host };
     Q.pool = T.items.filter((it) => it.onTimeline && (show === 'all' || it.key) &&
       (!chapters.size || chapters.has(it.chapter)) && (!subjects.size || subjects.has(it.subject)));
+    Q.scope = chapters.size === 1 ? T.chapters[[...chapters][0]]?.title : null;
+    Q.mem = loadMastery(T.slug);
+    Q.opts = opts;
     next();
   }
+  Q.opts = opts;
   Q.host = host;
   draw();
 }
@@ -51,7 +102,7 @@ function next(){
 function makeOrder(){
   const pool = Q.pool.filter((it) => DATE_TYPES.has(it.type));
   if(pool.length < 4) return null;
-  const seed = pick(pool);
+  const seed = pickWeighted(pool);
   // Neighbours: same chapter or adjacent, so the question is about sequence
   // within a stretch of history rather than "which is the Roman one".
   const near = pool.filter((it) => it !== seed && Math.abs(it.chapter - seed.chapter) <= 1);
@@ -69,9 +120,10 @@ function makeOrder(){
 // --- Era ---------------------------------------------------------------------
 
 function makeEra(){
+  if(Q.scope) return null;     // "which chapter?" while quizzing on one chapter is a giveaway
   const chs = Q.T.chapters.filter((c) => Q.T.items.some((it) => it.onTimeline && it.chapter === c.id));
   if(chs.length < 3 || !Q.pool.length) return null;
-  const it = pick(Q.pool);
+  const it = pickWeighted(Q.pool);
   const right = Q.T.chapters[it.chapter];
   // The right chapter plus up to three others, preferring its neighbours —
   // "Tudor or Stuart?" is the useful distinction, "Tudor or Roman?" is not.
@@ -83,7 +135,7 @@ function makeEra(){
 
 function makeRecall(){
   if(!Q.pool.length) return null;
-  const it = pick(Q.pool);
+  const it = pickWeighted(Q.pool);
   const e = { ...it, x0: it.start, x1: it.end ?? it.start, isSpan: it.kind === 'span', dataset: Q.T.title };
   const q = questionsFor(e);
   if(!DATE_TYPES.has(it.type)) q.fields = q.fields.filter((f) => f.key !== 'year' && f.key !== 'span');
@@ -99,16 +151,20 @@ function makeRecall(){
 
 function draw(){
   const c = Q.cur;
-  const tab = (m, label) => `<button data-qmode="${m}" class="${Q.mode === m ? 'on' : ''}">${label}</button>`;
+  const tab = (m, label, tip) => `<button data-qmode="${m}" class="${Q.mode === m ? 'on' : ''}" title="${tip}">${label}</button>`;
+  if(Q.scope && Q.mode === 'era'){ Q.mode = 'order'; next(); }
+  const seen = Q.pool.filter((it) => Q.mem[it.id]).length;
+  const known = Q.pool.filter((it) => isKnown(Q.mem[it.id])).length;
   const head = `
+    <div class="tp-qhead">${Q.scope ? `Quiz: <b>${esc(Q.scope)}</b>` : `Quiz: <b>all of ${esc(Q.T.title)}</b>`}
+      <span class="tp-meta">· ${known} of ${Q.pool.length} known${seen > known ? `, ${seen - known} to review` : ''}</span></div>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <span class="tp-seg">${tab('order', 'Order')}${tab('era', 'Era')}${tab('recall', 'Recall')}</span>
-      <span class="tp-meta">${Q.pool.length} entries in the pool</span>
+      <span class="tp-seg">${tab('order', 'Order', 'Put four in time order')}${Q.scope ? '' : tab('era', 'Era', 'Which chapter is it from?')}${tab('recall', 'Recall', 'Type the year and details')}</span>
       <span class="tp-spacer"></span>
       <span class="tp-score"><span><b>${Q.right}</b>/${Q.total} right</span><span>streak <b>${Q.streak}</b></span></span>
     </div>`;
   let body = '';
-  if(!c) body = '<div class="tp-q">Not enough entries for this mode with the current filters — widen the chapters or switch to All.</div>';
+  if(!c) body = '<div class="tp-q">Not enough entries for this mode here. Pick Everything, or a wider chapter on the left.</div>';
   else if(c.kind === 'order') body = drawOrder(c);
   else if(c.kind === 'era') body = drawEra(c);
   else body = drawRecall(c);
@@ -116,18 +172,23 @@ function draw(){
   Q.host.onclick = onClick;
   const first = Q.host.querySelector('.tp-in:not([disabled])');
   if(first) first.focus();
-  Q.host.onkeydown = (ev) => {
-    if(ev.key !== 'Enter') return;
-    ev.preventDefault();
-    if(Q.cur?.kind === 'recall' && !Q.cur.marks) gradeRecall(); else if(isDone()) { next(); draw(); }
-  };
+  // On the document, not the host: a redraw drops focus to <body>, and Enter
+  // for "Next" has to keep working after a click.
+  if(!keysBound){
+    keysBound = true;
+    document.addEventListener('keydown', (ev) => {
+      if(!Q?.host?.isConnected || ev.key !== 'Enter' || ev.target.closest?.('select')) return;
+      ev.preventDefault();
+      if(Q.cur?.kind === 'recall' && !Q.cur.marks) gradeRecall(); else if(isDone()) { next(); draw(); }
+    });
+  }
 }
 
 const isDone = () => { const c = Q.cur; return c && (c.kind === 'order' ? c.done : c.kind === 'era' ? c.chosen != null : !!c.marks); };
 
 function card(it, extra = ''){
   return `<div style="display:flex;gap:12px;align-items:center">
-    ${it.image ? `<img src="${esc(thumbUrl(it.image, 120))}" style="width:56px;height:44px;object-fit:contain;background:#f8fafc;border-radius:6px" alt="">` : ''}
+    ${it.image ? `<img src="${esc(thumbUrl(it.image, 120))}" style="width:56px;height:44px;object-fit:contain;background:#f8fafc;border-radius:6px" alt="" onerror="imgRetry(this,'hide')">` : ''}
     <div style="flex:1"><b>${esc(it.title)}</b>${extra}</div></div>`;
 }
 
@@ -145,8 +206,9 @@ function drawOrder(c){
       </button>`;
     }).join('')}
     ${c.done ? `<div style="margin-top:12px"><div class="tp-meta" style="margin-bottom:4px">Correct order</div>
-      ${sorted.map((it, i) => `<div>${i + 1}. <b>${esc(it.yearText || fmtYear(it.start))}</b> — ${esc(it.title)}</div>`).join('')}
-      <button class="tp-btn primary" style="margin-top:12px" data-qact="next">Next →</button></div>` : ''}
+      ${sorted.map((it, i) => `<div class="tp-ordr"><b>${i + 1}. ${esc(it.yearText || fmtYear(it.start))}</b> — <a href="#" data-open="${esc(it.id)}">${esc(it.title)}</a>
+        <div class="tp-meta">${esc(summary(it.context || it.excerpt, 200))}</div></div>`).join('')}
+      <button class="tp-btn primary" style="margin-top:12px" data-qact="next">Next → <span class="tp-meta" style="color:#cbd5e1">Enter</span></button></div>` : ''}
   </div>`;
 }
 
@@ -154,7 +216,7 @@ function drawEra(c){
   const it = c.item;
   const done = c.chosen != null;
   return `<div class="tp-q">
-    ${it.image ? `<img src="${esc(thumbUrl(it.image, 500))}" style="width:100%;max-height:300px;object-fit:contain;background:#f8fafc;border-radius:12px;margin-bottom:12px" alt="">` : ''}
+    ${it.image ? `<img src="${esc(thumbUrl(it.image, 500))}" style="width:100%;max-height:300px;object-fit:contain;background:#f8fafc;border-radius:12px;margin-bottom:12px" alt="" onerror="imgRetry(this)">` : ''}
     <h3>${esc(it.title)}</h3>
     <div class="tp-meta" style="margin-bottom:8px">Which chapter of ${esc(Q.T.title)} does this belong to?</div>
     ${c.options.map((o) => {
@@ -170,7 +232,7 @@ function drawRecall(c){
   const it = c.item;
   const p = c.q.prompt;
   return `<div class="tp-q">
-    ${p.image ? `<img src="${esc(thumbUrl(p.image, 900))}" style="width:100%;max-height:340px;object-fit:contain;background:#f8fafc;border-radius:12px;margin-bottom:12px" alt="">` : ''}
+    ${p.image ? `<img src="${esc(thumbUrl(p.image, 900))}" style="width:100%;max-height:340px;object-fit:contain;background:#f8fafc;border-radius:12px;margin-bottom:12px" alt="" onerror="imgRetry(this)">` : ''}
     ${p.title ? `<h3>${esc(p.title)}</h3>` : ''}
     ${c.q.fields.map((f, i) => {
       const m = c.marks?.[i];
@@ -187,9 +249,10 @@ function reveal(it){
   const ch = Q.T.chapters[it.chapter];
   return `<div style="margin-top:14px;border-left:3px solid ${ch?.color || '#cbd5e1'};padding-left:12px">
     <div class="tp-meta">${esc(it.yearText || fmtYear(it.start))} · ${esc(ch?.title || '')}</div>
-    <div style="color:#334155;margin-top:4px">${esc(summary(it.excerpt, 420))}</div>
+    <div style="color:#334155;margin-top:4px">${esc(it.context || summary(it.excerpt, 420))}</div>
+    <a href="#" class="tp-src" data-open="${esc(it.id)}">More about ${esc(it.title)}</a>
   </div>
-  <button class="tp-btn primary" style="margin-top:12px" data-qact="next">Next →</button>`;
+  <button class="tp-btn primary" style="margin-top:12px" data-qact="next">Next → <span class="tp-meta" style="color:#cbd5e1">Enter</span></button>`;
 }
 
 function score(ok){
@@ -204,14 +267,18 @@ function gradeRecall(){
     return { typed, ok: gradeField(f, typed, c.e).ok };
   });
   c.marks = marks;
-  score(marks.every((m) => m.ok));
+  const ok = marks.every((m) => m.ok);
+  score(ok);
+  remember(c.item.id, ok);
   draw();
 }
 
 function onClick(ev){
-  const b = ev.target.closest('[data-qmode],[data-qact],[data-pick],[data-era]');
+  const b = ev.target.closest('[data-qmode],[data-qact],[data-pick],[data-era],[data-open]');
   if(!b) return;
   ev.preventDefault();
+  ev.stopPropagation();
+  if(b.dataset.open){ Q.opts.onOpen?.(b.dataset.open); return; }
   const c = Q.cur;
   if(b.dataset.qmode){ Q.mode = b.dataset.qmode; next(); draw(); return; }
   if(b.dataset.qact === 'next'){ next(); draw(); return; }
@@ -225,8 +292,12 @@ function onClick(ev){
       c.done = true;
       const sorted = [...c.items].sort((a, b2) => a.anchor - b2.anchor).map((it) => it.id);
       // Ties in anchor year are both acceptable orders.
-      const ok = c.picked.every((id2, i) => id2 === sorted[i] || Q.T.byId.get(id2).anchor === Q.T.byId.get(sorted[i]).anchor);
+      const placed = c.picked.map((id2, i) => id2 === sorted[i] || Q.T.byId.get(id2).anchor === Q.T.byId.get(sorted[i]).anchor);
+      const ok = placed.every(Boolean);
       score(ok);
+      // Each entry is marked by whether IT landed in the right place.
+      remember(c.picked.filter((_, i) => placed[i]), true);
+      if(!ok) remember(c.picked.filter((_, i) => !placed[i]), false);
     }
     draw();
     return;
@@ -234,6 +305,7 @@ function onClick(ev){
   if(b.dataset.era != null && c?.kind === 'era' && c.chosen == null){
     c.chosen = Number(b.dataset.era);
     score(c.chosen === c.answer);
+    remember(c.item.id, c.chosen === c.answer);
     draw();
   }
 }

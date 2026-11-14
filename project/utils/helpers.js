@@ -85,6 +85,11 @@ export function thumbUrl(url, width = 330){
 
   if(!url.includes('upload.wikimedia.org')) return url;
 
+  // The Wikipedia API appends "?utm_source=…" to image URLs. Left in, it lands
+  // in the middle of the thumb path and the CDN answers 400 (107 of 396 England
+  // images were broken this way).
+  url = url.split('#')[0].split('?')[0];
+
   // Already a thumb URL: replace the trailing "<n>px-" width token.
   if(url.includes('/thumb/')){
     return url.replace(/\/(\d+)px-([^/]+)$/, `/${w}px-$2`);
@@ -92,10 +97,14 @@ export function thumbUrl(url, width = 330){
 
   // Bare file URL: convert to thumb form.
   // .../commons/a/ab/File.jpg  ->  .../commons/thumb/a/ab/File.jpg/<w>px-File.jpg
+  // Vector and multi-page sources are rasterised, and the CDN only answers the
+  // name with the raster extension appended: File.svg -> <w>px-File.svg.png.
   const m = url.match(/^(https?:\/\/upload\.wikimedia\.org\/wikipedia\/[^/]+)\/([0-9a-f])\/([0-9a-f]{2})\/(.+)$/);
   if(m){
     const [, base, d1, d2, file] = m;
-    return `${base}/thumb/${d1}/${d2}/${file}/${w}px-${file}`;
+    const ext = /\.svg$/i.test(file) ? '.png' : /\.(tiff?|pdf|djvu)$/i.test(file) ? '.jpg' : '';
+    const name = ext === '.jpg' ? `lossy-page1-${w}px-${file}.jpg` : `${w}px-${file}${ext}`;
+    return `${base}/thumb/${d1}/${d2}/${file}/${name}`;
   }
 
   return url;
@@ -119,3 +128,29 @@ export function fullUrl(url, width = 1280){
   return `https://${f.host}/wiki/Special:FilePath/${f.file}` +
          `?width=${snapWikimediaWidth(Math.round(width))}`;
 }
+
+/**
+ * `onerror` fallback for a thumbnail: retry once through Special:FilePath, which
+ * serves the original when the source is narrower than the width asked for (the
+ * CDN answers that with a 400). If that fails too: 'card' shows the next
+ * sibling (a text fallback), 'hide' keeps the space, anything else removes it.
+ *
+ * Wire it with an attribute that carries no text, e.g.
+ *   onerror="imgRetry(this)"
+ * Never put item text inside an inline handler: an apostrophe once broke one.
+ */
+export function imgRetry(img, giveUp){
+  const src = img.src;
+  if(!img.dataset.retried){
+    img.dataset.retried = '1';
+    const alt = fullUrl(src.replace(/\/thumb\/(.+)\/[^/]+$/, '/$1'), img.width > 400 ? 960 : 500);
+    if(alt && alt !== src){ img.src = alt; return; }
+  }
+  img.onerror = null;
+  if(giveUp === 'card'){            // swap to the text fallback that follows the image
+    img.style.display = 'none';
+    if(img.nextElementSibling) img.nextElementSibling.style.display = '-webkit-box';
+  } else if(giveUp === 'hide') img.style.visibility = 'hidden';
+  else img.remove();
+}
+if(typeof window !== 'undefined') window.imgRetry = imgRetry;

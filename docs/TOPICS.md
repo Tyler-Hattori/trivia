@@ -5,7 +5,7 @@ datasets/topic.mjs            build a topic from one Wikipedia article
 datasets/topics/<slug>.json   what the page loads (self-contained: items, chapters, excerpts)
 datasets/topics/index.json    the list
 datasets/lib/etype.mjs        what KIND of thing an entry is (event, person, work, period, place, group, concept)
-project/features/topic/       index.js (routes, timeline, read, detail, search) · layout.js · quiz.js · styles.js
+project/features/topic/       index.js (routes, learn, timeline, detail, search) · layout.js · quiz.js (+ memory) · styles.js
 ```
 
 Build one:
@@ -19,6 +19,44 @@ Then open `#/topics` from the home page. Without `--ingest` it builds from what
 the store already has and lists the linked pages that are missing. With
 `--ingest` it pulls them through `ingest.mjs` first (throttled, only new rows
 embedded) and places them on the atlas.
+
+## The bar: better than reading the article
+
+For England, the 92 key entries' own Wikipedia leads add up to ~120,000
+characters, more than the whole *History of England* article (~94,000). They are
+also generic: Julius Caesar's lead is about Caesar, not about England. Showing
+those leads is slower than the article and loses its story. So the page leads
+with the article's own words, cut down:
+
+- **`context`** on each item: the sentence in the article that links it,
+  scored to find the one that is *about* it (link near the start, few
+  competing links, has a date). "Main article:" hatnote targets fall back to
+  their section's opening. No two entries of a chapter share a sentence; the
+  more important one keeps it, the other takes its next best or falls back to
+  its own lead's first sentence.
+- **`intro`** on the topic and each chapter (and subsection): the opening
+  sentences of that part of the article. This is the narrative the entries
+  hang off.
+- **`related`**: other entries linked in the same sentence (strong) or
+  paragraph (weak), on the timeline only. The detail panel's "Connected" row.
+- **`sub`**: the subsection the chosen sentence is in. Learn groups by it, in
+  the article's order.
+
+The Learn view (the default) is intro → chapter intro → one line per entry,
+grouped by subsection, with a "test yourself" at the end of each chapter.
+England's essentials read in ~17 minutes; the article takes over an hour.
+
+Key ("Essentials") rules worth keeping:
+
+- **Places, groups and concepts are only key with a "Main article" hatnote.**
+  Greater Manchester, Merseyside and the European Union were key on lead
+  mentions alone.
+- **Unknown fame is the median, not zero.** Old-CSV entries (Elizabeth I) have
+  no Wikidata id; scored 0 they lost their key slot to Francis Drake.
+
+The quiz remembers answers per entry (`topic:mastery:<slug>` in localStorage),
+draws missed and unseen entries more often, and drives the progress bars in the
+contents rail and on the topic list. "Known" = last answer right.
 
 ## Why a topic comes from an article and not from embeddings
 

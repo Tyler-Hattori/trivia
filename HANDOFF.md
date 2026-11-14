@@ -8,6 +8,29 @@ Two sessions on 2026-11-13 changed the direction of the project; a short one on
 2026-11-14 finished the crawl follow-up and reorganised the repo. Below: what
 exists now and what to do next.
 
+### Done 2026-11-14, session 2: Topics usability pass
+
+The aim: make a topic better than reading its Wikipedia article. See
+`docs/TOPICS.md`, "The bar".
+- **Images:** `thumbUrl` stripped neither the API's `?utm_…` suffix nor
+  added `.png` for SVGs. 107 of 396 England images were broken (now 395/396). The
+  shared `imgRetry(img, mode)` fallback retries through Special:FilePath.
+- **topic.mjs:** in-article `context` sentence per entry, `intro` per topic,
+  chapter and subsection, `related` from co-mentions, `sub` grouping. Key
+  excludes places/groups/concepts without a hatnote; unknown fame becomes the
+  median.
+- **UI:**
+  - **Learn** is the default view (`#/topic/<slug>`). It has a contents rail
+    with mastery bars, chapter intros, one line per entry, and a "test
+    yourself" link per chapter.
+  - **Timeline** (`/timeline`): an overview strip, click a band to fit the
+    chapter, drag to pan, hover for context.
+  - **Detail panel:** context first, then Connected, About (collapsible),
+    and before/after.
+  - **Quiz:** remembers answers and weights missed ones.
+  - The chip rows are gone; Subject is a dropdown.
+- **qa-topic** has 6 new data checks (21 total).
+
 ### 0. What to do next
 
 1. The user's priority is **presentation and usability**: "as usable as
