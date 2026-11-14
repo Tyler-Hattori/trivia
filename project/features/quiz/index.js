@@ -438,7 +438,7 @@ window.quizToggle = (id) => {
 window.quizHome = () => {
   document.onkeydown = null;
   S.current = null; S.answered = 0;
-  location.hash = '#/topics';
+  location.hash = '#/home';
 };
 
 /*

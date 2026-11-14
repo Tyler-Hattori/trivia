@@ -106,10 +106,39 @@ are kept outside the built topic so rebuilds keep them; titles match with
 whitespace normalised. `topic-report.mjs` flags chapters without points
 (`no-points`). Write them for every new topic before calling it done.
 
+## Titles for mined events
+
+Lines mined from "Timeline of…" pages are titled by their own first words,
+which reads as a sentence fragment ("Harry Brearley invents stainless steel in
+Sheffield, Yorkshire"). `datasets/titles.json` maps entry id → a short title
+("Stainless steel invented in Sheffield"), written for the site (by Claude, in
+session; 898 so far, every mined event in the first 14 topics). `topic.mjs`
+applies them (keeping `origTitle`, so overrides naming the old title still
+match) and so does the search index. Write them for each new batch: dump the
+mined events with 4+ word titles, title them, merge into `titles.json`.
+
+## The search page (#/search/<query>)
+
+`topics/store-lite.json` (`lib/lite.mjs`, rewritten by every topic build) is
+the whole store compressed for the browser: title, years, type, description,
+first sentence, image, subject, fame, topics. About 1.4 MB gzipped, loaded only
+when searching.
+- **A year or span** ("1294", "1290–1300", "1290s", "13th century", "3rd
+  millennium BC", "66 million years ago") builds a page for those years. It has
+  your topics' entries for those years, then what happened, began, ended, who
+  was born and died, and what was under way (specific before vast), with
+  subject chips and ←/→ to the neighbouring span.
+- **Words** list every matching store entry in time order (BM25, then the
+  hybrid server ranking when `serve.mjs` is up), with matching topics and
+  ideas first. Words plus a date ("mongol 1294") combine.
+- Inside a topic, searching a year filters by date ("1294" in the Mongol Empire
+  finds Kublai Khan's death).
+
 ## What the browser loads
 
 - `topics/<slug>.json` — the topic, self-contained.
 - `topics/index.json` — the list.
+- `topics/store-lite.json` — the whole store, for the search page.
 - `topics/all.json` — every timeline entry of every topic, compact (~2 MB):
   **Meanwhile**, the cross-topic quiz and review. Written by every build.
 - `topics/members.json` / `members-all.json` — "Also in", and the atlas's Topic

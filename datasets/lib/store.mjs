@@ -175,12 +175,18 @@ export function readEntries(){
   const out = [];
   const text = fs.readFileSync(PATHS.entries, 'utf8');
   let lineNo = 0;
-  for(const line of text.split('\n')){
+  const lines = text.split('\n');
+  for(const line of lines){
     lineNo++;
     const s = line.trim();
     if(!s) continue;
     try { out.push(JSON.parse(s)); }
-    catch(e){ throw new Error(`entries.jsonl:${lineNo} is not valid JSON — ${e.message}`); }
+    catch(e){
+      // The last line may be half-written by an ingest running at the same
+      // moment (a topic build during a batch). Anywhere else it is corruption.
+      if(lines.slice(lineNo).every((l) => !l.trim())){ console.warn(`  (entries.jsonl: skipped a half-written last line)`); continue; }
+      throw new Error(`entries.jsonl:${lineNo} is not valid JSON — ${e.message}`);
+    }
   }
   return out;
 }

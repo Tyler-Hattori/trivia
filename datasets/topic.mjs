@@ -100,6 +100,7 @@ import { loadTaxonomy } from './lib/taxotree.mjs';
 import { getJSON } from './lib/wikilib.mjs';
 import { INDEX_TITLE, stripApparatus } from './lib/wiki.mjs';
 import { readIdeas, ensureIdeas } from './lib/ideas.mjs';
+import { writeLite, readTitles } from './lib/lite.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WP = 'https://en.wikipedia.org';
@@ -711,7 +712,10 @@ const canon = (t) => redirects.get(t) || t;
 const slug = slugify(OPT.name || art.title);
 const domain = slug;
 const OVR = loadOverrides(slug);
-const titleIn = (set, it) => set.has(String(it.title).toLowerCase()) || (it.canon && set.has(String(it.canon).toLowerCase()));
+const titleIn = (set, it) => set.has(String(it.title).toLowerCase()) || (it.canon && set.has(String(it.canon).toLowerCase())) || (it.origTitle && set.has(String(it.origTitle).toLowerCase()));
+// Short titles for mined timeline events, whose own title is a sentence fragment
+// ("Harry Brearley invents stainless steel in Sheffield, Yorkshire"): datasets/titles.json.
+const TITLES = readTitles();
 const wikiKey = (u) => decodeURIComponent(String(u || '').replace(/^https?:\/\/en\.wikipedia\.org\/wiki\//, '')).replace(/_/g, ' ');
 
 let entries = readEntries();
@@ -893,7 +897,8 @@ const taxo = loadTaxonomy();
 const out = [...items.values()].map(({ e, m, via, t }) => ({
   id: e.id,
   canon: t || null,
-  title: e.title,
+  title: TITLES[e.id] || e.title,
+  ...(TITLES[e.id] ? { origTitle: e.title } : {}),
   subtitle: e.subtitle || '',
   yearText: e.yearText || '',
   start: e.start, end: e.end,
@@ -1243,7 +1248,7 @@ for(const it of out){
  * article and more than a passing mention: a hatnote, two or more mentions, or
  * a title that shares a word with its chapter's.
  */
-const NOT_IDEA = /\b(language|dialect|country|city|town|village|capital|snack|food|dish|cuisine|beverage|drink|brand|company|corporation|manufacturer|university|college|school|academy|institute|museum|library|title|office|position|rank|religio\w*|church|denomination|nationality|ethnic|ethnonym|demonym|sport|award|prize|newspaper|journal|magazine|periodical|television|film|song|album|band|dam|bridge|river|mountain|island|lake|sea|ocean|continent|region|province|county|district|surname|given name|family name|website|encyclopedia|dictionary|novel|painting|holiday|festival|calendar|month|day of|currency|awards?|prizes?|society|organi[sz]ation|association|agency|party|army|navy|air force|government|dynasty|empire|kingdom|nation|sovereign state|people|tribe|family|house)\b/i;
+const NOT_IDEA = /\b(language|dialect|country|city|town|village|capital|snack|food|dish|cuisine|beverage|drink|brand|company|corporation|manufacturer|university|college|school|academy|institute|museum|library|title|office|position|rank|religio\w*|church|denomination|nationality|ethnic|ethnonym|demonym|sport|award|prize|newspaper|journal|magazine|periodical|television|film|song|album|band|dam|bridge|river|mountain|island|lake|sea|ocean|continent|region|province|county|district|surname|given name|family name|website|encyclopedia|dictionary|novel|painting|holiday|festival|calendar|month|day of|currency|awards?|prizes?|society|organi[sz]ation|association|agency|party|army|navy|air force|government|dynasty|empire|kingdom|nation|sovereign state|people|tribe|family|house|missile|weapon|aircraft|tank|rifle|gun|ship|vessel|submarine|bomber|fighter|warship)\b/i;
 const wordsOf = (x) => new Set(String(x).toLowerCase().match(/[a-z]{4,}/g) || []);
 // Shared title words, ignoring generic ones ("law", "theory"): how strongly a
 // chapter is ABOUT an idea. "Newton's laws of motion" shares 2 with "Newton's
@@ -1371,6 +1376,7 @@ fs.writeFileSync(path.join(PATHS.topics, `${slug}.json`), JSON.stringify(topic) 
 updateIndex(topic);
 updateMembers(topic);
 updateAll(topic);
+writeLite({ entries, taxo });
 
 // --- report ---------------------------------------------------------------------
 const n = (f) => out.filter(f).length;

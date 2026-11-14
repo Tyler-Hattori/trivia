@@ -36,6 +36,7 @@
 import { questionsFor, gradeField } from '../quiz/questions.js';
 import { thumbUrl } from '../../utils/helpers.js';
 import { fmtYear, summary } from './layout.js';
+import { parseWhen } from './search.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const DATE_TYPES = new Set(['event', 'person', 'work', 'period']);
@@ -120,16 +121,44 @@ function pickWeighted(pool){
   return pool[pool.length - 1];
 }
 
+// --- settings --------------------------------------------------------------------
+
+/*
+ * The quiz is a session: a length (10, 20, 50 or endless), a mix of question
+ * kinds, a focus (everything / weak spots / only new) and optionally a span of
+ * years. Saved in localStorage and shared by every quiz (a topic's, Quiz,
+ * Review), because they are the same habits.
+ */
+const SET_KEY = 'quiz:settings:v1';
+const KINDS = ['order', 'recall', 'ideas', 'era'];
+const DEFAULTS = { length: 20, kinds: { order: true, recall: true, ideas: true, era: true }, focus: 'mixed', years: '' };
+export function loadSettings(){
+  try { const s = JSON.parse(localStorage.getItem(SET_KEY)) || {}; return { ...DEFAULTS, ...s, kinds: { ...DEFAULTS.kinds, ...(s.kinds || {}) } }; }
+  catch { return { ...DEFAULTS, kinds: { ...DEFAULTS.kinds } }; }
+}
+const saveSettings = (x) => localStorage.setItem(SET_KEY, JSON.stringify(x));
+
+function restart(){
+  const { T, opts, host } = Q;
+  Q = null;
+  renderQuiz(host, T, opts);
+}
+
 export function renderQuiz(host, T, opts){
   const { show, chapters, subjects = new Set() } = opts;
   const key = `${T.slug}|${show}|${[...chapters].sort()}|${[...subjects].sort()}|${T.reviewOnly ? 'review' : ''}`;
   if(!Q || Q.key !== key){
-    Q = { key, T, mode: Q?.mode || 'order', right: 0, total: 0, streak: 0, cur: null, host };
-    Q.pool = T.items.filter((it) => it.onTimeline && (show === 'all' || it.key) &&
+    Q = { key, T, mode: Q?.mode || 'order', right: 0, total: 0, streak: 0, cur: null, host, showSet: Q?.showSet || false };
+    Q.set = loadSettings();
+    Q.sess = { n: 0, right: 0, log: [] };
+    // An optional span of years narrows the pool (ideas have none, so they go).
+    Q.when = Q.set.years ? parseWhen(Q.set.years) : null;
+    const inYears = (it) => !Q.when || (it.start != null && it.start <= Q.when.hi && (it.end ?? it.start) >= Q.when.lo);
+    Q.pool = T.items.filter((it) => it.onTimeline && (show === 'all' || it.key) && inYears(it) &&
       (!chapters.size || chapters.has(it.chapter)) && (!subjects.size || subjects.has(it.subject)));
     Q.scope = chapters.size === 1 ? T.chapters[[...chapters][0]]?.title : null;
     // Ideas in scope; distractors may come from anywhere in the topic.
-    Q.ideas = T.items.filter((it) => (show === 'all' ? it.isIdea : it.keyIdea) && (!chapters.size || chapters.has(it.chapter)) && defOf(it));
+    Q.ideas = Q.when ? [] : T.items.filter((it) => (show === 'all' ? it.isIdea : it.keyIdea) && (!chapters.size || chapters.has(it.chapter)) && defOf(it));
     Q.allIdeas = T.items.filter((it) => it.isIdea && defOf(it));
     Q.mem = memOf(T);
     Q.opts = opts;
@@ -145,21 +174,27 @@ export function renderQuiz(host, T, opts){
  * only what is due (an Order question still borrows undue neighbours).
  */
 function seeds(pool = Q.pool){
-  if(!Q.T.reviewOnly) return pool;
   const now = Date.now();
-  return pool.filter((it) => isDue(Q.mem[it.id], now));
+  if(Q.T.reviewOnly) return pool.filter((it) => isDue(Q.mem[it.id], now));
+  // Focus: weak spots = missed last time or due again; new = never answered.
+  if(Q.set.focus === 'weak') return pool.filter((it) => { const m = Q.mem[it.id]; return m && (m.last === 0 || isDue(m, now)); });
+  if(Q.set.focus === 'new') return pool.filter((it) => !Q.mem[it.id]);
+  return pool;
 }
 
 const MAKERS = () => ({ order: makeOrder, era: makeEra, recall: makeRecall, ideas: makeIdeas });
 function next(){
   Q.cur = null;
-  // The chosen mode first; if it cannot make a question here (a chapter with
-  // three entries cannot be put in order), the others, rather than a dead end.
-  const modes = [Q.mode, ...['order', 'recall', 'ideas', 'era'].filter((m) => m !== Q.mode)];
-  for(const mode of modes){
+  if(Q.set.length && Q.sess.n >= Q.set.length){ Q.cur = { kind: 'end' }; return; }
+  // A random kind among those switched on; if it cannot make a question here
+  // (a chapter with three entries cannot be put in order), the next one.
+  let kinds = KINDS.filter((k) => Q.set.kinds[k]);
+  if(!kinds.length) kinds = [...KINDS];
+  for(let i = kinds.length - 1; i > 0; i--){ const j = rnd(i + 1); [kinds[i], kinds[j]] = [kinds[j], kinds[i]]; }
+  for(const mode of kinds){
     const make = MAKERS()[mode];
     for(let tries = 0; tries < 40 && !Q.cur; tries++) Q.cur = make();
-    if(Q.cur){ if(mode !== Q.mode) Q.fellBack = Q.mode; Q.mode = mode; return; }
+    if(Q.cur){ Q.mode = mode; return; }
   }
 }
 
@@ -266,8 +301,6 @@ function makeRecall(){
 
 function draw(){
   const c = Q.cur;
-  const tab = (m, label, tip) => `<button data-qmode="${m}" class="${Q.mode === m ? 'on' : ''}" title="${tip}">${label}</button>`;
-  if((Q.scope || Q.T.synthetic) && Q.mode === 'era'){ Q.mode = 'order'; next(); }
   const now = Date.now();
   const known = Q.pool.filter((it) => isKnown(Q.mem[it.id])).length;
   const due = Q.pool.filter((it) => isDue(Q.mem[it.id], now)).length;
@@ -276,17 +309,19 @@ function draw(){
     <div class="tp-qhead">${what}
       <span class="tp-meta">· ${Q.T.reviewOnly ? `${due} due` : `${known} of ${Q.pool.length} known${due ? `, ${due} due for review` : ''}`}</span></div>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <span class="tp-seg">${tab('order', 'Order', 'Put four in time order')}${Q.scope || Q.T.synthetic ? '' : tab('era', 'Era', 'Which chapter is it from?')}${tab('recall', 'Recall', 'Type the year and details')}${Q.ideas.length && Q.allIdeas.length >= 4 ? tab('ideas', 'Ideas', 'Which idea is this? (from its definition)') : ''}</span>
+      <span class="tp-qprog">${Q.set.length ? `Question <b>${Math.min(Q.sess.n + (isDone() ? 0 : 1), Q.set.length)}</b> of ${Q.set.length}` : `<b>${Q.sess.n}</b> answered`}${c && c.kind !== 'end' ? ` · ${esc(MODE_NAME[c.kind] || '')}` : ''}</span>
       <span class="tp-spacer"></span>
-      <span class="tp-score"><span><b>${Q.right}</b>/${Q.total} right</span><span>streak <b>${Q.streak}</b></span></span>
+      <span class="tp-score"><span><b>${Q.sess.right}</b>/${Q.sess.n} right</span><span>streak <b>${Q.streak}</b></span></span>
+      <button class="tp-btn sm ${Q.showSet ? 'primary' : ''}" data-qact="settings" title="Length, kinds of question, focus, years">⚙ Settings</button>
     </div>
-    ${Q.fellBack ? `<div class="tp-meta" style="margin-top:6px">Too few entries here for ${esc(MODE_NAME[Q.fellBack])}, so: ${esc(MODE_NAME[Q.mode])}.</div>` : ''}`;
-  Q.fellBack = null;
+    ${Q.set.length ? `<div class="tp-qbar"><i style="width:${(100 * Q.sess.n / Q.set.length).toFixed(1)}%"></i></div>` : ''}
+    ${Q.showSet ? drawSettings() : ''}`;
   let body = '';
   if(!c && Q.T.reviewOnly) body = `<div class="tp-q"><h3>All caught up</h3><div class="tp-meta">Nothing is due${Q.scope ? ' here' : ''}. Answers you get right come back after 1, 3, 7, 16, 35 and 90 days; misses come back in ten minutes.</div>
     ${Q.opts.onWiden ? '<button class="tp-btn primary" style="margin-top:12px" data-qact="widen">Quiz everything instead →</button>' : ''}</div>`;
   else if(!c) body = `<div class="tp-q">Not enough entries for a question here.
     ${Q.opts.onWiden ? '<button class="tp-btn primary" style="margin-left:8px" data-qact="widen">Quiz on everything →</button>' : ''}</div>`;
+  else if(c.kind === 'end') body = drawEnd();
   else if(c.kind === 'order') body = drawOrder(c);
   else if(c.kind === 'era') body = drawEra(c);
   else if(c.kind === 'ideas') body = drawIdeas(c);
@@ -380,9 +415,44 @@ function reveal(it){
   <button class="tp-btn primary" style="margin-top:12px" data-qact="next">Next → <span class="tp-meta" style="color:#cbd5e1">Enter</span></button>`;
 }
 
-function score(ok){
+/** Score one question of the session; `missed` = the entries to show again at the end. */
+function score(ok, missed = []){
   Q.total++;
   if(ok){ Q.right++; Q.streak++; } else Q.streak = 0;
+  Q.sess.n++;
+  if(ok) Q.sess.right++;
+  Q.sess.log.push({ ok, missed: [].concat(missed) });
+}
+
+function drawSettings(){
+  const st = Q.set;
+  const seg = (name, val, label) => `<button data-set-${name}="${val}" class="${String(st[name]) === String(val) ? 'on' : ''}">${label}</button>`;
+  const avail = { order: true, recall: true, ideas: Q.allIdeas.length >= 4 && !Q.when, era: !Q.scope && !Q.T.synthetic };
+  const tips = { order: 'Put four in time order', recall: 'Type the year', ideas: 'Pick the idea from its definition', era: 'Which chapter is it from?' };
+  return `<div class="tp-qset">
+    <div><span class="lb">Length</span><span class="tp-seg">${seg('length', 10, '10')}${seg('length', 20, '20')}${seg('length', 50, '50')}${seg('length', 0, 'Endless')}</span></div>
+    <div><span class="lb">Questions</span>${KINDS.filter((k) => avail[k]).map((k) =>
+      `<button class="tp-chip ${st.kinds[k] ? 'on' : ''}" style="--c:#0f172a" data-set-kind="${k}" title="${tips[k]}">${MODE_NAME[k]}</button>`).join(' ')}</div>
+    ${Q.T.reviewOnly ? '' : `<div><span class="lb">Focus</span><span class="tp-seg">${seg('focus', 'mixed', 'Everything')}${seg('focus', 'weak', 'Weak spots')}${seg('focus', 'new', 'New only')}</span></div>`}
+    <div><span class="lb">Years</span><input class="tp-search" id="qYears" value="${esc(st.years)}" placeholder="any · 1500-1700 · 13th century" style="width:200px">
+      <button class="tp-btn sm" data-qact="years">Apply</button>${Q.when ? ` <span class="tp-meta">${esc(Q.when.label)}: ${Q.pool.length} entries</span>` : ''}</div>
+  </div>`;
+}
+
+function drawEnd(){
+  const n = Q.sess.n, r = Q.sess.right;
+  const missed = [...new Set(Q.sess.log.flatMap((x) => x.missed))].map((id) => Q.T.byId.get(id)).filter(Boolean);
+  return `<div class="tp-q">
+    <h3>${r} of ${n} right · ${n ? Math.round(100 * r / n) : 0}%</h3>
+    ${missed.length ? `<div class="tp-meta" style="margin-bottom:6px">To go over (they will come back sooner):</div>
+      ${missed.map((it) => `<div class="tp-ordr"><a href="#" data-open="${esc(it.id)}">${esc(it.title)}</a> <span class="tp-meta">${esc(it.yearText || fmtYear(it.start) || '')}</span>
+        <div class="tp-meta">${esc(summary(it.context || it.def || it.excerpt, 180))}</div></div>`).join('')}` : '<div class="tp-meta">Nothing missed.</div>'}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+      <button class="tp-btn primary" data-qact="again">Another ${Q.set.length}</button>
+      ${missed.length && !Q.T.reviewOnly ? '<button class="tp-btn" data-qact="weak">Practise weak spots</button>' : ''}
+      <button class="tp-btn" data-qact="settings">Settings</button>
+    </div>
+  </div>`;
 }
 
 function gradeRecall(){
@@ -393,19 +463,26 @@ function gradeRecall(){
   });
   c.marks = marks;
   const ok = marks.every((m) => m.ok);
-  score(ok);
+  score(ok, ok ? [] : [c.item.id]);
   remember(c.item.id, ok);
   draw();
 }
 
 function onClick(ev){
-  const b = ev.target.closest('[data-qmode],[data-qact],[data-pick],[data-era],[data-idea],[data-open]');
+  const b = ev.target.closest('[data-qact],[data-pick],[data-era],[data-idea],[data-open],[data-set-length],[data-set-kind],[data-set-focus]');
   if(!b) return;
   ev.preventDefault();
   ev.stopPropagation();
   if(b.dataset.open){ Q.opts.onOpen?.(b.dataset.open); return; }
   const c = Q.cur;
-  if(b.dataset.qmode){ Q.mode = b.dataset.qmode; next(); draw(); return; }
+  // Settings: length and focus restart the session; kinds apply from the next question.
+  if(b.dataset.setLength != null){ Q.set.length = Number(b.dataset.setLength); saveSettings(Q.set); if(Q.cur?.kind === 'end' || (Q.set.length && Q.sess.n >= Q.set.length)) restart(); else draw(); return; }
+  if(b.dataset.setKind){ const k = b.dataset.setKind; Q.set.kinds[k] = !Q.set.kinds[k]; saveSettings(Q.set); if(!isDone() && Q.cur?.kind !== 'end' && !Q.set.kinds[Q.cur?.kind]) next(); draw(); return; }
+  if(b.dataset.setFocus){ Q.set.focus = b.dataset.setFocus; saveSettings(Q.set); restart(); return; }
+  if(b.dataset.qact === 'settings'){ Q.showSet = !Q.showSet; draw(); return; }
+  if(b.dataset.qact === 'years'){ Q.set.years = Q.host.querySelector('#qYears')?.value.trim() || ''; saveSettings(Q.set); restart(); return; }
+  if(b.dataset.qact === 'again'){ restart(); return; }
+  if(b.dataset.qact === 'weak'){ Q.set.focus = 'weak'; saveSettings(Q.set); restart(); return; }
   if(b.dataset.qact === 'next'){ next(); draw(); return; }
   if(b.dataset.qact === 'widen'){ Q.opts.onWiden?.(); return; }
   if(b.dataset.qact === 'grade'){ gradeRecall(); return; }
@@ -420,7 +497,7 @@ function onClick(ev){
       // Ties in anchor year are both acceptable orders.
       const placed = c.picked.map((id2, i) => id2 === sorted[i] || Q.T.byId.get(id2).anchor === Q.T.byId.get(sorted[i]).anchor);
       const ok = placed.every(Boolean);
-      score(ok);
+      score(ok, c.picked.filter((_, i) => !placed[i]));
       // Each entry is marked by whether IT landed in the right place.
       remember(c.picked.filter((_, i) => placed[i]), true);
       if(!ok) remember(c.picked.filter((_, i) => !placed[i]), false);
@@ -431,14 +508,14 @@ function onClick(ev){
   if(b.dataset.idea != null && c?.kind === 'ideas' && c.chosen == null){
     c.chosen = b.dataset.idea;
     const ok = c.chosen === c.item.id;
-    score(ok);
+    score(ok, ok ? [] : [c.item.id]);
     remember(c.item.id, ok);
     draw();
     return;
   }
   if(b.dataset.era != null && c?.kind === 'era' && c.chosen == null){
     c.chosen = Number(b.dataset.era);
-    score(c.chosen === c.answer);
+    score(c.chosen === c.answer, c.chosen === c.answer ? [] : [c.item.id]);
     remember(c.item.id, c.chosen === c.answer);
     draw();
   }

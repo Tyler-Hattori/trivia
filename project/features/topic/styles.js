@@ -231,6 +231,30 @@ a.tp-btn{text-decoration:none;display:inline-flex;align-items:center;gap:5px}
 .tp-points ul{margin:0;padding-left:18px}
 .tp-points li{color:#1e293b;font-size:14.5px;line-height:1.55;margin:3px 0}
 
+/* quiz session + settings */
+.tp-qprog{font-size:13px;color:#334155}
+.tp-qbar{height:4px;border-radius:2px;background:#e2e8f0;margin-top:8px;overflow:hidden}
+.tp-qbar i{display:block;height:100%;background:#0f172a;transition:width .2s}
+.tp-qset{display:flex;flex-direction:column;gap:10px;margin-top:12px;padding:12px 14px;border:1px solid #e5e7eb;border-radius:14px;background:#fcfcfd}
+.tp-qset>div{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tp-qset .lb{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#64748b;width:84px}
+
+/* search page */
+.tp-sform{flex:1;min-width:200px;max-width:640px;display:flex}
+.tp-sq{width:100%;font-size:15px}
+.tp-sread{max-width:980px}
+.tp-shead h1{font-size:34px;font-weight:850;letter-spacing:-.02em;margin:8px 0 2px}
+.tp-shead .tp-sw{color:#64748b;font-weight:600;font-size:24px}
+.tp-snav{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.tp-schips{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 2px}
+.tp-sgroup{margin-top:20px}
+.tp-sgroup>.lb{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#475569;margin-bottom:6px;border-bottom:1px solid #f1f5f9;padding-bottom:4px}
+.tp-sgroup .tp-btn{margin-top:6px}
+.tp-stopic{font-size:10.5px;font-weight:600;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:999px;padding:0 6px}
+.tp-sgroup .tp-mw .h a{color:#334155;text-decoration:none}
+.tp-sgroup .tp-mw{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+#tpCount a{color:#475569}
+
 /* phones: one column; the rail is a drawer, the detail panel a full screen */
 @media (max-width:760px){
   .tp-mob{display:inline-flex}

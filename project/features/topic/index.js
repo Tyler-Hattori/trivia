@@ -30,6 +30,7 @@ import { injectStyles } from './styles.js';
 import { GEO, makeScale, ticks, pack, anchorYear, fmtYear, fmtRange, summary } from './layout.js';
 import { bm25Index, docText } from '../../../datasets/lib/textsearch.mjs';
 import { renderQuiz, loadMastery, isKnown, isDue, dueSummary } from './quiz.js';
+import { renderSearch, parseWhen } from './search.js';
 import { thumbUrl, fullUrl } from '../../utils/helpers.js';
 
 const BASE = location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '');
@@ -47,8 +48,7 @@ let searchSeq = 0;
 // Routing
 // ---------------------------------------------------------------------------
 
-/** The topic list is the home page, so an empty hash is a topic route too. */
-export function isTopicRoute(){ return /^(#\/?)?$/.test(location.hash) || /^#\/(topic|topics|quiz|review)(\/|$)/.test(location.hash); }
+export function isTopicRoute(){ return /^#\/(topic|topics|quiz|review|search)(\/|$)/.test(location.hash); }
 
 export async function route(){
   const h = location.hash;
@@ -56,6 +56,7 @@ export async function route(){
   injectStyles();
   open();
   if(/^#\/(quiz|review)/.test(h)){ await showCross(h.startsWith('#/review') ? 'review' : 'quiz'); return true; }
+  if(h.startsWith('#/search')){ T = null; V = null; await renderSearch(root, h.replace(/^#\/search\/?/, '')); return true; }
   const m = h.match(/^#\/topic\/([a-z0-9-]+)(?:\/(read|learn|timeline|quiz))?/);
   if(!m){ await showList(); return true; }
   const mode = m[2] === 'timeline' || m[2] === 'quiz' ? m[2] : 'learn';
@@ -222,7 +223,8 @@ async function showList(){
   const due = dueSummary();
   root.innerHTML = `
     <div class="tp-bar">
-      <div class="tp-title tp-brand">Trivia Hub</div>
+      <a class="tp-btn" href="#/home" title="Home">←</a>
+      <div class="tp-title">Topics</div>
       <input class="tp-search" id="tlSearch" placeholder="Search ${all.length} topics…  ( / )" value="${esc(L.q)}">
       <select class="tp-select tp-hide-m" id="tlSort" title="Order">
         ${[['group', 'By shelf'], ['az', 'A–Z'], ['size', 'Largest first'], ['progress', 'Most known first']].map(([v, l]) =>
@@ -280,6 +282,8 @@ async function showList(){
         html += `<h2 class="tp-shelf">${esc(g)} <span class="tp-meta">${its.length}</span></h2><div class="tp-tgrid">${its.map(card).join('')}</div>`;
       }
     } else if(vis.length) html += `${started.length ? '<h2 class="tp-shelf">All</h2>' : ''}<div class="tp-tgrid">${vis.map(card).join('')}</div>`;
+    if(q) html += `<div class="tp-empty" style="margin:18px auto 0"><a class="tp-btn primary" href="#/search/${encodeURIComponent(L.q.trim())}">Search everything for “${esc(L.q.trim())}” →</a>
+      <div class="tp-meta" style="margin-top:6px">Every entry in the store, not just the topics. A year (1294) or a span (1290s, 13th century) builds a page for those years.</div></div>`;
     if(!vis.length) html += all.length
       ? `<div class="tp-empty">No topic matches “${esc(L.q)}”${L.group ? ` in ${esc(L.group)}` : ''}.</div>`
       : `<div class="tp-empty"><p><b>No topics built yet.</b> Add lines to <code>datasets/topics.txt</code> and run
@@ -292,7 +296,12 @@ async function showList(){
   box.oninput = () => { L.q = box.value; draw(); };
   box.onkeydown = (ev) => {
     if(ev.key === 'Escape'){ box.value = ''; L.q = ''; draw(); }
-    if(ev.key === 'Enter'){ const first = root.querySelector('.tp-tcard'); if(first) location.hash = `#/topic/${first.dataset.topic}`; }
+    if(ev.key === 'Enter'){
+      const first = root.querySelector('.tp-tcard');
+      // A date, or no topic by that name: search everything instead.
+      if(parseWhen(box.value) || !first) location.hash = `#/search/${encodeURIComponent(box.value.trim())}`;
+      else location.hash = `#/topic/${first.dataset.topic}`;
+    }
   };
   root.querySelector('#tlSort').onchange = (ev) => { L.sort = ev.target.value; draw(); };
   root.onclick = (ev) => {
@@ -360,14 +369,15 @@ async function showCross(kind){
 
   root.innerHTML = `
     <div class="tp-bar">
-      <a class="tp-btn" href="#/topics" title="All topics">←</a>
-      <div class="tp-title">${kind === 'review' ? 'Review' : 'Quiz: all topics'}</div>
+      <a class="tp-btn" href="#/home" title="Home">←</a>
+      <div class="tp-title">${kind === 'review' ? 'Review' : 'Quiz'}</div>
       <button class="tp-btn tp-mob" data-x="toc">☰ Scope</button>
       ${kind === 'quiz' ? `<span class="tp-seg" title="Essentials: what each article leans on most. Everything: all it links to that has a date.">
         <button data-xshow="key" class="${X.show === 'key' ? 'on' : ''}">Essentials</button>
         <button data-xshow="all" class="${X.show === 'all' ? 'on' : ''}">Everything</button></span>` : ''}
       <span class="tp-spacer"></span>
-      <a class="tp-btn" href="#/${kind === 'review' ? 'quiz' : 'review'}">${kind === 'review' ? 'Quiz all topics' : 'Review'}</a>
+      ${kind === 'quiz' ? '<a class="tp-btn tp-hide-m" href="#/cluster-quiz" title="The older quiz over all 12,000+ entries, by atlas cluster">Whole store by cluster</a>' : ''}
+      <a class="tp-btn" href="#/${kind === 'review' ? 'quiz' : 'review'}">${kind === 'review' ? 'Quiz' : 'Review'}</a>
     </div>
     <div class="tp-body">
       <nav class="tp-rail" id="tpRail"></nav>
@@ -592,7 +602,7 @@ function refreshCount(){
   if(!el) return;
   if(!V.matches){ el.textContent = ''; return; }
   const n = visibleItems().filter((it) => V.matches.has(it.id)).length;
-  el.textContent = `${n} match${n === 1 ? '' : 'es'}${V.semantic ? '' : ' (keywords)'}`;
+  el.innerHTML = `${n} match${n === 1 ? '' : 'es'}${V.when ? ` in ${esc(V.when.label)}` : V.semantic ? '' : ' (keywords)'} · <a href="#/search/${encodeURIComponent(V.query.trim())}">search everything →</a>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -1099,6 +1109,22 @@ async function runSearch(q){
   const my = ++searchSeq;
   if(!q.trim()){ V.matches = null; V.semantic = false; redraw(); return; }
 
+  /*
+   * A year or span ("1294", "1290s", "13th century") matches by DATE: what
+   * happened, began or ended then, or was under way. Searching "1294" in the
+   * Mongol Empire finds Kublai Khan (1215–1294), whose death split the empire;
+   * as a keyword it found nothing. Words left over ("kublai 1294") narrow it.
+   */
+  const when = parseWhen(q);
+  if(when){
+    const words = when.rest ? new Set(kwIndex.search(when.rest, { limit: 400 }).map((h) => h.id)) : null;
+    V.matches = new Set(T.items.filter((it) => it.start != null && it.start <= when.hi && (it.openEnded ? it.start : it.end ?? it.start) >= when.lo && (!words || words.has(it.id))).map((it) => it.id));
+    V.semantic = false; V.when = when;
+    if(V.show === 'key' && ![...V.matches].some((id) => T.byId.get(id)?.key)){ V.show = 'all'; drawShell(); }
+    redraw();
+    return;
+  }
+  V.when = null;
   // Instant keyword pass, so typing never waits on a model.
   V.matches = new Set(kwIndex.search(q, { limit: 400 }).map((h) => h.id));
   V.semantic = false;

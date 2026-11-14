@@ -17,7 +17,33 @@ Read them only for the history of a specific decision.
 - `topic-report.mjs`: about 25 minor findings.
 - Committed and pushed.
 
-### Session 6 (this one)
+### Session 7 (this one, in progress)
+
+- **The home page is three doors again** (Topics, Atlas, Quiz), plus a search
+  box and a Review banner. The topic list is at `#/topics`.
+- **Search** (`#/search/<q>`) builds a page from the whole store for a year,
+  a span or words (`project/features/topic/search.js`, `lib/lite.mjs`). Inside
+  a topic, a year filters by date.
+- **Quiz settings:** length 10/20/50/endless; question kinds (Order, Recall,
+  Ideas, Era) mixed at random; focus (everything / weak spots / new only); a
+  year span. Sessions end with a score and a list of misses. Saved as
+  `quiz:settings:v1`.
+- **Titles:** `datasets/titles.json` gives 898 mined events short titles.
+- **Batches running in the background:** 1–2 (16 Life & Earth and science
+  topics), then 3 (19 civilisations, `/tmp/batch3.txt`), then 4 (6 regions +
+  28 countries, `/tmp/batch4.txt`), via `/tmp/run34.sh` under caffeinate.
+  Logs are `/tmp/batch12.log`, `/tmp/batch3.log` and `/tmp/batch4.log`.
+  `/tmp/batch34.done` appears at the end.
+
+  After each batch:
+  - `--ideas` for the new topics;
+  - `topic-report`, then overrides;
+  - key points in `topic-notes/`;
+  - titles for new mined events in `titles.json`;
+  - QA, then commit, including `datasets/atlas/*`.
+- `readEntries` now skips a half-written LAST line (a build during an ingest).
+
+### Session 6
 
 - **Key ideas.**
   - Undated concepts live in `datasets/atlas/ideas.jsonl` (`lib/ideas.mjs`),

@@ -118,24 +118,37 @@ listeners.push((m) => {
 await send('Page.navigate', { url: `${ORIGIN}/index.html` }, app);
 await until(app, `!!document.querySelector('#app')`, { label: 'app root' });
 
-// ---- home: the topic list ----------------------------------------------------
+// ---- home: search + three doors ---------------------------------------------
 
 const home = await until(app, `
   (() => {
-    const cards = document.querySelectorAll('.tp .tp-tcard').length;
-    const bar = document.querySelector('.tp .tp-bar')?.textContent || '';
-    return cards ? { cards, review: /Review/.test(bar), quiz: /Quiz all/.test(bar), atlas: /Atlas/.test(bar) } : null;
-  })()`, { label: 'topic list as home' });
-check('home is the topic list', home.ok && home.value.cards > 0, JSON.stringify(home.value));
-check('home links Review, Quiz all and Atlas', home.value?.review && home.value?.quiz && home.value?.atlas, JSON.stringify(home.value));
+    const b = [...document.querySelectorAll('#app button[onclick]')];
+    const t = document.querySelector('#app')?.textContent || '';
+    return b.length ? { n: b.length, topics: /Topics/.test(t), atlas: /Atlas/.test(t), quiz: /Quiz/.test(t), search: !!document.querySelector('#app input[name=q]') } : null;
+  })()`, { label: 'home doors' });
+check('home has exactly three doors (Topics, Atlas, Quiz)', home.ok && home.value.n === 3 && home.value.topics && home.value.atlas && home.value.quiz, JSON.stringify(home.value));
+check('home has the search box', home.value?.search === true);
 const gone = await evaluate(app, `
   (() => { const t = document.body.textContent; return { token: /GitHub Token/.test(t), lanes: /Old lane timeline/.test(t) }; })()`);
 check('GitHub token panel gone', !gone.token);
 check('old lane timeline button gone', !gone.lanes);
 
+// ---- search: a year builds a page from the whole store --------------------------
+
+await evaluate(app, `location.hash = '#/search/1294'`);
+const yr = await until(app, `
+  (() => { const t = document.querySelector('.tp-sread')?.textContent || ''; return /Died/.test(t) ? t : null; })()`, { timeout: 20000, label: 'year page' });
+check('#/search/1294 builds a year page', yr.ok);
+check('the 1294 page lists Kublai Khan under Died', /Died[\s\S]*Kublai Khan/.test(yr.value || ''));
+await evaluate(app, `location.hash = '#/search/mongol'`);
+const tx = await until(app, `
+  (() => { const n = document.querySelectorAll('.tp-srow').length; return n > 5 ? n : null; })()`, { timeout: 20000, label: 'text page' });
+check('#/search/mongol lists entries from the whole store', tx.ok, String(tx.value));
+
 // ---- the cross-topic quiz and review ---------------------------------------------
 
-await evaluate(app, `(localStorage.clear(), location.hash = '#/quiz')`);
+// Order questions only, so the check below is deterministic.
+await evaluate(app, `(localStorage.clear(), localStorage.setItem('quiz:settings:v1', JSON.stringify({ length: 10, kinds: { order: true, recall: false, ideas: false, era: false } })), location.hash = '#/quiz')`);
 const cross = await until(app, `
   (() => {
     const opts = document.querySelectorAll('.tp-q .tp-opt[data-pick]');
@@ -169,11 +182,20 @@ const mw = await until(app, `
 check('detail panel shows Meanwhile from other topics', mw.ok && mw.value >= 2, String(mw.value));
 const mwSelf = await evaluate(app, `[...document.querySelectorAll('#tpMeanwhile [data-mw]')].some((a) => a.dataset.mw === 'world-war-ii')`);
 check('Meanwhile never lists the topic you are in', mwSelf === false);
-await evaluate(app, `location.hash = '#/topics'`);
+// Settings: a 10-question session ends with a summary.
+await evaluate(app, `location.hash = '#/quiz'`);
+await until(app, `document.querySelectorAll('.tp-q .tp-opt[data-pick]').length === 4 || null`, { label: 'quiz again' });
+for(let q = 0; q < 10; q++){
+  for(let k = 0; k < 4; k++) await evaluate(app, `[...document.querySelectorAll('.tp-q .tp-opt[data-pick]')].find((b) => b.querySelector('.num.empty'))?.click()`);
+  await evaluate(app, `document.querySelector('[data-qact=next]')?.click()`);
+}
+const end = await until(app, `(() => { const t = document.querySelector('.tp-quiz')?.textContent || ''; return /of 10 right/.test(t) ? t.slice(0, 80) : null; })()`, { label: 'session end' });
+check('a 10-question session ends with a summary', end.ok, end.value);
+await evaluate(app, `location.hash = '#/home'`);
 
 // ---- open the quiz --------------------------------------------------------
 
-await evaluate(app, `window.openQuiz()`, { awaitPromise: false, userGesture: true });
+await evaluate(app, `window.openClusterQuiz()`, { awaitPromise: false, userGesture: true });
 
 const loaded = await until(app, `
   (() => {
@@ -426,12 +448,12 @@ check('both ends of a span must be right', grader.spanOk === true && grader.span
 
 await evaluate(app, `window.quizHome()`, { awaitPromise: false });
 const back = await until(app, `
-  document.querySelectorAll('.tp .tp-tcard').length ? 'yes' : null`,
+  document.querySelectorAll('#app button[onclick]').length === 3 ? 'yes' : null`,
   { label: 'home again' });
-check('Home returns to the topic list', back.ok, String(back.value));
+check('Home returns to the three doors', back.ok, String(back.value));
 
 if(SHOT){
-  await evaluate(app, `window.openQuiz()`, { awaitPromise: false, userGesture: true });
+  await evaluate(app, `window.openClusterQuiz()`, { awaitPromise: false, userGesture: true });
   await until(app, `/entries can be asked about/.test(document.querySelector('#app').textContent)`);
   await evaluate(app, `window.quizStart()`, { awaitPromise: false });
   await sleep(600);
