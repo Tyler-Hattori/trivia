@@ -96,7 +96,7 @@ import { readEntries, PATHS, slugify } from './lib/store.mjs';
 import { entryType, TIMELINE_TYPES } from './lib/etype.mjs';
 import { loadTaxonomy } from './lib/taxotree.mjs';
 import { getJSON } from './lib/wikilib.mjs';
-import { INDEX_TITLE } from './lib/wiki.mjs';
+import { INDEX_TITLE, stripApparatus } from './lib/wiki.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WP = 'https://en.wikipedia.org';
@@ -397,6 +397,49 @@ function opening(paras, max){
 }
 
 /**
+ * An intro as a reader should get it: no pronunciation guide, and no sentence
+ * about the website itself ("Welcome to the general public version of the
+ * homepage…", "try saving them to your desktop and using QuickTime"). Course
+ * sites open their index page that way.
+ */
+const BOILERPLATE = /\b(welcome to|this (web ?site|web ?page|site)|homepage|home page|web browser|click (here|on)|quicktime|download|bookmark|copyright|all rights reserved|lecture topics are listed)\b/i;
+function cleanIntro(text){
+  if(!text) return '';
+  return String(text).split(/\n{2,}/).map((p) => sentences(stripApparatus(p)).map((s) => s.text).filter((s) => !BOILERPLATE.test(s)).join(' '))
+    .filter((p) => p.trim().length > 20).join('\n\n').trim();
+}
+
+/** Does one passage repeat the other? Compared on their openings, so a trimmed copy still counts. */
+const repeats = (a, b) => !!a && !!b && (b.includes(a.slice(0, 90)) || a.includes(b.slice(0, 90)));
+
+/**
+ * Hand corrections, per topic: datasets/topic-overrides.json. For what no rule
+ * should have to know ("Ottoman Greeks" is a bad match for "the Greeks" in a
+ * physics lecture). Titles match case-insensitively.
+ *
+ *   drop          [titles]   not in the topic at all
+ *   unkey         [titles]   never an essential (the next best takes the slot)
+ *   key           [titles]   always an essential (if it has a date)
+ *   intro         text       replaces the topic's intro
+ *   blurb         text       replaces the topic list's one-liner
+ *   chapterYears  { chapter title: [from, to] }
+ *   chapterIntro  { chapter title: text }
+ *   noKeyChapters [chapter titles]  no essentials from these (historiography,
+ *                 "Approaches to…": a list of historians, not the subject)
+ */
+function loadOverrides(slug){
+  try {
+    const all = JSON.parse(fs.readFileSync(path.join(HERE, 'topic-overrides.json'), 'utf8'));
+    const o = all[slug] || {};
+    const low = (a) => new Set((a || []).map((s) => String(s).toLowerCase()));
+    return { ...o, drop: low(o.drop), unkey: low(o.unkey), key: low(o.key), noKeyChapters: low(o.noKeyChapters), chapterYears: o.chapterYears || {}, chapterIntro: o.chapterIntro || {} };
+  } catch(e){
+    if(e.code !== 'ENOENT') console.log(`  !! topic-overrides.json: ${e.message}`);
+    return { drop: new Set(), unkey: new Set(), key: new Set(), noKeyChapters: new Set(), chapterYears: {}, chapterIntro: {} };
+  }
+}
+
+/**
  * Group sections into chapters: each level-2 heading is a chapter, its level-3
  * and -4 headings are its subsections. The lead is not a chapter; its links are
  * credited as "mentioned in the lead".
@@ -467,6 +510,7 @@ async function resolveRedirects(titles){
 async function siteArticle(url){
   const { readSite, chunks, linksOf, toWikipedia, leadingName, textOf, titleOf, gazetteer, namesIn } = await import('./lib/site.mjs');
   const gaz = gazetteer(readEntries(), entryType);
+  let common = null;     // words the site writes in lower case: not names when capitalised alone
   const unknownTried = new Map();     // capitalised phrase -> exact Wikipedia title or null
   console.log(`\n  reading ${url}…`);
   const S = await readSite(url, { maxSubpages: OPT.maxSubpages });
@@ -495,6 +539,8 @@ async function siteArticle(url){
     return t;
   };
 
+  common = new Set();
+  for(const c of S.chapters) if(c.html) for(const w of textOf(c.html).match(/(?<![.!?]\s)\b[a-z][a-z'’-]{2,}\b/g) || []) common.add(w);
   const sections = [{ level: 1, title: '(lead)', body: '', links: [], paras: S.intro ? [{ tag: 'p', text: S.intro, links: [] }] : [] }];
   const events = [];
   for(const c of S.chapters){
@@ -519,7 +565,7 @@ async function siteArticle(url){
        * Wikipedia title (proper names only, so no search guessing). A name
        * already covered by a link is not added twice.
        */
-      for(const nm of namesIn(p.text, gaz)){
+      for(const nm of namesIn(p.text, gaz, common)){
         if(p.links.some((l) => nm.at < l.at + l.len && l.at < nm.at + nm.len)) continue;
         let tt = nm.title;
         if(!tt){
@@ -659,6 +705,8 @@ const canon = (t) => redirects.get(t) || t;
 // article's DATED entries are, not where its links are.
 const slug = slugify(OPT.name || art.title);
 const domain = slug;
+const OVR = loadOverrides(slug);
+const titleIn = (set, it) => set.has(String(it.title).toLowerCase()) || (it.canon && set.has(String(it.canon).toLowerCase()));
 const wikiKey = (u) => decodeURIComponent(String(u || '').replace(/^https?:\/\/en\.wikipedia\.org\/wiki\//, '')).replace(/_/g, ' ');
 
 let entries = readEntries();
@@ -846,6 +894,32 @@ const out = [...items.values()].map(({ e, m, via, t }) => ({
   noteUrl: (t && art.notes?.get(t)?.url) || '',
 })).filter((it) => it.start != null);
 
+/*
+ * A state or period stored as a single year usually states its span in its
+ * description: *Soviet Union* "former country in Eurasia (1922–1991)", *Empire
+ * of Japan* "empire … from 1868 to 1947". Use it, so it is drawn as the span it
+ * was and is judged as an umbrella rather than an event of 1922.
+ */
+for(const it of out){
+  if(it.type !== 'period' || (it.end != null && it.end !== it.start)) continue;
+  const m = String(it.subtitle || '').match(/\b(\d{3,4})\s*(?:[–-]|to)\s*(\d{3,4})\b/);
+  if(m && +m[1] === it.start && +m[2] > it.start && +m[2] <= new Date().getFullYear()){ it.end = +m[2]; it.kind = 'span'; it.yearText = `${m[1]}-${m[2]}`; }
+}
+
+// The subject itself is the whole topic, not one of its entries: Cold War had
+// four "Cold War" essentials (the store holds it more than once).
+{
+  const self = new Set([art.title, OPT.name, slug.replace(/-/g, ' ')].filter(Boolean).map((x) => String(x).toLowerCase()));
+  for(let i = out.length - 1; i >= 0; i--) if(self.has(String(out[i].title).toLowerCase()) && out[i].via !== 'works') out.splice(i, 1);
+}
+
+// Hand corrections: dropped entries are not members at all.
+if(OVR.drop.size){
+  const before = out.length;
+  for(let i = out.length - 1; i >= 0; i--) if(titleIn(OVR.drop, out[i])) out.splice(i, 1);
+  console.log(`  overrides: dropped ${before - out.length}`);
+}
+
 // A site's timeline page is a chapter: its mined events belong to it.
 if(art.kind === 'site'){
   const chOfUrl = new Map(chapters.map((c, i) => [c.sections[0].url, i]));
@@ -920,6 +994,10 @@ if(nWorks) console.log(`  + ${nWorks} works by ${worksOf.size} of the topic's pe
 // --- chapters & date checks -----------------------------------------------
 chapters.forEach((c, ci) => { c.members = out.filter((it) => it.chapterOfMention === ci); });
 let chronological = inferRanges(chapters);
+for(const c of chapters){
+  const y = OVR.chapterYears[c.title];
+  if(y){ c.from = y[0]; c.to = y[1]; c.overlaps = false; }
+}
 /*
  * Dated chapters only make sense if they mostly do not overlap. *History of
  * science* passed the "medians ascend" test but 11 of its 13 chapters ended up
@@ -989,6 +1067,7 @@ for(const it of out){
 // --- importance & key selection --------------------------------------------
 // Periods are already drawn as the chapter bands, so in the KEY set they yield to
 // what happened and who did it.
+const POLITY = /\b(country|state|empire|kingdom|republic|monarchy|federation|union|confederation|principality|caliphate|sultanate)\b/i;
 const TYPE_W = { event: 1, person: 0.9, period: 0.6, work: 0.75, place: 0.5, group: 0.5, concept: 0.3 };
 
 /*
@@ -1041,6 +1120,10 @@ for(const it of out){
     const len = Math.abs(it.end - it.start), chLen = Math.max(20, ch.to - ch.from);
     if(len > 1.5 * chLen) imp *= 0.55;
   }
+  // A state stored with only its founding year is an umbrella too, just one
+  // whose length we do not know: *British Empire* (1583) and *Soviet Union*
+  // (1922) were essentials of World War II's "Start and end dates".
+  if(it.type === 'period' && it.end == null && !it.hat && POLITY.test(it.subtitle)) imp *= 0.55;
   it.importance = +imp.toFixed(4);
 }
 // A creator's works rank just under the creator: the best known two can be
@@ -1061,14 +1144,29 @@ for(const [pid, list] of byWorks){
  * "There were renewed Scandinavian attacks…" links both Cnut and the Norman
  * Conquest, and read twice in a row it says nothing about the second.
  */
+const proseParas = (sec) => (sec?.paras || []).filter((p) => p.tag === 'p');
+const topicIntro = OVR.intro || cleanIntro(opening(proseParas(lead), 700));
+const chIntro = chapters.map((c) => OVR.chapterIntro[c.title] || cleanIntro(c.sections.map((x) => opening(proseParas(x), 650)).find(Boolean) || ''));
 const usedCtx = new Map();   // chapter -> Set of texts
 for(const it of [...out].sort((a, b) => b.importance - a.importance)){
   const used = usedCtx.get(it.chapter) || usedCtx.set(it.chapter, new Set()).get(it.chapter);
-  const list = (it.canon ? contexts.get(it.canon) || [] : []).filter((c) => !used.has(c.text));
+  // Not a sentence the reader has just read as the chapter's (or the topic's)
+  // intro: "Anglo-Saxon settlement" repeated the Anglo-Saxon intro word for word.
+  const raw = it.canon ? contexts.get(it.canon) || [] : [];
+  const list = raw.filter((c) => !used.has(c.text) && !repeats(c.text, chIntro[it.chapter]) && !repeats(c.text, topicIntro));
+  // Told only in the intro: Learn shows its own Wikipedia first line instead,
+  // which adds to the intro rather than repeating it.
+  if(!list.length && raw.length) it.inIntro = true;
   const best = (f) => list.filter(f).sort((a, b) => b.score - a.score)[0];
   const pick = best((c) => c.ch === it.chapter) || best((c) => c.ch === it.chapterOfMention) || best((c) => c.ch != null) || best(() => true);
   it.context = pick?.text || '';
   if(pick){ it.sub = pick.sub || null; used.add(pick.text); }
+  /*
+   * An entry the article never puts in a sentence of its own makes a poor
+   * essential: Learn can only show its generic Wikipedia lead ("A world war is
+   * an international conflict…"). It yields its slot to one the article tells.
+   */
+  if(!it.context && !it.inIntro && it.via === 'link') it.importance = +(it.importance * 0.7).toFixed(4);
 }
 
 // Key events: proportional to each chapter's share, at least 4 per chapter, so
@@ -1085,25 +1183,29 @@ for(const [, arr] of byCh){
    * *European Union* were all Key in England because the lead mentions them.
    * They stay Key only when a section is ABOUT them (a "Main article" hatnote).
    */
-  const eligible = arr.filter((it) => !['place', 'group', 'concept'].includes(it.type) || it.hat);
+  if(OVR.noKeyChapters.has(String(chapters[arr[0].chapter]?.title).toLowerCase())){ arr.forEach((it) => { it.key = false; }); continue; }
+  const eligible = arr.filter((it) => (!['place', 'group', 'concept'].includes(it.type) || it.hat) && !titleIn(OVR.unkey, it));
   // A chapter of nothing but places ("Legacy") still gets its best two.
-  if(eligible.length < Math.min(2, arr.length)) eligible.push(...arr.filter((it) => !eligible.includes(it)).slice(0, 2 - eligible.length));
+  if(!eligible.length) eligible.push(...arr.filter((it) => !titleIn(OVR.unkey, it)).slice(0, 2));
   const keyIds = new Set(eligible.slice(0, quota).map((it) => it.id));
   arr.forEach((it) => { it.key = keyIds.has(it.id); });
 }
 for(const it of out) if(!it.onTimeline) it.key = false;
+for(const it of out){
+  if(titleIn(OVR.unkey, it)) it.key = false;
+  if(titleIn(OVR.key, it)){ it.key = true; it.onTimeline = true; }
+}
 
 // --- chapter output -----------------------------------------------------------
 const PALETTE = ['#8a6d3b', '#a0522d', '#6b8e23', '#2f6f73', '#4a6fa5', '#7b5ea7', '#a3477a', '#b5543c', '#5b7c3a', '#3d6e8f', '#8c6239', '#566573'];
-const proseParas = (sec) => (sec?.paras || []).filter((p) => p.tag === 'p');
 const chOut = chapters.map((c, i) => ({
   id: i,
   title: c.title,
   // The chapter's own opening, from the article: the narrative that the
   // entries hang off. If the heading goes straight into a subsection, that
   // subsection's opening stands in.
-  intro: c.sections.map((x) => opening(proseParas(x), 650)).find(Boolean) || '',
-  subsections: c.sections.slice(1).map((sec) => ({ title: sec.title, intro: opening(proseParas(sec), 280) })),
+  intro: chIntro[i],
+  subsections: c.sections.slice(1).map((sec) => ({ title: sec.title, intro: cleanIntro(opening(proseParas(sec), 280)) })),
   parent: c.parent || null,
   from: c.from ?? null,
   to: c.to ?? null,
@@ -1138,7 +1240,10 @@ const topic = {
   keyTarget: OPT.key,
   built: new Date().toISOString().slice(0, 10),
   chronological,
-  intro: opening(proseParas(lead), 700),
+  // A site's index page is often all housekeeping: then the first chapter's
+  // opening is the better start.
+  intro: topicIntro || chIntro.find(Boolean) || '',
+  blurb: OVR.blurb || null,
   chapters: chOut,
   items: out,
 };
@@ -1146,6 +1251,7 @@ const topic = {
 fs.writeFileSync(path.join(PATHS.topics, `${slug}.json`), JSON.stringify(topic) + '\n');
 updateIndex(topic);
 updateMembers(topic);
+updateAll(topic);
 
 // --- report ---------------------------------------------------------------------
 const n = (f) => out.filter(f).length;
@@ -1175,16 +1281,71 @@ function updateIndex(t){
   const cover = t.items.filter((it) => it.key && it.image).sort((a, b) => b.importance - a.importance)[0]?.image || '';
   const row = {
     slug: t.slug, title: t.title, group: t.group, source: t.source, events: t.events, keyTarget: t.keyTarget,
-    blurb: (t.intro || '').split(/(?<=[.!?])\s/)[0].slice(0, 220),
+    blurb: t.blurb || (t.intro || '').split(/(?<=[.!?])\s/)[0].slice(0, 220),
     built: t.built, count: t.items.filter((it) => it.onTimeline).length, key: t.items.filter((it) => it.key).length,
-    // The first chapter's start, not the oldest entry: one Palaeolithic link
-    // made England read "4,000,000 BC – 2026".
     chapters: t.chapters.length,
-    from: t.chapters.find((c) => c.from != null)?.from ?? Math.min(...t.items.filter((it) => it.onTimeline).map((it) => it.start)),
-    to: Math.max(...t.items.filter((it) => it.onTimeline).map((it) => it.end ?? it.start)), cover,
+    ...spanOf(t), cover,
   };
   idx.topics = [...idx.topics.filter((x) => x.slug !== t.slug), row].sort((a, b) => a.title.localeCompare(b.title));
   fs.writeFileSync(path.join(PATHS.topics, 'index.json'), JSON.stringify(idx, null, 1) + '\n');
+}
+
+/**
+ * The years a topic is about, for the topic list. From its ESSENTIALS, minus
+ * the oldest and newest few: one Palaeolithic link made England read
+ * "4,000,000 BC – 2026", and Ancient Egypt's geology chapter made it
+ * "71,000,000 BC". Rounded the way a person would say it.
+ */
+function spanOf(t){
+  const key = t.items.filter((it) => it.key && it.onTimeline);
+  const pool = key.length >= 10 ? key : t.items.filter((it) => it.onTimeline);
+  // A person counts from their working life, not their birth (Roosevelt, born
+  // 1882, made the Cold War start in 1882).
+  const lo = pool.map((it) => (it.type === 'person' && it.end != null ? Math.round(it.start + 0.6 * (it.end - it.start)) : it.start)).sort((a, b) => a - b);
+  const hi = pool.map((it) => Math.min(new Date().getFullYear(), it.end ?? it.start)).sort((a, b) => a - b);
+  const cut = Math.floor(pool.length * 0.04);
+  const round = (y, dir) => {
+    const a = Math.abs(y);
+    if(a < 3000) return y;
+    const unit = 10 ** (Math.floor(Math.log10(a)) - 1);     // two significant figures
+    return Math.sign(y) * (dir < 0 === y < 0 ? Math.ceil(a / unit) : Math.floor(a / unit)) * unit;
+  };
+  // A chronological article says where it starts: its first chapter (England's
+  // Prehistory). A thematic one starts where most of its essentials do.
+  const first = t.chronological ? t.chapters.find((c) => c.from != null)?.from : null;
+  return { from: first != null ? round(first, -1) : lo.length ? round(lo[cut], -1) : null, to: hi.length ? round(hi[hi.length - 1 - cut], 1) : null };
+}
+
+/**
+ * topics/all.json: every timeline entry of every topic, small enough for a
+ * phone. The detail panel's "Meanwhile" (what the OTHER topics were doing in
+ * the same years) and the cross-topic quiz and review read it; neither needs
+ * the full topic files.
+ */
+function updateAll(t){
+  const f = path.join(PATHS.topics, 'all.json');
+  let all = { topics: {}, items: [] };
+  try { all = JSON.parse(fs.readFileSync(f, 'utf8')); } catch {}
+  all.items = all.items.filter((r) => r.x !== t.slug);
+  all.topics[t.slug] = { title: t.title, group: t.group, chapters: t.chapters.map((c) => [c.title, c.color]) };
+  const clip = (s, n) => { s = String(s || ''); return s.length > n ? s.slice(0, n).replace(/\s+\S*$/, '') + '…' : s; };
+  for(const it of t.items){
+    if(!it.onTimeline) continue;
+    const r = { x: t.slug, id: it.id, t: it.title, s: it.start, ch: it.chapter, ty: it.type };
+    if(it.end != null && it.end !== it.start) r.e = it.end;
+    if(it.yearText) r.y = it.yearText;
+    if(it.kind === 'span') r.k = 1;
+    if(it.dataset === 'leaders') r.d = 'leaders';
+    if(it.key) r.key = 1;
+    if(it.image) r.im = it.image;
+    const c = it.context || it.note || '';
+    r.c = clip(c || it.excerpt, 260);
+    all.items.push(r);
+  }
+  // Drop topics that no longer exist (renamed or deleted).
+  const live = new Set(readIndex().topics.map((x) => x.slug));
+  for(const s of Object.keys(all.topics)) if(!live.has(s)){ delete all.topics[s]; all.items = all.items.filter((r) => r.x !== s); }
+  fs.writeFileSync(f, JSON.stringify(all) + '\n');
 }
 
 /**

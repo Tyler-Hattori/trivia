@@ -15,7 +15,9 @@
  *   Quiz       Order / Era / Recall, remembering what you missed.
  *
  * Routes (hash-based, so reload keeps your place and Back works):
- *   #/topics                      the list
+ *   (no hash), #/topics           the list: the home page
+ *   #/quiz                        a quiz across every topic (Order / Recall)
+ *   #/review                      what is due for review, across every topic
  *   #/topic/<slug>                learn
  *   #/topic/<slug>/timeline       timeline
  *   #/topic/<slug>/quiz           quiz
@@ -27,7 +29,7 @@
 import { injectStyles } from './styles.js';
 import { GEO, makeScale, ticks, pack, anchorYear, fmtYear, fmtRange, summary } from './layout.js';
 import { bm25Index, docText } from '../../../datasets/lib/textsearch.mjs';
-import { renderQuiz, loadMastery, isKnown } from './quiz.js';
+import { renderQuiz, loadMastery, isKnown, isDue, dueSummary } from './quiz.js';
 import { thumbUrl, fullUrl } from '../../utils/helpers.js';
 
 const BASE = location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '');
@@ -45,13 +47,15 @@ let searchSeq = 0;
 // Routing
 // ---------------------------------------------------------------------------
 
-export function isTopicRoute(){ return /^#\/topic/.test(location.hash); }
+/** The topic list is the home page, so an empty hash is a topic route too. */
+export function isTopicRoute(){ return /^(#\/?)?$/.test(location.hash) || /^#\/(topic|topics|quiz|review)(\/|$)/.test(location.hash); }
 
 export async function route(){
   const h = location.hash;
   if(!isTopicRoute()){ close(); return false; }
   injectStyles();
   open();
+  if(/^#\/(quiz|review)/.test(h)){ await showCross(h.startsWith('#/review') ? 'review' : 'quiz'); return true; }
   const m = h.match(/^#\/topic\/([a-z0-9-]+)(?:\/(read|learn|timeline|quiz))?/);
   if(!m){ await showList(); return true; }
   const mode = m[2] === 'timeline' || m[2] === 'quiz' ? m[2] : 'learn';
@@ -76,6 +80,9 @@ function close(){
 }
 
 export function openTopics(){ location.hash = '#/topics'; }
+
+// On a phone the contents rail is a drawer, not a column.
+const narrow = () => window.matchMedia('(max-width: 760px)').matches;
 
 const go = (mode) => { location.hash = `#/topic/${T.slug}${mode === 'learn' ? '' : '/' + mode}`; };
 
@@ -108,6 +115,54 @@ async function loadMembers(){
 }
 let topicTitles = null;
 
+/** topics/all.json: every timeline entry of every topic, compact (topic.mjs). For Meanwhile and the cross-topic quiz. */
+let allP = null;
+function loadAll(){
+  if(!allP) allP = getJSON('datasets/topics/all.json').then((d) => {
+    for(const r of d.items){
+      r.anchor = anchorYear({ type: r.ty, kind: r.k ? 'span' : 'point', start: r.s, end: r.e, dataset: r.d });
+    }
+    d.items.sort((a, b) => a.anchor - b.anchor);
+    return d;
+  }).catch(() => { allP = null; return { topics: {}, items: [] }; });
+  return allP;
+}
+
+/*
+ * Meanwhile: what the OTHER topics were doing at the same time. The window
+ * grows with distance from today, because "the same time" means a few years in
+ * 1940 and a few centuries in 3000 BC. A span (a war, a reign) uses its own
+ * years; a person their adult life.
+ */
+function meanwhileRange(it){
+  const age = Math.max(0, new Date().getFullYear() - it.anchor);
+  const w = Math.max(4, Math.round(age * 0.035));
+  if(it.type === 'person' && it.end != null && it.end > it.start) return [it.start + Math.min(20, (it.end - it.start) / 3), it.end, w];
+  if(it.end != null && it.end > it.start && it.end - it.start <= 12 * w) return [it.start, it.end, w];
+  return [it.anchor - w, it.anchor + w, w];
+}
+async function meanwhile(it, slug){
+  const A = await loadAll();
+  const [lo, hi, w] = meanwhileRange(it);
+  const mid = (lo + hi) / 2;
+  const by = new Map();
+  for(const r of A.items){
+    if(r.anchor < lo || r.anchor > hi || r.x === slug || r.id === it.id) continue;
+    (by.get(r.x) || by.set(r.x, []).get(r.x)).push(r);
+  }
+  const groups = [...by].map(([x, rows]) => {
+    rows.sort((a, b) => (b.key || 0) - (a.key || 0) || Math.abs(a.anchor - mid) - Math.abs(b.anchor - mid));
+    return { slug: x, title: A.topics[x]?.title || x, rows, n: rows.length, keyN: rows.filter((r) => r.key).length };
+  }).sort((a, b) => b.keyN - a.keyN || b.n - a.n);
+  // Each thing once: Cicero is in four topics, and three Ciceros say less
+  // than Cicero, Vercingetorix and the Gallic Wars.
+  const shown = new Set([it.id]);
+  for(const g of groups){
+    g.rows = g.rows.filter((r) => !shown.has(r.id)).slice(0, 3);
+    g.rows.forEach((r) => shown.add(r.id));
+  }
+  return { groups: groups.filter((g) => g.rows.length).slice(0, 6), lo, hi, w };
+}
 /**
  * One or two sentences about an entry, as THIS topic tells it. A mined
  * timeline event's title IS its sentence ("Charles VI died. He was succeeded
@@ -150,17 +205,19 @@ async function showList(){
     return { ...t, group: t.group || 'Other', known, seen, touched };
   });
 
+  const due = dueSummary();
   root.innerHTML = `
     <div class="tp-bar">
-      <button class="tp-btn" data-act="home" title="Home">←</button>
-      <div class="tp-title">Topics</div>
+      <div class="tp-title tp-brand">Trivia Hub</div>
       <input class="tp-search" id="tlSearch" placeholder="Search ${all.length} topics…  ( / )" value="${esc(L.q)}">
-      <select class="tp-select" id="tlSort" title="Order">
+      <select class="tp-select tp-hide-m" id="tlSort" title="Order">
         ${[['group', 'By shelf'], ['az', 'A–Z'], ['size', 'Largest first'], ['progress', 'Most known first']].map(([v, l]) =>
           `<option value="${v}" ${L.sort === v ? 'selected' : ''}>${l}</option>`).join('')}
       </select>
       <span class="tp-spacer"></span>
-      <span class="tp-meta">Each topic is one Wikipedia article as a short course: the story, a timeline, a quiz.</span>
+      <a class="tp-btn ${due.n ? 'primary' : ''}" href="#/review" title="Spaced repetition: what you answered before and is due again">Review${due.n ? ` <b>${due.n}</b> due` : ''}</a>
+      <a class="tp-btn" href="#/quiz" title="Questions from every topic at once">Quiz all</a>
+      <button class="tp-btn tp-hide-m" data-act="atlas" title="Every entry on one map: time across, subject down">Atlas ↗</button>
     </div>
     <div class="tp-chiprow" id="tlGroups"></div>
     <div style="overflow:auto;flex:1" id="tlBody"></div>`;
@@ -191,14 +248,16 @@ async function showList(){
         <div class="im">${t.cover ? `<img src="${esc(thumbUrl(t.cover, 330))}" loading="lazy" alt="" onerror="imgRetry(this,'hide')">` : ''}</div>
         <div class="in">
           <div class="t">${esc(t.title)}</div>
-          <div class="tp-meta">${esc(fmtYear(t.from))} – ${esc(fmtYear(t.to))} · ${t.chapters} ch · ${t.key} essentials</div>
+          <div class="tp-meta">${esc(fmtRange(t.from, t.to))} · ${t.chapters} chapters${due.per[t.slug] ? ` · <b class="tp-due">${due.per[t.slug]} due</b>` : ''}</div>
           ${t.blurb ? `<div class="bl">${esc(t.blurb)}</div>` : ''}
           ${t.seen ? `<div class="tp-prog" title="${t.known} of ${t.key} essentials known"><i style="width:${Math.min(100, 100 * t.known / Math.max(1, t.key)).toFixed(0)}%"></i></div>` : ''}
         </div>
         <button class="x" data-hide="${esc(t.slug)}" title="${hidden.has(t.slug) ? 'Unhide' : 'Hide this topic'}">${hidden.has(t.slug) ? '↺' : '×'}</button>
       </div>`;
 
-    const started = !q && !L.group ? vis.filter((t) => t.touched && !hidden.has(t.slug)).sort((a, b) => b.touched - a.touched).slice(0, 6) : [];
+    // Continue: what you opened or answered in the last month, four at most.
+    const month = Date.now() - 30 * 864e5;
+    const started = !q && !L.group ? vis.filter((t) => t.touched > month && !hidden.has(t.slug)).sort((a, b) => b.touched - a.touched).slice(0, 4) : [];
     let html = '';
     if(started.length) html += `<h2 class="tp-shelf">Continue</h2><div class="tp-tgrid">${started.map(card).join('')}</div>`;
     if(L.sort === 'group' && !L.group){
@@ -224,14 +283,14 @@ async function showList(){
   root.querySelector('#tlSort').onchange = (ev) => { L.sort = ev.target.value; draw(); };
   root.onclick = (ev) => {
     const b = ev.target.closest('[data-topic],[data-act],[data-group],[data-hide]');
-    if(!b) return;
+    if(!b || b.tagName === 'A') return;
     if(b.dataset.hide){
       ev.stopPropagation();
       const h = new Set(L.hidden);
       if(h.has(b.dataset.hide)) h.delete(b.dataset.hide); else h.add(b.dataset.hide);
       L.hidden = [...h]; draw(); return;
     }
-    if(b.dataset.act === 'home'){ location.hash = ''; return; }
+    if(b.dataset.act === 'atlas'){ localStorage.removeItem('atlas:course'); window.openAtlas?.(); return; }
     if(b.dataset.act === 'hidden'){ L.showHidden = !L.showHidden; draw(); return; }
     if(b.dataset.group != null){ L.group = b.dataset.group; draw(); return; }
     location.hash = `#/topic/${b.dataset.topic}`;
@@ -239,6 +298,107 @@ async function showList(){
   root.onkeydown = (ev) => {
     if(ev.key === '/' && ev.target !== box){ ev.preventDefault(); box.focus(); }
     if(ev.key === 'Enter' && ev.target.classList?.contains('tp-tcard')) location.hash = `#/topic/${ev.target.dataset.topic}`;
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Across topics: #/quiz and #/review
+// ---------------------------------------------------------------------------
+
+/*
+ * One quiz over every topic, from topics/all.json. It is the topic quiz
+ * (quiz.js) run on a synthetic topic whose "chapters" are the topics, so Order
+ * asks "which came first" across subjects ("the Meiji Restoration or the Paris
+ * Commune?"), and every answer is recorded in the topic the entry belongs to.
+ * Review is the same with only what is due.
+ */
+const CROSS_KEY = 'topics:cross:v1';
+const XPAL = ['#b45309', '#2563eb', '#7c3aed', '#be123c', '#15803d', '#0e7490', '#a16207', '#4f46e5', '#c2410c', '#0f766e', '#9333ea', '#475569', '#db2777', '#65a30d'];
+
+async function showCross(kind){
+  T = null; V = null;
+  root.innerHTML = '<div class="tp-empty">Loading…</div>';
+  const A = await loadAll();
+  const slugs = Object.keys(A.topics).sort((a, b) => A.topics[a].title.localeCompare(A.topics[b].title));
+  const idx = new Map(slugs.map((x, i) => [x, i]));
+  const items = A.items.filter((r) => idx.has(r.x)).map((r) => ({
+    id: `${r.x}|${r.id}`, eid: r.id, x: r.x, title: r.t, yearText: r.y || '', start: r.s, end: r.e ?? null,
+    kind: r.k ? 'span' : 'point', type: r.ty, key: !!r.key, image: r.im || '', context: r.c || '',
+    chapter: idx.get(r.x), onTimeline: true, anchor: r.anchor, dataset: r.d || '',
+  }));
+  const ST = {
+    slug: `__${kind}`, title: 'all topics', synthetic: true, reviewOnly: kind === 'review',
+    chapters: slugs.map((x, i) => ({ id: i, title: A.topics[x].title, color: XPAL[i % XPAL.length] })),
+    items, byId: new Map(items.map((it) => [it.id, it])),
+    loadMem(){
+      const m = {};
+      for(const x of slugs) for(const [id, rec] of Object.entries(loadMastery(x))) m[`${x}|${id}`] = rec;
+      return m;
+    },
+    memRef: (id) => { const k = id.indexOf('|'); return [id.slice(0, k), id.slice(k + 1)]; },
+  };
+  let P = {};
+  try { P = JSON.parse(localStorage.getItem(CROSS_KEY)) || {}; } catch {}
+  // Review covers anything you have answered, essential or not.
+  const X = { show: kind === 'review' ? 'all' : (P.show || 'key'), scope: new Set((P.scope || []).map((x) => idx.get(x)).filter((i) => i != null)) };
+  const save = () => localStorage.setItem(CROSS_KEY, JSON.stringify({ show: kind === 'review' ? P.show : X.show, scope: [...X.scope].map((i) => slugs[i]) }));
+
+  root.innerHTML = `
+    <div class="tp-bar">
+      <a class="tp-btn" href="#/topics" title="All topics">←</a>
+      <div class="tp-title">${kind === 'review' ? 'Review' : 'Quiz: all topics'}</div>
+      <button class="tp-btn tp-mob" data-x="toc">☰ Scope</button>
+      ${kind === 'quiz' ? `<span class="tp-seg" title="Essentials: what each article leans on most. Everything: all it links to that has a date.">
+        <button data-xshow="key" class="${X.show === 'key' ? 'on' : ''}">Essentials</button>
+        <button data-xshow="all" class="${X.show === 'all' ? 'on' : ''}">Everything</button></span>` : ''}
+      <span class="tp-spacer"></span>
+      <a class="tp-btn" href="#/${kind === 'review' ? 'quiz' : 'review'}">${kind === 'review' ? 'Quiz all topics' : 'Review'}</a>
+    </div>
+    <div class="tp-body">
+      <nav class="tp-rail" id="tpRail"></nav>
+      <div class="tp-main"><div class="tp-scroll" id="tpScroll"></div></div>
+    </div>`;
+
+  const rail = () => {
+    const mem = ST.loadMem(), now = Date.now();
+    const stat = (i) => {
+      const its = items.filter((it) => it.chapter === i && (X.show === 'all' || it.key));
+      return { n: its.length, known: its.filter((it) => isKnown(mem[it.id])).length, due: its.filter((it) => isDue(mem[it.id], now)).length };
+    };
+    const row = (i, label, color, s) => `<button class="tp-toc ${i === 'all' ? (X.scope.size ? '' : 'on') : X.scope.has(i) ? 'on' : ''}" data-xtoc="${i}" style="--c:${color}">
+      <span class="dot"></span><span class="tx"><span class="nm">${esc(label)}</span>
+      ${s.n ? `<span class="tp-prog"><i style="width:${(100 * s.known / s.n).toFixed(0)}%"></i></span>` : ''}</span>
+      <span class="k">${kind === 'review' ? (s.due ? `<b class="tp-due">${s.due}</b>` : '–') : `${s.known}/${s.n}`}</span></button>`;
+    const stats = ST.chapters.map((c) => stat(c.id));
+    const tot = stats.reduce((a, b) => ({ n: a.n + b.n, known: a.known + b.known, due: a.due + b.due }), { n: 0, known: 0, due: 0 });
+    root.querySelector('#tpRail').innerHTML = `
+      <button class="tp-btn tp-mob tp-railx" data-x="toc" title="Close">✕</button>
+      <div class="hd">${kind === 'review' ? 'Due in' : 'Quiz on'}</div>
+      ${row('all', 'Every topic', '#0f172a', tot)}
+      ${ST.chapters.map((c, i) => (kind === 'review' && !stats[i].due && !X.scope.has(i) ? '' : row(c.id, c.title, c.color, stats[i]))).join('')}
+      <div class="ft tp-meta">${kind === 'review'
+        ? 'Right answers come back after 1, 3, 7, 16, 35 and 90 days; misses after ten minutes.'
+        : 'Order questions mix topics: what came first, here or there? Every answer counts in its own topic.'}</div>`;
+  };
+  const quiz = () => renderQuiz(root.querySelector('#tpScroll'), ST, {
+    show: X.show, chapters: X.scope,
+    onAnswer: rail,
+    onOpen: (id) => { const it = ST.byId.get(id); if(it){ pendingSelect = it.eid; location.hash = `#/topic/${it.x}`; } },
+    onWiden: kind === 'review' ? () => { location.hash = '#/quiz'; } : X.scope.size ? () => { X.scope.clear(); save(); rail(); quiz(); } : null,
+  });
+  rail(); quiz();
+  root.onclick = (ev) => {
+    const b = ev.target.closest('[data-x],[data-xtoc],[data-xshow]');
+    if(!b) return;
+    if(b.dataset.x === 'toc'){ root.querySelector('#tpRail').classList.toggle('open'); return; }
+    if(b.dataset.xshow){ X.show = b.dataset.xshow; save(); showCross(kind); return; }
+    if(b.dataset.xtoc != null){
+      const i = b.dataset.xtoc === 'all' ? null : Number(b.dataset.xtoc);
+      if(i == null) X.scope.clear();
+      else if(X.scope.has(i)) X.scope.delete(i); else X.scope.add(i);
+      root.querySelector('#tpRail').classList.remove('open');
+      save(); rail(); quiz();
+    }
   };
 }
 
@@ -254,7 +414,7 @@ function loadPrefs(slug){
 function savePrefs(){
   if(!T || !V) return;
   localStorage.setItem(prefsKey(T.slug), JSON.stringify({
-    show: V.show, chapters: [...V.chapters], subject: V.subject, ppy: V.ppy, readAt: V.readAt,
+    show: V.show, subject: V.subject, ppy: V.ppy, readAt: V.readAt,
   }));
 }
 
@@ -267,7 +427,9 @@ async function showTopic(slug, mode){
     V = {
       mode,
       show: p.show || 'key',                 // 'key' (Essentials) | 'all' (Everything)
-      chapters: new Set(p.chapters || []),   // timeline/quiz focus; empty = every chapter
+      // Timeline/quiz focus; empty = every chapter. Not restored from last time:
+      // coming back to a topic should never open on four cards of one chapter.
+      chapters: new Set(),
       subject: p.subject || '',
       ppy: p.ppy || defaultPpy(T),
       readAt: p.readAt ?? null,              // learn: chapter you were last reading
@@ -286,6 +448,9 @@ async function showTopic(slug, mode){
   // arriving there from a chapter-focused timeline should not hide the rest.
   if(mode === 'learn' && prev !== 'learn') V.chapters.clear();
   V.mastery = loadMastery(T.slug);
+  // Arriving from the atlas's "In topics" (another window): open that entry.
+  const fromAtlas = localStorage.getItem('topic:pendingSelect');
+  if(fromAtlas){ localStorage.removeItem('topic:pendingSelect'); pendingSelect = pendingSelect || fromAtlas; }
   // Arriving from another topic's "Also in": open the same entry here.
   if(pendingSelect && T.byId.has(pendingSelect)){ V.selected = pendingSelect; if(!T.byId.get(pendingSelect).key) V.show = 'all'; }
   pendingSelect = null;
@@ -334,12 +499,13 @@ function drawShell(){
     <div class="tp-bar">
       <button class="tp-btn" data-act="list" title="All topics">←</button>
       <div class="tp-title">${esc(T.title)}</div>
+      ${V.mode !== 'timeline' ? `<button class="tp-btn tp-mob" data-act="toc" title="Contents">☰ ${V.mode === 'quiz' ? 'Scope' : 'Contents'}</button>` : ''}
       <span class="tp-seg tp-modes">${tab('learn', 'Learn', 'The story, chapter by chapter')}${tab('timeline', 'Timeline', 'Everything on a time axis')}${tab('quiz', 'Quiz', 'Test yourself')}</span>
       <span class="tp-seg" title="Essentials: what the article leans on most. Everything: all it links to that has a date.">
         <button data-show="key" class="${V.show === 'key' ? 'on' : ''}">Essentials</button>
         <button data-show="all" class="${V.show === 'all' ? 'on' : ''}">Everything</button>
       </span>
-      ${subs.length > 1 ? `<select class="tp-select" id="tpSubj" title="Only one kind of subject">
+      ${subs.length > 1 ? `<select class="tp-select tp-hide-m" id="tpSubj" title="Only one kind of subject">
         <option value="">All subjects</option>
         ${subs.map(([s, n]) => `<option value="${esc(s)}" ${V.subject === s ? 'selected' : ''}>${esc(s)} (${n})</option>`).join('')}
       </select>` : ''}
@@ -354,7 +520,7 @@ function drawShell(){
       ${V.mode === 'timeline' ? `
         <button class="tp-btn" data-zoom="out" title="Zoom out (−)">−</button>
         <button class="tp-btn" data-zoom="in" title="Zoom in (+)">+</button>` : ''}
-      <button class="tp-btn" data-act="atlas" title="See this topic's entries among everything else on the atlas">Atlas ↗</button>
+      <button class="tp-btn tp-hide-m" data-act="atlas" title="See this topic's entries among everything else on the atlas">Atlas ↗</button>
       ${V.mode !== 'timeline' ? `<a class="tp-src" href="${esc(T.source.url)}" target="_blank" rel="noopener" title="The article this topic is built from">${esc(T.source.page)} ↗</a>` : ''}
     </div>
     <div class="tp-body">
@@ -391,6 +557,11 @@ function drawMode(){
     show: V.show, chapters: V.chapters, subjects: V.subject ? new Set([V.subject]) : new Set(),
     onAnswer: () => { V.mastery = loadMastery(T.slug); drawRail(); },
     onOpen: (id) => showDetail(id),
+    // A dead end offers the next wider scope: all chapters, then Everything.
+    onWiden: V.chapters.size || V.subject || V.show === 'key' ? () => {
+      if(V.chapters.size || V.subject){ V.chapters.clear(); V.subject = ''; } else V.show = 'all';
+      savePrefs(); drawShell(); drawMode();
+    } : null,
   });
   drawRail();
   if(V.selected && V.mode !== 'quiz'){
@@ -442,6 +613,7 @@ function drawRail(){
     ${T.chapters.map(row).join('')}
     <div class="ft tp-meta">${all.known} of ${all.n} ${V.show === 'key' ? 'essentials' : 'entries'} known.
       ${quiz ? 'Missed ones come back more often.' : 'Answer quiz questions to fill these bars.'}</div>`;
+  el.insertAdjacentHTML('afterbegin', '<button class="tp-btn tp-mob tp-railx" data-act="toc" title="Close">✕</button>');
 }
 
 // ---------------------------------------------------------------------------
@@ -466,6 +638,7 @@ function drawLearn(){
         <div class="yr">${esc(it.yearText || fmtYear(it.start))}</div>
         <div class="mid">
           <div class="t">${esc(it.title)}${known ? '<span class="ok" title="You answered this right">✓</span>' : ''}<span class="ty">${esc(TYPE_LABEL[it.type] || '')}</span></div>
+          <div class="yr2">${esc(it.yearText || fmtYear(it.start))}</div>
           ${lineOf(it) ? `<div class="s">${esc(lineOf(it))}</div>` : ''}
         </div>
         <div class="im">${it.image ? `<img src="${esc(thumbUrl(it.image, 120))}" loading="lazy" alt="" onerror="imgRetry(this)">` : ''}</div>
@@ -616,8 +789,15 @@ function drawTimeline(){
       ${cards}
     </div>` : '<div class="tp-empty">Nothing to show with these filters.</div>';
 
-  // Keep the same proportional scroll position across zoom/filter changes.
-  if(keepW > 1) host.scrollLeft = (keepX / keepW) * host.scrollWidth;
+  // Keep the same proportional scroll position across zoom/filter changes. The
+  // first time, start where the essentials start, not at the oldest outlier
+  // (Impressionism opened on Dutch painting of 1568).
+  if(!V.tlShown && !V.chapters.size){
+    V.tlShown = true;
+    const ys = items.filter((it) => it.key).map((it) => it.anchor).sort((a, b) => a - b);
+    const y0 = ys[Math.floor(ys.length * 0.08)];
+    if(y0 != null) host.scrollLeft = Math.max(0, scale.x(y0) - GEO.CARD_W);
+  } else if(keepW > 1) host.scrollLeft = (keepX / keepW) * host.scrollWidth;
   V.scale = scale; V.pos = pos; V.extent = extent;
   bindTimelineGestures(host);
   drawOverview();
@@ -798,6 +978,7 @@ function showDetail(id, scroll = true){
       })()}
       ${related.length ? `<div class="lb">Connected</div><div class="tp-rel">${related.map((r) =>
         `<button class="tp-relc" data-id="${esc(r.id)}">${esc(r.title)} <span>${esc(fmtYear(r.start))}</span></button>`).join('')}</div>` : ''}
+      <div id="tpMeanwhile"></div>
       ${about.length ? `<div class="lb">About ${esc(it.title)}</div>
         <div class="tp-about">${about.slice(0, 1).map((p) => `<p>${esc(p)}</p>`).join('')}
         ${about.length > 1 ? `<details><summary>More</summary>${about.slice(1).map((p) => `<p>${esc(p)}</p>`).join('')}</details>` : ''}</div>` : ''}
@@ -811,6 +992,7 @@ function showDetail(id, scroll = true){
       </div>
     </div>`;
   el.scrollTop = 0;
+  drawMeanwhile(it);
   if(!scroll) return;
   if(V.mode === 'timeline' && V.pos?.get(id)){
     const host = root.querySelector('#tpScroll');
@@ -820,6 +1002,22 @@ function showDetail(id, scroll = true){
     }
   }
   if(V.mode === 'learn') root.querySelector(`.tp-row[data-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+/** Fill the detail panel's Meanwhile block once all.json is in. */
+async function drawMeanwhile(it){
+  const slot = root.querySelector('#tpMeanwhile');
+  if(!slot) return;
+  const want = it.id;
+  const M = await meanwhile(it, T.slug);
+  if(V.selected !== want || !slot.isConnected || !M.groups.length) return;
+  const range = `${fmtYear(Math.round(M.lo))}–${fmtYear(Math.round(M.hi))}`;
+  slot.innerHTML = `<div class="lb">Meanwhile <span class="tp-mw-r">${esc(range)}</span></div>
+    <div class="tp-mw">${M.groups.map((g) => `
+      <div class="g"><div class="h">${esc(g.title)}${g.n > g.rows.length ? ` <span>+${g.n - g.rows.length}</span>` : ''}</div>
+        ${g.rows.map((r) => `<a href="#/topic/${esc(r.x)}" data-mw="${esc(r.x)}" data-mwid="${esc(r.id)}" title="${esc(r.c || '')}">
+          <span class="y">${esc(r.ty === "person" && r.y ? r.y : fmtYear(r.s))}</span> ${esc(r.t)}</a>`).join('')}
+      </div>`).join('')}</div>`;
 }
 
 /** What ←/→ steps through: visible (and matching) entries, in time order. */
@@ -897,12 +1095,15 @@ function onClick(ev){
   const t = ev.target;
   const also = t.closest('[data-also]');
   if(also){ ev.preventDefault(); pendingSelect = V.selected; location.hash = `#/topic/${also.dataset.also}`; return; }
+  const mw = t.closest('[data-mw]');
+  if(mw){ ev.preventDefault(); pendingSelect = mw.dataset.mwid; location.hash = `#/topic/${mw.dataset.mw}`; return; }
   const b = t.closest('[data-act],[data-mode],[data-show],[data-toc],[data-zoom],[data-nav],[data-band],[data-fit],[data-check],[data-goch],[data-id]');
   if(!b) return;
   if(b.tagName === 'A' && b.getAttribute('href') === '#') ev.preventDefault();
   const host = root.querySelector('#tpScroll');
   if(b.dataset.act === 'list'){ location.hash = '#/topics'; return; }
   if(b.dataset.act === 'close'){ closeDetail(); return; }
+  if(b.dataset.act === 'toc'){ root.querySelector('#tpRail')?.classList.toggle('open'); return; }
   if(b.dataset.act === 'atlas'){ localStorage.setItem('atlas:course', T.slug); window.openAtlas?.(); return; }
   if(b.dataset.act === 'ontl'){
     const id = V.selected;
@@ -910,9 +1111,10 @@ function onClick(ev){
     setTimeout(() => { if(V.pos?.get(id)) showDetail(id); }, 60);
     return;
   }
-  if(b.dataset.mode){ go(b.dataset.mode); return; }
+  if(b.dataset.mode){ V.chapters.clear(); go(b.dataset.mode); return; }
   if(b.dataset.show){ V.show = b.dataset.show; savePrefs(); drawShell(); drawMode(); return; }
   if(b.dataset.toc != null){
+    root.querySelector('#tpRail')?.classList.remove('open');
     if(V.mode === 'quiz'){
       V.chapters = b.dataset.toc === 'all' ? new Set() : new Set([Number(b.dataset.toc)]);
       savePrefs(); drawMode();

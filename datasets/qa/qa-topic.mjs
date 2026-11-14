@@ -14,6 +14,8 @@ import { makeScale, pack, GEO, anchorYear } from '../../project/features/topic/l
 
 const want = process.argv[2];
 const idx = JSON.parse(fs.readFileSync(path.join(PATHS.topics, 'index.json'), 'utf8'));
+let OVR = {};
+try { OVR = JSON.parse(fs.readFileSync(path.join(PATHS.topics, '..', 'topic-overrides.json'), 'utf8')); } catch {}
 let pass = 0, fail = 0;
 const check = (name, ok, info = '') => {
   ok ? pass++ : fail++;
@@ -33,8 +35,10 @@ for(const row of idx.topics){
     T.items.filter((it) => it.onTimeline && it.type === 'concept').map((it) => it.title).slice(0, 5).join(', '));
   check('no date-suspect item is on the timeline', !T.items.some((it) => it.onTimeline && it.dateSuspect));
   check('every item has a start year', T.items.every((it) => Number.isFinite(it.start)));
-  check('every non-empty chapter has key items', T.chapters.every((c) => !c.count || c.key > 0),
-    T.chapters.filter((c) => c.count && !c.key).map((c) => c.title).join(', '));
+  // Except chapters a hand override keeps out of the essentials (noKeyChapters).
+  const noKey = new Set((OVR[T.slug]?.noKeyChapters || []).map((x) => x.toLowerCase()));
+  check('every non-empty chapter has key items', T.chapters.every((c) => !c.count || c.key > 0 || noKey.has(c.title.toLowerCase())),
+    T.chapters.filter((c) => c.count && !c.key && !noKey.has(c.title.toLowerCase())).map((c) => c.title).join(', '));
   if(T.chronological){
     const main = T.chapters.filter((c) => !c.overlaps && c.from != null);
     check('chronological chapters ascend', main.every((c, i) => i === 0 || c.from >= main[i - 1].from));
@@ -46,7 +50,8 @@ for(const row of idx.topics){
   // The article's own links. Works pulled in by their creator and mined
   // timeline events are not in the article's prose, by design.
   const linked = key.filter((it) => it.via === 'link');
-  const withCtx = linked.filter((it) => it.context).length;
+  // Told only in the chapter intro counts: Learn shows its own lead instead.
+  const withCtx = linked.filter((it) => it.context || it.inIntro).length;
   check('most key links have an in-article sentence', withCtx >= linked.length * 0.7, `${withCtx}/${linked.length}`);
   check('every chapter with entries has an intro', T.chapters.every((c) => !c.count || c.intro),
     T.chapters.filter((c) => c.count && !c.intro).map((c) => c.title).join(', '));

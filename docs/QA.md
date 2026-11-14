@@ -14,7 +14,8 @@ node datasets/qa/qa-atlas.mjs                    # 87 browser checks
 node datasets/qa/qa-atlas.mjs --shot /tmp/a.png  # + a screenshot
 node datasets/qa/qa-atlas.mjs --keep             # leave the windows open
 
-node datasets/qa/qa-quiz.mjs                     # 43 checks: home + quiz + grader
+node datasets/qa/qa-quiz.mjs                     # 45 checks: home (topic list) + cross-topic quiz/review + Meanwhile + cluster quiz + grader
+node datasets/qa/topic-report.mjs                # what a reader would trip over in each topic (not pass/fail)
 node datasets/qa/qa-quiz.mjs --shot /tmp/q.png
 node datasets/qa/qa-topic.mjs                    # topic invariants + timeline layout, no browser
 ```

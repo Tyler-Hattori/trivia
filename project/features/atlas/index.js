@@ -253,6 +253,14 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     onTopic: (t) => { toggleTopic(t); },
     onNode: (id) => focusNode(id),
     onClose: () => { V.selected = -1; mark({ paint: true }); },
+    topicsOf: (id) => (membersAll?.[id] || []).map((x) => ({ slug: x, title: topicTitle.get(x) || x })),
+    // The topic opens in the main window (this code runs in its realm), at the
+    // entry: topic/index.js picks the id up from localStorage.
+    onOpenTopic: (slug, id) => {
+      w.localStorage.setItem('topic:pendingSelect', id);
+      if(window.closed === false){ window.location.hash = `#/topic/${slug}`; window.focus(); }
+      else w.open(`index.html#/topic/${slug}`, '_blank');
+    },
   });
 
   const rail = createRail($('railHost'), {
@@ -999,6 +1007,7 @@ export async function openAtlas({ title = 'Atlas' } = {}){
   // One topic's entries, from members-all.json (written by topic.mjs). Hides
   // the rest (or dims, with Dim on) and fits the time axis to the topic.
   let courseSet = null, membersAll = null;
+  const topicTitle = new Map();
   async function setCourse(slug){
     V.course = slug || '';
     $('courseSel').value = V.course;
@@ -1026,6 +1035,9 @@ export async function openAtlas({ title = 'Atlas' } = {}){
   async function loadCourses(){
     try {
       const idx = await (await w.fetch('datasets/topics/index.json', { cache: 'no-store' })).json();
+      for(const t of idx.topics) topicTitle.set(t.slug, t.title);
+      // For the detail panel's "In topics" (and the Topic filter).
+      w.fetch('datasets/topics/members-all.json', { cache: 'no-store' }).then((r) => r.json()).then((m) => { membersAll = membersAll || m; if(V.selected >= 0) detail.refresh(); }).catch(() => {});
       $('courseSel').innerHTML = '<option value="">All topics</option>' + idx.topics
         .slice().sort((a, b) => a.title.localeCompare(b.title))
         .map((t) => `<option value="${t.slug}">${t.title.replace(/</g, '&lt;')}</option>`).join('');

@@ -23,7 +23,6 @@
 import { loadAtlas, runFilter } from '../atlas/data.js';
 import { questionsFor, gradeField } from './questions.js';
 import { $, shuffle, thumbUrl, calcRMSE } from '../../utils/helpers.js';
-import { render } from '../../app/render.js';
 
 let A = null;                       // the atlas model, loaded once per session
 let entries = [];                   // one plain object per point
@@ -397,7 +396,7 @@ export async function openQuiz(){
         Loading the atlas…
       </div>`;
     try {
-      const base = location.href.replace(/[^/]*$/, '');
+      const base = location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '');
       A = await loadAtlas({ base });
       // Facets and excerpts live in details.json, which `loadAtlas` starts but
       // does not await. The quiz needs the facets to know what to ask, so unlike
@@ -439,7 +438,7 @@ window.quizToggle = (id) => {
 window.quizHome = () => {
   document.onkeydown = null;
   S.current = null; S.answered = 0;
-  render();
+  location.hash = '#/topics';
 };
 
 /*

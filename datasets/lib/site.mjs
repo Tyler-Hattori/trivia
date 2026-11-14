@@ -301,8 +301,20 @@ export function gazetteer(entries, typeOf){
  * their Wikipedia title; unknown capitalised 2–3-word phrases come back without,
  * for the caller to try as exact titles.
  */
-export function namesIn(text, gaz){
+export function namesIn(text, gaz, common = null){
   const out = [];
+  /*
+   * A ONE-word match is the risky kind: "More recently…" became Thomas More,
+   * "the Church" Alonzo Church, "Nature" the journal. So a single word is not a
+   * name at the start of a sentence (where every word is capitalised), nor when
+   * the same site also writes it in lower case (`common`: "more", "church",
+   * "nature"), which says it is an ordinary word there.
+   */
+  const oneWordOk = (word, at) => {
+    const before = text.slice(0, at).trimEnd();
+    if(!before || /[.!?:;"“”(\-–—]$/.test(before)) return false;
+    return !(common && common.has(word.toLowerCase()));
+  };
   // A word is capitalised; a full stop belongs to it only as an initial ("J."),
   // so "…Galilei. Edmond Halley" is two names, not one.
   const W = String.raw`\p{Lu}(?:\.|[\p{L}'’-]*)`;
@@ -317,10 +329,11 @@ export function namesIn(text, gaz){
     for(let n = words.length; n >= 1 && !hit; n--){
       for(let i = 0; i + n <= words.length && !hit; i++){
         const phrase = words.slice(i, i + n).join(' ').replace(/[.'’]+$/, '');
+        const off = text.indexOf(phrase, at);
+        if(n === 1 && !oneWordOk(phrase, off < 0 ? at : off)) continue;
         const f = gaz.full.get(phrase.toLowerCase());
         const t = f?.title || (n === 1 ? gaz.sur.get(phrase) : null);
         if(t){
-          const off = text.indexOf(phrase, at);
           hit = { name: phrase, at: off < 0 ? at : off, len: phrase.length, title: t };
         }
       }

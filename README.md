@@ -1,22 +1,24 @@
 # Trivia — topics, an atlas, and a quiz over one corpus
 
-A static site (no build step, no npm) built on a corpus of ~9,600 dated
-Wikipedia entries. The home screen has three doors:
+A static site (no build step, no npm) built on a corpus of ~12,000 dated
+Wikipedia entries. **The home page is the topic list.**
 
 - **Topics** — one subject at a time (e.g. *England*, built from the article
-  *History of England*): an image-card **timeline** split into the article's own
-  chapters, a **read** outline, and a **quiz** on order, era and recall. The view
-  for *learning* a subject. → [`docs/TOPICS.md`](docs/TOPICS.md)
-- **Atlas** — a zoomable map where **x is time** and **y is subject**, with
-  known subject layers (History › Military, Culture › Films, Science › Physics…)
-  on top and embedding clusters inside each. The view for *exploring across*
-  subjects. → [`docs/ATLAS.md`](docs/ATLAS.md)
-- **Quiz** — one quiz over the whole corpus, filtered by picking a node of the
-  atlas's cluster tree. → [`docs/QUIZ.md`](docs/QUIZ.md)
+  *History of England*): a **Learn** view in the article's own words, an
+  image-card **timeline**, and a **quiz** (Order / Era / Recall). Each entry's
+  detail panel has **Meanwhile**: what the other topics were doing in the same
+  years. → [`docs/TOPICS.md`](docs/TOPICS.md)
+- **Review** (`#/review`) — spaced repetition across every topic: what you
+  answered before comes back after 1, 3, 7, 16, 35 and 90 days.
+- **Quiz all** (`#/quiz`) — one quiz over every topic; Order questions mix
+  subjects ("which came first?"). → [`docs/QUIZ.md`](docs/QUIZ.md)
+- **Atlas** — a zoomable map where **x is time** and **y is subject**. The view
+  for *exploring across* subjects; its detail panel links back to the topics an
+  entry is in. → [`docs/ATLAS.md`](docs/ATLAS.md)
+- The older **cluster quiz** over the whole corpus is at `#/cluster-quiz`.
 
-All three read the same compiled store in `datasets/atlas/`. "Quiz me on this
-cluster" only works because the atlas already computed the clusters, so a
-rebuild of the map is a rebuild of the quiz.
+Works on a phone: the contents rail becomes a drawer and the detail panel a
+full screen.
 
 ## Running it
 
@@ -38,15 +40,18 @@ The atlas opens in a **named popup window**, so allow pop-ups.
 ```
 index.html                    app shell (Tailwind via CDN)
 project/
-  app/init.js, render.js      entry point, hash routing, home render
-  ui/home.js, header.js       the three doors
+  app/init.js, render.js      entry point, hash routing
+  ui/home.js, header.js       the old three-door page (#/home, unlinked)
   utils/helpers.js            $, shuffle, Wikimedia thumbUrl/fullUrl
-  features/topic/             TOPICS — timeline layout, read view, topic quiz
+  features/topic/             TOPICS — the home list, learn, timeline, quiz (+ review,
+                              cross-topic quiz, Meanwhile)
   features/atlas/             THE ATLAS renderer
   features/quiz/              THE QUIZ — questions.js derives what to ask
 datasets/
   atlas/                      the compiled store the browser fetches
-  topics/                     one JSON per topic + index.json
+  topics/                     one JSON per topic + index.json, all.json, members*.json
+  topics.txt                  the topics to build
+  topic-overrides.json        hand corrections per topic (see docs/TOPICS.md)
   *.csv                       the original hand-curated sources (read by migrate)
   crawl.txt, crawl-state.json what the crawler fetches, and how far it got
   crawl.mjs ingest.mjs        the pipeline — see below

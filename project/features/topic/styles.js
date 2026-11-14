@@ -201,6 +201,62 @@ export const CSS = String.raw`
 .tp-qhead{font-size:15px;margin-bottom:10px}
 .tp-ordr{margin:6px 0}
 .tp-ordr a{color:#0f172a}
+
+/* links styled as buttons, home bar, review counts */
+a.tp-btn{text-decoration:none;display:inline-flex;align-items:center;gap:5px}
+.tp-btn.primary b{color:#fde68a}
+.tp-brand{font-size:21px}
+.tp-due{color:#b45309;font-weight:700}
+.tp-mob{display:none}
+.tp-row .yr2{display:none}
+
+/* Meanwhile: the other topics at the same time */
+.tp-mw-r{font-weight:500;letter-spacing:0;text-transform:none;color:#94a3b8;margin-left:4px}
+.tp-mw{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+.tp-mw .g{min-width:0}
+.tp-mw .h{font-size:12px;font-weight:700;color:#334155;margin-bottom:3px}
+.tp-mw .h span{color:#94a3b8;font-weight:500}
+.tp-mw a{display:block;font-size:12.5px;color:#0f172a;text-decoration:none;padding:2px 0;line-height:1.35;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tp-mw a:hover{text-decoration:underline}
+.tp-mw a .y{color:#64748b;font-variant-numeric:tabular-nums;font-size:11.5px}
+
+/* phones: one column; the rail is a drawer, the detail panel a full screen */
+@media (max-width:760px){
+  .tp-mob{display:inline-flex}
+  .tp-hide-m{display:none !important}
+  .tp-bar{gap:6px;padding:8px 10px}
+  .tp-title{font-size:17px;margin-right:0}
+  .tp-search{width:100%;order:10}
+  .tp-src,.tp-bar>.tp-meta{display:none}
+  .tp-select{max-width:46vw}
+  .tp-seg button{padding:5px 9px}
+  .tp-rail{position:fixed;left:0;top:0;bottom:0;width:86vw;max-width:340px;z-index:75;transform:translateX(-102%);
+    transition:transform .2s;box-shadow:0 0 40px rgba(15,23,42,.25);padding-top:16px}
+  .tp-rail.open{transform:none}
+  .tp-railx{position:absolute;right:10px;top:8px}
+  .tp-detail{position:fixed;inset:0;width:100%;max-width:100%;z-index:80;border:0}
+  .tp-detail img{max-height:260px}
+  .tp-read{padding:12px 16px 100px}
+  .tp-head h1{font-size:27px}
+  .tp-chhd h2{font-size:22px}
+  .tp-intro{font-size:15.5px;line-height:1.65}
+  .tp-intro.lead{font-size:16px}
+  .tp-row{grid-template-columns:1fr 56px;gap:10px;padding:9px 8px;margin:0 -8px}
+  .tp-row>.yr{display:none}
+  .tp-row .yr2{display:block;font-size:12px;color:#64748b;font-weight:600;margin-top:1px}
+  .tp-row .t{font-size:15px;flex-wrap:wrap}
+  .tp-row .im img{width:56px;height:48px}
+  .tp-chend{padding:10px}
+  .tp-quiz{padding:10px 12px 80px}
+  .tp-q{padding:14px;border-radius:14px}
+  .tp-q h3{font-size:19px}
+  .tp-tlist{padding:4px 12px 60px}
+  .tp-tgrid{grid-template-columns:1fr}
+  .tp-tcard .x{opacity:1}
+  .tp-over{padding:6px 10px}
+  .tp-mw{grid-template-columns:1fr}
+}
 `;
 
 let injected = false;

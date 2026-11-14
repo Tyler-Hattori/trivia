@@ -15,13 +15,19 @@
  * The pool honours the topic page's Essentials/Everything, chapter and subject
  * filters.
  *
- * ## Memory
+ * ## Memory: spaced repetition
  *
  * Every answer is recorded per entry in localStorage (`topic:mastery:<slug>`):
- * right and wrong counts and whether the LAST answer was right. Questions are
- * drawn weighted towards what you have missed or never seen, so a session
- * spends its time on what you do not know yet. "Known" (the ticks and progress
- * bars on the Learn page) means the last answer was right.
+ * right and wrong counts, whether the LAST answer was right, a Leitner box and
+ * when it is next due. Right moves an entry up a box (due again in 1, 3, 7, 16,
+ * 35, then 90 days); wrong sends it back to box 0 (due in 10 minutes). Questions
+ * are drawn weighted towards what is due, missed or never seen. The home page's
+ * Review collects everything due across all topics. "Known" (the ticks and
+ * progress bars) still means the last answer was right.
+ *
+ * A quiz over several topics (#/quiz, #/review) passes a synthetic topic whose
+ * item ids are "<slug>|<entry id>"; `memOf` and `remember` route each answer to
+ * the topic it belongs to, so it counts there too.
  */
 
 import { questionsFor, gradeField } from '../quiz/questions.js';
@@ -40,34 +46,71 @@ let keysBound = false;
 
 // --- memory ------------------------------------------------------------------
 
-const memKey = (slug) => `topic:mastery:${slug}`;
+const MEM_PREFIX = 'topic:mastery:';
+const memKey = (slug) => `${MEM_PREFIX}${slug}`;
 export function loadMastery(slug){
   try { return JSON.parse(localStorage.getItem(memKey(slug))) || {}; } catch { return {}; }
 }
 /** Known = answered at least once, and right the last time. */
 export const isKnown = (m) => !!m && m.last === 1;
 
-function remember(ids, ok){
-  const m = loadMastery(Q.T.slug);
-  for(const id of [].concat(ids)){
-    const x = m[id] || { r: 0, w: 0, last: 0 };
-    if(ok) x.r++; else x.w++;
-    x.last = ok ? 1 : 0;
-    x.at = Date.now();
-    m[id] = x;
+const MIN = 60e3, DAY = 864e5;
+const INTERVALS = [10 * MIN, 1 * DAY, 3 * DAY, 7 * DAY, 16 * DAY, 35 * DAY, 90 * DAY];
+/** When an entry is next due. Records from before boxes existed: a day after a right answer, ten minutes after a wrong one. */
+export const dueAt = (m) => (!m ? Infinity : m.due ?? (m.at || 0) + (m.last ? DAY : 10 * MIN));
+export const isDue = (m, now = Date.now()) => !!m && dueAt(m) <= now;
+
+/** Record one answer for one entry of one topic. */
+export function recordAnswer(slug, id, ok){
+  const m = loadMastery(slug);
+  const x = m[id] || { r: 0, w: 0, last: 0 };
+  const box = x.box ?? (x.last ? 1 : 0);
+  if(ok) x.r++; else x.w++;
+  x.last = ok ? 1 : 0;
+  x.box = ok ? Math.min(INTERVALS.length - 1, box + 1) : 0;
+  x.at = Date.now();
+  x.due = x.at + INTERVALS[x.box];
+  m[id] = x;
+  localStorage.setItem(memKey(slug), JSON.stringify(m));
+}
+
+/** Everything due, across every topic: { n, per: { slug: count }, next: ms until the next one }. */
+export function dueSummary(now = Date.now()){
+  const per = {};
+  let n = 0, next = Infinity;
+  for(let i = 0; i < localStorage.length; i++){
+    const k = localStorage.key(i);
+    if(!k?.startsWith(MEM_PREFIX)) continue;
+    const slug = k.slice(MEM_PREFIX.length);
+    for(const x of Object.values(loadMastery(slug))){
+      const d = dueAt(x);
+      if(d <= now){ per[slug] = (per[slug] || 0) + 1; n++; }
+      else next = Math.min(next, d - now);
+    }
   }
-  localStorage.setItem(memKey(Q.T.slug), JSON.stringify(m));
-  Q.mem = m;
+  return { n, per, next };
+}
+
+const memOf = (T) => (T.loadMem ? T.loadMem() : loadMastery(T.slug));
+
+function remember(ids, ok){
+  for(const id of [].concat(ids)){
+    const [slug, eid] = Q.T.memRef ? Q.T.memRef(id) : [Q.T.slug, id];
+    recordAnswer(slug, eid, ok);
+  }
+  Q.mem = memOf(Q.T);
   Q.opts.onAnswer?.();
 }
 
-/** Weighted pick: missed entries most, unseen next, known ones rarely. */
+/** Weighted pick: due and missed entries most, unseen next, known ones rarely. */
 function pickWeighted(pool){
+  const now = Date.now();
   const w = pool.map((it) => {
     const m = Q.mem[it.id];
     if(!m) return 3;
     if(m.last === 0) return 5;
-    return m.w > 0 ? 1.2 : 0.5;
+    if(isDue(m, now)) return 4;
+    return m.w > 0 ? 0.6 : 0.25;
   });
   let r = Math.random() * w.reduce((a, b) => a + b, 0);
   for(let i = 0; i < pool.length; i++){ r -= w[i]; if(r <= 0) return pool[i]; }
@@ -76,13 +119,13 @@ function pickWeighted(pool){
 
 export function renderQuiz(host, T, opts){
   const { show, chapters, subjects = new Set() } = opts;
-  const key = `${T.slug}|${show}|${[...chapters].sort()}|${[...subjects].sort()}`;
+  const key = `${T.slug}|${show}|${[...chapters].sort()}|${[...subjects].sort()}|${T.reviewOnly ? 'review' : ''}`;
   if(!Q || Q.key !== key){
     Q = { key, T, mode: Q?.mode || 'order', right: 0, total: 0, streak: 0, cur: null, host };
     Q.pool = T.items.filter((it) => it.onTimeline && (show === 'all' || it.key) &&
       (!chapters.size || chapters.has(it.chapter)) && (!subjects.size || subjects.has(it.subject)));
     Q.scope = chapters.size === 1 ? T.chapters[[...chapters][0]]?.title : null;
-    Q.mem = loadMastery(T.slug);
+    Q.mem = memOf(T);
     Q.opts = opts;
     next();
   }
@@ -91,21 +134,42 @@ export function renderQuiz(host, T, opts){
   draw();
 }
 
+/**
+ * What a question may be ABOUT. Normally the whole pool; in a review session
+ * only what is due (an Order question still borrows undue neighbours).
+ */
+function seeds(){
+  if(!Q.T.reviewOnly) return Q.pool;
+  const now = Date.now();
+  return Q.pool.filter((it) => isDue(Q.mem[it.id], now));
+}
+
+const MAKERS = () => ({ order: makeOrder, era: makeEra, recall: makeRecall });
 function next(){
-  const make = { order: makeOrder, era: makeEra, recall: makeRecall }[Q.mode];
   Q.cur = null;
-  for(let tries = 0; tries < 40 && !Q.cur; tries++) Q.cur = make();
+  // The chosen mode first; if it cannot make a question here (a chapter with
+  // three entries cannot be put in order), the others, rather than a dead end.
+  const modes = [Q.mode, ...['order', 'recall', 'era'].filter((m) => m !== Q.mode)];
+  for(const mode of modes){
+    const make = MAKERS()[mode];
+    for(let tries = 0; tries < 40 && !Q.cur; tries++) Q.cur = make();
+    if(Q.cur){ if(mode !== Q.mode) Q.fellBack = Q.mode; Q.mode = mode; return; }
+  }
 }
 
 // --- Order -------------------------------------------------------------------
 
 function makeOrder(){
   const pool = Q.pool.filter((it) => DATE_TYPES.has(it.type));
-  if(pool.length < 4) return null;
-  const seed = pickWeighted(pool);
+  const from = seeds().filter((it) => DATE_TYPES.has(it.type));
+  if(pool.length < 4 || !from.length) return null;
+  const seed = pickWeighted(from);
   // Neighbours: same chapter or adjacent, so the question is about sequence
-  // within a stretch of history rather than "which is the Roman one".
-  const near = pool.filter((it) => it !== seed && Math.abs(it.chapter - seed.chapter) <= 1);
+  // within a stretch of history rather than "which is the Roman one". Across
+  // topics, the nearest in time: "which came first, X in Japan or Y in France".
+  const near = Q.T.synthetic
+    ? pool.filter((it) => it !== seed).sort((a, b) => Math.abs(a.anchor - seed.anchor) - Math.abs(b.anchor - seed.anchor)).slice(0, 14)
+    : pool.filter((it) => it !== seed && Math.abs(it.chapter - seed.chapter) <= 1);
   const src = near.length >= 6 ? near : pool.filter((it) => it !== seed);
   const chosen = [seed];
   for(const it of shuffle([...src])){
@@ -120,10 +184,11 @@ function makeOrder(){
 // --- Era ---------------------------------------------------------------------
 
 function makeEra(){
-  if(Q.scope) return null;     // "which chapter?" while quizzing on one chapter is a giveaway
+  if(Q.scope || Q.T.synthetic) return null;     // "which chapter?" while quizzing on one chapter is a giveaway
   const chs = Q.T.chapters.filter((c) => Q.T.items.some((it) => it.onTimeline && it.chapter === c.id));
-  if(chs.length < 3 || !Q.pool.length) return null;
-  const it = pickWeighted(Q.pool);
+  const from = seeds();
+  if(chs.length < 3 || !from.length) return null;
+  const it = pickWeighted(from);
   const right = Q.T.chapters[it.chapter];
   // The right chapter plus up to three others, preferring its neighbours —
   // "Tudor or Stuart?" is the useful distinction, "Tudor or Roman?" is not.
@@ -134,8 +199,9 @@ function makeEra(){
 // --- Recall --------------------------------------------------------------------
 
 function makeRecall(){
-  if(!Q.pool.length) return null;
-  const it = pickWeighted(Q.pool);
+  const from = seeds();
+  if(!from.length) return null;
+  const it = pickWeighted(from);
   const e = { ...it, x0: it.start, x1: it.end ?? it.start, isSpan: it.kind === 'span', dataset: Q.T.title };
   const q = questionsFor(e);
   if(!DATE_TYPES.has(it.type)) q.fields = q.fields.filter((f) => f.key !== 'year' && f.key !== 'span');
@@ -152,19 +218,26 @@ function makeRecall(){
 function draw(){
   const c = Q.cur;
   const tab = (m, label, tip) => `<button data-qmode="${m}" class="${Q.mode === m ? 'on' : ''}" title="${tip}">${label}</button>`;
-  if(Q.scope && Q.mode === 'era'){ Q.mode = 'order'; next(); }
-  const seen = Q.pool.filter((it) => Q.mem[it.id]).length;
+  if((Q.scope || Q.T.synthetic) && Q.mode === 'era'){ Q.mode = 'order'; next(); }
+  const now = Date.now();
   const known = Q.pool.filter((it) => isKnown(Q.mem[it.id])).length;
+  const due = Q.pool.filter((it) => isDue(Q.mem[it.id], now)).length;
+  const what = Q.T.reviewOnly ? `Review${Q.scope ? `: <b>${esc(Q.scope)}</b>` : ''}` : Q.scope ? `Quiz: <b>${esc(Q.scope)}</b>` : `Quiz: <b>${Q.T.synthetic ? '' : 'all of '}${esc(Q.T.title)}</b>`;
   const head = `
-    <div class="tp-qhead">${Q.scope ? `Quiz: <b>${esc(Q.scope)}</b>` : `Quiz: <b>all of ${esc(Q.T.title)}</b>`}
-      <span class="tp-meta">· ${known} of ${Q.pool.length} known${seen > known ? `, ${seen - known} to review` : ''}</span></div>
+    <div class="tp-qhead">${what}
+      <span class="tp-meta">· ${Q.T.reviewOnly ? `${due} due` : `${known} of ${Q.pool.length} known${due ? `, ${due} due for review` : ''}`}</span></div>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <span class="tp-seg">${tab('order', 'Order', 'Put four in time order')}${Q.scope ? '' : tab('era', 'Era', 'Which chapter is it from?')}${tab('recall', 'Recall', 'Type the year and details')}</span>
+      <span class="tp-seg">${tab('order', 'Order', 'Put four in time order')}${Q.scope || Q.T.synthetic ? '' : tab('era', 'Era', 'Which chapter is it from?')}${tab('recall', 'Recall', 'Type the year and details')}</span>
       <span class="tp-spacer"></span>
       <span class="tp-score"><span><b>${Q.right}</b>/${Q.total} right</span><span>streak <b>${Q.streak}</b></span></span>
-    </div>`;
+    </div>
+    ${Q.fellBack ? `<div class="tp-meta" style="margin-top:6px">Too few entries here for ${esc(Q.fellBack === 'order' ? 'Order' : Q.fellBack === 'era' ? 'Era' : 'Recall')}, so: ${esc(Q.mode === 'order' ? 'Order' : Q.mode === 'era' ? 'Era' : 'Recall')}.</div>` : ''}`;
+  Q.fellBack = null;
   let body = '';
-  if(!c) body = '<div class="tp-q">Not enough entries for this mode here. Pick Everything, or a wider chapter on the left.</div>';
+  if(!c && Q.T.reviewOnly) body = `<div class="tp-q"><h3>All caught up</h3><div class="tp-meta">Nothing is due${Q.scope ? ' here' : ''}. Answers you get right come back after 1, 3, 7, 16, 35 and 90 days; misses come back in ten minutes.</div>
+    ${Q.opts.onWiden ? '<button class="tp-btn primary" style="margin-top:12px" data-qact="widen">Quiz everything instead →</button>' : ''}</div>`;
+  else if(!c) body = `<div class="tp-q">Not enough entries for a question here.
+    ${Q.opts.onWiden ? '<button class="tp-btn primary" style="margin-left:8px" data-qact="widen">Quiz on everything →</button>' : ''}</div>`;
   else if(c.kind === 'order') body = drawOrder(c);
   else if(c.kind === 'era') body = drawEra(c);
   else body = drawRecall(c);
@@ -282,6 +355,7 @@ function onClick(ev){
   const c = Q.cur;
   if(b.dataset.qmode){ Q.mode = b.dataset.qmode; next(); draw(); return; }
   if(b.dataset.qact === 'next'){ next(); draw(); return; }
+  if(b.dataset.qact === 'widen'){ Q.opts.onWiden?.(); return; }
   if(b.dataset.qact === 'grade'){ gradeRecall(); return; }
   if(b.dataset.qact === 'undo'){ c.picked.pop(); draw(); return; }
   if(b.dataset.pick && c?.kind === 'order' && !c.done){

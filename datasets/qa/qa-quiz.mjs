@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * Headless QA for the home screen and the unified quiz.
+ * Headless QA for the home screen (the topic list), the cross-topic quiz and
+ * review, Meanwhile, and the cluster quiz (#/cluster-quiz).
  *
  *   node datasets/serve.mjs
  *   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
@@ -117,29 +118,58 @@ listeners.push((m) => {
 await send('Page.navigate', { url: `${ORIGIN}/index.html` }, app);
 await until(app, `!!document.querySelector('#app')`, { label: 'app root' });
 
-// ---- home -----------------------------------------------------------------
+// ---- home: the topic list ----------------------------------------------------
 
 const home = await until(app, `
   (() => {
-    const b = [...document.querySelectorAll('#app button')];
-    return b.length ? { n: b.length, labels: b.map(x => (x.textContent.match(/\\S.*?\\n/) || [''])[0].trim()) } : null;
-  })()`, { label: 'home buttons' });
+    const cards = document.querySelectorAll('.tp .tp-tcard').length;
+    const bar = document.querySelector('.tp .tp-bar')?.textContent || '';
+    return cards ? { cards, review: /Review/.test(bar), quiz: /Quiz all/.test(bar), atlas: /Atlas/.test(bar) } : null;
+  })()`, { label: 'topic list as home' });
+check('home is the topic list', home.ok && home.value.cards > 0, JSON.stringify(home.value));
+check('home links Review, Quiz all and Atlas', home.value?.review && home.value?.quiz && home.value?.atlas, JSON.stringify(home.value));
+const gone = await evaluate(app, `
+  (() => { const t = document.body.textContent; return { token: /GitHub Token/.test(t), lanes: /Old lane timeline/.test(t) }; })()`);
+check('GitHub token panel gone', !gone.token);
+check('old lane timeline button gone', !gone.lanes);
 
-check('home renders', home.ok, JSON.stringify(home.value));
-check('home has exactly three doors (Topics, Atlas, Quiz)', home.value?.n === 3,
-  `found ${home.value?.n} buttons: ${JSON.stringify(home.value?.labels)}`);
+// ---- the cross-topic quiz and review ---------------------------------------------
 
-const hasBoth = await evaluate(app, `
+await evaluate(app, `(localStorage.clear(), location.hash = '#/quiz')`);
+const cross = await until(app, `
   (() => {
-    const t = document.querySelector('#app').textContent;
-    return { atlas: /Atlas/.test(t), quiz: /Quiz/.test(t), topics: /Topics/.test(t),
-             token: /GitHub Token/.test(t), lanes: /Old lane timeline/.test(t) };
-  })()`);
-check('Atlas door present', hasBoth.atlas);
-check('Quiz door present', hasBoth.quiz);
-check('Topics door present', hasBoth.topics);
-check('GitHub token panel gone', !hasBoth.token);
-check('old lane timeline button gone', !hasBoth.lanes);
+    const opts = document.querySelectorAll('.tp-q .tp-opt[data-pick]');
+    const rail = document.querySelectorAll('.tp-rail [data-xtoc]').length;
+    return opts.length === 4 && rail > 2 ? { opts: opts.length, rail } : null;
+  })()`, { label: 'cross-topic Order question' });
+check('#/quiz asks an Order question over every topic', cross.ok, JSON.stringify(cross.value));
+// Answer it (in whatever order) and check the answer is remembered in its own topic, with a due date.
+// One at a time: every click redraws the question.
+for(let k = 0; k < 4; k++) await evaluate(app, `[...document.querySelectorAll('.tp-q .tp-opt[data-pick]')].find((b) => b.querySelector('.num.empty'))?.click()`);
+const mem = await until(app, `
+  (() => {
+    const keys = Object.keys(localStorage).filter((k) => k.startsWith('topic:mastery:'));
+    if(!keys.length) return null;
+    const recs = keys.flatMap((k) => Object.values(JSON.parse(localStorage.getItem(k))));
+    return { topics: keys.length, n: recs.length, due: recs.every((r) => r.due > Date.now() - 1000 && r.box != null) };
+  })()`, { label: 'answers remembered' });
+check('answers are recorded per topic with a box and a due date', mem.ok && mem.value.n === 4 && mem.value.due, JSON.stringify(mem.value));
+await evaluate(app, `location.hash = '#/review'`);
+const rev = await until(app, `
+  (() => { const t = document.querySelector('.tp-quiz')?.textContent || ''; return /Review/.test(t) ? t.slice(0, 120) : null; })()`, { label: 'review page' });
+check('#/review renders', rev.ok, rev.value);
+
+// ---- Meanwhile in a topic's detail panel -------------------------------------------
+
+await evaluate(app, `location.hash = '#/topic/world-war-ii'`);
+await until(app, `document.querySelectorAll('.tp-row[data-id]').length > 5 || null`, { label: 'learn rows' });
+await evaluate(app, `document.querySelectorAll('.tp-row[data-id]')[3].click()`);
+const mw = await until(app, `
+  (() => { const g = document.querySelectorAll('#tpMeanwhile .tp-mw .g'); return g.length ? g.length : null; })()`, { label: 'meanwhile' });
+check('detail panel shows Meanwhile from other topics', mw.ok && mw.value >= 2, String(mw.value));
+const mwSelf = await evaluate(app, `[...document.querySelectorAll('#tpMeanwhile [data-mw]')].some((a) => a.dataset.mw === 'world-war-ii')`);
+check('Meanwhile never lists the topic you are in', mwSelf === false);
+await evaluate(app, `location.hash = '#/topics'`);
 
 // ---- open the quiz --------------------------------------------------------
 
@@ -396,9 +426,9 @@ check('both ends of a span must be right', grader.spanOk === true && grader.span
 
 await evaluate(app, `window.quizHome()`, { awaitPromise: false });
 const back = await until(app, `
-  document.querySelectorAll('#app button').length === 3 ? 'yes' : null`,
+  document.querySelectorAll('.tp .tp-tcard').length ? 'yes' : null`,
   { label: 'home again' });
-check('Home returns to the three doors', back.ok, String(back.value));
+check('Home returns to the topic list', back.ok, String(back.value));
 
 if(SHOT){
   await evaluate(app, `window.openQuiz()`, { awaitPromise: false, userGesture: true });

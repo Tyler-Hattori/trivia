@@ -13,9 +13,78 @@ Build one:
 ```
 node datasets/topic.mjs "History of England" --name England --events "Timeline of English history" --ingest
 node datasets/qa/qa-topic.mjs          # invariants + layout, ~1s
+node datasets/qa/topic-report.mjs england   # what a reader would trip over
 ```
 
-Then open `#/topics` from the home page. Without `--ingest` it builds from what
+## Checking and correcting a topic
+
+**`datasets/qa/topic-report.mjs`** lists, per topic, what a reader would trip
+over: generic essentials ("World war", "Classical antiquity"), essentials the
+article never puts in a sentence, essentials dated far outside their chapter,
+boilerplate or pronunciation guides in intros, chapters with fewer than two
+essentials, topics with fewer than 60 timeline entries. Run it after every
+build; `--summary` gives one line per topic.
+
+**`datasets/topic-overrides.json`** fixes what no rule should have to know, per
+topic slug. Titles match case-insensitively; rebuild the topic afterwards
+(seconds, no `--ingest` needed).
+
+```json
+{
+  "ideas-of-physics": { "drop": ["Sammy Sosa"], "unkey": ["New Mexico"] },
+  "science": { "noKeyChapters": ["Approaches to history of science"] }
+}
+```
+
+| key | effect |
+|---|---|
+| `drop` | not in the topic at all |
+| `unkey` | never an essential; the next best takes the slot |
+| `key` | always an essential (and on the timeline) |
+| `intro`, `blurb` | replace the topic's intro / its one-liner on the list |
+| `chapterYears` | `{ "chapter title": [from, to] }` |
+| `chapterIntro` | `{ "chapter title": "text" }` |
+| `noKeyChapters` | chapters that give no essentials (historiography: a list of historians) |
+
+Rule of thumb: the same kind of finding in two or more topics is a builder rule;
+a one-off is an override. Rules added from the 2026-11-14 review:
+
+- **A context sentence never repeats the chapter's (or topic's) intro.** An
+  entry told only there is flagged `inIntro`, and Learn shows its own
+  Wikipedia first line instead, which adds to the intro.
+- **An essential needs a sentence.** A linked entry the article never puts in
+  a sentence (and not in the intro) loses 30% importance.
+- **States stored as one year** (*Soviet Union* 1922) take their span from the
+  description ("former country in Eurasia (1922–1991)"); without one they count
+  as umbrellas, like long spans.
+- **The topic's own subject is not an entry** (Cold War had four "Cold War"
+  essentials).
+- **A chapter of only places gets its best two** only when it has no other
+  candidate (Relativity: Einstein, not Einstein + ETH Zurich).
+- **Intros** drop sentences about the website ("Welcome to…", "QuickTime") and
+  pronunciation guides.
+- **Site topics: a one-word name** (a bare surname or title) is not matched at
+  the start of a sentence, nor when the same site uses the word in lower case:
+  "More recently" was Thomas More, "the Church" Alonzo Church.
+- **The list's date range** is the first chapter's start for chronological
+  articles, else the essentials' 4th–96th percentile (people at their prime),
+  rounded to two significant figures.
+
+## What the browser loads
+
+- `topics/<slug>.json` — the topic, self-contained.
+- `topics/index.json` — the list.
+- `topics/all.json` — every timeline entry of every topic, compact (~2 MB):
+  **Meanwhile**, the cross-topic quiz and review. Written by every build.
+- `topics/members.json` / `members-all.json` — "Also in", and the atlas's Topic
+  filter and "In topics".
+
+**Meanwhile** (detail panel): entries from other topics within a window that
+grows with distance from today (±4 years in 1940, ±80 at year 0, ±200 at 3000
+BC). A war or reign uses its own span, a person their adult life. Each thing
+once, essentials first, at most three per topic and six topics.
+
+Then open it from the topic list (the home page). Without `--ingest` it builds from what
 the store already has and lists the linked pages that are missing. With
 `--ingest` it pulls them through `ingest.mjs` first (throttled, only new rows
 embedded) and places them on the atlas.

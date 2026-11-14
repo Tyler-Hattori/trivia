@@ -15,8 +15,8 @@
    "count": 118,
    "key": 84,
    "chapters": 18,
-   "from": -71000000,
-   "to": 2026,
+   "from": -5500,
+   "to": 1889,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/7/7a/Predynastic_collage_%28new_version%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
   },
   {
@@ -34,8 +34,8 @@
    "count": 228,
    "key": 96,
    "chapters": 11,
-   "from": -3500,
-   "to": 2026,
+   "from": -1199,
+   "to": 1946,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/e/ea/Roman_Republic_Empire_map.gif"
   },
   {
@@ -54,7 +54,7 @@
    "key": 92,
    "chapters": 7,
    "from": -5500,
-   "to": 2026,
+   "to": 1997,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/2/20/Opstanden%2C_revolutie%2C_SFA022823302.jpg"
   },
   {
@@ -69,11 +69,11 @@
    "keyTarget": 90,
    "blurb": "The Cold War was a period of international geopolitical rivalry between the United States (US) and the Soviet Union (USSR) and their respective allies, the capitalist Western Bloc and communist Eastern Bloc.",
    "built": "2026-11-14",
-   "count": 232,
+   "count": 226,
    "key": 97,
    "chapters": 18,
-   "from": -660,
-   "to": 2026,
+   "from": 1923,
+   "to": 2022,
    "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/50/Map_of_USSR_with_SSR_names.svg/330px-Map_of_USSR_with_SSR_names.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
   },
   {
@@ -90,11 +90,11 @@
    "keyTarget": 90,
    "blurb": "The territory today known as England became inhabited more than 800,000 years ago, as the discovery of stone tools and footprints at Happisburgh in Norfolk have indicated.",
    "built": "2026-11-14",
-   "count": 480,
+   "count": 481,
    "key": 92,
    "chapters": 10,
-   "from": -78784,
-   "to": 2026,
+   "from": -79000,
+   "to": 1925,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/b/b3/Battle_of_Naseby%2C_hand-coloured_copper_engraving.jpg"
   },
   {
@@ -111,11 +111,11 @@
    "keyTarget": 90,
    "blurb": "The first written records for the history of France appeared in the Iron Age.",
    "built": "2026-11-14",
-   "count": 631,
-   "key": 97,
+   "count": 634,
+   "key": 98,
    "chapters": 11,
    "from": -3300,
-   "to": 2026,
+   "to": 1995,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/5/57/Anonymous_-_Prise_de_la_Bastille.jpg"
   },
   {
@@ -131,14 +131,14 @@
    },
    "events": [],
    "keyTarget": 90,
-   "blurb": "Welcome to the general public version of the homepage for Phyx 103-0, Ideas of Physics.",
+   "blurb": "Astronomy has very old, prehistoric origins.",
    "built": "2026-11-14",
-   "count": 228,
-   "key": 97,
-   "chapters": 18,
-   "from": -4535000000,
-   "to": 2026,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f7/Portrait_of_Sir_Isaac_Newton%2C_1689_%28brightened%29.jpg"
+   "count": 220,
+   "key": 98,
+   "chapters": 22,
+   "from": 146,
+   "to": 2004,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/2/28/Albert_Einstein_Head_cleaned.jpg"
   },
   {
    "slug": "impressionism",
@@ -153,10 +153,10 @@
    "blurb": "Impressionism was a 19th-century art movement characterised by visible brush strokes, open composition, emphasis on accurate depiction of light in its changing qualities (often accentuating the effects of the passage of ",
    "built": "2026-11-14",
    "count": 346,
-   "key": 100,
+   "key": 99,
    "chapters": 12,
-   "from": -250,
-   "to": 2026,
+   "from": 1658,
+   "to": 1981,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/a/a4/Claude_Monet_1899_Nadar_crop.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
   },
   {
@@ -196,7 +196,7 @@
    "key": 92,
    "chapters": 7,
    "from": -800,
-   "to": 2026,
+   "to": 1988,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Galileo_Galilei_%281564-1642%29_RMG_BHC2700.tiff/lossy-page1-1920px-Galileo_Galilei_%281564-1642%29_RMG_BHC2700.tiff.jpg"
   },
   {
@@ -209,13 +209,13 @@
    },
    "events": [],
    "keyTarget": 90,
-   "blurb": "The Renaissance (ɪˈneɪsəns/ rin-AY-sənss, rɛnəsɑːns/ REN-ə-sahnss, \"rebirth\") was a European period of history and cultural movement taking place at the end of the Late Middle Ages and the beginning of the early modern e",
+   "blurb": "The Renaissance was a European period of history and cultural movement taking place at the end of the Late Middle Ages and the beginning of the early modern era.",
    "built": "2026-11-14",
-   "count": 204,
-   "key": 91,
+   "count": 208,
+   "key": 89,
    "chapters": 5,
    "from": 697,
-   "to": 2026,
+   "to": 1800,
    "cover": "https://commons.wikimedia.org/wiki/Special:FilePath/95Thesen_facsimile_colour.png"
   },
   {
@@ -230,12 +230,12 @@
    "keyTarget": 90,
    "blurb": "The history of science covers the development of science from ancient times to the present.",
    "built": "2026-11-14",
-   "count": 216,
-   "key": 95,
+   "count": 215,
+   "key": 69,
    "chapters": 13,
-   "from": -48000,
-   "to": 2026,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/3/35/Portrait_of_Sir_Isaac_Newton%2C_1689_%28head_shot_crop%29.jpg"
+   "from": -3500,
+   "to": 1962,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/e/ee/Affinity-table.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
   },
   {
    "slug": "united-states",
@@ -252,7 +252,7 @@
    "count": 184,
    "key": 91,
    "chapters": 10,
-   "from": -113000,
+   "from": -120000,
    "to": 2026,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/6/69/Battle_of_Gettysburg%2C_by_Currier_and_Ives.png"
   },
@@ -266,13 +266,13 @@
    },
    "events": [],
    "keyTarget": 90,
-   "blurb": "World War II, or the Second World War (1 September 1939 – 2 September 1945), was a global conflict between two coalitions: the Allies and the Axis powers.",
+   "blurb": "World War II, or the Second World War, was a global conflict between two coalitions: the Allies and the Axis powers.",
    "built": "2026-11-14",
    "count": 289,
    "key": 100,
    "chapters": 17,
-   "from": 565,
-   "to": 2026,
+   "from": 1914,
+   "to": 1989,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/c/c5/EasternFrontWWIIcolage.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
   }
  ]

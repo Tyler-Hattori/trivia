@@ -1,0 +1,66 @@
+{
+  "ideas-of-physics": {
+    "drop": [
+      "Sammy Sosa",
+      "Louis the German",
+      "Rhode Island",
+      "Iron Curtain",
+      "Encyclopædia Britannica",
+      "Ottoman Greeks",
+      "Proceedings of the National Academy of Sciences of the United States of America",
+      "New Mexico",
+      "Roman Empire",
+      "American Revolution",
+      "French Revolution"
+    ],
+    "unkey": [
+      "A siphon is a fluid-filled tube that allows fluids at a higher level",
+      "Otto von Guericke, Mayor of Magdeburg, Germany",
+      "Joseph Fraunhofer, a German lens-maker and optical scientist, has",
+      "Henri Becquerel, a French physicist, reads of William Roentgen's",
+      "It has long been thought that the Earth is no more than a few tens"
+    ]
+  },
+  "world-war-ii": {
+    "unkey": [
+      "World war",
+      "Matilda II",
+      "Wuhan",
+      "Germans",
+      "Shōwa era",
+      "Aftermath of World War II",
+      "British Empire",
+      "Empire of Japan",
+      "Soviet Union",
+      "Commonwealth of Nations"
+    ]
+  },
+  "science": {
+    "drop": [
+      "Science"
+    ],
+    "noKeyChapters": [
+      "Approaches to history of science"
+    ],
+    "unkey": [
+      "Ancient history",
+      "The Republic",
+      "Metaphysics",
+      "Nicomachean Ethics",
+      "Plutarch"
+    ]
+  },
+  "cold-war": {
+    "unkey": [
+      "Kazakh Soviet Socialist Republic",
+      "Japan during World War II",
+      "Aftermath of World War II"
+    ]
+  },
+  "impressionism": {
+    "unkey": [
+      "Allies of World War II",
+      "Androniqi Zengo Antoniu"
+    ]
+  }
+}

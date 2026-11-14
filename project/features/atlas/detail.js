@@ -90,13 +90,25 @@ export function createDetail(root, hooks = {}){
         }${A.circa[i] ? ' <span class="approx">approx.</span>' : ''}</div>
         ${A.region?.[i] ? `<div class="dsub">Region: ${esc(A.region[i])}</div>` : ''}
 
+        ${(() => {
+          // Which topic pages (datasets/topics) this entry is in: read it there,
+          // in the article's own words and order.
+          const tp = hooks.topicsOf?.(A.id[i]) || [];
+          return tp.length ? `
+          <div class="dsection">
+            <h3>In topics</h3>
+            <div class="chips">${tp.map((t) =>
+              `<button class="chip intopic" data-opentopic="${esc(t.slug)}" title="Open ${esc(t.title)} at this entry">${esc(t.title)} →</button>`).join('')}</div>
+          </div>` : '';
+        })()}
+
         ${d.excerpt
           ? `<div class="dex">${d.excerpt.split(/\n\n+/).map((p) => `<p>${esc(p)}</p>`).join('')}</div>`
           : '<div class="dex empty">No excerpt yet. <code>node datasets/ingest.mjs</code> can fill it from Wikipedia.</div>'}
 
         ${(A.topics[i] || []).length ? `
           <div class="dsection">
-            <h3>Topics</h3>
+            <h3>Tags</h3>
             <div class="chips">${(A.topics[i] || [])
               .map((t) => `<button class="chip" data-topic="${esc(t)}">${esc(t)}</button>`).join('')}</div>
           </div>` : ''}
@@ -137,6 +149,9 @@ export function createDetail(root, hooks = {}){
 
     const pic = t.closest('.dpic');
     if(pic && current >= 0){ openBox(A.image[current], A.title[current]); return; }
+
+    const op = t.closest('[data-opentopic]');
+    if(op && current >= 0){ hooks.onOpenTopic?.(op.dataset.opentopic, A.id[current]); return; }
 
     const goto = t.closest('[data-goto]');
     if(goto){ hooks.onGoto?.(Number(goto.dataset.goto)); return; }

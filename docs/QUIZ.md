@@ -1,5 +1,34 @@
-# The quiz
+# The quizzes
 
+There are two, plus review:
+
+- **The topic quiz** (`project/features/topic/quiz.js`) — the main one. Inside a
+  topic (`#/topic/<slug>/quiz`), across every topic (`#/quiz`), and as **Review**
+  (`#/review`, only what is due). Modes: **Order** (put four in time order; across
+  topics, the four nearest in time), **Era** (which chapter; one topic only),
+  **Recall** (type the year). If the chosen mode cannot make a question in the
+  current scope it falls back to another instead of a dead end.
+- **The cluster quiz** (`project/features/quiz/`, `#/cluster-quiz`) — the older
+  quiz over the whole corpus, scoped by a node of the atlas's cluster tree.
+  Below.
+
+Both use `questions.js` for what an entry can be asked.
+
+## Memory: spaced repetition
+
+Every answer is stored per topic in localStorage, `topic:mastery:<slug>` →
+`{ <entry id>: { r, w, last, box, at, due } }`. Right moves an entry up a Leitner
+box (due again after 1, 3, 7, 16, 35, 90 days); wrong sends it to box 0 (due in
+10 minutes). Questions are drawn weighted towards due, missed and unseen
+entries. `dueSummary()` counts what is due across every topic for the home
+page's Review button. The cross-topic quiz uses ids `<slug>|<entry id>` and
+records each answer in its own topic, so it counts there too. Records from
+before boxes existed are treated as due a day after a right answer.
+
+The cross-topic quiz and review read `datasets/topics/all.json` (every
+timeline entry of every topic, ~2 MB), not the full topic files.
+
+# The cluster quiz
 ```
 project/features/quiz/
   questions.js   what an entry can be asked, and whether an answer is right
