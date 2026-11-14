@@ -1,5 +1,5 @@
 /*
- * The home screen: two doors.
+ * The home screen: three doors. Topics is the one for learning a subject.
  *
  * Everything that used to live here — eight per-dataset quiz tiles, the GitHub
  * token box, the old lane timeline — is gone from the UI. The two views left are
@@ -62,8 +62,20 @@ export function renderHome(){
         fill="#0f172a" font-family="ui-sans-serif,system-ui,sans-serif">?</text>
     </svg>`;
 
+  const topicsArt = `
+    <svg viewBox="0 0 400 300" class="w-full h-full" preserveAspectRatio="xMidYMid slice">
+      ${[0, 1, 2, 3, 4].map((i) => `<rect x="${20 + i * 76}" y="40" width="70" height="14" rx="4" fill="#0f172a" opacity="${0.4 + i * 0.12}"/>`).join('')}
+      ${Array.from({ length: 9 }, (_, i) => {
+        const x = 24 + i * 41, y = 80 + (i % 3) * 66;
+        return `<rect x="${x}" y="${y}" width="56" height="54" rx="6" fill="none" stroke="#0f172a" stroke-width="2"/>`;
+      }).join('')}
+    </svg>`;
+
   return `
-    <div class="grid md:grid-cols-2 gap-6">
+    <div class="grid md:grid-cols-3 gap-6">
+      ${door('openTopics', 'Topics',
+        'One subject at a time — chapters from the article, the key events in order, a readable outline, and a quiz on it.',
+        topicsArt, 'linear-gradient(90deg,#b45309,#65a30d)')}
       ${door('openAtlas', 'Atlas',
         'Every entry on one map — time across, similarity down. Zoom out for clusters, in for cards.',
         atlasArt, 'linear-gradient(90deg,#2563eb,#7c3aed)')}

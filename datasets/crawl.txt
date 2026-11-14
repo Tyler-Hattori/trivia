@@ -1,0 +1,30 @@
+# Categories to crawl:  node datasets/crawl.mjs   (--dry first to see sizes)
+# Each line runs once; crawl-state.json remembers what is done. --redo "<category>" repeats one.
+#
+# source                                      | domain   | depth | limit
+# A line is a CATEGORY, "search: <query>" (articletopic:<subject> works) or
+# "wikidata: <type> <from>-<to>" (painting, battle, war, treaty, film, novel, person…).
+# Start SPECIFIC. Depth 1 = the category plus one level of its subcategories.
+
+# --- English history (deepens the England topic) ---
+Battles involving the Kingdom of England      | england  | 1 | 300
+Wars of the Roses                             | england  | 1 | 150
+English Civil War                             | england  | 1 | 200
+Tudor England                                 | england  | 1 | 200
+English monarchs                              | england  | 1 | 150
+
+# --- Art movements (deepens the art clusters) ---
+Impressionist paintings                       | art      | 1 | 300
+Renaissance paintings                         | art      | 1 | 300
+Baroque paintings                             | art      | 1 | 300
+
+# --- Science ---
+History of physics                            | science  | 1 | 200
+Inventions by country                         | science  | 1 | 200
+
+# --- By decade (Wikidata: a type + a year range, most famous first) ---
+wikidata: painting 1880-1889                  | art      | - | 200
+wikidata: battle 1600-1699                    | england  | - | 150
+
+# --- By subject (Wikipedia search; articletopic: is the same taxonomy classify.mjs uses) ---
+search: articletopic:physics discovery        | science  | - | 150

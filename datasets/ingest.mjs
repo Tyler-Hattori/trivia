@@ -60,6 +60,7 @@
 import fs from 'node:fs';
 import {
   readEntries, appendEntries, readVectors, appendVectors, writeEntries,
+  readSearchVectors, writeSearchVectors, SEARCH_DIM,
   makeEntry, entryId, entryText, truncateNormalize, DIM, PATHS, readJSON,
 } from './lib/store.mjs';
 import {
@@ -885,15 +886,27 @@ if(vecStore.model && vecStore.model !== EMBED_MODEL){
 
 process.stdout.write(`\n  embedding ${fresh.length} with ${EMBED_MODEL}… `);
 const pairs = [];
-for(let i = 0; i < fresh.length; i += 24){
-  const chunk = fresh.slice(i, i + 24);
+const searchPairs = [];
+for(let i = 0; i < fresh.length; i += 16){
+  const chunk = fresh.slice(i, i + 16);
   const vs = await embed(chunk.map((e) => entryText(e)));
-  chunk.forEach((e, j) => pairs.push([e.id, truncateNormalize(vs[j], DIM)]));
+  chunk.forEach((e, j) => {
+    pairs.push([e.id, truncateNormalize(vs[j], DIM)]);
+    searchPairs.push([e.id, truncateNormalize(vs[j], SEARCH_DIM)]);
+  });
+  await new Promise((r) => setTimeout(r, 250));   // keep the GPU from pinning on a big ingest
 }
 console.log('done');
 
 appendEntries(fresh);
 appendVectors(pairs, { model: EMBED_MODEL });
+// The full-width search copy. Rewritten rather than appended: it is small enough,
+// and rewriting keeps it consistent even if an earlier run left it partial.
+{
+  const sv = readSearchVectors();
+  const have = sv && sv.model === EMBED_MODEL ? sv.ids.map((id) => [id, sv.get(id)]) : [];
+  writeSearchVectors([...have, ...searchPairs], { model: EMBED_MODEL });
+}
 
 // Preview where each landed, using the frozen tree — the same descent the atlas
 // build will do, so this report is not a guess.

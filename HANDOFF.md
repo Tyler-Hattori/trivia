@@ -1,6 +1,190 @@
 # Handoff — the atlas rework
 
-Written 2026-07-29, updated 2026-07-31.
+---
+
+## START HERE — state as of 2026-11-13 (read this first)
+
+Two sessions on 2026-11-13 changed the direction of the project. Below: what
+exists now, what was running when the session ended, what to do next, and the
+open requests.
+
+### 0. Open requests from the user (do these next)
+
+1. **Organize the repo and push to `main`.** Nothing from 2026-11-13 is
+   committed: ~45 changed or new files. Suggested shape:
+   - **Delete superseded code**, after checking nothing imports it (`init.js`
+     still imports some):
+     - `project/features/timeline/`, `timeline_engine.js`, `global_timeline.js`
+       (old lane timeline)
+     - `quiz_engine.js`, `ui/quiz.js`, `ui/stats.js` (old per-dataset quiz)
+     - `data/github.js`, `utils/layout.js`, `app/bind.js`
+   - **Move scripts out of `datasets/`:**
+     - one-off scripts: `enrich, excerpts, era-excerpts, imgfix, fame-backfill,
+       dedupe, roles, misses, suggest, inspect, migrate`
+     - the QA scripts (`qa-*.mjs`, `verify.mjs`)
+     - keep the pipeline scripts (`ingest, crawl, classify, embed-all, atlas,
+       topic, serve`) together
+   - **Move the old CSV leftovers** (`*.bak`, `*.pre-*`, `*-log.json`,
+     `*-misses.json`, `*-leads.json`) into an archive folder or `.gitignore`.
+     `_site/` and `.jekyll-cache/` are already ignored.
+   - **Split the docs:** the README is ~900 lines. A short README plus
+     `docs/ATLAS.md`, `docs/TOPICS.md`, `docs/SEARCH.md`, `docs/PIPELINE.md`
+     would read better.
+   - **Watch file sizes before pushing:**
+
+     | file | size |
+     |---|---|
+     | `entries.jsonl` | 11M |
+     | `details.json` | 7.3M |
+     | `search-vectors.bin` | 6.4M |
+     | `taxonomy.json` | 5.2M |
+     | `atlas.json` | 3.4M |
+     | `vectors.bin` | 2.2M |
+
+     All are under GitHub's 100MB limit, but the repo grows by roughly this much
+     on every rebuild. Either accept it, or keep the derived files
+     (`atlas.json`, `details.json`, `layout.json`, `*vectors*`, `vocab.*`) out of
+     git and rebuild them. The site needs `atlas.json`, `details.json` and
+     `topics/*.json` to be served, so if it is deployed as static files they
+     must stay.
+   - **Update path references** in the docs and the QA scripts if files move,
+     then run every check (section 4).
+2. The user's priority is **presentation and usability**: "as usable as
+   possible, with as much information as possible". Prefer UI work over more
+   pipeline work.
+
+### 1. What the app is now
+
+The home page has three doors:
+
+- **Topics** (`#/topics`, `project/features/topic/`) — the view for LEARNING a
+  subject. One Wikipedia article becomes:
+  - chapters, from its section headings
+  - an image-card timeline in the style of the original art timeline:
+    - lanes packed by importance
+    - empty stretches cut out and marked
+    - Key/All toggle, chapter chips, subject chips
+    - search, and a side panel with ←/→ stepping
+  - a Read outline
+  - a quiz with Order / Era / Recall modes
+
+  Built so far: **England** (`datasets/topics/england.json`, from *History of
+  England* + *Timeline of English history*).
+- **Atlas** — the view for EXPLORING across subjects. x = time.
+  - y is now **known subject layers on top** (History & Society › History /
+    Politics / Military…, Culture › Visual arts / Films…, Science › Physics /
+    Mathematics…), from Wikimedia's articletopic taxonomy. Embedding clusters
+    are used only inside a subject.
+  - Long spans are faint and only grabbable at their start.
+- **Quiz** — the global cluster quiz. It no longer asks year questions about
+  places and concepts.
+
+### 2. Pipeline (all free; only embedding uses the local GPU, throttled)
+
+```
+crawl.mjs   crawl.txt lines: category | search: articletopic:<subject> | wikidata: <type> <from>-<to>
+  → ingest.mjs     Wikipedia/Wikidata → entries.jsonl, embeds new rows (map 256-d + search 768-d)
+  → classify.mjs   subject + region per entry → atlas/taxonomy.json (Wikimedia Lift Wing, + kNN vote)
+  → atlas.mjs      known top layers (lib/taxotree.mjs) + clusters below → atlas.json / details.json
+topic.mjs "History of X" [--events "Timeline of X"] [--ingest]  → datasets/topics/<slug>.json
+serve.mjs   dev server + /api/search (hybrid BM25 + 768-d EmbeddingGemma, query prefix, floor 0.40)
+```
+
+Key docs:
+
+- `datasets/SEARCH.md` — every search/embedding measurement, and why
+- `datasets/ATLAS.md` — "Subjects", "Dates are not in the embedding",
+  "Semantic search"
+- README — the Topics, Crawling and atlas design-decision sections
+
+Decisions made with evidence; don't undo them without new evidence:
+
+- **Query prefix.** Search queries must use EmbeddingGemma's
+  `task: search result | query:` prefix. Without it, nonsense scored 0.58.
+- **Subjects aren't embedded.** They are structure; embedding them would
+  repeat the old `domains` mistake.
+- **Dates aren't embedded.** Date-bin tags are stripped by `DATE_TAG` in
+  `lib/store.mjs`, and the store was re-embedded with them removed.
+- **Topic membership comes from the article**, not from a similarity threshold.
+  "English history" ranked Richard II #100.
+- **Text length doesn't matter much**; vector width does. 768-d is +5.5
+  R-precision, and the text format moved results by only 1–2 points.
+
+### 3. State when the session ended
+
+- **`node datasets/crawl.mjs` was running in the background** (log
+  `/tmp/crawl2.log`). Done so far:
+  - *Battles involving the Kingdom of England* (+179)
+  - *Wars of the Roses*
+  - *English Civil War* was in progress; 10 lines remained
+
+  It's **resumable**: `crawl-state.json` records finished lines, and a re-run
+  continues. **If it was interrupted, run `node datasets/crawl.mjs` again.**
+  Ollama must be running for the embedding step:
+
+  ```
+  OLLAMA_MAX_LOADED_MODELS=1 OLLAMA_NUM_PARALLEL=1 OLLAMA_KEEP_ALIVE=2m ollama serve
+  ```
+
+  When it finishes, it runs `classify.mjs` and an incremental `atlas.mjs`
+  itself.
+- **After the crawl:**
+  1. `node datasets/atlas.mjs --rebuild`. Optional, but ~2,000 new rows were
+     placed into a tree fitted without them.
+  2. `node datasets/topic.mjs "History of England" --name England --events "Timeline of English history"`,
+     so the topic picks up the crawled English battles and Wars of the Roses
+     pages.
+  3. Run every check (section 4).
+- **Planned next**, not started: a second topic, **Impressionism**
+  (`topic.mjs "Impressionism" --ingest`), to exercise a *thematic* article whose
+  chapters aren't eras.
+- **Backups** from before the big changes are in `/tmp` and will vanish on
+  reboot. The git history covers everything up to the last commit:
+  - `/tmp/entries.pre-crawl.jsonl`
+  - `/tmp/*.pre-dates.*` (vectors before the re-embed)
+  - `/tmp/*.pre-taxo.json` (atlas and layout before the subject layers)
+- `qwen3-embedding:0.6b` (640MB) is still pulled in Ollama from an abandoned
+  comparison: `ollama rm qwen3-embedding:0.6b`.
+
+### 4. Checks (all passing before the crawl started)
+
+```
+node datasets/serve.mjs &           # + headless Chrome on :9334, see README "Visual QA"
+node datasets/verify.mjs            # 31/31
+node datasets/qa-atlas.mjs          # 92/92
+node datasets/qa-quiz.mjs           # 43/43 (expects three home doors)
+node datasets/qa-topic.mjs          # 15/15, no browser
+```
+
+Gotchas from this session:
+
+- **QA closes Chrome tabs.** Open a new one before driving a page manually:
+  `curl -X PUT localhost:9334/json/new?about:blank`
+- **Never put text inside an inline `onerror="..."` handler.** An apostrophe in
+  a summary broke the topic cards' image fallback.
+- **Wikidata queries:** use one date property per type, and filter by sitelinks
+  first. The query service times out at 60s.
+- **Wikipedia listings fail transiently** during long crawls. `crawl.mjs` now
+  retries, then skips the line (it stays pending).
+
+### 5. Heat and cost
+
+- A full-corpus re-embed at full speed overheated the laptop once. Defaults are
+  throttled now (`embed-all` 16/batch + 400ms pause; `ingest` 16 + 250ms).
+- Normal use embeds only new rows. A `--force` re-embed of ~8.4k rows takes
+  ~11 min at `--pause 800`.
+- Everything else (Wikipedia, Wikidata, Lift Wing) is free and network-bound.
+
+### 6. Ideas not built
+
+- **A third known layer from each page's own categories** (`cats` in
+  taxonomy.json), e.g. "Battles involving the Normans".
+- **For art, `movement` as a known layer under Visual arts.** Clusters there are
+  still named by embedding ("Paintings · Rococo · Baroque").
+- **Topic chapter edges:** a `--chapter-years` override (Norman England starts
+  at 1084 instead of 1066).
+- **Topic builder misses:** ~80 linked pages per article report "no such page".
+  Probably redirect titles `describe()` doesn't follow.
 
 ---
 

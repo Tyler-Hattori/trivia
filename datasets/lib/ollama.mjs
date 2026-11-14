@@ -82,10 +82,34 @@ export async function ensureUp(){
  * Ollama's newer `/api/embed` takes an array; older builds only have
  * `/api/embeddings`, one string at a time. Try the fast path, fall back once.
  */
+/*
+ * How long the embedding model stays loaded after a request. Short on purpose:
+ * EmbeddingGemma is ~600MB resident, and a search box that fires a few queries a
+ * minute does not need it pinned in memory between sessions. Override with
+ * TRIVIA_EMBED_KEEPALIVE ('0' unloads immediately, '10m' keeps it warm).
+ */
+const EMBED_KEEPALIVE = process.env.TRIVIA_EMBED_KEEPALIVE || '2m';
+
+/*
+ * EmbeddingGemma is trained ASYMMETRICALLY: documents as `title: … | text: …`
+ * (which `entryText` already does) and search queries as below. Sending a query
+ * bare — which serve.mjs did until 2026-11 — embeds it as if it were a document,
+ * and that is what produced the "anisotropy" the old README described:
+ * `zzzznotathing` scored 0.58 against its best match, above `cubism`'s 0.557.
+ * With this prefix (768 dims) nonsense tops out near 0.34 and real queries start
+ * near 0.47, so a similarity floor works again. Measured; see datasets/SEARCH.md.
+ */
+export const QUERY_PREFIX = 'task: search result | query: ';
+
+/** Embed search queries (not documents) — adds the model's query prefix. */
+export async function embedQuery(texts, model = EMBED_MODEL){
+  return embed(texts.map((t) => QUERY_PREFIX + t), model);
+}
+
 export async function embed(texts, model = EMBED_MODEL){
   if(!texts.length) return [];
   try {
-    const d = await post('/api/embed', { model, input: texts });
+    const d = await post('/api/embed', { model, input: texts, keep_alive: EMBED_KEEPALIVE });
     if(d?.embeddings?.length === texts.length) return d.embeddings;
     throw new Error('unexpected /api/embed response shape');
   } catch(e){

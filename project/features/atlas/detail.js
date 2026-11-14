@@ -88,6 +88,7 @@ export function createDetail(root, hooks = {}){
         <div class="dyear">${esc(yearText)}${
           A.openEnded[i] ? ' <span class="approx">no end recorded</span>' : ''
         }${A.circa[i] ? ' <span class="approx">approx.</span>' : ''}</div>
+        ${A.region?.[i] ? `<div class="dsub">Region: ${esc(A.region[i])}</div>` : ''}
 
         ${d.excerpt
           ? `<div class="dex">${d.excerpt.split(/\n\n+/).map((p) => `<p>${esc(p)}</p>`).join('')}</div>`

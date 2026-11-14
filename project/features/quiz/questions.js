@@ -33,6 +33,8 @@
  * Wikidata class label present on 489 entries — "human", "aircraft model" — and
  * asking someone to guess it is asking them to guess Wikidata's ontology.
  */
+import { entryType, DATE_QUIZ_TYPES } from '../../../datasets/lib/etype.mjs';
+
 export const FACET_LABEL = {
   artist: 'Artist',
   director: 'Director',
@@ -128,6 +130,17 @@ export function questionsFor(e){
    * which of several the grader held.
    */
 
+  /*
+   * No date question for places, groups and concepts. Their stored year is
+   * whatever Wikidata recorded — a founding, a renaming, the year a word was
+   * coined — so "What year: Trinovantes?" (an Iron Age tribe) or "What year:
+   * Celtic languages?" (1707, when the term was first used) tests trivia about
+   * Wikidata, not history. See datasets/lib/etype.mjs.
+   */
+  const type = e.type || entryType({ ...e, origin: e.origin || { dataset: e.dataset } });
+  if(!DATE_QUIZ_TYPES.has(type)){
+    // nothing: the date is not a fair question for this kind of thing
+  } else
   // A reign or a lifetime is two dates and asking for one of them is ambiguous.
   if(e.isSpan && e.x0 !== e.x1){
     fields.push({ key: 'span', label: 'Years (start–end)', answer: e.yearText || `${e.x0}–${e.x1}` });

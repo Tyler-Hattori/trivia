@@ -24,7 +24,7 @@
  *      what is offered; `packLabels` fills the space that is actually free.
  */
 
-import { loadAtlas, runFilter, parseQuery, queryIsEmpty, cosineToQuery, focusYArray } from './data.js';
+import { loadAtlas, runFilter, parseQuery, queryIsEmpty, focusYArray } from './data.js';
 import {
   makeScale, zoomAt, clampView, fitView, tierFor, depthFor, ticks, collapsedRanges,
   MODES, DEFAULT_MODE, modeOf, widerMode, domainFor, ppyRange, atEdge, stopsFor,
@@ -57,7 +57,7 @@ const SHELL = (base, css, theme) => `<!DOCTYPE html>
       <div class="searchbox">
         <span class="mag">&#9906;</span>
         <input id="q" type="text" autocomplete="off" spellcheck="false"
-               placeholder="Search — or 1750-1800, ds:art, topic:cubism, has:image">
+               placeholder="Search — or 1750-1800, subject:physics, region:europe, topic:cubism, has:image">
         <button class="pinfocus" title="Pin this search's focused view, then search something else">&#9670;</button>
         <button class="clear" title="Clear (Esc)">&times;</button>
         <span class="kbd">/</span>
@@ -831,32 +831,31 @@ export async function openAtlas({ title = 'Atlas' } = {}){
    */
   let semanticMatches = null;
   let semanticForQuery = '';
-  const SEMANTIC_MIN_SIM = 0.35;
-  const SEMANTIC_TOP_K = 40;
+  const SEMANTIC_TOP_K = 80;
 
+  /*
+   * Now served by `/api/search` (hybrid BM25 + 768-dim embeddings with the
+   * model's query prefix and a calibrated floor) instead of a browser-side cosine
+   * over the 256-dim map vectors with a bare query. The old path had no usable
+   * threshold — gibberish outscored real words — so it always returned its top 40.
+   * This one returns nothing for nonsense and a ranked, cut list otherwise.
+   */
   async function triggerSemanticSearch(raw){
     const text = parseQuery(raw).text.join(' ');
     if(!text){ semanticMatches = null; semanticForQuery = raw; return; }
 
-    await A.vectorsPromise;
-    if(!A.vecRowOf) return;   // never loaded — stay substring-only, silently
-
-    let vec;
+    let hits;
     try {
-      const res = await w.fetch(`/api/embed-query?q=${encodeURIComponent(text)}`);
+      const res = await w.fetch(`/api/search?q=${encodeURIComponent(text)}&k=${SEMANTIC_TOP_K}`);
       if(!res.ok) return;
-      vec = await res.json();
+      hits = (await res.json()).hits || [];
     } catch { return; }
 
     if(V.query !== raw) return;   // superseded by a later keystroke
 
-    const scored = [];
-    for(let i = 0; i < A.n; i++){
-      const sim = cosineToQuery(A, i, vec);
-      if(sim != null && sim > SEMANTIC_MIN_SIM) scored.push([i, sim]);
-    }
-    scored.sort((a, b) => b[1] - a[1]);
-    semanticMatches = new Set(scored.slice(0, SEMANTIC_TOP_K).map((pair) => pair[0]));
+    const set = new Set();
+    for(const h of hits){ const i = A.idIndex.get(h.id); if(i != null) set.add(i); }
+    semanticMatches = set;
     semanticForQuery = raw;
     mark({ data: true, paint: true });
   }

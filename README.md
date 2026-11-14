@@ -1,14 +1,22 @@
-# Trivia — an atlas + quiz over CSV datasets
+# Trivia — topics, an atlas, and a quiz over one corpus
 
-A static site (no build step, no npm) that renders `datasets/*.csv` as:
+A static site (no build step, no npm) that renders the store in `datasets/atlas/` as:
 
+- **Topics** — one subject at a time (e.g. *England*, built from the article
+  *History of England*). It has three views:
+  - a clean image-card **timeline** split into the article's own chapters
+  - a **read** outline
+  - a **quiz** on order, era, and recall
+
+  This is the view for *learning* a subject. See **Topics** below.
 - **The atlas** — a zoomable map where **x is time** and **y is semantic
   similarity**, derived from local embeddings. Related things sit at the same
-  height whatever century they are from.
+  height whatever century they are from. The view for *exploring across*
+  subjects.
 - **The quiz** — one quiz over the whole corpus, filtered by picking a node of
   the atlas's own cluster tree.
 
-The home screen is those two buttons and nothing else.
+The home screen is those three doors.
 
 Both read the same compiled store (`datasets/atlas/`), not the CSVs directly;
 `datasets/ATLAS.md` is the authority on that pipeline and **you should read it before
@@ -173,9 +181,10 @@ writing anything by hand.
 
 ```
 node datasets/migrate.mjs      # CSVs -> atlas/entries.jsonl (reads CSVs, never writes them)
-node datasets/embed-all.mjs    # fill missing vectors (resumable)
+node datasets/embed-all.mjs    # fill missing vectors (resumable; also writes the 768-d search vectors)
+node datasets/classify.mjs     # known subject + region for new entries (free, Wikimedia APIs)
 node datasets/atlas.mjs        # place new entries, keep the map stable
-node datasets/verify.mjs       # 28 invariants
+node datasets/verify.mjs       # 31 invariants
 ```
 
 Use plain `atlas.mjs`, **not `--rebuild`**, unless you mean to re-fit the whole
@@ -185,6 +194,53 @@ not move under you. `--rebuild` throws that away.
 `embed-all.mjs` only fills *missing* vectors — nothing hashes entry text, so it
 cannot see an **edited** title or excerpt. After editing existing rows you need
 `--force`, which re-embeds all of them.
+
+### Crawling — the easiest way to add a lot
+
+`crawl.mjs` runs the whole pipeline from a list: list pages → `ingest.mjs`
+(dates, images, excerpts, throttled embedding) → `classify.mjs` → `atlas.mjs`.
+It's free and resumable, and each line runs once (`crawl-state.json`).
+
+```
+node datasets/crawl.mjs --dry      # sizes and examples for every pending line of crawl.txt
+node datasets/crawl.mjs            # do it
+node datasets/crawl.mjs --redo "Wars of the Roses"
+```
+
+A line in `datasets/crawl.txt` is one of three things:
+
+| line | gets you | example |
+|---|---|---|
+| a **category** | its pages, `depth` levels of subcategories down | `Impressionist paintings \| art \| 1 \| 300` |
+| `search:` | Wikipedia search, so `articletopic:<subject>` gives **a subject** | `search: articletopic:military-and-warfare incategory:"Kingdom of England"` |
+| `wikidata:` | **a type in a date range, most famous first**: decades, centuries | `wikidata: painting 1880-1889 \| art \| - \| 200` |
+
+Things worth knowing:
+
+- **Wikipedia's category graph has cycles.** `crawl.mjs` keeps a seen-set,
+  skips date-bin subcategories ("1066 in England"), and stops at `depth` and
+  `limit`. Start from *specific* categories. A few levels down from "History"
+  is a large share of the encyclopedia.
+- **`wikidata:` uses one date property per type:**
+
+  | types | dated by |
+  |---|---|
+  | painting, sculpture, building, cathedral, castle, opera, symphony | inception (made) |
+  | film, novel, book, poem | publication |
+  | battle, siege, election, disaster | point in time |
+  | war, rebellion, revolution, expedition | start time |
+  | treaty | point in time or inception |
+  | invention, discovery | time of discovery or invention |
+  | person | birth |
+
+  Mixing date properties over a big class (about 1M paintings) timed out the
+  free query service. Notability (≥3 language editions) is filtered first.
+  If a decade query still times out, the crawler falls back to Wikipedia's
+  decade category ("1880s paintings").
+- **Categories bring obscure pages.** "Wars of the Roses" includes *Black Lady
+  of Bradley Woods*. `ingest.mjs` drops anything it can't date. Topics' **Key**
+  mode and the atlas's fame-weighted labels keep the rest in the background.
+  `wikidata:` lines are fame-ordered, so they don't have this problem.
 
 ### Adding data without a CSV — the thing to actually use
 
@@ -249,6 +305,39 @@ in `project/app/init.js` as `window.openAtlas`.
 The data it reads is built by `datasets/atlas.mjs`; see `datasets/ATLAS.md`.
 
 ### Design decisions — do not re-litigate these
+
+- **The top two layers are KNOWN; only the layers below are learned.**
+  - **Layers:**
+    - depth 1 is a subject group (History & Society, Culture, Science &
+      Technology, Geography)
+    - depth 2 is a subject (History, Politics and government, Military and
+      warfare, Visual arts, Films, Physics, Mathematics…)
+    - embedding clusters exist only inside one subject
+  - **Where the names come from:** Wikimedia's articletopic taxonomy, fetched
+    free by `datasets/classify.mjs`.
+  - **Why:** this fixed the worst of the old rail ("Politician · President" ×5,
+    "Byzantine" ×5, a "Rococo" band over 1400). Embeddings are good at "which
+    paintings are closest" and bad at naming broad subjects.
+  - **Why not Wikipedia's own category graph:** walking up from *Battle of
+    Hastings* touches 1,260 categories in six levels and reaches Politics before
+    History.
+  - **Labels are used structurally, never embedded.** Embedding `domains` made
+    the map re-derive its source CSVs (`datasets/ATLAS.md`).
+  - **People are filed by their field, not under "Biography":** Henry VIII is
+    Biography 0.87 / History 0.29 → History, beside Bosworth.
+  - Subjects under 25 entries fold into one "Other …" row per group.
+  - Sibling clusters that still share a name get a distinguishing second term.
+  - Search with `subject:physics` and `region:northern_europe`. The detail
+    panel's breadcrumb shows the path.
+- **A span much wider than the screen is context, not a mark.** Past 75% of the
+  viewport (`LONG_SPAN_FRAC` in `paint.js`):
+  - it draws as a 1px line at low alpha
+  - it can't be grabbed along its bar, only at its start point
+
+  Also, a nearby point **always** beats a span's bar. Before this, *Plants*
+  (hundreds of millions of years) crossed the screen at most zooms, and because
+  bar distance was compared against points' full distance, hovering near its
+  row anywhere selected it.
 
 - **x is linear, always.** Compressing or eliding empty stretches was offered and
   rejected. Gaps should read as real.
@@ -341,20 +430,18 @@ The data it reads is built by `datasets/atlas.mjs`; see `datasets/ATLAS.md`.
   filled-not-stroked, one-hairline aesthetic everywhere else on the canvas. An entry
   with no QID (a mined event, a hand-entered row) just gets fame 0, same treatment as
   an entry with no image.
-- **Free-text search has a semantic fallback, and "no results" is no longer
-  guaranteed for it.** Typing embeds the query through `/api/embed-query` (same
-  local EmbeddingGemma model, served by `datasets/serve.mjs`) and scores it by
-  cosine similarity against the vectors the atlas already ships, so a phrase with no
-  literal token overlap against any entry ("guy who invented the telephone") can
-  still find one. There is no similarity threshold that cleanly separates
-  "genuinely related" from "nothing better available" — measured, gibberish like
-  `zzzznotathing` scores *higher* against its best match (0.58) than the real term
-  `cubism` does against its own (0.557), an artifact of embedding-space anisotropy,
-  not a bug in the number. So semantic match is an OR added to literal matching,
-  never a replacement, and it fails soft: if Ollama is unreachable the fetch just
-  fails and plain substring search stands unchanged. A structured filter (`ds:`,
-  `topic:`, a year range) is untouched by this and is the only search left that can
-  show a true empty result.
+- **Free-text search adds hybrid matches from `/api/search`.** That route
+  combines BM25 with 768-d EmbeddingGemma scores, using the model's
+  `task: search result | query:` prefix, a calibrated similarity floor, and
+  rank fusion. So a phrase with no literal overlap ("guy who invented the
+  telephone") still finds Bell, and **a nonsense query finds nothing**.
+  - **Corrected 2026-11-13:** this README used to say no threshold could separate
+    real matches from noise, because `zzzznotathing` scored 0.58. That was the
+    query being embedded without its prefix. With the prefix it scores 0.28, and
+    real queries start near 0.47.
+  - Hybrid matches are still an OR on top of literal substring matching, and fail
+    soft to substring-only without Ollama.
+  - Full measurements: `datasets/SEARCH.md`.
 
 ### Atlas gotchas
 
@@ -446,6 +533,83 @@ These all cost time at least once.
   the corpus. Watch with `node datasets/inspect.mjs --cross`.
 
 ---
+
+## Topics
+
+```
+datasets/topic.mjs            build a topic from one Wikipedia article
+datasets/topics/<slug>.json   what the page loads (self-contained: items, chapters, excerpts)
+datasets/topics/index.json    the list
+datasets/lib/etype.mjs        what KIND of thing an entry is (event, person, work, period, place, group, concept)
+project/features/topic/       index.js (routes, timeline, read, detail, search) · layout.js · quiz.js · styles.js
+```
+
+Build one:
+
+```
+node datasets/topic.mjs "History of England" --name England --events "Timeline of English history" --ingest
+node datasets/qa-topic.mjs          # invariants + layout, ~1s
+```
+
+Then open `#/topics` from the home page. Without `--ingest` it builds from what
+the store already has and lists the linked pages that are missing. With
+`--ingest` it pulls them through `ingest.mjs` first (throttled, only new rows
+embedded) and places them on the atlas.
+
+### Why a topic comes from an article and not from embeddings
+
+Measured (see `datasets/SEARCH.md`): no similarity threshold returns "everything
+in English history". *Richard II* ranks #100 and *Stonehenge* #300 for the query
+"English history", with French events between them. Similarity ranks well but
+can't define a set. The article already holds what the clustering was guessing at:
+
+- **Membership:** the pages it links to from prose and "Main article:" hatnotes,
+  not tables or navboxes. Plus the events mined from a "Timeline of…" page.
+- **Chapters:** its own section headings, in its own order (Prehistory, Roman
+  Britain, Anglo-Saxon, Norman, Plantagenet, Tudor…). Date ranges come from the
+  heading when it states one ("14th century"); otherwise they're inferred from
+  members as the split that misplaces the fewest.
+- **Date checks:** an entry linked in "Roman Britain" whose stored year is 2021
+  (*Colchester*, city status) stays in the topic but off the timeline.
+- **Importance:** a weighted mention count (hatnote ×4, lead ×2) plus Wikidata
+  fame, scaled by type. **Key** takes about 90 entries, proportional per chapter
+  with at least 4 each.
+
+### What goes on the timeline
+
+`etype.mjs` types every entry:
+
+- **Events, people, works and periods** go on the timeline.
+- **Concepts** (languages, "History of …" articles) never do.
+- **Places and groups** go on only when their date is a real one: not prose-derived,
+  not an open span to today, and consistent with the chapter that mentions them.
+
+The same types keep year questions away from places and concepts in **both**
+quizzes. "What year: Trinovantes?" (an Iron Age tribe) is gone.
+
+### Design decisions
+
+- **Looks like the original art timeline**:
+  - white background, hairlines
+  - image cards with a chapter-colour strip, images never cropped
+  - chapter chips that filter; horizontal scroll
+- **Lanes are packed in importance order**, so the top lane is the headline
+  sequence of the topic and can be read left to right.
+- **Long empty stretches are cut out and marked.** A hatched break says how many
+  years were skipped; within a segment x is linear. Unlike the atlas — this view
+  is for reading a story, and 80,000 empty years of Palaeolithic scroll serve no
+  one.
+- **People sit at 60% of their lifespan**, not at birth: Shakespeare is
+  Elizabethan. Leaders' spans are already reigns and sit at their start.
+- **Read view** is the same items as an outline per chapter: year, title, two
+  sentences, image. ←/→ steps through entries in time order in both views.
+- **Search** runs BM25 in the browser instantly, then upgrades to the hybrid
+  `/api/search?topic=` ranking when the dev server is up.
+- **The quiz has three modes:**
+  - **Order:** four events from the same or neighbouring chapters.
+  - **Era:** which chapter something belongs to.
+  - **Recall:** the global quiz's typed fields, minus country and occupation,
+    which inside a topic are free or unguessable.
 
 ## The quiz
 
@@ -627,13 +791,14 @@ node datasets/serve.mjs
   --remote-debugging-port=9334 --user-data-dir=/tmp/chrome-atlas \
   --window-size=1600,1000 about:blank
 
-node datasets/verify.mjs                      # 26 data invariants, ~1s
+node datasets/verify.mjs                      # 31 data invariants, ~1s
 node datasets/qa-atlas.mjs                    # 87 browser checks
 node datasets/qa-atlas.mjs --shot /tmp/a.png  # + a screenshot
 node datasets/qa-atlas.mjs --keep             # leave the windows open
 
-node datasets/qa-quiz.mjs                     # 42 checks: home + quiz + grader
+node datasets/qa-quiz.mjs                     # 43 checks: home + quiz + grader
 node datasets/qa-quiz.mjs --shot /tmp/q.png
+node datasets/qa-topic.mjs                    # topic invariants + timeline layout, no browser
 ```
 
 `window.__atlas` on the atlas window is a deliberate debug handle, exposing

@@ -133,6 +133,10 @@ export function buildModel(raw){
     yearText: P.yearText,
     image: P.image,
     dataset: P.dataset,
+    // Known subject ("Culture › Visual arts") and region, from classify.mjs.
+    // Absent from older builds; empty strings keep every consumer simple.
+    subject: P.subject || P.kind.map(() => ''),
+    region: P.region || P.kind.map(() => ''),
     topics: P.topics,
     knn: P.knn,
     x0: Float64Array.from(P.x0),
@@ -239,7 +243,7 @@ export function buildModel(raw){
   // strings is well under a frame, and it keeps search dependency-free.
   A.haystack = new Array(n);
   for(let i = 0; i < n; i++){
-    A.haystack[i] = `${A.title[i]} ${A.subtitle[i]} ${(A.topics[i] || []).join(' ')} ${A.dataset[i]}`.toLowerCase();
+    A.haystack[i] = `${A.title[i]} ${A.subtitle[i]} ${(A.topics[i] || []).join(' ')} ${A.dataset[i]} ${A.subject[i]} ${A.region[i]}`.toLowerCase();
   }
 
   return A;
@@ -377,7 +381,7 @@ function buildGrid(A){
  *   has:image               only entries with a picture
  */
 export function parseQuery(raw){
-  const q = { text: [], range: null, datasets: [], topics: [], flags: [] };
+  const q = { text: [], range: null, datasets: [], topics: [], flags: [], subjects: [], regions: [] };
   for(const tok of String(raw || '').trim().split(/\s+/).filter(Boolean)){
     let m;
     if((m = tok.match(/^(-?\d{1,4})\s*(?:-|–|to)\s*(-?\d{1,4})$/))){
@@ -386,6 +390,10 @@ export function parseQuery(raw){
       q.datasets.push(m[1].toLowerCase());
     } else if((m = tok.match(/^topic:(.+)$/i))){
       q.topics.push(m[1].toLowerCase().replace(/_/g, ' '));
+    } else if((m = tok.match(/^subject:(.+)$/i))){
+      q.subjects.push(m[1].toLowerCase().replace(/_/g, ' '));
+    } else if((m = tok.match(/^region:(.+)$/i))){
+      q.regions.push(m[1].toLowerCase().replace(/_/g, ' '));
     } else if((m = tok.match(/^has:(.+)$/i))){
       q.flags.push(m[1].toLowerCase());
     } else {
@@ -396,7 +404,8 @@ export function parseQuery(raw){
 }
 
 export const queryIsEmpty = (q) =>
-  !q.text.length && !q.range && !q.datasets.length && !q.topics.length && !q.flags.length;
+  !q.text.length && !q.range && !q.datasets.length && !q.topics.length && !q.flags.length &&
+  !q.subjects.length && !q.regions.length;
 
 /**
  * Compute the match set as a Uint8Array flag per point.
@@ -418,6 +427,10 @@ export function runFilter(A, { query, topics, datasets, mode, semanticMatches })
     if(q.range && (A.x1[i] < q.range[0] || A.x0[i] > q.range[1])) continue;
     if(q.datasets.length && !q.datasets.includes(A.dataset[i])) continue;
     if(q.flags.includes('image') && !A.image[i]) continue;
+    // subject:physics, subject:visual_arts, region:northern_europe — substring, so
+    // "subject:history" also takes "History & Society › Military and warfare".
+    if(q.subjects.length && !q.subjects.every((s) => A.subject[i].toLowerCase().includes(s))) continue;
+    if(q.regions.length && !q.regions.every((r) => A.region[i].toLowerCase().includes(r))) continue;
     if(q.flags.includes('excerpt') && !A.details?.[A.id[i]]?.excerpt) continue;
 
     if(q.topics.length){

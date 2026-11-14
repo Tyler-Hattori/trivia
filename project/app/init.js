@@ -6,6 +6,7 @@ import { state } from '../core/state.js';
 import { openGlobalTimeline } from '../features/global_timeline.js';
 import { openAtlas } from '../features/atlas/index.js';
 import { openQuiz } from '../features/quiz/index.js';
+import { route as topicRoute, isTopicRoute, openTopics } from '../features/topic/index.js';
 
 window.saveToken = () => {
   const val = document.getElementById('token').value;
@@ -21,13 +22,19 @@ window.openTimeline = openTimeline;
 window.openGlobalTimeline = openGlobalTimeline;
 window.openAtlas = openAtlas;
 window.openQuiz = openQuiz;
+window.openTopics = openTopics;
 
 window.toggleTimelineFilters = () => {
   state.filtersOpen = !state.filtersOpen;
   render();
 };
 
+// Topics live on hash routes (#/topics, #/topic/<slug>[/read|/quiz]) so reload
+// and Back work. Anything else is the home screen.
+window.addEventListener('hashchange', () => { topicRoute(); if(!isTopicRoute()) render(); });
+
 document.addEventListener('DOMContentLoaded', () => {
+  if(isTopicRoute()) topicRoute();
   try {
     render();
     console.log('RENDER OK');

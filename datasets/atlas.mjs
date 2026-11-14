@@ -40,8 +40,12 @@ import {
   nearestLeaf, centroid, cosine, pc1Projections, knn, harvestVocabulary,
 } from './lib/cluster.mjs';
 
+import { buildTaxonomyTree, descendFrom, disambiguateSiblings, taxoKey, loadTaxonomy } from './lib/taxotree.mjs';
+
 const argv = process.argv.slice(2);
 const REBUILD = argv.includes('--rebuild');
+// --no-taxonomy: the old all-embedding hierarchy, for comparison.
+const NO_TAXO = argv.includes('--no-taxonomy');
 const KNN_K = Number(argv[argv.indexOf('--knn') + 1]) || 8;
 const NO_SEMANTIC = argv.includes('--no-semantic-labels');
 
@@ -68,6 +72,11 @@ const dim = vec.dim;
 const m = new Float32Array(n * dim);
 rows.forEach((e, i) => m.set(vec.get(e.id), i * dim));
 rows.forEach((e, i) => { e.vec = m.subarray(i * dim, i * dim + dim); });   // for labelNodes
+
+// Known subject layers (datasets/classify.mjs). Absent -> the old pure-embedding tree.
+const taxo = NO_TAXO ? null : loadTaxonomy();
+if(taxo) rows.forEach((e) => { e.taxo = taxo.entries[e.id] || null; });
+if(taxo) console.log(`  taxonomy: ${rows.filter((e) => e.taxo).length}/${n} entries have a known subject`);
 
 console.log(`  ${n} entries x ${dim} dims · model ${vec.model}`);
 
@@ -101,7 +110,10 @@ if(frozen){
   rows.forEach((e, i) => {
     let leaf = knownIndex.get(e.id);
     if(leaf === undefined || !nodes[leaf] || nodes[leaf].children.length){
-      leaf = nearestLeaf(e.vec, nodes);
+      // Into its own subject's subtree when the frozen tree has one; descending
+      // from the root by centroid alone can file a battle under Films.
+      const home = e.taxo ? nodes.find((nd) => nd.taxo === taxoKey(e.taxo)) : null;
+      leaf = home ? descendFrom(home.id, e.vec, nodes) : nearestLeaf(e.vec, nodes);
       added++;
     } else placed++;
     nodes[leaf].rows.push(i);
@@ -134,7 +146,12 @@ if(frozen){
 } else {
   // ---- full fit ------------------------------------------------------------
   console.log('  fitting hierarchy…');
-  ({ nodes } = buildTree(m, dim, n, FIT_OPTS));
+  if(taxo){
+    // Known layers on top (subject group -> subject), embeddings below.
+    ({ nodes } = buildTaxonomyTree(m, dim, rows, { ...FIT_OPTS, maxDepth: 5 }));
+  } else {
+    ({ nodes } = buildTree(m, dim, n, FIT_OPTS));
+  }
   ({ y } = assignY(m, dim, n, nodes, FIT_OPTS));
 }
 
@@ -196,6 +213,11 @@ async function labelVocabulary(){
 const vocab = await labelVocabulary();
 
 labelNodes(nodes, rows, { vocab });
+// Taxonomy nodes are NAMED, not guessed: "Visual arts", not "Painting · Oil".
+for(const nd of nodes) if(nd.fixedLabel) nd.label = nd.fixedLabel;
+// Siblings that ended up with the same label ("Byzantine" x5) get told apart by
+// their next most distinctive term.
+disambiguateSiblings(nodes);
 assignColors(nodes);
 
 const leaves = leavesInOrder(nodes);
@@ -338,6 +360,9 @@ const atlas = {
     image:    rows.map((e) => e.image),
     yearText: rows.map((e) => e.yearText),
     dataset:  rows.map((e) => e.origin?.dataset || ''),
+    // Known subject (classify.mjs) and region, for filters and the detail panel.
+    subject:  rows.map((e) => (e.taxo ? `${e.taxo.top} › ${e.taxo.mid}` : '')),
+    region:   rows.map((e) => e.taxo?.region || ''),
     topics:   rows.map((e) => e.topics),
     // How well-known this entry is, [0,1], from Wikidata sitelinks. Never
     // embedded — like `dataset`, it's metadata about the entry, not the entry.
@@ -355,6 +380,7 @@ const atlas = {
     terms: nd.terms,
     topics: nd.topTopics,
     exemplar: nd.exemplar,          // index into points
+    taxo: nd.taxo || null,          // "Culture|Visual arts" on a known-subject node
     y0: r5(nd.y0), y1: r5(nd.y1),
     x0: nd.x0, x1: nd.x1,
     color: nd.color,
@@ -377,6 +403,7 @@ writeJSON(PATHS.layout, {
   fittedCount: frozen ? frozen.fittedCount : n,
   nodes: nodes.map((nd) => ({
     id: nd.id, parent: nd.parent, depth: nd.depth, children: nd.children,
+    taxo: nd.taxo || null, fixedLabel: nd.fixedLabel || null,
     centroid: Array.from(nd.centroid, (v) => Math.round(v * 1e4) / 1e4),
     y0: r5(nd.y0), y1: r5(nd.y1),
   })),

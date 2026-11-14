@@ -126,17 +126,18 @@ const home = await until(app, `
   })()`, { label: 'home buttons' });
 
 check('home renders', home.ok, JSON.stringify(home.value));
-check('home has exactly two doors', home.value?.n === 2,
+check('home has exactly three doors (Topics, Atlas, Quiz)', home.value?.n === 3,
   `found ${home.value?.n} buttons: ${JSON.stringify(home.value?.labels)}`);
 
 const hasBoth = await evaluate(app, `
   (() => {
     const t = document.querySelector('#app').textContent;
-    return { atlas: /Atlas/.test(t), quiz: /Quiz/.test(t),
+    return { atlas: /Atlas/.test(t), quiz: /Quiz/.test(t), topics: /Topics/.test(t),
              token: /GitHub Token/.test(t), lanes: /Old lane timeline/.test(t) };
   })()`);
 check('Atlas door present', hasBoth.atlas);
 check('Quiz door present', hasBoth.quiz);
+check('Topics door present', hasBoth.topics);
 check('GitHub token panel gone', !hasBoth.token);
 check('old lane timeline button gone', !hasBoth.lanes);
 
@@ -395,9 +396,9 @@ check('both ends of a span must be right', grader.spanOk === true && grader.span
 
 await evaluate(app, `window.quizHome()`, { awaitPromise: false });
 const back = await until(app, `
-  document.querySelectorAll('#app button').length === 2 ? 'yes' : null`,
+  document.querySelectorAll('#app button').length === 3 ? 'yes' : null`,
   { label: 'home again' });
-check('Home returns to the two doors', back.ok, String(back.value));
+check('Home returns to the three doors', back.ok, String(back.value));
 
 if(SHOT){
   await evaluate(app, `window.openQuiz()`, { awaitPromise: false, userGesture: true });

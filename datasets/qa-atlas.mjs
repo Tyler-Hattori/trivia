@@ -529,7 +529,11 @@ const gesture = await evaluate(atlas, `(async()=>{
   X.goto(0, 6); await frame();
   const a={ppy:V.ppy, x0:V.x0, yTop:V.yTop};
 
+  // Down, and if the view was already against the bottom edge, up. Which edge
+  // the previous step leaves us near depends on where the data sits, not on the
+  // gesture handling being tested.
   fire({deltaY:120, deltaX:0}); await frame();
+  if(V.yTop === a.yTop){ fire({deltaY:-120, deltaX:0}); await frame(); }
   const scrolled={ppy:V.ppy, x0:V.x0, yTop:V.yTop};
 
   fire({deltaY:-240, deltaX:0, ctrlKey:true}); await frame();
@@ -543,7 +547,7 @@ const gesture = await evaluate(atlas, `(async()=>{
 })()`);
 
 check('a two-finger scroll pans instead of zooming',
-  gesture.scrolled.ppy === gesture.a.ppy && gesture.scrolled.yTop > gesture.a.yTop,
+  gesture.scrolled.ppy === gesture.a.ppy && gesture.scrolled.yTop !== gesture.a.yTop,
   `ppy held at ${gesture.a.ppy.toFixed(2)}, yTop ${gesture.a.yTop.toFixed(4)} -> ${gesture.scrolled.yTop.toFixed(4)}`);
 check('a pinch zooms', gesture.pinched.ppy > gesture.scrolled.ppy * 1.1,
   `${gesture.scrolled.ppy.toFixed(2)} -> ${gesture.pinched.ppy.toFixed(2)} px/yr`);
@@ -797,17 +801,15 @@ check('has:image filters to entries with pictures', s5.matched > 0 && s5.matched
   `"has:image" -> ${s5.count}`);
 
 /*
- * Semantic search changed what "hopeless" means for free text. Embedding a
- * query and ranking by cosine similarity always returns a nearest neighbour —
- * there is no threshold that cleanly separates "genuinely related" from
- * "nothing better available" (measured: gibberish like "zzzznotathing" scores
- * *higher*, 0.58, against its best match than the real term "cubism" does
- * against its own, 0.557 — an artifact of embedding-space anisotropy, not a
- * bug in the threshold). So a free-text query can no longer guarantee zero
- * matches; only a structured filter that names something absent can.
+ * A nonsense query finds nothing again. The old claim here was that no
+ * similarity threshold could separate "related" from "nothing better available"
+ * because gibberish scored 0.58 — but that was the query being embedded WITHOUT
+ * EmbeddingGemma's query prefix. With it (and 768 dims), nonsense tops out near
+ * 0.34 and real queries start near 0.47, and /api/search cuts at 0.40. See
+ * datasets/SEARCH.md.
  */
 const s6 = await search('zzzznotathing');
-check('a hopeless free-text search still finds a semantic neighbour', s6.matched > 0, s6.count);
+check('a nonsense free-text search finds nothing', s6.matched === 0, s6.count);
 
 const s7 = await search('ds:zzznotarealdataset');
 check('a structured filter with no matches shows the empty state', s7.matched === 0 && s7.empty, s7.count);

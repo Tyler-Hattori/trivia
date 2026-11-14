@@ -17,7 +17,9 @@ Wikipedia + Wikidata          ingest.mjs      free, no model
         ↓
   vectors.bin                 int8 + per-row scale
         ↓
-  cluster tree + y            atlas.mjs       deterministic, ~9s for 3,800
+  subject + region            classify.mjs    free (Wikimedia articletopic) + kNN vote
+        ↓
+  cluster tree + y            atlas.mjs       known top 2 layers, embeddings below
         ↓
   vocab.bin + labels          atlas.mjs       term vectors, cached
         ↓
@@ -342,6 +344,73 @@ See **The old CSVs** below.
 
 ---
 
+## Subjects: the known top of the hierarchy (2026-11-13)
+
+```
+node datasets/classify.mjs             # label new entries (resumable; fetches are cached)
+node datasets/classify.mjs --refresh   # recompute every assignment from the cache
+node datasets/classify.mjs --report    # the subject tree and coverage, no network
+node datasets/atlas.mjs --rebuild      # after a big change in subjects
+```
+
+Writes `atlas/taxonomy.json`, a sidecar so `migrate.mjs` can't lose it.
+
+**Where a subject comes from**, most trusted first:
+
+| source | entries | how |
+|---|---|---|
+| `page` | 3,226 | the entry's own article, through Wikimedia's **articletopic** model (Lift Wing `outlink-topic-model`): 64 topics in layers, Geography kept as a separate region axis. ~3 min for the store, free |
+| `dataset` | 2,580 | a CSV row with no page: `art` → Visual arts, `film` → Films, `leaders` → Politics/History |
+| `knn` | 2,596 | a mined event or hand row: similarity-weighted vote of its 15 nearest page-labelled neighbours (768-d search vectors), mixed 60/40 with the labels of the page it was mined from |
+
+**Filing rules:**
+
+- A **person** goes under their best non-Biography subject when it scores
+  ≥ 0.15 (Henry VIII → History, not Biography).
+- A **catch-all** topic (`STEM.STEM*`) yields to a specific one in the same
+  group that scores ≥ 0.15. Without this, 656 entries sat in a band called
+  "STEM" while Physics had 23.
+- **Region** is the most specific region topic scoring ≥ 0.4.
+- Each page's **own categories** are kept as `cats`, minus date bins and
+  maintenance categories. They're the precise bottom layer, unused by the map so
+  far.
+
+**What `atlas.mjs` does with it** (`lib/taxotree.mjs`):
+
+- **Layers:** root → subject group → subject → `buildTree` clusters inside each
+  subject.
+- **Order:** subjects run biggest first, "Other …" last; under 25 entries they
+  fold into "Other <group>".
+- **Incremental placement** sends a newcomer to its subject's node and descends
+  by centroid only below it. `verify.mjs`'s re-ingest check takes the same
+  route.
+- `--no-taxonomy` builds the old all-embedding tree for comparison.
+
+**Why not the category graph.** Wikipedia:Contents/Categories names good top
+headings, but the graph under them is a web. From *Battle of Hastings*, six
+levels up touches 1,260 categories and reaches Politics (depth 4) before History
+(depth 6). From *Les Demoiselles d'Avignon* it reaches Food and drink. There is
+no single "top-level category of" to inherit.
+
+**Why the subject isn't embedded.** Same lesson as `domains` below: a broad
+label in the embedded text forces every entry with that label together and
+re-derives the label. It's used as structure instead.
+
+## Dates are not in the embedding (2026-11-13)
+
+`entryText()` drops topic tags that are date bins ("1066 in england", "1491
+births", "8th-century bc establishments"; `DATE_TAG` in `lib/store.mjs`). They
+were 26% of embedded tags on 35% of entries. Time is a number on every entry
+(`start`/`end`) and the x axis; inside an embedding it is noise. Centuries and
+decades are arithmetic on `start`/`end`, not scraped. The store was re-embedded
+once (`embed-all.mjs --force`, throttled, ~11 min).
+
+## Crawling
+
+See the root README's **Crawling** section: categories, `search:
+articletopic:<subject>` and `wikidata: <type> <from>-<to>`, all in
+`datasets/crawl.txt`.
+
 ## Rebuilding the map
 
 ```
@@ -626,35 +695,19 @@ there is no notability signal available for those regardless.
 
 ## Semantic search
 
-`datasets/serve.mjs` — the dev server that is otherwise a pure static file
-server — has one route, `GET /api/embed-query?q=...`: it embeds the query text
-with the same local EmbeddingGemma model every entry was embedded with
-(`lib/ollama.mjs`'s `embed()`), truncates and renormalises it to the stored
-256-dim width (`truncateNormalize`, `lib/store.mjs`), and returns it as JSON.
-That is the entire server-side piece — the browser already fetches
-`vectors.bin` + `vectors.json` as static files and does the cosine similarity
-itself, joining by id (vectors.bin's row order is append-order, **not**
-`atlas.json`'s point order, so the join can never be positional).
+Rewritten 2026-11-13. **`datasets/SEARCH.md` is the authority**; in short:
 
-The route is short-timeout and fail-soft on purpose: a 503 if Ollama is down or
-the embed call hangs past a few seconds, and the frontend treats anything but
-200 as "semantic unavailable" and falls back to plain substring matching with
-no user-visible error. This is an enhancement layered on top of search that
-already works, not a replacement for it.
-
-**There is no similarity threshold that reliably separates "genuinely related"
-from "nothing better available."** Nearest-neighbour search always returns a
-nearest neighbour. Measured against this corpus: gibberish (`zzzznotathing`)
-scores 0.58 against its best match, *higher* than the real term `cubism` scores
-against its own best match (0.557) — an artifact of embedding-space anisotropy,
-not a miscalibrated number. So the browser treats a semantic hit as an OR
-added to literal substring matching, never a replacement, and a "hopeless"
-free-text search is now expected to surface a loose semantic neighbour rather
-than nothing. Only a structured filter (`ds:`, `topic:`, a year range) can still
-show a genuinely empty result, and `qa-atlas.mjs` checks that distinction
-rather than "free text can return zero," which no longer holds.
-
----
+- `GET /api/search?q=…[&topic=slug][&k=N]` (`lib/search.mjs`): BM25 plus
+  768-d EmbeddingGemma similarity, with the query prefix
+  `task: search result | query:`, fused by reciprocal rank.
+- A similarity floor of 0.40 now works because the prefix is there: nonsense
+  tops out near 0.34 and real queries start near 0.47. The old claim that no
+  threshold could separate them came from embedding the query bare.
+- Search reads `atlas/search-vectors.bin` (768-d, written by `embed-all.mjs`
+  and `ingest.mjs` from the same embed call as the map vectors). The map keeps
+  the 256-d `vectors.bin`, so nothing on the atlas moves.
+- Fails soft: without Ollama it's keyword-only and says so. `/api/embed-query`
+  still exists (now prefixed) but nothing in the app calls it.
 
 ## The old CSVs
 

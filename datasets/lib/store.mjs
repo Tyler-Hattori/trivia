@@ -50,7 +50,16 @@ export const PATHS = {
   details: path.join(ATLAS_DIR, 'details.json'),
   vocab:     path.join(ATLAS_DIR, 'vocab.bin'),
   vocabMeta: path.join(ATLAS_DIR, 'vocab.json'),
+  // Full-width vectors for SEARCH only. The map keeps using the 256-dim
+  // `vectors.bin` (changing that would re-fit every y on the atlas); search reads
+  // these, because the Matryoshka cut costs retrieval ~5 points of R-precision.
+  searchVectors: path.join(ATLAS_DIR, 'search-vectors.bin'),
+  searchVecMeta: path.join(ATLAS_DIR, 'search-vectors.json'),
+  topics:  path.join(DATASETS_DIR, 'topics'),
 };
+
+/** Width of the search vectors: EmbeddingGemma's native output, uncut. */
+export const SEARCH_DIM = 768;
 
 /** Stored vector width. A Matryoshka prefix of the model's native output. */
 export const DIM = 256;
@@ -229,9 +238,19 @@ export function appendEntries(entries){
  * partly redundant with x and bend the whole map into a diagonal, wasting the
  * dimension that is supposed to carry meaning.
  */
+/*
+ * Topic tags that are really DATES: Wikipedia's date categories ("1066 in
+ * england", "1491 births", "8th-century bc establishments"). 26% of all tags on
+ * 35% of entries, measured 2026-11-13. Time is the x axis and a number on every
+ * entry; inside the embedding it only adds noise (embedding models represent
+ * numbers poorly) and pulls entries together by calendar coincidence. Kept on
+ * the entry for filtering, removed from what is embedded.
+ */
+export const DATE_TAG = /\b\d{1,4}s?\b|\bcentury\b|\bcenturies\b|\bmillennium\b|\bbirths\b|\bdeaths\b|\bestablishments\b|\bdisestablishments\b/i;
+
 export function entryText(e, maxExcerpt = 700){
   const head = [e.title, e.subtitle].filter(Boolean).join(' — ');
-  const topics = (e.topics || []).join(', ');
+  const topics = (e.topics || []).filter((t) => !DATE_TAG.test(t)).join(', ');
   const facets = Object.entries(e.facets || {})
     // A date is `start`/`end`'s job. In the text it only pulls entries together by
     // calendar coincidence — "24 January" is not what an event is about.
@@ -252,9 +271,23 @@ export function entryText(e, maxExcerpt = 700){
 // Vectors
 // ---------------------------------------------------------------------------
 
-function readVecMeta(){
-  if(!fs.existsSync(PATHS.vecMeta)) return { model: null, dim: DIM, native: null, ids: [] };
-  return JSON.parse(fs.readFileSync(PATHS.vecMeta, 'utf8'));
+function readVecMeta(metaPath = PATHS.vecMeta, dim = DIM){
+  if(!fs.existsSync(metaPath)) return { model: null, dim, native: null, ids: [] };
+  return JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+}
+
+/**
+ * The search-vector store: same int8-plus-scale row format as `vectors.bin`, at
+ * SEARCH_DIM. Returns the same shape as `readVectors`, or null when absent — a
+ * store built before search vectors existed simply searches at 256 dims.
+ */
+export function readSearchVectors(){
+  if(!fs.existsSync(PATHS.searchVecMeta) || !fs.existsSync(PATHS.searchVectors)) return null;
+  return readVecFile(PATHS.searchVectors, PATHS.searchVecMeta, SEARCH_DIM);
+}
+
+export function writeSearchVectors(pairs, { model } = {}){
+  writeVecFile(PATHS.searchVectors, PATHS.searchVecMeta, pairs, { model, native: SEARCH_DIM });
 }
 
 /**
@@ -262,15 +295,19 @@ function readVecMeta(){
  * Returns `{ model, dim, ids, get(id) -> Float32Array|null }`.
  */
 export function readVectors(){
-  const meta = readVecMeta();
-  const dim = meta.dim || DIM;
+  return readVecFile(PATHS.vectors, PATHS.vecMeta, DIM);
+}
+
+function readVecFile(binPath, metaPath, defaultDim){
+  const meta = readVecMeta(metaPath, defaultDim);
+  const dim = meta.dim || defaultDim;
   const rowBytes = 4 + dim;
-  const buf = fs.existsSync(PATHS.vectors) ? fs.readFileSync(PATHS.vectors) : Buffer.alloc(0);
+  const buf = fs.existsSync(binPath) ? fs.readFileSync(binPath) : Buffer.alloc(0);
   const rows = Math.floor(buf.length / rowBytes);
 
   if(rows !== meta.ids.length){
     throw new Error(
-      `vectors.bin holds ${rows} rows but vectors.json indexes ${meta.ids.length}. ` +
+      `${path.basename(binPath)} holds ${rows} rows but ${path.basename(metaPath)} indexes ${meta.ids.length}. ` +
       `Re-run: node datasets/embed-all.mjs --force`,
     );
   }
@@ -287,7 +324,7 @@ export function readVectors(){
     return out;
   };
 
-  return { model: meta.model, dim, native: meta.native, ids: meta.ids, index, get, has: (id) => index.has(id) };
+  return { model: meta.model, dim, native: meta.native, ids: meta.ids, index, get, has: (id) => index.has(id), buf, rowBytes };
 }
 
 /** Quantise one float vector to a `4 + dim` byte row. */
@@ -323,12 +360,16 @@ export function truncateNormalize(vec, dim = DIM){
  * order. Order is the file's own; nothing outside relies on it.
  */
 export function writeVectors(pairs, { model, native } = {}){
+  writeVecFile(PATHS.vectors, PATHS.vecMeta, pairs, { model, native });
+}
+
+function writeVecFile(binPath, metaPath, pairs, { model, native } = {}){
   fs.mkdirSync(ATLAS_DIR, { recursive: true });
   const dim = pairs.length ? pairs[0][1].length : DIM;
   const buf = Buffer.concat(pairs.map(([, v]) => packVector(v)));
-  fs.writeFileSync(PATHS.vectors + '.tmp', buf);
-  fs.renameSync(PATHS.vectors + '.tmp', PATHS.vectors);
-  fs.writeFileSync(PATHS.vecMeta, JSON.stringify({
+  fs.writeFileSync(binPath + '.tmp', buf);
+  fs.renameSync(binPath + '.tmp', binPath);
+  fs.writeFileSync(metaPath, JSON.stringify({
     model, native, dim, count: pairs.length, ids: pairs.map(([id]) => id),
   }, null, 0) + '\n');
 }

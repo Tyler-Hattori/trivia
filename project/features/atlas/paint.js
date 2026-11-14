@@ -363,7 +363,15 @@ export function paintFrame(ctx, A, scale, opts){
     const xb = scale.sx(A.x1[i]);
     if(xb - xa < 1.5) continue;
     const y = Math.round(scale.sy(Y[i])) + 0.5;
-    const alpha = matched ? 0.55 : COLORS.dimSpan;
+    /*
+     * A span far wider than the screen (*Plants*, hundreds of millions of years;
+     * *Middle Ages* at decade zoom) is CONTEXT here, not a mark: it says "this was
+     * going on", and drawn at full strength it is the loudest thing on the map
+     * and buries the points around it. Faded to a hairline once it is wider than
+     * the viewport. It also stops being grabbable along its length — see hitTest.
+     */
+    const ultra = xb - xa > W * LONG_SPAN_FRAC;
+    const alpha = matched ? (ultra ? 0.16 : 0.55) : COLORS.dimSpan;
 
     // Clamped to the viewport before measuring the tail, or an openEnded span
     // whose end is off-screen fades somewhere nobody can see while the visible
@@ -383,7 +391,7 @@ export function paintFrame(ctx, A, scale, opts){
       ctx.fillRect(x1 - fade, y - 1, fade, 2);
     } else {
       ctx.fillStyle = hexToRgba(A.color[i], alpha);
-      ctx.fillRect(x0, y - 1, x1 - x0, 2);
+      ctx.fillRect(x0, ultra ? y : y - 1, x1 - x0, ultra ? 1 : 2);
     }
   }
 
@@ -601,6 +609,9 @@ function clip(ctx, text, maxW){
   return text.slice(0, lo) + '…';
 }
 
+/** A span wider than this share of the viewport is drawn as context and not grabbable along its bar. */
+export const LONG_SPAN_FRAC = 0.75;
+
 // ---------------------------------------------------------------------------
 // Hit testing
 // ---------------------------------------------------------------------------
@@ -620,6 +631,9 @@ export function hitTest(A, scale, visible, placements, mx, my, { collapsed, radi
   }
 
   const Y = yArr || A.y;
+  const W = scale.W || 1600;
+
+  // 1. Points (a span's start counts as its point). Nearest within the radius wins.
   let best = -1, bestD = radius * radius;
   for(const i of visible){
     if(collapsed?.size && isHidden(A, i, collapsed)) continue;
@@ -627,17 +641,28 @@ export function hitTest(A, scale, visible, placements, mx, my, { collapsed, radi
     const dy = scale.sy(Y[i]) - my;
     const d = dx * dx + dy * dy;
     if(d < bestD){ bestD = d; best = i; }
-
-    // A span is grabbable anywhere along its bar, not just at its start.
-    if(A.isSpan[i]){
-      const xa = scale.sx(A.x0[i]), xb = scale.sx(A.x1[i]);
-      if(mx >= xa && mx <= xb){
-        const dy2 = Math.abs(scale.sy(Y[i]) - my);
-        if(dy2 < 5 && dy2 * dy2 < bestD){ bestD = dy2 * dy2; best = i; }
-      }
-    }
   }
-  return best;
+  if(best >= 0) return best;
+
+  /*
+   * 2. Only if no point is near: a span's BAR, and only a span short enough to
+   * read as one thing on screen. This used to run in the same loop and compare
+   * the bar's vertical distance against points' full distance, so a bar 2px
+   * under the cursor beat a point 6px away — and since *Plants* or *Animal*
+   * cross the entire screen at most zooms, hovering almost anywhere near their
+   * row selected them. Ultra-long spans are reachable at their start point.
+   */
+  let bestBar = -1, bestDy = 4;
+  for(const i of visible){
+    if(!A.isSpan[i]) continue;
+    if(collapsed?.size && isHidden(A, i, collapsed)) continue;
+    const xa = scale.sx(A.x0[i]), xb = scale.sx(A.x1[i]);
+    if(xb - xa > W * LONG_SPAN_FRAC) continue;
+    if(mx < xa || mx > xb) continue;
+    const dy = Math.abs(scale.sy(Y[i]) - my);
+    if(dy < bestDy){ bestDy = dy; bestBar = i; }
+  }
+  return bestBar;
 }
 
 /** The band under a y pixel, for clicking a cluster rather than a point. */

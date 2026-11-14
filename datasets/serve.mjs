@@ -25,8 +25,10 @@ import { stat, readFile } from 'node:fs/promises';
 import { extname, join, normalize, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { ensureUp, embed } from './lib/ollama.mjs';
-import { truncateNormalize, DIM } from './lib/store.mjs';
+import fs from 'node:fs';
+import { ensureUp, embedQuery } from './lib/ollama.mjs';
+import { truncateNormalize, DIM, PATHS } from './lib/store.mjs';
+import { search } from './lib/search.mjs';
 import { reclusterSubset } from './lib/reclusterApi.mjs';
 
 const ROOT = normalize(join(fileURLToPath(new URL('.', import.meta.url)), '..'));
@@ -88,11 +90,42 @@ const server = createServer(async (req, res) => {
     try {
       const timeout = (ms) => new Promise((_, rej) => setTimeout(() => rej(new Error('timed out')), ms));
       await Promise.race([ensureUp(), timeout(3000)]);
-      const [vec] = await Promise.race([embed([q]), timeout(8000)]);
+      // embedQuery, not embed: EmbeddingGemma needs its query prefix. Without it
+      // a query is embedded as a document and nonsense outscores real terms.
+      const [vec] = await Promise.race([embedQuery([q]), timeout(8000)]);
       const norm = truncateNormalize(vec, DIM);
       return send(200, JSON.stringify(Array.from(norm)), 'application/json; charset=utf-8');
     } catch (e) {
       return send(503, JSON.stringify({ error: String(e.message || e) }), 'application/json; charset=utf-8');
+    }
+  }
+
+  /*
+   * Hybrid search: BM25 + full-width embeddings, fused by rank, with a calibrated
+   * similarity floor so a nonsense query can return nothing. Ranked, unlike the
+   * atlas's old top-40 set. See lib/search.mjs and datasets/SEARCH.md.
+   *
+   *   GET /api/search?q=tudor+dynasty&k=50
+   *   GET /api/search?q=plague&topic=history-of-england   (restrict to a topic)
+   *
+   * Never fails on Ollama: without it, results are keyword-only and
+   * `semantic: false` says so.
+   */
+  if (req.method === 'GET' && (req.url || '').startsWith('/api/search')) {
+    const u = new URL(req.url, 'http://x');
+    const q = u.searchParams.get('q') || '';
+    const k = Math.min(500, Number(u.searchParams.get('k')) || 100);
+    const topic = (u.searchParams.get('topic') || '').replace(/[^a-z0-9-]/gi, '');
+    try {
+      let scope = null;
+      if (topic) {
+        const t = JSON.parse(fs.readFileSync(join(PATHS.topics, `${topic}.json`), 'utf8'));
+        scope = new Set(t.items.map((it) => it.id));
+      }
+      const r = await search(q, { scope, limit: k });
+      return send(200, JSON.stringify(r), 'application/json; charset=utf-8');
+    } catch (e) {
+      return send(400, JSON.stringify({ error: String(e.message || e) }), 'application/json; charset=utf-8');
     }
   }
 

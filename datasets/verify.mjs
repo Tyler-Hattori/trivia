@@ -12,6 +12,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { readEntries, readVectors, readJSON, PATHS, REPO_DIR, entryText } from './lib/store.mjs';
+import { loadTaxonomy, taxoKey, descendFrom } from './lib/taxotree.mjs';
 import { cosine, nearestLeaf } from './lib/cluster.mjs';
 import { parseYears, findDate } from './lib/years.mjs';
 
@@ -428,12 +429,20 @@ check('a re-ingest of an existing entry would be a no-op', () => {
   // entry is already in, or incremental placement would scatter re-ingests.
   const vec = readVectors();
   const tree = layout.nodes.map((nd) => ({ ...nd, centroid: Float32Array.from(nd.centroid) }));
+  // With known subject layers, placement goes to the entry's own subject node
+  // first and only descends by centroid below it — the same route atlas.mjs takes.
+  const taxo = loadTaxonomy();
+  const leafFor = (id) => {
+    const t = taxo?.entries?.[id];
+    const home = t ? tree.find((nd) => nd.taxo === taxoKey(t)) : null;
+    return home ? descendFrom(home.id, vec.get(id), tree) : nearestLeaf(vec.get(id), tree);
+  };
   let wrong = 0;
   const step = Math.max(1, Math.floor(N / 300));
   let tested = 0;
   for(let i = 0; i < N; i += step){
     tested++;
-    if(nearestLeaf(vec.get(P.id[i]), tree) !== P.leaf[i]) wrong++;
+    if(leafFor(P.id[i]) !== P.leaf[i]) wrong++;
   }
   // Greedy descent is not guaranteed to match a k-means assignment exactly:
   // k-means assigns by leaf centroid globally, descent commits at each level.
