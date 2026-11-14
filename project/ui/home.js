@@ -1,11 +1,9 @@
 /*
  * The home screen: three doors. Topics is the one for learning a subject.
  *
- * Everything that used to live here — eight per-dataset quiz tiles, the GitHub
- * token box, the old lane timeline — is gone from the UI. The two views left are
- * the two things this project actually is: a map of the corpus, and a quiz over
- * the same corpus. The per-dataset quiz code is still in the tree
- * (`features/quiz_engine.js`, `ui/quiz.js`) but nothing routes to it.
+ * Atlas is for exploring across subjects, Quiz tests the whole corpus by
+ * cluster. The old per-dataset quiz tiles, GitHub token box and lane timeline
+ * were removed in the 2026-11 cleanup; they are in git history if needed.
  */
 
 export function renderHome(){

@@ -97,7 +97,7 @@ const EMBED_KEEPALIVE = process.env.TRIVIA_EMBED_KEEPALIVE || '2m';
  * and that is what produced the "anisotropy" the old README described:
  * `zzzznotathing` scored 0.58 against its best match, above `cubism`'s 0.557.
  * With this prefix (768 dims) nonsense tops out near 0.34 and real queries start
- * near 0.47, so a similarity floor works again. Measured; see datasets/SEARCH.md.
+ * near 0.47, so a similarity floor works again. Measured; see docs/SEARCH.md.
  */
 export const QUERY_PREFIX = 'task: search result | query: ';
 

@@ -1,8 +1,9 @@
 /**
- * Year parsing — the single source of truth, shared by the Node tooling and the
- * browser. `project/utils/helpers.js` re-exports these rather than keeping its
- * own copy, because two parsers drifting apart silently mis-places entries on
- * the timeline (a span read as a point lands at the wrong x, and nothing errors).
+ * Year parsing — the single source of truth. It is plain ESM with no Node
+ * imports so the browser can load it directly; if the app ever needs to parse
+ * years again, import this rather than keeping a copy, because two parsers
+ * drifting apart silently mis-place entries on the timeline (a span read as a
+ * point lands at the wrong x, and nothing errors).
  *
  * Accepted forms: `1543`, `1879-1955`, `27 BC - 14 AD`, `100-44 BC`,
  * `1990-present`, `c. 1500`, `1602-1604`, `fl. 1450`.

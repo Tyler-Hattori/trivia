@@ -864,7 +864,7 @@ export async function openAtlas({ title = 'Atlas' } = {}){
    * "Focus mode": while a free-text query matches a modest, non-trivial set of
    * entries, the main canvas repositions them by their OWN mutual similarity
    * (a fresh tree from `POST /api/recluster`) instead of their place in the
-   * corpus-wide hierarchy — see datasets/ATLAS.md for why a topic spanning
+   * corpus-wide hierarchy — see docs/PIPELINE.md for why a topic spanning
    * several domains (e.g. "England": monarchs, wars, art) reads as scattered
    * points there. Fails soft to today's global-y dim/hide on any error, the
    * same way semantic search degrades to substring-only when Ollama is down.
@@ -1506,7 +1506,7 @@ export async function openAtlas({ title = 'Atlas' } = {}){
   mark({ data: true, paint: true, rail: true, facets: true, mini: true });
 
   /*
-   * A debug handle on the atlas window. `datasets/qa-atlas.mjs` drives the view
+   * A debug handle on the atlas window. `datasets/qa/qa-atlas.mjs` drives the view
    * through this: a headless test cannot meaningfully "zoom into a dense region"
    * by dispatching wheel events at guessed coordinates, because on a scatter plot
    * most coordinates are empty space and the test then measures an empty screen.

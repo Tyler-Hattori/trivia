@@ -14,7 +14,7 @@
  * because it silently lands in the wrong century and nothing flags it.
  */
 
-import { getJSON, wpSearch, wpSummary, mapPool } from '../wikilib.mjs';
+import { getJSON, wpSearch, wpSummary, mapPool } from './wikilib.mjs';
 import { parseYears, isCirca, findDate, UNIT_AFTER } from './years.mjs';
 
 const WP = 'https://en.wikipedia.org';

@@ -51,7 +51,7 @@ const NO_SEMANTIC = argv.includes('--no-semantic-labels');
 
 const entries = readEntries();
 if(!entries.length){
-  console.error('  No entries. Run: node datasets/migrate.mjs');
+  console.error('  No entries. Run: node datasets/scripts/migrate.mjs');
   process.exit(1);
 }
 

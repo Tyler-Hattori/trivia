@@ -47,7 +47,7 @@ import { fileURLToPath } from 'node:url';
 import { readEntries, PATHS, slugify } from './lib/store.mjs';
 import { entryType, TIMELINE_TYPES } from './lib/etype.mjs';
 import { loadTaxonomy } from './lib/taxotree.mjs';
-import { getJSON } from './wikilib.mjs';
+import { getJSON } from './lib/wikilib.mjs';
 import { INDEX_TITLE } from './lib/wiki.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));

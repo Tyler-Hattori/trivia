@@ -15,7 +15,7 @@
  *
  * The taxonomy is used STRUCTURALLY, never put into the embedded text. Putting
  * a broad label into the text was tried once with `domains` and it made the map
- * re-derive its own source files (datasets/ATLAS.md, "domains vs topics").
+ * re-derive its own source files (docs/PIPELINE.md, "domains vs topics").
  */
 
 import fs from 'node:fs';

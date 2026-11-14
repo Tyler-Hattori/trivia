@@ -5,7 +5,7 @@
  * the same arrangement as `years.mjs`.
  *
  * Why hybrid rather than embeddings alone, measured on this corpus (see
- * datasets/SEARCH.md):
+ * docs/SEARCH.md):
  *
  *   - Embeddings find paraphrases ("guy who invented the telephone" -> Bell) and
  *     keywords never will.

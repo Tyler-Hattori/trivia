@@ -29,7 +29,7 @@ export async function loadAtlas({ base = '', onProgress = () => {} } = {}){
     throw new Error(
       `Could not load datasets/atlas/atlas.json (HTTP ${res.status}).\n\n` +
       `Build it first:\n` +
-      `    node datasets/migrate.mjs\n` +
+      `    node datasets/scripts/migrate.mjs\n` +
       `    node datasets/embed-all.mjs\n` +
       `    node datasets/atlas.mjs --rebuild`,
     );

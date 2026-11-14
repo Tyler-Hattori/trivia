@@ -57,7 +57,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { readEntries, slugify } from './lib/store.mjs';
-import { getJSON } from './wikilib.mjs';
+import { getJSON } from './lib/wikilib.mjs';
 import { INDEX_TITLE } from './lib/wiki.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));

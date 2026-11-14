@@ -67,7 +67,7 @@ import {
   describe, describeMany, categoryMembers, pageLinks, mineEvents,
   leadText, resolveTitle, INDEX_TITLE, MIN_EXCERPT,
 } from './lib/wiki.mjs';
-import { mapPool, sleep } from './wikilib.mjs';
+import { mapPool, sleep } from './lib/wikilib.mjs';
 import { embed, generate, ensureUp, EMBED_MODEL, WRITE_MODEL } from './lib/ollama.mjs';
 import { STYLE, styleReject } from './lib/style.mjs';
 import { nearestLeaf } from './lib/cluster.mjs';
@@ -395,7 +395,7 @@ for(const block of rawTextBlocks){
     yearText, circa: isCirca(yearText), topics: [], facets: {},
     // `manual` is what keeps migrate.mjs from deleting this. It is the one kind of
     // entry nothing can re-fetch, and it used to be exactly the kind that a routine
-    // `node datasets/migrate.mjs` dropped — see the discriminator there.
+    // `node datasets/scripts/migrate.mjs` dropped — see the discriminator there.
     origin: { wiki: '', qid: null, manual: true },
     _dateSource: yearText ? 'given' : null,
   });

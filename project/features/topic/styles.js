@@ -3,7 +3,7 @@
  * (white, one hairline, image cards with a colour strip) — that was the design
  * that was easy to read. Injected once.
  *
- * NO BACKTICKS INSIDE THIS TEMPLATE, including in comments (see README: it has
+ * NO BACKTICKS INSIDE THIS TEMPLATE, including in comments (see docs/ATLAS.md, Atlas gotchas: it has
  * broken styles.js files three times).
  */
 export const CSS = String.raw`

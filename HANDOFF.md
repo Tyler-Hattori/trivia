@@ -2,56 +2,56 @@
 
 ---
 
-## START HERE — state as of 2026-11-13 (read this first)
+## START HERE — state as of 2026-11-14 (read this first)
 
-Two sessions on 2026-11-13 changed the direction of the project. Below: what
-exists now, what was running when the session ended, what to do next, and the
-open requests.
+Two sessions on 2026-11-13 changed the direction of the project; a short one on
+2026-11-14 finished the crawl follow-up and reorganised the repo. Below: what
+exists now and what to do next.
 
-### 0. Open requests from the user (do these next)
+### 0. What to do next
 
-1. **Organize the repo and push to `main`.** Nothing from 2026-11-13 is
-   committed: ~45 changed or new files. Suggested shape:
-   - **Delete superseded code**, after checking nothing imports it (`init.js`
-     still imports some):
-     - `project/features/timeline/`, `timeline_engine.js`, `global_timeline.js`
-       (old lane timeline)
-     - `quiz_engine.js`, `ui/quiz.js`, `ui/stats.js` (old per-dataset quiz)
-     - `data/github.js`, `utils/layout.js`, `app/bind.js`
-   - **Move scripts out of `datasets/`:**
-     - one-off scripts: `enrich, excerpts, era-excerpts, imgfix, fame-backfill,
-       dedupe, roles, misses, suggest, inspect, migrate`
-     - the QA scripts (`qa-*.mjs`, `verify.mjs`)
-     - keep the pipeline scripts (`ingest, crawl, classify, embed-all, atlas,
-       topic, serve`) together
-   - **Move the old CSV leftovers** (`*.bak`, `*.pre-*`, `*-log.json`,
-     `*-misses.json`, `*-leads.json`) into an archive folder or `.gitignore`.
-     `_site/` and `.jekyll-cache/` are already ignored.
-   - **Split the docs:** the README is ~900 lines. A short README plus
-     `docs/ATLAS.md`, `docs/TOPICS.md`, `docs/SEARCH.md`, `docs/PIPELINE.md`
-     would read better.
-   - **Watch file sizes before pushing:**
-
-     | file | size |
-     |---|---|
-     | `entries.jsonl` | 11M |
-     | `details.json` | 7.3M |
-     | `search-vectors.bin` | 6.4M |
-     | `taxonomy.json` | 5.2M |
-     | `atlas.json` | 3.4M |
-     | `vectors.bin` | 2.2M |
-
-     All are under GitHub's 100MB limit, but the repo grows by roughly this much
-     on every rebuild. Either accept it, or keep the derived files
-     (`atlas.json`, `details.json`, `layout.json`, `*vectors*`, `vocab.*`) out of
-     git and rebuild them. The site needs `atlas.json`, `details.json` and
-     `topics/*.json` to be served, so if it is deployed as static files they
-     must stay.
-   - **Update path references** in the docs and the QA scripts if files move,
-     then run every check (section 4).
-2. The user's priority is **presentation and usability**: "as usable as
+1. The user's priority is **presentation and usability**: "as usable as
    possible, with as much information as possible". Prefer UI work over more
    pipeline work.
+2. **A second topic, Impressionism** (`node datasets/topic.mjs "Impressionism"
+   --ingest`), to exercise a *thematic* article whose chapters aren't eras.
+3. Cleanup still open:
+   - `thumbnails/` (8.2 MB, 643 files) and `datasets/scripts/build_thumbnails.js`
+     are unused since the lane timeline was deleted. They weren't removed
+     without asking.
+   - `ollama rm qwen3-embedding:0.6b` (640 MB, from an abandoned comparison).
+
+### Done 2026-11-14
+
+- **Post-crawl:** `atlas.mjs --rebuild` (9,605 entries, 765 nodes, depth 5);
+  England topic rebuilt (571 members, 479 on the timeline, 92 key). All checks
+  pass.
+- **Repo reorganised:**
+  - **Deleted** the old lane timeline, the per-dataset quiz, the GitHub writer
+    and everything only they used (`core/`, `data/`, `utils/layout.js`,
+    `utils/normalize.js`, `app/bind.js`). The last commit with them is
+    `252c0bf`. `init.js` / `render.js` / `header.js` are now minimal.
+  - `datasets/` now holds only the pipeline (`crawl, ingest, classify,
+    embed-all, atlas, topic, serve`), the CSVs and the data directories:
+    - `datasets/qa/` — `verify`, `qa-atlas`, `qa-quiz`, `qa-topic`, `reload`
+    - `datasets/scripts/` — the one-offs and their README (was
+      `datasets/README.md`). **Run them from `datasets/`**:
+      `node scripts/enrich.mjs film.csv`.
+    - `datasets/lib/wikilib.mjs` — moved from `datasets/`
+    - `datasets/archive/` — `*.bak`, `*.pre-*`, logs, miss lists, lead
+      caches. New ones are git-ignored. `misses.mjs` with no arguments now
+      finds nothing, so pass it `archive/<x>.misses.json`.
+  - **Docs:** a short README plus `docs/PIPELINE.md` (was `datasets/ATLAS.md`),
+    `docs/ADDING-DATA.md`, `docs/ATLAS.md`, `docs/TOPICS.md`, `docs/QUIZ.md`,
+    `docs/SEARCH.md`, `docs/QA.md`. The lane-timeline docs and the
+    timeline-modes handoff are in `docs/archive/`.
+  - **Large files stay in git.** The site is static and needs `atlas.json`,
+    `details.json` and `topics/*.json` served. `.git` was 69 MB after the
+    2026-11-13 commit, and each full rebuild adds roughly 30 MB. If that becomes
+    a problem, untrack `layout.json`, `search-vectors.*`, `vocab.*`,
+    `taxonomy.json` and `entries.jsonl`, which only the Node tools read. The
+    browser fetches `atlas.json`, `details.json`, `vectors.bin`/`.json` (atlas
+    similarity, optional) and `topics/*.json`.
 
 ### 1. What the app is now
 
@@ -92,10 +92,10 @@ serve.mjs   dev server + /api/search (hybrid BM25 + 768-d EmbeddingGemma, query 
 
 Key docs:
 
-- `datasets/SEARCH.md` — every search/embedding measurement, and why
-- `datasets/ATLAS.md` — "Subjects", "Dates are not in the embedding",
+- `docs/SEARCH.md` — every search/embedding measurement, and why
+- `docs/PIPELINE.md` — "Subjects", "Dates are not in the embedding",
   "Semantic search"
-- README — the Topics, Crawling and atlas design-decision sections
+- `docs/TOPICS.md`, `docs/ADDING-DATA.md` (Crawling), `docs/ATLAS.md` (design decisions)
 
 Decisions made with evidence; don't undo them without new evidence:
 
@@ -110,50 +110,26 @@ Decisions made with evidence; don't undo them without new evidence:
 - **Text length doesn't matter much**; vector width does. 768-d is +5.5
   R-precision, and the text format moved results by only 1–2 points.
 
-### 3. State when the session ended
+### 3. Ollama
 
-- **`node datasets/crawl.mjs` was running in the background** (log
-  `/tmp/crawl2.log`). Done so far:
-  - *Battles involving the Kingdom of England* (+179)
-  - *Wars of the Roses*
-  - *English Civil War* was in progress; 10 lines remained
-
-  It's **resumable**: `crawl-state.json` records finished lines, and a re-run
-  continues. **If it was interrupted, run `node datasets/crawl.mjs` again.**
-  Ollama must be running for the embedding step:
-
-  ```
-  OLLAMA_MAX_LOADED_MODELS=1 OLLAMA_NUM_PARALLEL=1 OLLAMA_KEEP_ALIVE=2m ollama serve
-  ```
-
-  When it finishes, it runs `classify.mjs` and an incremental `atlas.mjs`
-  itself.
-- **After the crawl:**
-  1. `node datasets/atlas.mjs --rebuild`. Optional, but ~2,000 new rows were
-     placed into a tree fitted without them.
-  2. `node datasets/topic.mjs "History of England" --name England --events "Timeline of English history"`,
-     so the topic picks up the crawled English battles and Wars of the Roses
-     pages.
-  3. Run every check (section 4).
-- **Planned next**, not started: a second topic, **Impressionism**
-  (`topic.mjs "Impressionism" --ingest`), to exercise a *thematic* article whose
-  chapters aren't eras.
-- **Backups** from before the big changes are in `/tmp` and will vanish on
-  reboot. The git history covers everything up to the last commit:
-  - `/tmp/entries.pre-crawl.jsonl`
-  - `/tmp/*.pre-dates.*` (vectors before the re-embed)
-  - `/tmp/*.pre-taxo.json` (atlas and layout before the subject layers)
-- `qwen3-embedding:0.6b` (640MB) is still pulled in Ollama from an abandoned
-  comparison: `ollama rm qwen3-embedding:0.6b`.
-
-### 4. Checks (all passing before the crawl started)
+Ollama must be running for any embedding step (ingest, crawl, embed-all,
+`/api/search`):
 
 ```
-node datasets/serve.mjs &           # + headless Chrome on :9334, see README "Visual QA"
-node datasets/verify.mjs            # 31/31
-node datasets/qa-atlas.mjs          # 92/92
-node datasets/qa-quiz.mjs           # 43/43 (expects three home doors)
-node datasets/qa-topic.mjs          # 15/15, no browser
+OLLAMA_MAX_LOADED_MODELS=1 OLLAMA_NUM_PARALLEL=1 OLLAMA_KEEP_ALIVE=2m ollama serve
+```
+
+The crawl in `crawl.txt` is finished. `crawl.mjs` is resumable: add lines and
+re-run it.
+
+### 4. Checks (all passing 2026-11-14)
+
+```
+node datasets/serve.mjs &           # + headless Chrome on :9334, see docs/QA.md
+node datasets/qa/verify.mjs            # 31/31
+node datasets/qa/qa-atlas.mjs          # 92/92
+node datasets/qa/qa-quiz.mjs           # 43/43 (expects three home doors)
+node datasets/qa/qa-topic.mjs          # 15/15, no browser
 ```
 
 Gotchas from this session:
@@ -194,9 +170,9 @@ Gotchas from this session:
 `art.csv` excerpts are filled. Store rebuilt: **4,126 entries, 4,066 with excerpts
 (was 3,572), 28/28 verify, 88/88 atlas QA, 39/39 quiz QA.**
 
-### 1. `datasets/era-excerpts.mjs` — the art backfill
+### 1. `datasets/scripts/era-excerpts.mjs` — the art backfill
 
-Full write-up in `datasets/README.md`. Two tiers: the work's own page when it has
+Full write-up in `datasets/scripts/README.md`. Two tiers: the work's own page when it has
 one (97 of 527), otherwise paragraphs of the *creator's* article scored by how near
 their years sit to the row's year. Pissarro in 1870 is Norwood and the
 Franco-Prussian War; in 1885 it is meeting Seurat. **494 filled, era fit median 1
@@ -225,7 +201,7 @@ tuning — a painting with no article usually still has an item carrying collect
 medium and depicted subject, which is per-work fact. Not built.
 
 Four traps, all of which produced fluent prose about the wrong thing, all in
-`datasets/README.md`: the `[5-9]\d\d` year pattern giving a paragraph a 1,509-year
+`datasets/scripts/README.md`: the `[5-9]\d\d` year pattern giving a paragraph a 1,509-year
 span, span-edge distance instead of nearest-year, provenance sections needing a
 veto rather than a penalty, and **`titleSim` being the wrong metric for matching a
 person** (it scored the correct `rembrandt van rijn` → *Rembrandt* at 0.33, below
@@ -252,7 +228,7 @@ revealed after grading.
 1901; and NFKD does not decompose `ł`, so `Chełmoński` split into "che" and
 "monski" and no typeable spelling matched.
 
-`node datasets/qa-quiz.mjs` — 39 checks, including the grader as unit tests.
+`node datasets/qa/qa-quiz.mjs` — 39 checks, including the grader as unit tests.
 
 ### 3. Still open
 
@@ -291,7 +267,7 @@ contributed nothing.** The whole gain came from step one, fetching the Wikipedia
 lead, which takes about a second per hundred rows and needs no model at all:
 
 ```bash
-node datasets/excerpts.mjs leaders.csv --no-reshape
+node datasets/scripts/excerpts.mjs leaders.csv --no-reshape
 #   982 of 999 rows · median 815 chars  (was: median 77)
 ```
 
@@ -405,7 +381,7 @@ Table pages fill 25 of 25, 24 by link. Prose pages fill about 10 of 18.
   the search returns the artist. `excerpts.mjs` has no reuse cap; the
   `CONTEXT_REUSE` logic now in `ingest.mjs` is the same idea and needs porting.
 - **The axis-zoom control has never been rendered.** Needs `node
-  datasets/serve.mjs` up, then `node datasets/qa-atlas.mjs`.
+  datasets/serve.mjs` up, then `node datasets/qa/qa-atlas.mjs`.
 - The **root node's label is still stale** (`President · Emperor · Reign`) — see
   the depth-0 note further down. Unchanged.
 
@@ -430,7 +406,7 @@ mining "Cubism"… Cubism: 0 events (0 from tables, 0 dated at a line head)
 
 Regression-swept all 12 pages in the yields table below; every strict count is
 identical. Two things this had to get right, both silent when wrong, both written
-up in `datasets/ATLAS.md`:
+up in `docs/PIPELINE.md`:
 
 - **The strict pass must complete before any prose is considered.** Dedupe is by
   `start|title`, so interleaved, a loose match on line 5 claims the key and blocks
@@ -443,7 +419,7 @@ up in `datasets/ATLAS.md`:
 > is **68**, not 594. Verified against the pre-change code, so this is a stale
 > note, not a regression.
 
-### 2. `datasets/misses.mjs` — triage before paying. Done
+### 2. `datasets/scripts/misses.mjs` — triage before paying. Done
 
 ```
 670 rows in  ->  60 need judgement  (357 rejected mechanically, 253 have no source)
@@ -462,9 +438,9 @@ Four mechanical verdicts (`reused-page`, `creator-page`, `index-page`,
 `no-source`), written back into the three files. `review-worklist.json` holds the
 60 survivors, which are a genuine mix — `schindlers list`→*Schindler's List* and
 `8 1/2`→*8½* are correct matches punctuation hid, `destruction of tyre`→*Tyrion
-Lannister* is not. Full write-up in `datasets/README.md`.
+Lannister* is not. Full write-up in `datasets/scripts/README.md`.
 
-### 3. `datasets/roles.mjs` — a `role` column from Wikidata P39. Done
+### 3. `datasets/scripts/roles.mjs` — a `role` column from Wikidata P39. Done
 
 **893 of 999 filled, 825 of them verified by date overlap.**
 
@@ -496,7 +472,7 @@ Two traps, both cost a full 999-row run to find:
 - A contiguous block of 329 `no-search-hit` rows was **throttling, not missing
   pages** — they all resolved on retry. Concurrency is now 3 with a back-off.
 
-### 4. `datasets/excerpts.mjs` — rewriting all 999 leaders excerpts. DONE, but see the top
+### 4. `datasets/scripts/excerpts.mjs` — rewriting all 999 leaders excerpts. DONE, but see the top
 
 > **The diagnosis below is right and the cure is half wrong.** The 77-character
 > fragments really were the problem; *fetching the lead* is what fixed it, and the
@@ -538,7 +514,7 @@ Three things worth not undoing:
 
 **Whether any of this actually fixes the `President · United States` label is
 unmeasured.** The rebuild had not run when this was written. Look at
-`node datasets/inspect.mjs --tree 2` first and judge it with your own eyes.
+`node datasets/scripts/inspect.mjs --tree 2` first and judge it with your own eyes.
 
 Be sceptical, because **the depth-1 labels have almost no margin** — I measured
 the gap between the winning term and the runner-up:
@@ -576,9 +552,9 @@ Also still open, and cheap:
 ### New files
 
 ```
-datasets/misses.mjs            triage *.misses.json — 91% decided free
-datasets/roles.mjs             leaders.csv role column from Wikidata P39
-datasets/excerpts.mjs          rewrite an excerpt column: lead + local reshape
+datasets/scripts/misses.mjs            triage *.misses.json — 91% decided free
+datasets/scripts/roles.mjs             leaders.csv role column from Wikidata P39
+datasets/scripts/excerpts.mjs          rewrite an excerpt column: lead + local reshape
 datasets/lib/style.mjs         STYLE + styleReject, shared with ingest.mjs --reshape
 datasets/leaders.roles-log.json / .roles-misses.json
 datasets/review-worklist.json  the 60 misses that need judgement
@@ -610,7 +586,7 @@ node datasets/ingest.mjs --events "History of quantum mechanics" --events-prose 
 #   49 events (49 mid-sentence) — was 11
 ```
 
-Full write-up in `datasets/ATLAS.md` under `--events`; that is the file to read.
+Full write-up in `docs/PIPELINE.md` under `--events`; that is the file to read.
 What follows is only what a summary would lose.
 
 ### The table diagnosis was right; the prose one was wrong
@@ -685,7 +661,7 @@ None of these announced itself; each one just produced fewer or wronger entries.
 
 ### Verified
 
-- `node datasets/verify.mjs` → **28 checks pass** (26 before; the two new ones
+- `node datasets/qa/verify.mjs` → **28 checks pass** (26 before; the two new ones
   lock in the comma/range fixes and the bounds on the loose grammar).
 - 4,528 drafts mined from 12 pages, every one satisfying every invariant
   `verify.mjs` enforces on the store — parseable year, forward span, `yearText`
@@ -714,7 +690,7 @@ None of these announced itself; each one just produced fewer or wronger entries.
 
 Picks up mid-Phase-2.
 
-> **See also `HANDOFF-timeline-modes.md`** — the brief for the next requested
+> **See also `docs/archive/HANDOFF-timeline-modes.md`** — the brief for the next requested
 > feature, a geologic ⇆ human-history mode toggle. It exists because a single entry
 > at −113000 now makes 89% of the linear x axis hold one point, and **Fit shows
 > 1 point**. That file also carries the current loose ends, including a data-loss bug
@@ -743,7 +719,7 @@ that directory once you are happy with the atlas.
 
 ## Phase 1: the pipeline (done)
 
-Full docs: **`datasets/ATLAS.md`**. Read that before touching any of it.
+Full docs: **`docs/PIPELINE.md`**. Read that before touching any of it.
 
 ```bash
 # one-time setup (already done on this machine)
@@ -752,12 +728,12 @@ ollama pull embeddinggemma       # required, ~200MB, 768 dims
 ollama pull qwen3:8b             # optional, ~5GB, only for --reshape
 
 # the pipeline
-node datasets/migrate.mjs            # 8 CSVs -> atlas/entries.jsonl
+node datasets/scripts/migrate.mjs            # 8 CSVs -> atlas/entries.jsonl
 node datasets/embed-all.mjs          # fill missing vectors (resumable)
 node datasets/atlas.mjs --rebuild    # re-fit the cluster hierarchy
 node datasets/atlas.mjs              # OR: place new entries, keep the map stable
-node datasets/verify.mjs             # 28 invariant checks, ~1s
-node datasets/inspect.mjs --near cubism
+node datasets/qa/verify.mjs             # 28 invariant checks, ~1s
+node datasets/scripts/inspect.mjs --near cubism
 
 # adding data — this is the thing to actually use
 node datasets/ingest.mjs --category "Battles of the Napoleonic Wars" --domain war --deep
@@ -770,7 +746,7 @@ Current store: **4,126 entries**, 537 cluster nodes, depth 6, years −4.57e9…
 
 ### What changed on 2026-07-30
 
-Four things, all in the pipeline. `datasets/ATLAS.md` is the full write-up —
+Four things, all in the pipeline. `docs/PIPELINE.md` is the full write-up —
 "How many groups a level has is decided by the data" and "Labels" are new
 sections there.
 
@@ -829,13 +805,13 @@ datasets/lib/store.mjs      entries.jsonl + int8 vector sidecar
 datasets/lib/ollama.mjs     the only model dependency; plain fetch to :11434
 datasets/lib/cluster.mjs    k-means, tree, leaf ordering, y assignment, labels, colour
 datasets/lib/wiki.mjs       Wikipedia + Wikidata -> a draft entry
-datasets/migrate.mjs        CSVs -> JSONL (reads only, never writes the CSVs)
+datasets/scripts/migrate.mjs        CSVs -> JSONL (reads only, never writes the CSVs)
 datasets/embed-all.mjs      resumable embedder, prunes orphaned vectors
 datasets/atlas.mjs          compiles atlas.json / details.json / layout.json
 datasets/ingest.mjs         THE tool for adding data
-datasets/inspect.mjs        tree / --near / --leaf / --cross
-datasets/verify.mjs         invariants
-datasets/reload.mjs         hard-reload the app in a visible Chrome from the terminal
+datasets/scripts/inspect.mjs        tree / --near / --leaf / --cross
+datasets/qa/verify.mjs         invariants
+datasets/qa/reload.mjs         hard-reload the app in a visible Chrome from the terminal
 datasets/atlas/*            the built artifacts (committed, the browser fetches them)
 ```
 
@@ -885,9 +861,9 @@ node datasets/serve.mjs                 # NOT python3 -m http.server — this fi
   --remote-debugging-port=9334 --user-data-dir=/tmp/chrome-atlas \
   --window-size=1600,1000 about:blank
 
-node datasets/qa-atlas.mjs                    # 50 browser checks
-node datasets/qa-atlas.mjs --shot /tmp/a.png  # + screenshot
-node datasets/qa-atlas.mjs --keep             # leave the windows open
+node datasets/qa/qa-atlas.mjs                    # 50 browser checks
+node datasets/qa/qa-atlas.mjs --shot /tmp/a.png  # + screenshot
+node datasets/qa/qa-atlas.mjs --keep             # leave the windows open
 ```
 
 `window.__atlas` is a deliberate debug handle on the atlas window, exposing
@@ -961,7 +937,7 @@ possessive `'s`. 35 of 2,697 entries were affected.
 what to carry over with `!MAP[`${e.origin?.dataset}.csv`]`. But `ingest.mjs --domain
 art` files entries under `origin.dataset: 'art'`, and `art.csv` exists — so all **58
 ingested entries would have been silently deleted** by a routine `node
-datasets/migrate.mjs`. The dry run said `total 2639` with no carry-over note while
+datasets/scripts/migrate.mjs`. The dry run said `total 2639` with no carry-over note while
 the store held 2,697; that 58-entry gap was the only symptom. The discriminator is
 now `origin.wiki || origin.qid`, which is what actually distinguishes an ingest from
 a CSV row. **If you had run the documented pipeline before this fix, you would have
@@ -977,11 +953,11 @@ two-build-old data, and the screenshot still showed `FranÇOis`. `attach()` now 
 ### Rebuild after those fixes — the map did not move
 
 ```
-node datasets/migrate.mjs        # 2697 entries, 58 carried over, 0 mangled titles
+node datasets/scripts/migrate.mjs        # 2697 entries, 58 carried over, 0 mangled titles
 node datasets/embed-all.mjs --force
 node datasets/atlas.mjs          # incremental, NOT --rebuild
-node datasets/verify.mjs         # 21/21
-node datasets/qa-atlas.mjs       # 50/50
+node datasets/qa/verify.mjs         # 21/21
+node datasets/qa/qa-atlas.mjs       # 50/50
 ```
 
 `--force` was needed because nothing hashes entry text, so the embedder cannot see a
@@ -1074,7 +1050,7 @@ Keep these in mind; three are traps that will recur.
      is forced to add information. Sibling collisions are no longer excluded
      outright though (only ancestor ones), so `Comedy Film · Drama Film` and
      `Drama Film · Comedy Film` still appear as siblings under `Film`. Worth a
-     look with `node datasets/inspect.mjs --tree 2` if it reads badly.
+     look with `node datasets/scripts/inspect.mjs --tree 2` if it reads badly.
    - **Band labels are occluded by cards.** They stick to the viewport's left edge
      (deliberately), but at detail zoom a card sitting at the left of the viewport
      covers them — visible in the screenshot as a clipped `Post-Impress…` and
@@ -1154,7 +1130,7 @@ run is the one you skip.
   when the whole extent fits in the viewport. Correct behaviour, looks odd.
 - 88% of leaf clusters are single-source. Expected while `art` + `leaders` are 68% of
   the corpus, and it will loosen as excerpts fill in and other domains grow. Watch it
-  with `node datasets/inspect.mjs --cross`.
+  with `node datasets/scripts/inspect.mjs --cross`.
 - `membersOf()` in `rail.js` memoises per node in a `WeakMap` keyed by the atlas; it
   scans all points on first call per node. Fine at 2.7k, worth revisiting at 100k.
 - `atlas.json` is 792KB and `details.json` 794KB, both loaded whole. Points are

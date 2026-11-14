@@ -5,3 +5,16 @@ _site/*
 .jekyll-cache/*
 
 .DS_Store
+
+# Leftovers the one-off scripts in datasets/scripts/ write next to the CSVs.
+# Older copies are kept in datasets/archive/.
+datasets/*.bak
+datasets/*.pre-*
+datasets/*-log.json
+datasets/*.misses.json
+datasets/*-misses.json
+datasets/*-leads.json
+datasets/*-articles.json
+datasets/review-worklist.json
+# crawl.mjs scratch lists
+datasets/.crawl-*.txt

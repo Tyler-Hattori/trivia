@@ -202,7 +202,7 @@ a{color:var(--accent)}
  *
  * NO BACKTICKS IN A COMMENT INSIDE THIS TEMPLATE. One here closed the string and
  * the rest of the stylesheet was parsed as JavaScript. Third time; see the note
- * in README's atlas gotchas.
+ * in docs/ATLAS.md, Atlas gotchas.
  */
 /* Tinted, or the spine is the same colour as the canvas and only the chevron
    shows — which reads as a stray glyph rather than a collapsed panel. */

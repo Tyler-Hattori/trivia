@@ -103,7 +103,7 @@ const server = createServer(async (req, res) => {
   /*
    * Hybrid search: BM25 + full-width embeddings, fused by rank, with a calibrated
    * similarity floor so a nonsense query can return nothing. Ranked, unlike the
-   * atlas's old top-40 set. See lib/search.mjs and datasets/SEARCH.md.
+   * atlas's old top-40 set. See lib/search.mjs and docs/SEARCH.md.
    *
    *   GET /api/search?q=tudor+dynasty&k=50
    *   GET /api/search?q=plague&topic=history-of-england   (restrict to a topic)
