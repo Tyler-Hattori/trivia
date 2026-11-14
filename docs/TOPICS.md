@@ -70,6 +70,42 @@ a one-off is an override. Rules added from the 2026-11-14 review:
   articles, else the essentials' 4th–96th percentile (people at their prime),
   rounded to two significant figures.
 
+## Key ideas (undated entries)
+
+The store (`entries.jsonl`) holds only DATED entries; the atlas, `verify.mjs`
+and search depend on it. Science and maths are mostly about ideas with no date
+(Energy, Wave, Uncertainty principle, Natural selection), so those live beside
+it in `datasets/atlas/ideas.jsonl` (`lib/ideas.mjs`): one Wikipedia summary each,
+fetched by `topic.mjs --ideas` (and by `--ingest`) for linked pages the store
+lacks. About a second per idea, no model, no embedding.
+
+- In a topic they are members with `idea: true`, `start: null`, never on the
+  timeline.
+- **Key ideas** (`keyIdea`, up to 6 per chapter) are concepts, dated or not,
+  that a chapter is about. They need a sentence in the article, more than a
+  passing mention, and a description that is not a language, office, country,
+  institution, food, publication… In a chronological history only undated
+  ideas qualify, because there the timeline carries what happened, and a dated
+  "concept" is usually a mistyped event.
+- An idea goes to the chapter whose title it shares the most words with ("Newton's
+  laws of motion" → "Newton's Laws"), else the one that mentions it most.
+- A missing page that is really an event or a "history of…" article is not an
+  idea (`NOT_IDEA_PAGE`); it belongs in the store via `--ingest`.
+- Learn shows them first in each chapter, defined by their lead's first
+  sentence, with the article's sentence under it. The quiz has an **Ideas** mode:
+  the definition with the name blanked, four names from the topic.
+- `topic.mjs --all --ideas` fetches ideas for every topic.
+
+## Key points (chapter summaries)
+
+`datasets/topic-notes/<slug>.json`: `{ "topic": [..], "chapters": { "<chapter
+title>": [..] } }`, 3–5 short factual points per chapter, written for the site
+(by Claude, from the article and the essentials) and shown in Learn as "Key
+points · summary", so they are never mistaken for the article's words. They
+are kept outside the built topic so rebuilds keep them; titles match with
+whitespace normalised. `topic-report.mjs` flags chapters without points
+(`no-points`). Write them for every new topic before calling it done.
+
 ## What the browser loads
 
 - `topics/<slug>.json` — the topic, self-contained.

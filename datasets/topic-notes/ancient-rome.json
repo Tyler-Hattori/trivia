@@ -1,0 +1,62 @@
+{
+  "topic": [
+    "Rome grew from a small town on the Tiber (traditionally founded in 753 BC) into a republic that conquered Italy and then the whole Mediterranean.",
+    "The Republic's institutions (consuls, Senate, assemblies) broke down in a century of civil wars, and Augustus founded the Empire in 27 BC.",
+    "At its height in the 2nd century AD the Empire stretched from Britain to Mesopotamia; Christianity became its state religion in the 4th century.",
+    "The Western Empire fell in 476; the Eastern (Byzantine) Empire lasted until 1453. Roman law, Latin, architecture and the Church shaped Europe afterwards."
+  ],
+  "chapters": {
+    "Early Italy and the founding of Rome": [
+      "Settlement on Rome's hills is evident from around 1000 BC; the town grew among Latins, Sabines and the more advanced Etruscans.",
+      "Roman legend traced the city to Romulus in 753 BC and, through Virgil's Aeneid, to Aeneas, a refugee from the Trojan War."
+    ],
+    "Kingdom": [
+      "Tradition lists seven kings, from Romulus to Tarquinius Superbus, the last of them Etruscan.",
+      "The last king was expelled around 509 BC, and Romans long afterwards distrusted the very word 'king'."
+    ],
+    "Republic": [
+      "Two consuls elected each year, the Senate and the popular assemblies shared power; the 'Conflict of the Orders' gradually opened offices to plebeians.",
+      "Rome conquered Italy by about 270 BC, then fought Carthage in three Punic Wars (264–146 BC), surviving Hannibal's invasion of Italy.",
+      "By 146 BC Rome had destroyed Carthage and Corinth and ruled the Mediterranean."
+    ],
+    "Late Republic": [
+      "Conquest brought wealth, slaves and inequality; reformers such as the Gracchi were killed, and generals like Marius and Sulla built armies loyal to themselves.",
+      "Pompey, Crassus and Caesar formed the First Triumvirate; Caesar conquered Gaul, crossed the Rubicon in 49 BC and became dictator.",
+      "Caesar was assassinated by Brutus and others in 44 BC; his heir Octavian defeated Mark Antony and Cleopatra at Actium in 31 BC."
+    ],
+    "Empire – the Principate": [
+      "Octavian took the name Augustus in 27 BC and ruled as 'first citizen' (princeps) while keeping republican forms.",
+      "The Pax Romana, about two centuries of relative peace, was a golden age of Latin literature (Virgil, Horace, Ovid).",
+      "Emperors ranged from capable to notorious (Tiberius, Caligula, Claudius, Nero); Claudius conquered Britain, where Boudica rebelled.",
+      "Under Trajan (98–117) the Empire reached its greatest extent; the 3rd century brought civil wars, invasions and economic crisis."
+    ],
+    "Empire – The Tetrarchy": [
+      "Diocletian (284–305) restored order, split rule among four emperors (the Tetrarchy) and enlarged the bureaucracy and army.",
+      "Constantine the Great reunited the Empire, legalised Christianity and founded Constantinople (330).",
+      "Julian tried to revive paganism, but by 380 Christianity was the state religion."
+    ],
+    "Fall of the Western Roman Empire": [
+      "Theodosius I was the last emperor to rule both halves; after 395 East and West were permanently divided.",
+      "Goths, Vandals and Huns under Attila broke the western frontiers; Rome itself was sacked in 410 and 455.",
+      "In 476 Odoacer deposed the boy emperor Romulus Augustulus; the Eastern Empire survived and, under Justinian, briefly reconquered Italy."
+    ],
+    "Society": [
+      "Rome itself held perhaps half a million to a million people; society was divided between citizens and non-citizens, patricians and plebeians, free and enslaved.",
+      "The legion was the core of Roman power; citizenship was gradually extended until almost all free people received it in 212.",
+      "Family life centred on the authority of the father (paterfamilias)."
+    ],
+    "Culture": [
+      "Roman culture absorbed Greek art, philosophy and religion, and spread Latin across the western Mediterranean.",
+      "Public life revolved around baths, theatres, chariot races and gladiatorial games in arenas such as the Colosseum.",
+      "Traditional religion honoured many gods and, later, the emperors themselves, before Christianity replaced it."
+    ],
+    "Technology": [
+      "Roman engineers built roads, aqueducts, bridges and public baths across the empire.",
+      "Concrete made possible domes such as the Pantheon's; Vitruvius wrote the period's main treatise on architecture."
+    ],
+    "Legacy": [
+      "Roman law, Latin (and the Romance languages descended from it), the calendar and architecture underpin Western civilisation.",
+      "The Renaissance and the Enlightenment looked back to Rome as a model of art, learning and republican virtue."
+    ]
+  }
+}

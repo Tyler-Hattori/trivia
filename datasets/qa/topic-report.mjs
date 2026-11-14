@@ -79,12 +79,14 @@ export function reportTopic(T){
     const all = T.items.filter((it) => it.chapter === c.id && it.onTimeline).length;
     if(n < 2 && all) add('thin-chapter', `"${c.title}" has ${n} essential${n === 1 ? '' : 's'} (${all} entries)`);
   }
+  const noPts = T.chapters.filter((c) => !(c.points || []).length && (c.intro || T.items.some((it) => it.chapter === c.id && (it.key || it.keyIdea))));
+  if(noPts.length) add('no-points', `${noPts.length} chapter${noPts.length === 1 ? '' : 's'} without key points (datasets/topic-notes/${T.slug}.json): ${noPts.slice(0, 3).map((c) => `"${c.title}"`).join(', ')}${noPts.length > 3 ? '…' : ''}`);
   const onTl = T.items.filter((it) => it.onTimeline).length;
   if(onTl < 60) add('thin-topic', `${onTl} entries on the timeline`);
   return F;
 }
 
-const ORDER = ['generic', 'boilerplate', 'dup-intro', 'far-date', 'no-context', 'apparatus', 'thin-chapter', 'thin-topic'];
+const ORDER = ['generic', 'boilerplate', 'dup-intro', 'far-date', 'no-context', 'apparatus', 'thin-chapter', 'thin-topic', 'no-points'];
 
 if(process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])){
   const idx = JSON.parse(fs.readFileSync(path.join(DIR, 'index.json'), 'utf8'));

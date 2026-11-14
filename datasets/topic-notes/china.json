@@ -1,0 +1,48 @@
+{
+  "topic": [
+    "Chinese civilisation grew up along the Yellow and Yangtze rivers; the Shang (from about 1600 BC) left the first Chinese writing.",
+    "In 221 BC the Qin unified China into an empire; for two thousand years dynasties rose and fell, with long periods of division between them.",
+    "Under the Han, Tang and Song, China led the world in technology (paper, printing, gunpowder, the compass) and in trade along the Silk Road.",
+    "After the last dynasty fell in 1911 came a republic, civil war and Japanese invasion; the Communists founded the People's Republic in 1949."
+  ],
+  "chapters": {
+    "Prehistory": [
+      "Homo erectus lived in China over a million years ago; 'Peking Man' is one of the best-known finds.",
+      "Farming began around 7000 BC: millet in the north, rice in the Yangtze valley.",
+      "Later Chinese history remembered this time through legends of the Three Sovereigns and Five Emperors, and of Yu the Great taming the floods."
+    ],
+    "Ancient China": [
+      "Tradition names the Xia as the first dynasty; the Shang (about 1600–1046 BC) left oracle bones bearing the earliest Chinese writing.",
+      "The Zhou overthrew the Shang and justified it by the 'Mandate of Heaven', the idea that heaven withdraws support from unjust rulers.",
+      "As Zhou power faded, the Spring and Autumn and Warring States periods saw rival states, and the thinkers of the 'Hundred Schools', including Confucius and Sun Tzu."
+    ],
+    "Early imperial China": [
+      "The state of Qin, reformed by Shang Yang along Legalist lines, conquered its rivals; in 221 BC Ying Zheng became Qin Shi Huang, the first emperor.",
+      "The Qin standardised writing, weights and coins, and began the Great Wall, but fell soon after his death.",
+      "The Han dynasty (202 BC–AD 220) lasted four centuries, made Confucianism the state ideology and opened the Silk Road after Zhang Qian's missions.",
+      "Han China produced Sima Qian's history, Cai Lun's paper and Zhang Heng's seismoscope; Wang Mang briefly usurped the throne (AD 9–23)."
+    ],
+    "Six Dynasties": [
+      "The Yellow Turban Rebellion (184) broke the Han; China split into the Three Kingdoms of Wei, Shu and Wu.",
+      "The Jin briefly reunited China, but northern peoples overran the north (the Sixteen Kingdoms), and the country divided into Northern and Southern dynasties.",
+      "In these centuries of division Buddhism spread widely through China."
+    ],
+    "Mid-imperial China": [
+      "The Sui reunited China in 589 and built the Grand Canal linking north and south.",
+      "The Tang (618–907), ruling from Chang'an, was a cosmopolitan golden age of poetry (Du Fu, Li Bai); Wu Zetian was China's only reigning empress.",
+      "The An Lushan rebellion (755–763) crippled the Tang; after its fall came the Five Dynasties and Ten Kingdoms."
+    ],
+    "Late imperial China": [
+      "The Song (960–1279) had a commercial economy, paper money, movable type and a bureaucracy chosen by examination, while the Liao, Western Xia and Jin held the north.",
+      "The Mongols under Genghis Khan and Kublai Khan conquered all of China, ruling as the Yuan dynasty.",
+      "The Ming (1368–1644) drove out the Mongols; Zheng He's treasure fleets sailed to Africa, and the Great Wall took its present form.",
+      "The Manchu Qing dynasty (1644–1912) expanded China to its largest extent but was weakened in the 19th century by the Opium Wars and the Taiping Rebellion."
+    ],
+    "Modern period": [
+      "The 1911 Revolution ended the empire; Sun Yat-sen's republic soon fell to warlords, until Chiang Kai-shek's Nationalists reunified much of China.",
+      "Japan seized Manchuria (1931) and invaded China in 1937; the war cost millions of lives.",
+      "Mao Zedong's Communists won the civil war and proclaimed the People's Republic in 1949; the Nationalists retreated to Taiwan.",
+      "The Great Leap Forward caused a catastrophic famine and the Cultural Revolution further chaos; from 1978 Deng Xiaoping's reforms began China's rise as an economic power."
+    ]
+  }
+}

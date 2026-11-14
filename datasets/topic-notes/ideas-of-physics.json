@@ -1,0 +1,107 @@
+{
+  "topic": [
+    "A tour of physics for non-specialists, from ancient astronomy to elementary particles, told largely through the people who made each discovery.",
+    "Its arc: careful observation of the sky led to Newton's laws, which explained motion and gravity; energy and its conservation explained heat and engines.",
+    "Waves, electricity and magnetism led to Maxwell's theory of light; puzzles about light and atoms led to relativity and quantum mechanics.",
+    "It ends with the nucleus, radioactivity and the small set of elementary particles and forces that make up the universe."
+  ],
+  "chapters": {
+    "The Origins of Astronomy": [
+      "Ancient peoples saw fixed stars in constellations, the Sun and Moon moving against them, and five wandering 'planets'.",
+      "Planets sometimes move backwards (retrograde motion); Ptolemy explained this with circles on circles (epicycles) in an Earth-centred system that lasted 1,400 years."
+    ],
+    "The Secret of the Planets": [
+      "Copernicus put the Sun at the centre; Tycho Brahe made the most accurate naked-eye observations.",
+      "Using Tycho's data, Kepler found that planets move in ellipses, sweep equal areas in equal times, and that the square of the orbital period is proportional to the cube of the orbit's size."
+    ],
+    "Galileo": [
+      "Galileo's telescope showed Jupiter's moons, the phases of Venus and the Milky Way's stars, evidence against the Earth-centred system.",
+      "He found that falling bodies accelerate at the same rate regardless of weight, overturning Aristotle.",
+      "His 'Dialogue' (1632) led to his trial and house arrest under Pope Urban VIII."
+    ],
+    "Newton": [
+      "In 1684 Halley asked Newton what orbit an inverse-square force would produce; Newton answered with the 'Principia' (1687).",
+      "Newton showed that the same gravity that makes an apple fall keeps the Moon in orbit and explains Kepler's laws.",
+      "He also did fundamental work on light and colour, and co-invented calculus."
+    ],
+    "Newton's Laws": [
+      "First law: an object keeps its state of motion unless a force acts on it (inertia).",
+      "Second law: force equals mass times acceleration (F = ma).",
+      "Third law: every action has an equal and opposite reaction."
+    ],
+    "Energy": [
+      "Work is force times distance; energy is the capacity to do work, and power is energy per unit time.",
+      "Energy takes many forms (kinetic, potential, chemical, thermal, electrical) and converts between them."
+    ],
+    "Conservation Laws": [
+      "Some quantities never change in a closed system: energy, momentum, angular momentum and electric charge.",
+      "Conservation of energy means energy is never created or destroyed, only converted from one form to another."
+    ],
+    "Atoms and Heat": [
+      "All matter is made of atoms in constant motion; temperature measures their average kinetic energy.",
+      "Heat is energy flowing from hotter to colder bodies; absolute zero (0 kelvin) is where molecular motion is at a minimum."
+    ],
+    "Ideal Gas Law": [
+      "For an ideal gas, pressure times volume is proportional to the number of molecules times the absolute temperature (PV = NkT).",
+      "It combines the older laws of Boyle, Charles and Gay-Lussac."
+    ],
+    "Refrigeration": [
+      "Heat never flows from cold to hot on its own (the second law of thermodynamics), but it can be pumped with work.",
+      "A refrigerator evaporates a fluid inside (absorbing heat) and compresses and condenses it outside (releasing heat)."
+    ],
+    "Dateline of Thermodynamics": [
+      "17th-century experiments on air pressure and vacuums (Torricelli, Pascal, von Guericke, Boyle) showed that air has weight and pressure.",
+      "Steam engines (Savery, Newcomen, Watt) turned heat into work and drove the Industrial Revolution.",
+      "Black, Joule, Carnot, Clausius, Kelvin and Boltzmann turned this into thermodynamics: heat as energy, entropy, and its statistical explanation."
+    ],
+    "Waves": [
+      "A wave carries energy from place to place without carrying matter.",
+      "Waves are described by wavelength, frequency, amplitude and speed: speed equals frequency times wavelength."
+    ],
+    "Light and Sound": [
+      "Sound is a pressure wave in a medium; light is a wave that can travel through a vacuum.",
+      "Young's double-slit experiment showed light interfering like a wave; Huygens and Fresnel developed the wave theory, and Foucault measured light's speed."
+    ],
+    "Static Electricity": [
+      "Thales noticed that rubbed amber attracts light objects; electric charge comes in two kinds, which du Fay distinguished.",
+      "Like charges repel and unlike attract, with a force that weakens with the square of distance (Coulomb's law); Franklin's kite experiment showed lightning is electrical."
+    ],
+    "Electricity and Magnetism": [
+      "Ørsted found that an electric current deflects a compass (1820); Faraday showed that a changing magnetic field induces a current.",
+      "Maxwell's equations unified electricity and magnetism and predicted electromagnetic waves travelling at the speed of light: light is one of them.",
+      "Michelson and Morley failed to detect the 'ether' that light was assumed to travel through."
+    ],
+    "Relativity": [
+      "Special relativity (1905): the laws of physics and the speed of light are the same for all observers moving uniformly, so time slows and lengths shrink at high speed.",
+      "Mass and energy are equivalent (E = mc²).",
+      "General relativity (1915) describes gravity as the curvature of spacetime."
+    ],
+    "Quantum Mechanics Timeline": [
+      "Spectra (Fraunhofer, Kirchhoff, Balmer) showed each element emits light at specific wavelengths.",
+      "J. J. Thomson discovered the electron (1897); Planck explained black-body radiation by assuming energy comes in quanta (1900).",
+      "Einstein explained the photoelectric effect with light quanta; Bohr's atom, de Broglie's matter waves and Schrödinger's equation followed."
+    ],
+    "Nuclear & Particle Physics Timeline": [
+      "Becquerel discovered radioactivity (1896); the Curies isolated polonium and radium.",
+      "Rutherford found the atomic nucleus (1911) and Chadwick the neutron (1932); radioactive dating showed the Earth is billions of years old.",
+      "Meitner and Hahn's discovery of fission (1938) led, via Szilard's warning and Einstein's letter to Roosevelt, to the Manhattan Project."
+    ],
+    "Summary of Quantum & Nuclear Physics": [
+      "The universe is quantised: energy, charge and other quantities come in discrete units.",
+      "Particles behave as waves and waves as particles; the uncertainty principle limits how precisely position and momentum can be known together.",
+      "Nuclei are held together by the strong force, and some decay radioactively."
+    ],
+    "Radioactivity": [
+      "Nuclei are made of protons and neutrons; the number of protons (the atomic number) fixes the element, while isotopes differ in neutrons.",
+      "Unstable nuclei decay by alpha, beta or gamma emission; each isotope has a fixed half-life."
+    ],
+    "The Five Common Particles": [
+      "Everyday matter is made of protons, neutrons and electrons; photons and neutrinos are the other common particles.",
+      "Most other subatomic particles decay within a tiny fraction of a second."
+    ],
+    "Summary of Particle Physics": [
+      "The Standard Model has elementary particles (quarks, leptons) that interact through four fundamental forces: gravity, electromagnetism, the weak and the strong force.",
+      "Each force is carried by its own particle: the photon, the W and Z bosons, gluons, and the hypothetical graviton."
+    ]
+  }
+}

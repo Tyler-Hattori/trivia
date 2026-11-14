@@ -34,7 +34,9 @@ for(const row of idx.topics){
   check('no concept is on the timeline', !T.items.some((it) => it.onTimeline && it.type === 'concept'),
     T.items.filter((it) => it.onTimeline && it.type === 'concept').map((it) => it.title).slice(0, 5).join(', '));
   check('no date-suspect item is on the timeline', !T.items.some((it) => it.onTimeline && it.dateSuspect));
-  check('every item has a start year', T.items.every((it) => Number.isFinite(it.start)));
+  // Ideas (lib/ideas.mjs) are the one undated kind, and never on the timeline.
+  check('every item has a start year, or is an undated idea off the timeline', T.items.every((it) => Number.isFinite(it.start) || (it.idea && !it.onTimeline)));
+  check('key ideas are concepts, off the timeline', T.items.filter((it) => it.keyIdea).every((it) => it.type === 'concept' && !it.onTimeline && !it.key));
   // Except chapters a hand override keeps out of the essentials (noKeyChapters).
   const noKey = new Set((OVR[T.slug]?.noKeyChapters || []).map((x) => x.toLowerCase()));
   check('every non-empty chapter has key items', T.chapters.every((c) => !c.count || c.key > 0 || noKey.has(c.title.toLowerCase())),

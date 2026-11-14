@@ -18,7 +18,8 @@
       "Otto von Guericke, Mayor of Magdeburg, Germany",
       "Joseph Fraunhofer, a German lens-maker and optical scientist, has",
       "Henri Becquerel, a French physicist, reads of William Roentgen's",
-      "It has long been thought that the Earth is no more than a few tens"
+      "It has long been thought that the Earth is no more than a few tens",
+      "Canada"
     ]
   },
   "world-war-ii": {
@@ -32,7 +33,9 @@
       "British Empire",
       "Empire of Japan",
       "Soviet Union",
-      "Commonwealth of Nations"
+      "Commonwealth of Nations",
+      "Junkers Ju 87",
+      "Permanent members of the United Nations Security Council"
     ]
   },
   "science": {
@@ -54,13 +57,60 @@
     "unkey": [
       "Kazakh Soviet Socialist Republic",
       "Japan during World War II",
-      "Aftermath of World War II"
+      "Aftermath of World War II",
+      "Korean People's Army",
+      "RDS-1",
+      "RSD-10 Pioneer",
+      "Presidency of Richard Nixon",
+      "Origins of the Cold War",
+      "Soviet reaction to the Polish crisis of 1980–1981",
+      "1980s oil glut"
     ]
   },
   "impressionism": {
     "unkey": [
       "Allies of World War II",
       "Androniqi Zengo Antoniu"
+    ]
+  },
+  "ancient-rome": {
+    "unkey": [
+      "Anatolia",
+      "Southern Italy",
+      "Italy in the Middle Ages",
+      "Prehistoric Italy",
+      "Classics",
+      "Ancient Rome and wine",
+      "Napoleon",
+      "Norman conquest of southern Italy",
+      "Military history of Italy during World War I",
+      "Military history of Italy during World War II",
+      "Italian Civil War",
+      "Italian Social Republic",
+      "Years of Lead",
+      "Great Recession",
+      "2015 European migrant crisis",
+      "Ancient Egypt"
+    ]
+  },
+  "united-states": {
+    "unkey": [
+      "Albanian Americans",
+      "Union violence in the United States",
+      "Nuclear weapon",
+      "Tax Cuts and Jobs Act",
+      "Income tax in the United States"
+    ]
+  },
+  "ancient-egypt": {
+    "unkey": [
+      "Wars of Alexander the Great",
+      "War of Actium",
+      "Arab conquest of Egypt",
+      "Early modern period",
+      "Fish",
+      "Sickle",
+      "Nature"
     ]
   }
 }

@@ -1,0 +1,66 @@
+{
+  "topic": [
+    "England was settled by successive peoples (Britons, Romans, Anglo-Saxons, Danes, Normans), and each left a layer: Roman roads and towns, English language and shires, Norman law and castles.",
+    "It became one kingdom in the 10th century under the House of Wessex, was conquered by the Normans in 1066, and was then ruled by dynasties whose lands and claims reached into France until 1453.",
+    "The Reformation (1530s), the Civil War (1642–51) and the Glorious Revolution (1688) settled it as a Protestant state where Parliament, not the Crown, held the final say.",
+    "In 1707 England merged with Scotland into Great Britain; the Industrial Revolution and the British Empire followed, and England's history became part of the United Kingdom's."
+  ],
+  "chapters": {
+    "Prehistory": [
+      "Humans reached Britain long before it became an island; rising seas cut it off from the continent around 6500 BC.",
+      "Farming arrived around 4000 BC with the Neolithic, followed by monuments such as Stonehenge, then the Bell Beaker culture and metalworking in the Bronze Age.",
+      "By the Iron Age, Britain was a patchwork of Celtic-speaking tribes with hillforts and coinage.",
+      "Julius Caesar raided in 55 and 54 BC, fresh from the Gallic Wars, but did not stay."
+    ],
+    "Roman Britain": [
+      "Claudius invaded in AD 43; within decades most of what is now England and Wales was a Roman province.",
+      "Resistance was real: Boudica's revolt in AD 60–61 burned Colchester, London and St Albans before it was crushed.",
+      "Rome built towns, roads and villas, and Hadrian's Wall (from AD 122) marked the northern frontier.",
+      "Imperial crises pulled the legions away; around 410 Britain was left to defend itself."
+    ],
+    "Anglo-Saxon period": [
+      "Angles, Saxons and Jutes from northern Germany and Denmark settled from the 5th century, forming kingdoms such as Northumbria, Mercia, East Anglia and Wessex (the 'Heptarchy').",
+      "Christianity returned with Augustine's mission in 597; Mercia under Offa (757–796) was the strongest kingdom of the 8th century.",
+      "Viking raids from 793 became conquest: the Danes settled the 'Danelaw', and Alfred the Great of Wessex held them off and rebuilt his kingdom.",
+      "Alfred's heirs, above all Æthelstan (924–939), united England; renewed Danish attacks put Cnut on the throne (1016), and in 1066 Harold Godwinson lost to William of Normandy at Hastings."
+    ],
+    "Norman England": [
+      "William replaced the English aristocracy with Norman lords, built castles across the country and recorded his new kingdom in the Domesday Book (1086).",
+      "Feudal landholding tied land to military service; French became the language of the court for three centuries.",
+      "After Henry I's only son drowned in 1120, the crown was fought over by his daughter Empress Matilda and his nephew Stephen: 'the Anarchy' (1135–1153)."
+    ],
+    "England under the Plantagenets": [
+      "Henry II (1154–89) ruled an 'Angevin empire' from Scotland's border to the Pyrenees and laid the foundations of English common law.",
+      "King John lost Normandy (1204) and was forced to accept Magna Carta (1215); under Henry III, Simon de Montfort's parliament (1265) included elected townsmen.",
+      "Edward I conquered Wales; Edward III began the Hundred Years' War with France (1337), and the Black Death (1348) killed perhaps a third to a half of the population.",
+      "Henry V won at Agincourt (1415) and the Treaty of Troyes, but the war was lost by 1453 and dynastic rivalry between Lancaster and York became the Wars of the Roses."
+    ],
+    "Tudor England": [
+      "Henry VII won at Bosworth (1485), married Elizabeth of York and ended the Wars of the Roses.",
+      "Henry VIII broke with Rome to annul his first marriage, made himself head of the Church of England and dissolved the monasteries.",
+      "Religion swung with each monarch: Protestant under Edward VI, Catholic under Mary I, and a Protestant settlement under Elizabeth I.",
+      "Elizabeth's reign (1558–1603) saw the defeat of the Spanish Armada (1588), Drake's voyages, the first steps toward empire and the plays of Shakespeare."
+    ],
+    "17th century": [
+      "James VI of Scotland became James I of England in 1603, uniting the two crowns but not the kingdoms.",
+      "Charles I's clashes with Parliament over money and religion led to civil war (1642–51); he was tried and executed in 1649.",
+      "England was a republic under the Commonwealth and then Oliver Cromwell's Protectorate until the monarchy was restored in 1660.",
+      "When Catholic James II had a son, Parliament invited William of Orange and Mary to take the throne: the Glorious Revolution (1688) and the Bill of Rights (1689)."
+    ],
+    "Formation of Great Britain and the United Kingdom": [
+      "The Acts of Union 1707 merged the parliaments of England and Scotland into one Kingdom of Great Britain.",
+      "Supporters of the exiled Stuarts (the Jacobites) rose in 1715 and 1745; Charles Edward Stuart's defeat at Culloden (1746) ended their cause.",
+      "A further Act of Union joined Ireland in 1801, creating the United Kingdom."
+    ],
+    "Modern England, 18th–19th centuries": [
+      "From the 18th century England's history is that of one country within the United Kingdom.",
+      "The Industrial Revolution began in England: steam power, textile mills, canals and then railways turned it into the first industrial, urban society.",
+      "Reform Acts widened the vote through the 19th century, and the Local Government Act 1888 created county councils."
+    ],
+    "20th and 21st centuries": [
+      "Two world wars, death duties and the agricultural depression ended the dominance of the landed aristocracy.",
+      "After 1945 came the welfare state and the NHS, the end of empire, and the decline of heavy industry.",
+      "Margaret Thatcher's governments (1979–90) privatised industries and curbed the unions; devolution from 1999 gave Scotland and Wales their own parliaments but not England."
+    ]
+  }
+}

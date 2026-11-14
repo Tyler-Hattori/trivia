@@ -63,7 +63,6 @@ datasets/
   archive/                    old CSV backups, logs and miss lists
   suggestions/                suggest.mjs output
 docs/                         the long-form docs (below)
-thumbnails/                   old local thumbnail cache (unused by the app)
 ```
 
 ## The pipeline

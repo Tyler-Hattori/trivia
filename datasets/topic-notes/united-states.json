@@ -1,0 +1,65 @@
+{
+  "topic": [
+    "People reached the Americas from Asia at least 15,000 years ago; European colonisation from the 16th century brought disease, war and dispossession to Native peoples.",
+    "Thirteen British colonies declared independence in 1776, won it in 1783 and wrote a federal Constitution in 1787.",
+    "The young republic expanded west across the continent; the dispute over slavery led to the Civil War (1861–65), which ended slavery and preserved the Union.",
+    "Industrialised by 1900, the United States emerged from two world wars as a superpower, led the West in the Cold War, and has been the dominant world power since 1991."
+  ],
+  "chapters": {
+    "Indigenous period": [
+      "People crossed from Siberia into North America at least 15,000 years ago and spread across both continents.",
+      "Societies ranged from hunter-gatherers to farming peoples; the Mississippian 'Mound Builders' built cities such as Cahokia.",
+      "Norse Greenlanders reached Newfoundland around 1000, but left no lasting settlement."
+    ],
+    "European colonization (1075–1754)": [
+      "Spain founded St. Augustine in Florida (1565); England founded Jamestown, Virginia (1607) and the Pilgrims Plymouth (1620).",
+      "The Dutch held New Netherland until England took it in 1664 (renamed New York); France claimed Canada and Louisiana.",
+      "The colonies split into New England, the Middle Colonies and the plantation South, where enslaved Africans replaced indentured servants as the main labour force.",
+      "Settlement brought repeated wars with Native nations and catastrophic losses to disease."
+    ],
+    "Revolutionary period (1754–1793)": [
+      "Britain's victory over France in the French and Indian War (1754–63) left debts, and its new taxes provoked colonial protest: 'no taxation without representation'.",
+      "After the Boston Tea Party (1773) and fighting at Lexington and Concord (1775), the Second Continental Congress declared independence on 4 July 1776.",
+      "With French help the colonies won; Britain recognised independence in the Treaty of Paris (1783).",
+      "The Constitutional Convention (1787) created a federal government with separated powers; the Bill of Rights followed in 1791."
+    ],
+    "Early republic (1793–1830)": [
+      "Washington was the first president (1789–97); Hamilton's financial system, including the First Bank of the United States, divided the first political parties.",
+      "Jefferson's Louisiana Purchase (1803) doubled the country's size.",
+      "The War of 1812 against Britain ended in a draw but strengthened national feeling; the importation of enslaved people was banned in 1808, while slavery itself spread west."
+    ],
+    "Expansion and reform (1830–1848)": [
+      "Andrew Jackson's era widened voting for white men and created the Democrats-versus-Whigs 'Second Party System'.",
+      "Indian removal forced the Cherokee and other nations west along the 'Trail of Tears'.",
+      "'Manifest destiny' drove expansion: Texas was annexed and the Mexican–American War (1846–48) won California and the Southwest."
+    ],
+    "Civil War and Reconstruction (1848–1877)": [
+      "Whether new territories would allow slavery split the country; Lincoln's election in 1860 led eleven Southern states to secede as the Confederacy.",
+      "The Civil War (1861–65) killed about 620,000–750,000 soldiers; Gettysburg (1863) was the turning point, and Lincoln's Emancipation Proclamation made it a war against slavery.",
+      "Lincoln was assassinated in 1865; the 13th, 14th and 15th Amendments abolished slavery and promised citizenship and votes to freed people.",
+      "Reconstruction ended in 1877, and white Southern rule returned with segregation and Ku Klux Klan terror."
+    ],
+    "Gilded Age and the Progressive Era (1877–1914)": [
+      "Railroads, steel and oil made the US the world's largest industrial economy; millions of immigrants arrived, and wealth became highly concentrated.",
+      "Progressive reformers, including Theodore Roosevelt, attacked monopolies, corruption and unsafe working conditions.",
+      "Victory in the Spanish–American War (1898) brought overseas colonies such as the Philippines and Puerto Rico; the Panama Canal opened in 1914."
+    ],
+    "Modern America and World Wars (1914–1945)": [
+      "The US entered the First World War in 1917; Wilson's peace plans at Paris were rejected by the Senate.",
+      "The 1920s brought Prohibition, women's suffrage and a boom that ended in the Wall Street crash of 1929.",
+      "Franklin D. Roosevelt answered the Great Depression with the New Deal.",
+      "After Pearl Harbor (1941) the US fought Germany and Japan, built the atomic bomb in the Manhattan Project, and ended the war as the strongest power on earth."
+    ],
+    "Cold War (1945–1991)": [
+      "The US led the Western bloc against the Soviet Union: the Marshall Plan, NATO, and wars in Korea and Vietnam.",
+      "The Cuban Missile Crisis (1962) was the closest the superpowers came to nuclear war; the Space Race ended with the Moon landing in 1969.",
+      "At home, the civil rights movement ended legal segregation; the 1960s also brought the Great Society programmes, the counterculture and second-wave feminism.",
+      "The Cold War ended with the collapse of the Soviet Union in 1991."
+    ],
+    "Contemporary United States (1991–present)": [
+      "As the sole superpower the US led the Gulf War (1991); the internet economy boomed in the 1990s.",
+      "The September 11 attacks (2001) led to wars in Afghanistan and Iraq, the 'War on Terror'.",
+      "The 2008 financial crisis, deepening political polarisation and the COVID-19 pandemic marked the following decades."
+    ]
+  }
+}

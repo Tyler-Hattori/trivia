@@ -1,0 +1,69 @@
+{
+  "topic": [
+    "France grew from Roman Gaul and the Frankish kingdom of Clovis and Charlemagne into a kingdom built up piece by piece by the Capetian kings around Paris.",
+    "From Louis XIV it was Europe's most powerful state and the centre of its culture; the Revolution of 1789 overthrew the monarchy and spread the ideas of citizenship and nationhood.",
+    "Between 1789 and 1958 France tried monarchies, empires and five republics, and fought three wars with Germany (1870, 1914, 1939).",
+    "Since 1945 it has lost its colonial empire, become a founding member of the European Union and a nuclear power, under the Fifth Republic founded by de Gaulle."
+  ],
+  "chapters": {
+    "Prehistory": [
+      "Humans have lived in France for hundreds of thousands of years; its caves (Lascaux, Chauvet) hold some of the oldest art in the world.",
+      "Farming spread from about 6000 BC; the Bronze Age brought the Bell Beaker culture and metalworking.",
+      "Celtic Hallstatt and then La Tène cultures dominated by the Iron Age: the peoples the Romans called Gauls."
+    ],
+    "Ancient history": [
+      "Greek traders founded Massalia (Marseille) around 600 BC.",
+      "Rome took southern Gaul in the 120s BC, and Julius Caesar conquered the rest in the Gallic Wars (58–50 BC), defeating Vercingetorix at Alesia in 52 BC.",
+      "Gaul became thoroughly Roman, with Latin, cities and roads; from the 400s Germanic peoples (Visigoths, Burgundians, Franks) crossed the Rhine and carved it up."
+    ],
+    "Frankish kingdoms (486–987)": [
+      "Clovis I united the Franks, defeated the last Roman ruler Syagrius (486) and the Visigoths (507), and converted to Catholic Christianity.",
+      "Charles Martel stopped an Umayyad army near Tours (732); his son Pepin the Short became king, founding the Carolingian dynasty.",
+      "Charlemagne built an empire across western Europe and was crowned emperor in Rome by Pope Leo III in 800.",
+      "The Treaty of Verdun (843) split the empire among his grandsons; West Francia, under Charles the Bald, became France."
+    ],
+    "State building into the Kingdom of France (987–1453)": [
+      "Hugh Capet founded the Capetian dynasty in 987, ruling little more than the land around Paris.",
+      "Kings slowly gained ground: Philip II Augustus took Normandy from King John and won at Bouvines (1214); Philip IV clashed with the pope and moved the papacy to Avignon.",
+      "The Hundred Years' War (1337–1453) with the English kings, who claimed the French throne, brought defeats at Crécy, Poitiers and Agincourt.",
+      "Joan of Arc relieved Orléans in 1429 and had Charles VII crowned; by 1453 the English held only Calais."
+    ],
+    "Early Modern France (1453–1789)": [
+      "Francis I fought the Habsburgs in the Italian Wars and patronised the Renaissance; the Wars of Religion (1562–98) ended with Henry IV's Edict of Nantes.",
+      "Richelieu and Mazarin built royal power and won the Thirty Years' War against the Habsburgs.",
+      "Louis XIV (1643–1715) ruled as an absolute monarch from Versailles, and France became Europe's dominant power and cultural model.",
+      "18th-century wars cost France most of its first colonial empire and its finances, while Enlightenment writers questioned the old order."
+    ],
+    "Revolutionary France (1789–1799)": [
+      "Bankruptcy forced Louis XVI to call the Estates-General in 1789; the Third Estate declared itself the National Assembly and Paris stormed the Bastille.",
+      "The Declaration of the Rights of Man abolished feudal privilege; the monarchy fell in 1792 and Louis XVI was executed in 1793.",
+      "War with Europe and internal revolt brought the Terror (1793–94) under Robespierre, then the Directory.",
+      "General Napoleon Bonaparte seized power in the coup of 18 Brumaire (1799)."
+    ],
+    "Napoleonic France (1799–1815)": [
+      "Napoleon ruled as First Consul and then Emperor from 1804; the Napoleonic Code and centralised administration outlasted him.",
+      "His armies dominated continental Europe until the invasion of Russia in 1812 failed.",
+      "Defeated at Leipzig (1813), he abdicated; he returned for the Hundred Days in 1815, lost at Waterloo, and the Bourbons under Louis XVIII were restored."
+    ],
+    "1815–1914": [
+      "Revolutions in 1830 and 1848 overthrew two monarchies; the Second Republic elected Louis-Napoleon, who made himself Napoleon III (Second Empire, 1852–70).",
+      "Defeat by Prussia in 1870–71 lost Alsace-Lorraine and ended the Empire; the Third Republic followed after the Paris Commune was crushed.",
+      "The Republic built secular schools, separated church and state (1905), expanded the empire and allied with Russia and Britain (the Triple Entente)."
+    ],
+    "Colonial empire": [
+      "France's second colonial empire grew from Algeria (1830) to most of West and North Africa, Indochina and Madagascar.",
+      "It was the second largest empire in the world, justified by a 'civilising mission'.",
+      "After 1945 it came apart through the First Indochina War (lost at Dien Bien Phu, 1954), the Algerian War (to 1962) and African independence around 1960."
+    ],
+    "1914–1945": [
+      "France bore much of the Western Front in the First World War and lost about 1.4 million soldiers; it won back Alsace-Lorraine in 1918.",
+      "In 1940 Germany defeated France in six weeks; the north was occupied and Marshal Pétain's Vichy regime collaborated.",
+      "Charles de Gaulle led the Free French from London; France was liberated in 1944."
+    ],
+    "Since 1945": [
+      "The Fourth Republic rebuilt the economy (the 'Trente Glorieuses') but fell over the Algerian War in 1958.",
+      "De Gaulle founded the Fifth Republic with a strong presidency, ended the Algerian War in 1962 and gave France its own nuclear force.",
+      "The protests of May 1968 shook the regime; since then presidents from Giscard to Mitterrand, Chirac and their successors have led France deeper into European integration."
+    ]
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "topic": [
+    "Science grew from practical knowledge in ancient Mesopotamia, Egypt, India, China and Mesoamerica: astronomy for calendars, mathematics for building and trade, and medicine.",
+    "Greek natural philosophers sought general explanations; their work was preserved and extended in the medieval Islamic world and Byzantium, and returned to Europe in the 12th century.",
+    "The Scientific Revolution of the 16th–17th centuries made experiment and mathematical law the method of natural science.",
+    "From the 19th century science became a profession, splitting into disciplines that produced evolution, germ theory, atomic and quantum physics, genetics and the Big Bang."
+  ],
+  "chapters": {
+    "Approaches to history of science": [
+      "Historians debate what counts as 'science' before the modern word existed, and whether its history is one of steady progress.",
+      "Thomas Kuhn's idea of 'paradigm shifts' (1962) and later sociological studies changed how the history of science is written."
+    ],
+    "Prehistory": [
+      "Before writing, knowledge of plants, animals, tools and seasons was passed down orally.",
+      "Practical knowledge was mixed with magic, divination and ritual."
+    ],
+    "Ancient Near East and North East Africa": [
+      "Mesopotamia and Egypt (about 3000–1200 BC) produced the earliest written mathematics, astronomy and medicine.",
+      "Babylonians used a base-60 number system and recorded and predicted planetary motions.",
+      "Egyptian mathematics and medicine were practical: land survey, building and medical texts."
+    ],
+    "Ancient and medieval South Asia and East Asia": [
+      "Indian mathematicians (Aryabhata, Brahmagupta, Bhāskara II) developed the decimal place-value system and zero; Pāṇini wrote a formal grammar of Sanskrit.",
+      "Chinese astronomers kept long records of eclipses, comets and supernovae; China invented paper, printing, gunpowder and the compass.",
+      "Both traditions had sophisticated medicine and logic."
+    ],
+    "Pre-Columbian Mesoamerica": [
+      "The Zapotec and Maya developed writing and complex calendars.",
+      "Maya astronomers predicted the movements of Venus and eclipses and used a place-value number system with a zero.",
+      "Mesoamerican peoples also achieved notable engineering, architecture and Aztec medicine."
+    ],
+    "Classical antiquity and Greco-Roman natural philosophy": [
+      "Greek thinkers from Thales and Pythagoras on sought natural explanations; Democritus proposed atoms and Hippocrates founded rational medicine.",
+      "Plato and Aristotle built systematic philosophies; Euclid organised geometry into proofs.",
+      "In the Hellenistic period Archimedes, Hipparchus and the scholars of Alexandria made major advances in mechanics and astronomy."
+    ],
+    "Middle Ages": [
+      "After Rome's fall in the West, Greek learning survived in Byzantium and was translated and extended in the Islamic Golden Age.",
+      "Al-Khwarizmi founded algebra, Ibn al-Haytham transformed optics, and Avicenna and Averroes wrote influential works on medicine and Aristotle.",
+      "Translations from Arabic sparked the Renaissance of the 12th century in Europe and the scholastic universities."
+    ],
+    "Renaissance": [
+      "Printing spread texts quickly; scholars recovered Greek originals such as Ptolemy's 'Geography'.",
+      "Copernicus's sun-centred system (1543) and Vesalius's anatomy (1543) challenged ancient authorities."
+    ],
+    "Scientific Revolution and birth of New Science": [
+      "Kepler, Galileo, Descartes and Pascal replaced Aristotle's physics with mathematics and experiment.",
+      "Newton's laws of motion and universal gravitation (1687) became the model of a scientific theory; Newton and Leibniz invented calculus.",
+      "Scientific societies and journals were founded; Enlightenment thinkers such as Voltaire and Kant spread the scientific outlook, and Lavoisier founded modern chemistry."
+    ],
+    "Romanticism and Post-Scientific Revolution": [
+      "Experiments on electricity culminated in Volta's battery (1800).",
+      "Adam Smith's 'The Wealth of Nations' (1776) applied systematic analysis to economics."
+    ],
+    "19th century": [
+      "Science became a profession; William Whewell coined the word 'scientist' in 1833.",
+      "Dalton's atomic theory, Faraday's electromagnetism, Darwin's evolution by natural selection and Mendel's laws of inheritance transformed their fields.",
+      "Pasteur's germ theory of disease and vaccines revolutionised medicine."
+    ],
+    "20th century": [
+      "Relativity and quantum mechanics (Planck, Einstein, Bohr) rebuilt physics; astronomers discovered the expanding universe and the Big Bang.",
+      "Crick and Watson's DNA double helix (1953) founded molecular biology, leading to the Human Genome Project; plate tectonics transformed geology.",
+      "Science became 'big science', with huge state-funded projects in particle physics, space and computing."
+    ],
+    "21st century": [
+      "The Higgs boson was found in 2012 and gravitational waves detected in 2015.",
+      "Genomics, neuroscience and climate science are among the fastest-growing fields."
+    ]
+  }
+}

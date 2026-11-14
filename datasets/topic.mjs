@@ -48,6 +48,8 @@
  *     --ingest-limit N        cap on linked pages ingested (default 250)
  *     --key N                 roughly how many entries "Key events" shows (default 90)
  *     --group "Countries"     shelf on the topic list (default: guessed from the article)
+ *     --ideas                 fetch linked pages the store lacks as undated IDEAS
+ *                             (lib/ideas.mjs); --ingest does this too
  *     --ingest-only           ingest what is missing, skip placing and building
  *                             (used by --list, which places once for the batch)
  *
@@ -97,6 +99,7 @@ import { entryType, TIMELINE_TYPES } from './lib/etype.mjs';
 import { loadTaxonomy } from './lib/taxotree.mjs';
 import { getJSON } from './lib/wikilib.mjs';
 import { INDEX_TITLE, stripApparatus } from './lib/wiki.mjs';
+import { readIdeas, ensureIdeas } from './lib/ideas.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WP = 'https://en.wikipedia.org';
@@ -123,6 +126,7 @@ const OPT = {
   hint: arg('--hint'),               // words that disambiguate its names on Wikipedia ("physics")
   credit: arg('--credit'),           // whose text it is, shown on every page of the topic
   maxSubpages: Number(arg('--max-subpages', 250)),
+  ideas: argv.includes('--ideas'),   // fetch undated pages as ideas, without a full --ingest
 };
 
 fs.mkdirSync(PATHS.topics, { recursive: true });
@@ -136,6 +140,7 @@ if(OPT.all){
       : [path.join(HERE, 'topic.mjs'), t.source.page, '--name', t.title, '--key', String(t.keyTarget || 90)];
     for(const ev of t.events || []) a.push('--events', ev);
     if(t.group) a.push('--group', t.group);
+    if(OPT.ideas) a.push('--ideas');
     spawnSync(process.execPath, a, { stdio: 'inherit' });
   }
   process.exit(0);
@@ -823,6 +828,21 @@ const eventPages = [...OPT.events, ...(art.events || [])];
 const pageKey = (u) => (/^https?:\/\//.test(u) && !/wikipedia\.org/.test(u) ? String(u) : wikiKey(u)).toLowerCase();
 const missingEvents = eventPages.filter((p) => !entries.some((e) => e.origin?.manual && pageKey(e.origin?.wiki) === pageKey(p)));
 
+/*
+ * Ideas: what is still missing after ingest is mostly undated (Energy, Wave,
+ * Natural selection), which the store refuses. Fetch those as ideas
+ * (lib/ideas.mjs): one summary each, no model. Only pages the article leans
+ * on: a hatnote, the lead, or more than one mention (any mention, for a site).
+ */
+async function fetchIdeasFor(){
+  entries = readEntries();
+  ({ byWiki, byTitle } = indexStore());
+  const want = [...mention.entries()]
+    .filter(([t, m]) => !findEntry(t) && !INDEX_TITLE.test(t) && (m.hat || m.lead || m.weight >= 1.5 || art.kind === 'site'))
+    .sort((a, b) => b[1].weight - a[1].weight).slice(0, 250).map(([t]) => t);
+  await ensureIdeas(want);
+}
+
 if(OPT.ingest && (missing.length || missingEvents.length)){
   const list = missing.slice(0, OPT.ingestLimit).map(([t]) => t);
   const run = (a) => spawnSync(process.execPath, [path.join(HERE, 'ingest.mjs'), ...a], { stdio: 'inherit' });
@@ -837,6 +857,7 @@ if(OPT.ingest && (missing.length || missingEvents.length)){
     console.log(`\n  mining events from "${p}"…`);
     run(['--events', p, '--domain', domain, '--no-build']);
   }
+  await fetchIdeasFor();
   if(OPT.ingestOnly){ console.log('  ingest only: not placing or building'); process.exit(0); }
   console.log('\n  placing new entries on the atlas…');
   spawnSync(process.execPath, [path.join(HERE, 'classify.mjs')], { stdio: 'inherit' });
@@ -845,16 +866,22 @@ if(OPT.ingest && (missing.length || missingEvents.length)){
   ({ byWiki, byTitle } = indexStore());
 }
 
+if(OPT.ideas || (OPT.ingest && !missing.length && !missingEvents.length)) await fetchIdeasFor();
 if(OPT.ingestOnly){ console.log('  ingest only: nothing else to do'); process.exit(0); }
 
 // --- membership ------------------------------------------------------------
 const items = new Map();
 const fameMax = Math.log1p(Math.max(1, ...entries.map((e) => e.sitelinks || 0)));
 
+const IDEAS = readIdeas();
+const NOT_IDEA_PAGE = /\d{3,4}|\bhistory\b|historiography|\b(presidency|administration) of\b|\bby (country|region)\b|\b(in|during) (world war|the (first|second) world war)\b|^(list|timeline|outline|index|glossary) of\b/i;
+const ideaEntry = (x) => ({ id: x.id, title: x.title, subtitle: x.subtitle || '', excerpt: x.excerpt || '', image: x.image || '',
+  origin: { wiki: x.wiki, dataset: 'ideas' }, start: null, end: null, kind: 'point', idea: true });
 for(const [t, m] of mention){
   const e = findEntry(t);
-  if(!e) continue;
-  items.set(e.id, { e, m, via: 'link', t });
+  if(e){ items.set(e.id, { e, m, via: 'link', t }); continue; }
+  const x = IDEAS.get(t.toLowerCase());
+  if(x && !x.missing && !items.has(x.id)) items.set(x.id, { e: ideaEntry(x), m, via: 'link', t });
 }
 for(const p of eventPages){
   for(const e of entries){
@@ -877,7 +904,13 @@ const out = [...items.values()].map(({ e, m, via, t }) => ({
   dataset: e.origin?.dataset || '',
   wiki: e.origin?.wiki || '',
   dateSource: e.origin?.dateSource || (e.origin?.manual ? 'mined' : ''),
-  type: entryType(e),
+  // An idea is a concept unless its description says person/place/group.
+  // An idea is a concept only if nothing says otherwise: a missing page that
+  // is really an event ("Civil Rights Act of 1964", "Battle of Appomattox
+  // Court House"; the store just never ingested it) keeps its own type and
+  // stays out of Key ideas. It belongs in the store, via --ingest.
+  type: e.idea ? (NOT_IDEA_PAGE.test(e.title) ? 'other' : entryType(e)) : entryType(e),
+  idea: !!e.idea,
   // Known subject + region (classify.mjs) — the topic page's second filter row.
   subject: taxo?.entries?.[e.id]?.mid || '',
   region: taxo?.entries?.[e.id]?.region || '',
@@ -892,7 +925,7 @@ const out = [...items.values()].map(({ e, m, via, t }) => ({
   // A site topic: what the site's own page about this entry says.
   note: (t && art.notes?.get(t)?.text) || '',
   noteUrl: (t && art.notes?.get(t)?.url) || '',
-})).filter((it) => it.start != null);
+})).filter((it) => it.start != null || it.idea);
 
 /*
  * A state or period stored as a single year usually states its span in its
@@ -992,7 +1025,7 @@ for(const [pid, list] of worksOf){
 if(nWorks) console.log(`  + ${nWorks} works by ${worksOf.size} of the topic's people (from the store)`);
 
 // --- chapters & date checks -----------------------------------------------
-chapters.forEach((c, ci) => { c.members = out.filter((it) => it.chapterOfMention === ci); });
+chapters.forEach((c, ci) => { c.members = out.filter((it) => it.chapterOfMention === ci && it.start != null); });
 let chronological = inferRanges(chapters);
 for(const c of chapters){
   const y = OVR.chapterYears[c.title];
@@ -1019,6 +1052,11 @@ const chapterOfYear = (y) => {
 };
 
 for(const it of out){
+  if(it.start == null){
+    // An idea: in the chapter that mentions it most, never on the timeline.
+    it.dateSuspect = false; it.chapter = it.chapterOfMention ?? 0; it.onTimeline = false;
+    continue;
+  }
   if(chronological){
     // Does the stored date fall in (or near) a chapter the article mentions it in?
     // Tolerance scales with the chapter: a 50-year slack is nothing for
@@ -1193,11 +1231,90 @@ for(const [, arr] of byCh){
 for(const it of out) if(!it.onTimeline) it.key = false;
 for(const it of out){
   if(titleIn(OVR.unkey, it)) it.key = false;
-  if(titleIn(OVR.key, it)){ it.key = true; it.onTimeline = true; }
+  if(titleIn(OVR.key, it) && it.start != null){ it.key = true; it.onTimeline = true; }
 }
+
+/*
+ * Key ideas: the concepts a chapter is about (Conservation of energy, Boyle's
+ * law, Natural selection), dated or not. Shown in Learn above the chapter's
+ * entries and asked in the quiz's Ideas mode. Not languages, offices,
+ * countries, foods, institutions or publications, which the prose links in
+ * passing ("the Pope", "Latin", "a Twinkie"). It needs a sentence in the
+ * article and more than a passing mention: a hatnote, two or more mentions, or
+ * a title that shares a word with its chapter's.
+ */
+const NOT_IDEA = /\b(language|dialect|country|city|town|village|capital|snack|food|dish|cuisine|beverage|drink|brand|company|corporation|manufacturer|university|college|school|academy|institute|museum|library|title|office|position|rank|religio\w*|church|denomination|nationality|ethnic|ethnonym|demonym|sport|award|prize|newspaper|journal|magazine|periodical|television|film|song|album|band|dam|bridge|river|mountain|island|lake|sea|ocean|continent|region|province|county|district|surname|given name|family name|website|encyclopedia|dictionary|novel|painting|holiday|festival|calendar|month|day of|currency|awards?|prizes?|society|organi[sz]ation|association|agency|party|army|navy|air force|government|dynasty|empire|kingdom|nation|sovereign state|people|tribe|family|house)\b/i;
+const wordsOf = (x) => new Set(String(x).toLowerCase().match(/[a-z]{4,}/g) || []);
+// Shared title words, ignoring generic ones ("law", "theory"): how strongly a
+// chapter is ABOUT an idea. "Newton's laws of motion" shares 2 with "Newton's
+// Laws" and 1 with "Newton".
+const GENERIC_W = new Set(['law', 'laws', 'theory', 'principle', 'effect', 'history', 'with', 'from', 'that', 'this', 'their', 'into', 'about']);
+const shares = (it, ci) => {
+  const cw = [...wordsOf(chapters[ci]?.title || '')].map((w) => w.replace(/s$/, ''));
+  const iw = [...wordsOf(it.title)].map((w) => w.replace(/s$/, ''));
+  const n = iw.filter((w) => cw.includes(w)).length;
+  return iw.some((w) => cw.includes(w) && !GENERIC_W.has(w) && !GENERIC_W.has(w + 's')) ? n : 0;
+};
+const NOT_IDEA_TITLE = /\b(society|university|college|institute|academy|museum|company|party|church|school|journal|prize|award)\b/i;
+const ideaCands = out.filter((it) => it.type === 'concept' && !it.onTimeline && it.via === 'link' &&
+  !/^(history|list|timeline|outline|index|glossary) of\b/i.test(it.title) && !NOT_IDEA.test(it.subtitle || '') &&
+  !NOT_IDEA_TITLE.test(it.title) && !titleIn(OVR.unkey, it) && (it.context || it.inIntro || it.idea));
+for(const it of ideaCands){
+  // The lecture an idea is named after is its chapter, even if another one
+  // mentions it more ("Newton's laws of motion" belongs to "Newton's Laws").
+  const own = (it.mentionedIn || []).map((ci) => [ci, shares(it, ci)]).filter(([, n]) => n).sort((a, b) => b[1] - a[1])[0];
+  if(own) it.chapter = own[0];
+  else if(it.mentionedIn?.length && !it.mentionedIn.includes(it.chapter)) it.chapter = it.chapterOfMention ?? it.mentionedIn[0];
+  const share = shares(it, it.chapter) > 0;
+  it.isIdea = true;
+  it.ideaScore = (it.hat ? 3 : 0) + Math.min(4, it.weight) + (share ? 2 : 0) + (it.context ? 1 : 0);
+  // A dated store entry typed "concept" is often a mistyped person, country or
+  // award with no description: it must be named by its chapter or a hatnote.
+  // A description that is just a name ("Robert Boyle") is a creator, not a
+  // description, and says nothing either way.
+  const described = it.subtitle && !/^[A-Z][\w'’.-]*( [A-Z][\w'’.-]*){0,3}$/.test(it.subtitle);
+  if(!it.idea && !(it.hat || share || (described && it.weight >= 2))) it.ideaScore = 0;
+  // In a chronological history the timeline carries what happened; a dated
+  // "concept" there is usually a mistyped event or institution. Only genuine
+  // ideas (undated) and what a section is about (a hatnote) count.
+  if(chronological && !it.idea) it.ideaScore = 0;
+}
+const byChIdea = new Map();
+for(const it of ideaCands) if(it.ideaScore >= 3) (byChIdea.get(it.chapter) || byChIdea.set(it.chapter, []).get(it.chapter)).push(it);
+for(const [, arr] of byChIdea){
+  arr.sort((a, b) => b.ideaScore - a.ideaScore || b.importance - a.importance);
+  arr.slice(0, 6).forEach((it) => { it.keyIdea = true; });
+}
+for(const it of out) if(titleIn(OVR.key, it) && it.start == null){ it.isIdea = true; it.keyIdea = true; }
+// An idea moved to the chapter named after it may now share its sentence
+// with an entry there: the entry keeps it, the idea shows its definition.
+{
+  const used = new Map();
+  for(const it of out) if(!it.isIdea && it.context) (used.get(it.chapter) || used.set(it.chapter, new Set()).get(it.chapter)).add(it.context);
+  for(const it of out){
+    if(!it.isIdea || !it.context) continue;
+    const u = used.get(it.chapter) || used.set(it.chapter, new Set()).get(it.chapter);
+    if(u.has(it.context)) it.context = ''; else u.add(it.context);
+  }
+}
+const nIdeas = out.filter((it) => it.keyIdea).length;
+if(nIdeas) console.log(`  ${nIdeas} key ideas (${out.filter((it) => it.idea).length} undated ideas in the topic)`);
 
 // --- chapter output -----------------------------------------------------------
 const PALETTE = ['#8a6d3b', '#a0522d', '#6b8e23', '#2f6f73', '#4a6fa5', '#7b5ea7', '#a3477a', '#b5543c', '#5b7c3a', '#3d6e8f', '#8c6239', '#566573'];
+/*
+ * Key points: a short summary per chapter (and one for the topic), written for
+ * this site and kept in datasets/topic-notes/<slug>.json so a rebuild never
+ * loses them: { "topic": [..], "chapters": { "<chapter title>": [..] } }.
+ * A chapter whose title changed simply has none until the notes are updated;
+ * topic-report.mjs lists those.
+ */
+let NOTES = { topic: [], chapters: {} };
+try { NOTES = { topic: [], chapters: {}, ...JSON.parse(fs.readFileSync(path.join(HERE, 'topic-notes', `${slug}.json`), 'utf8')) }; } catch {}
+// Titles compared with whitespace normalised: the article's "c. 3150" has a thin space.
+const normT = (t) => String(t).replace(/\s+/gu, ' ').trim().toLowerCase();
+const notesByTitle = new Map(Object.entries(NOTES.chapters || {}).map(([k, v]) => [normT(k), v]));
+const notesFor = (t) => notesByTitle.get(normT(t)) || [];
 const chOut = chapters.map((c, i) => ({
   id: i,
   title: c.title,
@@ -1207,6 +1324,7 @@ const chOut = chapters.map((c, i) => ({
   intro: chIntro[i],
   subsections: c.sections.slice(1).map((sec) => ({ title: sec.title, intro: cleanIntro(opening(proseParas(sec), 280)) })),
   parent: c.parent || null,
+  points: notesFor(c.title),
   from: c.from ?? null,
   to: c.to ?? null,
   overlaps: !!c.overlaps,
@@ -1215,7 +1333,7 @@ const chOut = chapters.map((c, i) => ({
   key: out.filter((it) => it.chapter === i && it.key).length,
 }));
 
-out.sort((a, b) => a.start - b.start || b.importance - a.importance);
+out.sort((a, b) => (a.start ?? Infinity) - (b.start ?? Infinity) || b.importance - a.importance);
 
 /*
  * The shelf on the topic list. From --group when the list gives one, else the
@@ -1244,6 +1362,7 @@ const topic = {
   // opening is the better start.
   intro: topicIntro || chIntro.find(Boolean) || '',
   blurb: OVR.blurb || null,
+  points: NOTES.topic || [],
   chapters: chOut,
   items: out,
 };
@@ -1330,6 +1449,15 @@ function updateAll(t){
   all.topics[t.slug] = { title: t.title, group: t.group, chapters: t.chapters.map((c) => [c.title, c.color]) };
   const clip = (s, n) => { s = String(s || ''); return s.length > n ? s.slice(0, n).replace(/\s+\S*$/, '') + '…' : s; };
   for(const it of t.items){
+    if(it.keyIdea){
+      // An idea: no date; its definition (the lead's first sentence) is the quiz prompt.
+      const r = { x: t.slug, id: it.id, t: it.title, ch: it.chapter, ty: it.type, i: 1, key: 1 };
+      if(it.image) r.im = it.image;
+      r.c = clip(it.context || it.note || it.excerpt, 260);
+      r.def = clip(String(it.excerpt || '').split(/(?<=[.!?])\s/)[0], 300);
+      all.items.push(r);
+      continue;
+    }
     if(!it.onTimeline) continue;
     const r = { x: t.slug, id: it.id, t: it.title, s: it.start, ch: it.chapter, ty: it.type };
     if(it.end != null && it.end !== it.start) r.e = it.end;

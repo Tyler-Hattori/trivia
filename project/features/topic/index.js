@@ -120,9 +120,9 @@ let allP = null;
 function loadAll(){
   if(!allP) allP = getJSON('datasets/topics/all.json').then((d) => {
     for(const r of d.items){
-      r.anchor = anchorYear({ type: r.ty, kind: r.k ? 'span' : 'point', start: r.s, end: r.e, dataset: r.d });
+      r.anchor = r.i ? null : anchorYear({ type: r.ty, kind: r.k ? 'span' : 'point', start: r.s, end: r.e, dataset: r.d });
     }
-    d.items.sort((a, b) => a.anchor - b.anchor);
+    d.items.sort((a, b) => (a.anchor ?? Infinity) - (b.anchor ?? Infinity));
     return d;
   }).catch(() => { allP = null; return { topics: {}, items: [] }; });
   return allP;
@@ -147,7 +147,7 @@ async function meanwhile(it, slug){
   const mid = (lo + hi) / 2;
   const by = new Map();
   for(const r of A.items){
-    if(r.anchor < lo || r.anchor > hi || r.x === slug || r.id === it.id) continue;
+    if(r.i || r.anchor < lo || r.anchor > hi || r.x === slug || r.id === it.id) continue;
     (by.get(r.x) || by.set(r.x, []).get(r.x)).push(r);
   }
   const groups = [...by].map(([x, rows]) => {
@@ -177,6 +177,20 @@ const lineOf = (it) => {
   }
   return s;
 };
+
+/** An idea's definition: the first sentence of its own lead. */
+export const defOf = (it) => it.def || summary(String(it.excerpt || '').split(/(?<=[.!?])\s+(?=[A-Z])/)[0], 260);
+const repeatsText = (a, b) => !!a && !!b && (a.includes(b.slice(0, 60)) || b.includes(a.slice(0, 60)));
+
+/**
+ * Key points: a short summary of a chapter, written for this site (by Claude,
+ * from the article and the entries; datasets/topic-notes/<slug>.json), and
+ * labelled as such so it is never mistaken for the article's words.
+ */
+function pointsBox(points, color, label = 'Key points'){
+  return `<div class="tp-points" style="--c:${color}"><div class="lb">${esc(label)} <span title="A summary written for this site by Claude, from the article. Check the article for anything that matters.">· summary</span></div>
+    <ul>${points.map((p) => `<li>${esc(p)}</li>`).join('')}</ul></div>`;
+}
 
 // ---------------------------------------------------------------------------
 // List
@@ -324,7 +338,8 @@ async function showCross(kind){
   const items = A.items.filter((r) => idx.has(r.x)).map((r) => ({
     id: `${r.x}|${r.id}`, eid: r.id, x: r.x, title: r.t, yearText: r.y || '', start: r.s, end: r.e ?? null,
     kind: r.k ? 'span' : 'point', type: r.ty, key: !!r.key, image: r.im || '', context: r.c || '',
-    chapter: idx.get(r.x), onTimeline: true, anchor: r.anchor, dataset: r.d || '',
+    chapter: idx.get(r.x), onTimeline: !r.i, anchor: r.anchor, dataset: r.d || '',
+    ...(r.i ? { isIdea: true, keyIdea: true, def: r.def || '', excerpt: r.def || '', start: null } : {}),
   }));
   const ST = {
     slug: `__${kind}`, title: 'all topics', synthetic: true, reviewOnly: kind === 'review',
@@ -585,7 +600,7 @@ function refreshCount(){
 // ---------------------------------------------------------------------------
 
 function chapterStats(c){
-  const its = T.items.filter((it) => it.chapter === c.id && it.onTimeline && (V.show === 'all' || it.key));
+  const its = T.items.filter((it) => it.chapter === c.id && ((it.onTimeline && (V.show === 'all' || it.key)) || it.keyIdea));
   const known = its.filter((it) => isKnown(V.mastery[it.id])).length;
   return { n: its.length, known };
 }
@@ -645,9 +660,33 @@ function drawLearn(){
       </div>`;
   };
 
+  /*
+   * Key ideas: what a chapter is ABOUT when that is a concept rather than an
+   * event (Energy, the Ideal gas law, Natural selection). Undated, so never on
+   * the timeline; here they come first, defined in one sentence each, with
+   * the article's own sentence when it has one.
+   */
+  const ideaRow = (it) => {
+    const def = defOf(it);
+    const ctx = it.context || it.note || '';
+    total += words(def) + words(ctx) + 3;
+    const known = isKnown(V.mastery[it.id]);
+    return `
+      <div class="tp-row tp-idea key ${V.selected === it.id ? 'sel' : ''}" data-id="${esc(it.id)}">
+        <div class="yr">idea</div>
+        <div class="mid">
+          <div class="t">${esc(it.title)}${known ? '<span class="ok" title="You answered this right">✓</span>' : ''}</div>
+          ${def ? `<div class="s">${esc(def)}</div>` : ''}
+          ${ctx && !repeatsText(ctx, def) ? `<div class="s tp-ictx">${esc(summary(ctx, 260))}</div>` : ''}
+        </div>
+        <div class="im">${it.image ? `<img src="${esc(thumbUrl(it.image, 120))}" loading="lazy" alt="" onerror="imgRetry(this)">` : ''}</div>
+      </div>`;
+  };
   const chapterHtml = T.chapters.map((c, ci) => {
     const its = items.filter((it) => it.chapter === c.id).sort((a, b) => a.anchor - b.anchor);
-    if(!its.length && (V.matches || V.subject)) return '';
+    const ideas = T.items.filter((it) => it.chapter === c.id && (V.show === 'key' ? it.keyIdea : it.isIdea) && (!V.matches || V.matches.has(it.id)));
+    if(!its.length && !ideas.length && (V.matches || V.subject)) return '';
+    total += (c.points || []).reduce((n, x) => n + words(x), 0);
     total += words(c.intro);
     // Group by the article's own subsections, in the article's order. Entries
     // mentioned in the chapter's opening come first, without a heading.
@@ -661,13 +700,15 @@ function drawLearn(){
         <div class="tp-chhd" style="--c:${c.color}">
           <div class="num">Chapter ${ci + 1}</div>
           <h2>${esc(c.title)}</h2>
-          <div class="yr">${[fmtRange(c.from, c.to), `${its.length} ${V.show === 'key' ? 'essentials' : 'entries'}`].filter(Boolean).map(esc).join(' · ')}</div>
+          <div class="yr">${[fmtRange(c.from, c.to), its.length ? `${its.length} ${V.show === 'key' ? 'essentials' : 'entries'}` : '', ideas.length ? `${ideas.length} idea${ideas.length === 1 ? '' : 's'}` : ''].filter(Boolean).map(esc).join(' · ')}</div>
         </div>
         ${c.intro && !V.matches ? `<div class="tp-intro" style="--c:${c.color}">${paras(c.intro)}</div>` : ''}
+        ${c.points?.length && !V.matches ? pointsBox(c.points, c.color) : ''}
+        ${ideas.length ? `<h3 class="tp-sub">Key ideas</h3>${ideas.map(ideaRow).join('')}${its.length ? '<h3 class="tp-sub">In order</h3>' : ''}` : ''}
         ${groups.map((g) => `
           ${g.sub ? `<h3 class="tp-sub">${esc(g.sub)}</h3>` : ''}
           ${g.its.map(row).join('')}`).join('')}
-        ${its.length >= 3 && !V.matches ? `<div class="tp-chend">
+        ${(its.length >= 3 || ideas.length >= 2) && !V.matches ? `<div class="tp-chend">
           <button class="tp-btn primary" data-check="${c.id}">Test yourself on ${esc(c.title)} →</button>
           ${next ? `<button class="tp-btn" data-goch="${next.id}">Next: ${esc(next.title)} ↓</button>` : ''}
         </div>` : ''}
@@ -684,6 +725,7 @@ function drawLearn(){
         · from <a class="tp-src" href="${esc(T.source.url)}" target="_blank" rel="noopener">${esc(T.source.page)}</a>
         (${V.show === 'key' ? 'switch to <a href="#" data-show="all">Everything</a> for all ' + T.items.filter((it) => it.onTimeline).length : 'switch to <a href="#" data-show="key">Essentials</a> for the short version'})</div>
       ${T.intro ? `<div class="tp-intro lead">${paras(T.intro)}</div>` : ''}
+      ${T.points?.length ? pointsBox(T.points, '#0f172a', 'In short') : ''}
     </header>` : ''}
     ${chapterHtml || '<div class="tp-empty">Nothing matches.</div>'}
   </div>`;
@@ -944,8 +986,9 @@ function showDetail(id, scroll = true){
   const k = list.findIndex((x) => x.id === id);
   // Outside the current view (a related entry): step from where it would sit.
   const at = k >= 0 ? k : list.findIndex((x) => x.anchor > it.anchor);
-  const prev = k >= 0 ? list[k - 1] : list[(at < 0 ? list.length : at) - 1];
-  const next = k >= 0 ? list[k + 1] : list[at < 0 ? list.length : at];
+  const undated = it.start == null || !!it.isIdea;
+  const prev = undated ? null : k >= 0 ? list[k - 1] : list[(at < 0 ? list.length : at) - 1];
+  const next = undated ? null : k >= 0 ? list[k + 1] : list[at < 0 ? list.length : at];
   const related = (it.related || []).map((r) => T.byId.get(r)).filter(Boolean).slice(0, 8);
   const m = V.mastery[it.id];
   const about = String(it.excerpt || '').split(/\n+/).filter(Boolean);
@@ -954,16 +997,17 @@ function showDetail(id, scroll = true){
     <div class="hd">
       <button class="tp-btn" data-nav="-1" title="Earlier (←)" ${prev ? '' : 'disabled'}>←</button>
       <button class="tp-btn" data-nav="1" title="Later (→)" ${next ? '' : 'disabled'}>→</button>
-      <span class="tp-meta" style="flex:1;text-align:center">${k >= 0 ? `${k + 1} of ${list.length}` : 'not in this view'}</span>
+      <span class="tp-meta" style="flex:1;text-align:center">${undated ? 'idea' : k >= 0 ? `${k + 1} of ${list.length}` : 'not in this view'}</span>
       <button class="tp-btn" data-act="close" title="Close (Esc)">✕</button>
     </div>
     ${it.image ? `<a href="${esc(fullUrl(it.image))}" target="_blank" rel="noopener"><img src="${esc(thumbUrl(it.image, 960))}" alt="" onerror="imgRetry(this)"></a>` : ''}
     <div class="in">
       <h2>${esc(it.title)}</h2>
-      <div class="sub">${esc(it.yearText || fmtYear(it.start))}${it.subtitle ? ` · ${esc(it.subtitle)}` : ''}</div>
+      <div class="sub">${[it.yearText || fmtYear(it.start), it.subtitle].filter(Boolean).map(esc).join(' · ')}</div>
+      ${undated && defOf(it) ? `<div class="tp-ctx" style="--c:#0f172a"><div class="lb">What it is</div>${esc(defOf(it))}</div>` : ''}
       <div style="margin-bottom:12px">
         ${ch ? `<span class="tp-badge" style="border-color:${ch.color};color:${ch.color}">${esc(ch.title)}</span>` : ''}
-        <span class="tp-badge">${esc(TYPE_LABEL[it.type] || it.type)}</span>
+        <span class="tp-badge">${esc(it.isIdea ? 'Idea' : TYPE_LABEL[it.type] || it.type)}</span>
         ${it.key ? '<span class="tp-badge" style="border-color:#f59e0b;color:#b45309">Essential</span>' : ''}
         ${m ? `<span class="tp-badge" style="${isKnown(m) ? 'border-color:#16a34a;color:#15803d' : 'border-color:#f87171;color:#b91c1c'}">${isKnown(m) ? '✓ known' : 'missed'} · ${m.r}/${m.r + m.w}</span>` : ''}
       </div>
@@ -992,7 +1036,7 @@ function showDetail(id, scroll = true){
       </div>
     </div>`;
   el.scrollTop = 0;
-  drawMeanwhile(it);
+  if(!undated) drawMeanwhile(it);
   if(!scroll) return;
   if(V.mode === 'timeline' && V.pos?.get(id)){
     const host = root.querySelector('#tpScroll');

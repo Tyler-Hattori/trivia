@@ -1,0 +1,36 @@
+{
+  "topic": [
+    "The Renaissance ('rebirth') was a European cultural movement of roughly the 14th to 17th centuries, beginning in Italy.",
+    "Humanists revived the study of classical Greek and Latin texts and put human experience, education and civic life at the centre of learning.",
+    "Art was transformed by linear perspective, realism and anatomy: Giotto, Masaccio, Brunelleschi, Donatello, then Leonardo, Michelangelo and Raphael.",
+    "Printing, voyages of discovery and new science spread its ideas across Europe and prepared the way for the Reformation and the Scientific Revolution."
+  ],
+  "chapters": {
+    "Period": [
+      "The Renaissance began in Italy during the crises of the Late Middle Ages and reached northern Europe later, lasting into the 1600s.",
+      "Florence, a rich republic, was its first centre; Giotto's frescoes (Scrovegni Chapel, about 1305) foreshadowed it.",
+      "Historians debate whether it was a sharp break with the Middle Ages or a continuation of them."
+    ],
+    "Overview": [
+      "It touched every field: art and architecture, literature, politics, science and music.",
+      "Painters adopted linear perspective (Masaccio's Brancacci Chapel frescoes); Machiavelli's 'The Prince' (1513) analysed power as it is, not as it should be.",
+      "Erasmus carried humanism to northern Europe."
+    ],
+    "Origins": [
+      "Humanists such as Petrarch rediscovered Roman authors like Cicero, Livy, Lucretius and Seneca; Dante wrote in the Italian vernacular.",
+      "Ancient learning also reached Europe through Arabic scholars such as Avicenna and Averroes, and through Muslim Spain.",
+      "The Black Death (1348) and the wealth of Italian city-states and patrons like the Medici helped set the conditions."
+    ],
+    "Characteristics": [
+      "Humanism was a method of learning based on the close reading of classical texts, rather than a single philosophy.",
+      "Brunelleschi, Donatello and Leonardo da Vinci joined art with mathematics and observation of nature; Jan van Eyck led an oil-painting revolution in the North.",
+      "Gutenberg's printing press (about 1450) spread texts fast; Greek scholars arrived after the Fall of Constantinople (1453).",
+      "The age of exploration (Columbus, da Gama, Vespucci) and Copernicus's sun-centred universe widened Europe's picture of the world."
+    ],
+    "Spread": [
+      "From Florence the Renaissance spread to Rome and Venice (Titian, Tintoretto, Veronese) and across Europe.",
+      "Northern artists included Dürer and Bruegel; music flourished with Palestrina, Victoria and Byrd.",
+      "In England it came late and literary: Spenser, Marlowe, Shakespeare and Francis Bacon."
+    ]
+  }
+}

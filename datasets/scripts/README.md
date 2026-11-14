@@ -65,7 +65,6 @@ and reserve a model only for judgment.
 | `excerpts.mjs` | Rewrites a whole `excerpt` column: Wikipedia lead + local-model reshape | **$0** (local LLM) |
 | `suggest.mjs` | Proposes new entries + new dataset ideas from Wikipedia/Wikidata | **$0** (no LLM) |
 | `imgcheck.mjs` | HEAD-checks every image URL as the browser will request it | **$0** (no LLM) |
-| `build_thumbnails.js` | Pre-existing local thumbnail cache builder (unchanged) | $0 |
 
 Requirements: Node 18+ (uses global `fetch`). No `npm install` needed — the scripts
 are self-contained `.mjs` and reuse the app's own CSV parser semantics, so files

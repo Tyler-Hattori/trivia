@@ -201,6 +201,7 @@ export const CSS = String.raw`
 .tp-qhead{font-size:15px;margin-bottom:10px}
 .tp-ordr{margin:6px 0}
 .tp-ordr a{color:#0f172a}
+.tp-defq{font-size:16px;line-height:1.6;color:#1e293b;background:#f8fafc;border-radius:12px;padding:12px 14px;margin-bottom:10px}
 
 /* links styled as buttons, home bar, review counts */
 a.tp-btn{text-decoration:none;display:inline-flex;align-items:center;gap:5px}
@@ -220,6 +221,15 @@ a.tp-btn{text-decoration:none;display:inline-flex;align-items:center;gap:5px}
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tp-mw a:hover{text-decoration:underline}
 .tp-mw a .y{color:#64748b;font-variant-numeric:tabular-nums;font-size:11.5px}
+
+/* key ideas and key points */
+.tp-idea .yr{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;font-weight:700}
+.tp-ictx{color:#64748b !important;font-size:13px !important;margin-top:4px !important;font-style:italic}
+.tp-points{margin:10px 0 8px;padding:10px 14px 10px 16px;border-left:3px solid var(--c);background:#f8fafc;border-radius:0 10px 10px 0;max-width:72ch}
+.tp-points .lb{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#64748b;margin-bottom:4px}
+.tp-points .lb span{font-weight:500;letter-spacing:0;text-transform:none;color:#94a3b8;cursor:help}
+.tp-points ul{margin:0;padding-left:18px}
+.tp-points li{color:#1e293b;font-size:14.5px;line-height:1.55;margin:3px 0}
 
 /* phones: one column; the rail is a drawer, the detail panel a full screen */
 @media (max-width:760px){

@@ -1,0 +1,46 @@
+{
+  "topic": [
+    "Physics grew out of ancient astronomy, optics and mechanics; Greek philosophers sought natural causes, and Aristotle's system dominated for nearly 2,000 years.",
+    "Scholars of the medieval Islamic world preserved and advanced this work, notably in optics.",
+    "The Scientific Revolution (Copernicus, Galileo, Kepler, Newton) replaced it with experiment and mathematical laws; Newton's mechanics and gravity explained heaven and earth alike.",
+    "19th-century physics unified electricity, magnetism and light, and founded thermodynamics; relativity and quantum mechanics in the 20th century then rebuilt the foundations."
+  ],
+  "chapters": {
+    "Ancient history": [
+      "Babylonians and Egyptians made careful astronomical observations; Greek thinkers from Thales on looked for natural rather than divine explanations.",
+      "Democritus proposed atoms; Aristotle's physics of natural motion and four elements lasted until the 17th century.",
+      "In the Hellenistic period Archimedes founded statics and hydrostatics, and Aristarchus proposed a sun-centred cosmos."
+    ],
+    "Medieval science": [
+      "Scholars in the Islamic world translated and extended Greek work; Ibn al-Haytham's 'Book of Optics' explained vision by light entering the eye and used experiment.",
+      "Al-Biruni, Avicenna and Nasir al-Din al-Tusi advanced astronomy and mechanics; Shen Kuo described the magnetic compass in China.",
+      "In Europe, scholastics such as Buridan developed 'impetus' theory, a step toward the idea of inertia."
+    ],
+    "Scientific Revolution": [
+      "Copernicus (1543) put the Sun at the centre; Tycho Brahe's observations let Kepler find that planets move in ellipses.",
+      "Galileo used the telescope and experiments on falling bodies and was condemned by the Church (1633).",
+      "Descartes, Gilbert, Torricelli and others pursued mechanical and experimental explanations.",
+      "Newton's Principia (1687) set out the laws of motion and universal gravitation, uniting terrestrial and celestial mechanics."
+    ],
+    "18th-century developments": [
+      "Euler, Lagrange and others rewrote Newton's mechanics in powerful mathematical form; Bernoulli founded fluid dynamics.",
+      "Franklin, Cavendish and Volta studied electricity; Volta built the first battery (1800).",
+      "Black and Lavoisier studied heat and chemistry, laying groundwork for thermodynamics."
+    ],
+    "19th century": [
+      "Faraday discovered electromagnetic induction; Maxwell's equations (1860s) unified electricity, magnetism and light as electromagnetic waves.",
+      "Joule, Mayer and Helmholtz established the conservation of energy; thermodynamics and statistical mechanics explained heat as molecular motion.",
+      "Fresnel's wave theory of light won out, Foucault measured the speed of light, and Röntgen discovered X-rays (1895)."
+    ],
+    "20th century: birth of modern physics": [
+      "Planck's quantum (1900) and Einstein's light quanta (1905) began quantum theory; Einstein's relativity (1905, 1915) reshaped space, time and gravity.",
+      "Thomson discovered the electron; Rutherford found the nucleus; Bohr, Schrödinger, Heisenberg, Pauli and Dirac built quantum mechanics in the 1920s.",
+      "Meitner and others discovered nuclear fission (1938); quantum electrodynamics (Feynman and others) and the electroweak theory (Weinberg and others) followed."
+    ],
+    "Contemporary physics": [
+      "The Standard Model describes the known particles and three of the four forces; the Higgs boson was confirmed in 2012.",
+      "Physical cosmology studies the Big Bang, dark matter and dark energy.",
+      "Unifying gravity with quantum theory remains the great open problem."
+    ]
+  }
+}

@@ -8,6 +8,9 @@
  *           neighbouring chapters, so it tests sequence, not era.
  *   Era     which chapter does this belong to? Periodisation is the skeleton
  *           everything else hangs on, and the chapters are the article's own.
+ *   Ideas   which idea is this? Its definition with the name blanked out, and
+ *           four names from the same topic. For what a chapter is ABOUT when
+ *           that is a concept (Energy, Natural selection), which has no date.
  *   Recall  the existing typed questions (year, span, artist, role…) from
  *           quiz/questions.js, minus year questions for places and concepts —
  *           "What year: Trinovantes?" is not a question.
@@ -125,6 +128,9 @@ export function renderQuiz(host, T, opts){
     Q.pool = T.items.filter((it) => it.onTimeline && (show === 'all' || it.key) &&
       (!chapters.size || chapters.has(it.chapter)) && (!subjects.size || subjects.has(it.subject)));
     Q.scope = chapters.size === 1 ? T.chapters[[...chapters][0]]?.title : null;
+    // Ideas in scope; distractors may come from anywhere in the topic.
+    Q.ideas = T.items.filter((it) => (show === 'all' ? it.isIdea : it.keyIdea) && (!chapters.size || chapters.has(it.chapter)) && defOf(it));
+    Q.allIdeas = T.items.filter((it) => it.isIdea && defOf(it));
     Q.mem = memOf(T);
     Q.opts = opts;
     next();
@@ -138,18 +144,18 @@ export function renderQuiz(host, T, opts){
  * What a question may be ABOUT. Normally the whole pool; in a review session
  * only what is due (an Order question still borrows undue neighbours).
  */
-function seeds(){
-  if(!Q.T.reviewOnly) return Q.pool;
+function seeds(pool = Q.pool){
+  if(!Q.T.reviewOnly) return pool;
   const now = Date.now();
-  return Q.pool.filter((it) => isDue(Q.mem[it.id], now));
+  return pool.filter((it) => isDue(Q.mem[it.id], now));
 }
 
-const MAKERS = () => ({ order: makeOrder, era: makeEra, recall: makeRecall });
+const MAKERS = () => ({ order: makeOrder, era: makeEra, recall: makeRecall, ideas: makeIdeas });
 function next(){
   Q.cur = null;
   // The chosen mode first; if it cannot make a question here (a chapter with
   // three entries cannot be put in order), the others, rather than a dead end.
-  const modes = [Q.mode, ...['order', 'recall', 'era'].filter((m) => m !== Q.mode)];
+  const modes = [Q.mode, ...['order', 'recall', 'ideas', 'era'].filter((m) => m !== Q.mode)];
   for(const mode of modes){
     const make = MAKERS()[mode];
     for(let tries = 0; tries < 40 && !Q.cur; tries++) Q.cur = make();
@@ -179,6 +185,49 @@ function makeOrder(){
   }
   if(chosen.length < 4) return null;
   return { kind: 'order', items: shuffle(chosen), picked: [], done: false };
+}
+
+// --- Ideas -------------------------------------------------------------------
+
+/** An idea's definition: the first sentence of its own lead. */
+const defOf = (it) => it.def || summary(String(it.excerpt || '').split(/(?<=[.!?])\s+(?=[A-Z])/)[0], 260);
+const GENERIC = new Set(['the', 'and', 'law', 'laws', 'theory', 'principle', 'effect', 'of', 'in', 'on']);
+/** Blank the idea's own name out of its definition, or the question answers itself. */
+function mask(text, title){
+  const plain = String(title).replace(/\s*\([^)]*\)$/, '');
+  let out = String(text).replace(new RegExp(plain.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '▁▁▁');
+  for(const w of plain.split(/[\s'’-]+/)){
+    if(w.length < 4 || GENERIC.has(w.toLowerCase())) continue;
+    out = out.replace(new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/s$/i, '')}\\w*`, 'gi'), '▁▁▁');
+  }
+  return out;
+}
+
+function makeIdeas(){
+  const from = seeds(Q.ideas);
+  if(!from.length || Q.allIdeas.length < 4) return null;
+  const it = pickWeighted(from);
+  // Distractors: same chapter first (the confusable ones), then same topic.
+  const near = Q.allIdeas.filter((x) => x !== it && x.title !== it.title);
+  const same = shuffle(near.filter((x) => x.chapter === it.chapter));
+  const other = shuffle(near.filter((x) => x.chapter !== it.chapter));
+  const opts = [];
+  for(const x of [...same, ...other]){ if(!opts.some((o) => o.title === x.title)) opts.push(x); if(opts.length === 3) break; }
+  if(opts.length < 3) return null;
+  return { kind: 'ideas', item: it, prompt: mask(defOf(it), it.title), options: shuffle([it, ...opts]), chosen: null };
+}
+
+function drawIdeas(c){
+  const done = c.chosen != null;
+  return `<div class="tp-q">
+    <h3>Which idea is this?</h3>
+    <div class="tp-defq">${esc(c.prompt)}</div>
+    ${c.options.map((o) => {
+      const cls = !done ? '' : o.id === c.item.id ? 'ok' : o.id === c.chosen ? 'bad' : '';
+      return `<button class="tp-opt ${cls}" data-idea="${esc(o.id)}" ${done ? 'disabled' : ''}>${card(o)}</button>`;
+    }).join('')}
+    ${done ? reveal(c.item) : ''}
+  </div>`;
 }
 
 // --- Era ---------------------------------------------------------------------
@@ -227,11 +276,11 @@ function draw(){
     <div class="tp-qhead">${what}
       <span class="tp-meta">· ${Q.T.reviewOnly ? `${due} due` : `${known} of ${Q.pool.length} known${due ? `, ${due} due for review` : ''}`}</span></div>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <span class="tp-seg">${tab('order', 'Order', 'Put four in time order')}${Q.scope || Q.T.synthetic ? '' : tab('era', 'Era', 'Which chapter is it from?')}${tab('recall', 'Recall', 'Type the year and details')}</span>
+      <span class="tp-seg">${tab('order', 'Order', 'Put four in time order')}${Q.scope || Q.T.synthetic ? '' : tab('era', 'Era', 'Which chapter is it from?')}${tab('recall', 'Recall', 'Type the year and details')}${Q.ideas.length && Q.allIdeas.length >= 4 ? tab('ideas', 'Ideas', 'Which idea is this? (from its definition)') : ''}</span>
       <span class="tp-spacer"></span>
       <span class="tp-score"><span><b>${Q.right}</b>/${Q.total} right</span><span>streak <b>${Q.streak}</b></span></span>
     </div>
-    ${Q.fellBack ? `<div class="tp-meta" style="margin-top:6px">Too few entries here for ${esc(Q.fellBack === 'order' ? 'Order' : Q.fellBack === 'era' ? 'Era' : 'Recall')}, so: ${esc(Q.mode === 'order' ? 'Order' : Q.mode === 'era' ? 'Era' : 'Recall')}.</div>` : ''}`;
+    ${Q.fellBack ? `<div class="tp-meta" style="margin-top:6px">Too few entries here for ${esc(MODE_NAME[Q.fellBack])}, so: ${esc(MODE_NAME[Q.mode])}.</div>` : ''}`;
   Q.fellBack = null;
   let body = '';
   if(!c && Q.T.reviewOnly) body = `<div class="tp-q"><h3>All caught up</h3><div class="tp-meta">Nothing is due${Q.scope ? ' here' : ''}. Answers you get right come back after 1, 3, 7, 16, 35 and 90 days; misses come back in ten minutes.</div>
@@ -240,6 +289,7 @@ function draw(){
     ${Q.opts.onWiden ? '<button class="tp-btn primary" style="margin-left:8px" data-qact="widen">Quiz on everything →</button>' : ''}</div>`;
   else if(c.kind === 'order') body = drawOrder(c);
   else if(c.kind === 'era') body = drawEra(c);
+  else if(c.kind === 'ideas') body = drawIdeas(c);
   else body = drawRecall(c);
   Q.host.innerHTML = `<div class="tp-quiz">${head}${body}</div>`;
   Q.host.onclick = onClick;
@@ -257,7 +307,8 @@ function draw(){
   }
 }
 
-const isDone = () => { const c = Q.cur; return c && (c.kind === 'order' ? c.done : c.kind === 'era' ? c.chosen != null : !!c.marks); };
+const MODE_NAME = { order: 'Order', era: 'Era', recall: 'Recall', ideas: 'Ideas' };
+const isDone = () => { const c = Q.cur; return c && (c.kind === 'order' ? c.done : c.kind === 'era' || c.kind === 'ideas' ? c.chosen != null : !!c.marks); };
 
 function card(it, extra = ''){
   return `<div style="display:flex;gap:12px;align-items:center">
@@ -321,8 +372,9 @@ function drawRecall(c){
 function reveal(it){
   const ch = Q.T.chapters[it.chapter];
   return `<div style="margin-top:14px;border-left:3px solid ${ch?.color || '#cbd5e1'};padding-left:12px">
-    <div class="tp-meta">${esc(it.yearText || fmtYear(it.start))} · ${esc(ch?.title || '')}</div>
-    <div style="color:#334155;margin-top:4px">${esc(it.context || summary(it.excerpt, 420))}</div>
+    <div class="tp-meta">${esc([it.start == null ? it.title : it.yearText || fmtYear(it.start), ch?.title].filter(Boolean).join(' · '))}</div>
+    ${it.start == null && defOf(it) ? `<div style="color:#334155;margin-top:4px">${esc(defOf(it))}</div>` : ''}
+    ${it.start == null && !it.context ? '' : `<div style="color:#334155;margin-top:4px">${esc(it.context || summary(it.excerpt, 420))}</div>`}
     <a href="#" class="tp-src" data-open="${esc(it.id)}">More about ${esc(it.title)}</a>
   </div>
   <button class="tp-btn primary" style="margin-top:12px" data-qact="next">Next → <span class="tp-meta" style="color:#cbd5e1">Enter</span></button>`;
@@ -347,7 +399,7 @@ function gradeRecall(){
 }
 
 function onClick(ev){
-  const b = ev.target.closest('[data-qmode],[data-qact],[data-pick],[data-era],[data-open]');
+  const b = ev.target.closest('[data-qmode],[data-qact],[data-pick],[data-era],[data-idea],[data-open]');
   if(!b) return;
   ev.preventDefault();
   ev.stopPropagation();
@@ -373,6 +425,14 @@ function onClick(ev){
       remember(c.picked.filter((_, i) => placed[i]), true);
       if(!ok) remember(c.picked.filter((_, i) => !placed[i]), false);
     }
+    draw();
+    return;
+  }
+  if(b.dataset.idea != null && c?.kind === 'ideas' && c.chosen == null){
+    c.chosen = b.dataset.idea;
+    const ok = c.chosen === c.item.id;
+    score(ok);
+    remember(c.item.id, ok);
     draw();
     return;
   }

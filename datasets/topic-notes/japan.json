@@ -1,0 +1,43 @@
+{
+  "topic": [
+    "Japan was settled in the Paleolithic; the Jōmon foragers were followed by Yayoi rice farmers, and by the 5th century the Yamato kings ruled much of the islands.",
+    "Ideas from China and Korea (Buddhism, writing, law) shaped classical Japan; from the 12th century real power passed to warriors and the shoguns.",
+    "The Tokugawa shoguns kept peace and limited foreign contact for 250 years; the Meiji Restoration of 1868 then industrialised Japan at speed and made it an empire.",
+    "Expansion led to the Pacific War and defeat in 1945; post-war Japan became a constitutional democracy and one of the world's largest economies."
+  ],
+  "chapters": {
+    "Prehistoric and ancient Japan": [
+      "Humans reached Japan around 38,000–40,000 years ago; the Jōmon period (from about 14,000 BC) produced some of the world's oldest pottery.",
+      "The Yayoi period (from about 1000–300 BC) brought wet-rice farming, metalworking and newcomers from the Asian mainland.",
+      "In the Kofun period (3rd–6th centuries) great keyhole-shaped burial mounds mark the rise of the Yamato state."
+    ],
+    "Classical Japan": [
+      "Buddhism arrived from the Korean kingdom of Baekje in the 6th century; the Asuka-period court adopted Chinese-style government, writing and law.",
+      "After defeat at Baekgang (663) and the Jinshin War (672), emperors such as Tenmu strengthened the state; the first histories, Kojiki and Nihon Shoki, were written.",
+      "The Nara period (710–794) had a permanent capital modelled on Chang'an; Emperor Shōmu built the great Buddha of Tōdai-ji.",
+      "In the Heian period (794–1185) the Fujiwara regents ran the court, and court literature flourished, above all Murasaki Shikibu's Tale of Genji."
+    ],
+    "Feudal Japan": [
+      "After the Genpei War, Minamoto no Yoritomo set up the first shogunate at Kamakura (1192); warriors (samurai) now held real power.",
+      "Kamakura Japan repelled the Mongol invasions of 1274 and 1281.",
+      "The Ashikaga (Muromachi) shogunate weakened, and the Ōnin War (1467–77) began a century of civil war, the Sengoku period.",
+      "Oda Nobunaga, Toyotomi Hideyoshi and Tokugawa Ieyasu reunified Japan; Ieyasu's victory at Sekigahara (1600) settled it. Portuguese traders and missionaries arrived from 1543."
+    ],
+    "Early modern Japan": [
+      "The Tokugawa shogunate ruled from Edo (Tokyo) for over 250 years of peace; society was fixed into four classes: samurai, farmers, artisans, merchants.",
+      "After the Shimabara Rebellion (1637–38) Christianity was banned and foreign contact was limited to the Dutch and Chinese at Nagasaki: the 'sakoku' policy.",
+      "Commodore Perry's American ships forced Japan open in 1853–54; the shogunate lost authority, and the Boshin War (1868–69) restored power to the emperor."
+    ],
+    "Modern Japan": [
+      "The Meiji government abolished the samurai class (the Satsuma Rebellion of 1877 was their last stand), adopted a constitution (1889) and industrialised rapidly.",
+      "Japan defeated China (1894–95) and Russia (1904–05) and annexed Korea (1910), becoming an imperial power.",
+      "In the 1930s militarists took control: the invasion of Manchuria (1931) and war with China (from 1937) included atrocities such as the Nanjing Massacre.",
+      "Japan attacked Pearl Harbor in 1941 and surrendered in 1945 after the atomic bombings; under American occupation it adopted a pacifist constitution and later became an economic power."
+    ],
+    "Social conditions": [
+      "Social rank grew sharper with rice farming in the Yayoi period and was formalised in the Tokugawa class system.",
+      "Modernisation after 1868 abolished legal classes and spread schooling.",
+      "Today Japan faces an ageing and shrinking population."
+    ]
+  }
+}

@@ -20,7 +20,7 @@
  */
 
 const RX = {
-  event: /\b(battles?|wars?|warfare|treaty|treaties|rebellions?|revolts?|uprisings?|revolutions?|conquests?|invasions?|sieges?|massacres?|plots?|conspiracy|elections?|crisis|riots?|coups?|disasters?|pandemics?|epidemics?|plagues?|famines?|campaigns?|expeditions?|conflicts?|insurrections?|mutiny|raids?|landing|abdication|coronation|assassinations?|murders?|executions?|congress|conference|act of parliament|act\b|acts\b|statutes?|charter|reformation|dissolution|schism|strike|protests?|referendum|declaration|accession|founding|invention|voyages?|exploration|earthquakes?|fires?|floods?|eruptions?|extinction event|event|occurrence|incident|ceremony|festival|tournament|olympic|championship|cup)\b/,
+  event: /\b(battles?|wars?|warfare|treaty|treaties|rebellions?|revolts?|uprisings?|revolutions?|conquests?|invasions?|sieges?|massacres?|plots?|conspiracy|elections?|crisis|riots?|coups?|disasters?|pandemics?|epidemics?|plagues?|famines?|campaigns?|expeditions?|conflicts?|insurrections?|mutiny|raids?|landing|abdication|coronation|assassinations?|murders?|executions?|congress|conference|act of parliament|act\b|acts\b|statutes?|charter|reformation|dissolution|schism|strike|protests?|referendum|declaration|accession|founding|invention|reforms?|fleet|armada|summits?|interventions?|convention|meetings?|unrest|operations?|offensives?|airlift|blockade|negotiations|talks|accords?|bombings?|attacks?|occupation|evacuation|airstrikes?|nuclear tests?|missile tests?|launch|crash|scandal|trial|affair|walkout|boycott|embargo|lockout|incursion|skirmish|ambush|duel|journey|tour|visit|speech|address|voyages?|exploration|earthquakes?|fires?|floods?|eruptions?|extinction event|event|occurrence|incident|ceremony|festival|tournament|olympic|championship|cup)\b/,
   person: /\b(king|queen|monarch|emperor|empress|ruler|wife|husband|son|daughter|mother|father|mistress|favou?rite|peer|chieftain|prince|princess|duke|duchess|earl|count|countess|lord|lady|baron|knight|bishop|archbishop|pope|saint|abbot|monk|nun|politician|statesman|prime minister|president|chancellor|general|admiral|soldier|commander|officer|writer|poet|novelist|playwright|dramatist|author|philosopher|theologian|scientist|physicist|chemist|mathematician|astronomer|biologist|naturalist|inventor|engineer|architect|painter|sculptor|artist|composer|musician|singer|actor|actress|director|explorer|historian|economist|businessman|lawyer|judge|activist|reformer|missionary|chronicler|scholar|human|person|consort|regent|pretender|claimant)\b/,
   work: /\b(painting|sculpture|fresco|mural|altarpiece|portrait|drawing|engraving|tapestry|embroider(?:y|ed)|wall-hanging|collection of stories|stories|manuscript|book|novel|poem|play|treatise|literary work|written work|film|opera|symphony|song|album|essay|chronicle|epic|codex|bible|map|statue|work of art|artwork)\b/,
   period: /\b(period|era|age|epoch|eon|dynasty|house of|reign|historical country|kingdom|empire|caliphate|sultanate|principality|duchy|countship|monarchy|republic|confederation|heptarchy|archaeological culture|culture|civili[sz]ation|historical period|stage|regime|protectorate|commonwealth|interregnum|restoration|renaissance|enlightenment|revolution era|polity|state)\b/,
@@ -87,6 +87,16 @@ export function entryType(e){
   //    of them describe a work (*The Canterbury Tales*).
   if(e.origin?.manual && !e.origin?.qid) return 'event';
 
+  // 6a. A description that opens with its date ("1986 Soviet-American
+  //     diplomatic summit", "August 1968 unrest in Czechoslovakia") is an event.
+  if(/^((early|mid|late) )?((january|february|march|april|may|june|july|august|september|october|november|december) )?\d{3,4}s?\b/.test(sub) && !RX.person.test(sub)) return 'event';
+  // 6b. A description that dates itself ("fleet of Spanish ships, intended to
+  //     attack England in 1588") is about something that happened then. Without
+  //     this the Spanish Armada fell through to "concept" and off the timeline.
+  if(/\b(in|of|from) (c\. )?\d{3,4}\b/.test(sub) && !RX.concept.test(sub)) return 'event';
+  // A state named as one, with no description: *Kingdom of Scotland*.
+  if(/^(kingdom|empire|republic|duchy|principality|sultanate|caliphate|emirate|khanate|grand duchy|county) of\b/.test(title)) return 'period';
+
   // 7. Nothing from Wikidata: read the title and the excerpt's first sentence.
   if(/^(battle|siege|treaty|war|sack|massacre|capture|raid|council|peace|siege) of\b/.test(title)) return 'event';
   if(/\bact( of)? \d{3,4}\b|\bact \d{3,4}$/.test(title)) return 'event';
@@ -97,6 +107,9 @@ export function entryType(e){
   if(/^[^.]{0,160}\((?:[^()]*\b(?:born|c\.)\s*)?[^()]*\d{3,4}[^()]*[–-][^()]*\d{3,4}[^()]*\)\s+(?:was|is)\b/.test(first)) return 'person';
   if(/\b(?:was|is) (?:an?|the) [^.]{0,60}\b(king|queen|prince|princess|nobleman|noblewoman|bishop|saint|politician|writer|poet|soldier|general|heroine|hero|peer|knight|son|daughter|wife|husband|mother|father|brother|sister)\b/.test(first)) return 'person';
 
+  // Wikidata gave it a start AND an end time: something with a duration
+  // that happened, not an idea.
+  if(src === 'P580+P582') return 'event';
   // A dated statement in prose with no Wikidata is most likely an event.
   if(!e.origin?.qid && e.excerpt && /^\W*\d/.test(e.excerpt)) return 'event';
   return 'concept';
