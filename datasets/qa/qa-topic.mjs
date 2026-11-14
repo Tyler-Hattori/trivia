@@ -43,8 +43,11 @@ for(const row of idx.topics){
 
   // The Learn view's text: the article's own words, decoded, and not repeated.
   const key = T.items.filter((it) => it.key);
-  const withCtx = key.filter((it) => it.context).length;
-  check('most key items have an in-article sentence', withCtx >= key.length * 0.75, `${withCtx}/${key.length}`);
+  // The article's own links. Works pulled in by their creator and mined
+  // timeline events are not in the article's prose, by design.
+  const linked = key.filter((it) => it.via === 'link');
+  const withCtx = linked.filter((it) => it.context).length;
+  check('most key links have an in-article sentence', withCtx >= linked.length * 0.7, `${withCtx}/${linked.length}`);
   check('every chapter with entries has an intro', T.chapters.every((c) => !c.count || c.intro),
     T.chapters.filter((c) => c.count && !c.intro).map((c) => c.title).join(', '));
   const texts = [T.intro, ...T.chapters.map((c) => c.intro), ...T.items.map((it) => it.context)].filter(Boolean);
@@ -54,9 +57,12 @@ for(const row of idx.topics){
   for(const it of T.items) if(it.context){ const k = `${it.chapter}|${it.context}`; if(seenCtx.has(k)) dup++; seenCtx.add(k); }
   check('no two entries in a chapter share a context sentence', dup === 0, `${dup} repeats`);
   check('related ids all resolve, never self', T.items.every((it) => (it.related || []).every((r) => ids.has(r) && r !== it.id)));
-  check('no place/group/concept is key without a main-article hatnote',
-    !key.some((it) => ['place', 'group', 'concept'].includes(it.type) && !it.hat),
-    key.filter((it) => ['place', 'group', 'concept'].includes(it.type) && !it.hat).map((it) => it.title).join(', '));
+  // Exempt: a chapter with nothing else to offer gets its best two anyway.
+  const thing = (it) => ['place', 'group', 'concept'].includes(it.type) && !it.hat;
+  const onlyThings = (ch) => T.items.filter((it) => it.onTimeline && it.chapter === ch).every(thing);
+  const badKey = key.filter((it) => thing(it) && !onlyThings(it.chapter));
+  check('no place/group/concept is key without a main-article hatnote', !badKey.length, badKey.map((it) => it.title).join(', '));
+  check('works pulled in by a creator name a member creator', T.items.filter((it) => it.via === 'works').every((it) => ids.has(it.by)));
 
   // Layout: in every lane, no two cards overlap, at several zooms and both modes.
   for(const show of ['key', 'all']){
@@ -77,6 +83,29 @@ for(const row of idx.topics){
       for(let i = 1; i < sorted.length; i++) if(pos.get(sorted[i].id).x < pos.get(sorted[i - 1].id).x - 0.5) back++;
       check(`layout ${show} @${ppy}px/yr: no overlaps, time runs left to right`, !overlaps && !back,
         `${items.length} cards, ${lanes.size} lanes, ${scale.breaks.length} breaks${overlaps ? `, ${overlaps} overlaps` : ''}${back ? `, ${back} out of order` : ''}`);
+    }
+  }
+}
+
+// Across topics: the list's fields and the membership files the detail panel
+// ("Also in") and the atlas's Topic filter read.
+if(!want){
+  console.log('\n  all topics');
+  check('every topic has a group and a blurb', idx.topics.every((t) => t.group && t.blurb),
+    idx.topics.filter((t) => !t.group || !t.blurb).map((t) => t.slug).join(', '));
+  check('topic slugs are unique', new Set(idx.topics.map((t) => t.slug)).size === idx.topics.length);
+  const read = (f) => { try { return JSON.parse(fs.readFileSync(path.join(PATHS.topics, f), 'utf8')); } catch { return null; } };
+  const all = read('members-all.json'), multi = read('members.json');
+  check('members files exist', !!all && !!multi);
+  if(all && multi){
+    const slugs = new Set(idx.topics.map((t) => t.slug));
+    check('members only name built topics', Object.values(all).every((v) => v.every((s) => slugs.has(s))));
+    check('members.json is exactly the entries in 2+ topics',
+      Object.keys(multi).length === Object.values(all).filter((v) => v.length > 1).length &&
+      Object.values(multi).every((v) => v.length > 1));
+    for(const t of idx.topics){
+      const n = Object.values(all).filter((v) => v.includes(t.slug)).length;
+      if(n !== t.count) check(`members-all matches ${t.slug}`, false, `${n} vs ${t.count} on its timeline`);
     }
   }
 }

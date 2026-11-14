@@ -67,7 +67,7 @@ import {
   describe, describeMany, categoryMembers, pageLinks, mineEvents,
   leadText, resolveTitle, INDEX_TITLE, MIN_EXCERPT,
 } from './lib/wiki.mjs';
-import { mapPool, sleep } from './lib/wikilib.mjs';
+import { mapPool, sleep, getJSON } from './lib/wikilib.mjs';
 import { embed, generate, ensureUp, EMBED_MODEL, WRITE_MODEL } from './lib/ollama.mjs';
 import { STYLE, styleReject } from './lib/style.mjs';
 import { nearestLeaf } from './lib/cluster.mjs';
@@ -292,6 +292,7 @@ if(inputs.length){
     },
   });
   console.log('\n');
+  if(getJSON.transient) console.log(`  ${getJSON.transient} requests gave up after retries (Wikipedia throttling); those pages stay missing and a re-run retries them\n`);
   fetched.forEach((d, i) => {
     if(!d) rejected.push([inputs[i], 'no such page']);
     else drafts.push(d);

@@ -425,6 +425,20 @@ export async function describe(input){
     }
   }
 
+  /*
+   * A span from Wikidata that runs backwards is a bad claim, not a date: the
+   * Satsuma Rebellion arrived as 2005–1877 (its start claim is wrong). Keep the
+   * end of the span the lead text agrees with, as a point; if the lead names
+   * neither year, drop both and let the text fallbacks below try.
+   */
+  if(start != null && end != null && end < start){
+    const text = String(lead || summary.extract || '');
+    const said = (y) => new RegExp(`\\b${Math.abs(y)}\\b`).test(text);
+    const keep = said(end) && !said(start) ? end : said(start) && !said(end) ? start : null;
+    if(keep != null){ start = end = keep; kind = 'point'; dateSource = `${dateSource}:repaired`; }
+    else { start = end = null; dateSource = null; }
+  }
+
   // Fall back to the text. A parenthetical in the title ("Metropolis (1927 film)")
   // is the most reliable of these; a year in the first sentence is next.
   if(start == null){

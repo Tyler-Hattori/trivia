@@ -415,15 +415,17 @@ export const queryIsEmpty = (q) =>
  * `null` means "no filter active", which callers treat as everything matching —
  * that distinction lets paint skip the lookup entirely in the common case.
  */
-export function runFilter(A, { query, topics, datasets, mode, semanticMatches }){
+export function runFilter(A, { query, topics, datasets, mode, semanticMatches, course }){
   const q = parseQuery(query);
-  const hasFacet = (topics && topics.size) || (datasets && datasets.size);
+  // `course`: point indices of one topic (datasets/topics/<slug>), or null.
+  const hasFacet = (topics && topics.size) || (datasets && datasets.size) || course;
   if(queryIsEmpty(q) && !hasFacet) return null;
 
   const flags = new Uint8Array(A.n);
   let count = 0;
 
   for(let i = 0; i < A.n; i++){
+    if(course && !course.has(i)) continue;
     if(q.range && (A.x1[i] < q.range[0] || A.x0[i] > q.range[1])) continue;
     if(q.datasets.length && !q.datasets.includes(A.dataset[i])) continue;
     if(q.flags.includes('image') && !A.image[i]) continue;

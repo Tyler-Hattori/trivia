@@ -110,21 +110,55 @@ export function cfgFor(file) {
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** GET JSON with the required UA, polite retry on 429/5xx. */
-export async function getJSON(url, tries = 4) {
+/*
+ * Retries back off exponentially (1, 2, 4, 8, 16 s, or whatever Retry-After
+ * says). The old schedule gave up after ~4 s, and under a long ingest Wikipedia
+ * answers 429 for longer than that: the null that came back was reported as "no
+ * such page" for real pages (72 of 250 on History of France, 4 of 40 even when
+ * re-fetched one at a time). `getJSON.transient` counts the give-ups, so a run
+ * can say how many "missing" pages were really throttling.
+ */
+/*
+ * One politeness budget for the whole process. Every caller (6 parallel ingest
+ * workers, each making 4–5 calls per page) goes through `polite()`:
+ *   - requests are spaced at least MIN_GAP_MS apart, and
+ *   - a 429 sets a cool-down that EVERY worker waits out, not just the one that
+ *     was refused. Before this, each worker backed off alone while the others
+ *     kept going, and a long batch escalated until Wikipedia refused even the
+ *     topic article itself (History of China, Ancient Egypt, … all failed).
+ * Override the gap with WIKI_GAP_MS.
+ */
+const MIN_GAP_MS = Number(process.env.WIKI_GAP_MS || 60);
+let nextSlot = 0, coolUntil = 0;
+async function polite() {
+  for (;;) {
+    const now = Date.now();
+    const wait = Math.max(coolUntil, nextSlot) - now;
+    if (wait <= 0) { nextSlot = now + MIN_GAP_MS; return; }
+    await sleep(wait);
+  }
+}
+
+export async function getJSON(url, tries = 6) {
   for (let attempt = 0; attempt < tries; attempt++) {
     try {
+      await polite();
       const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT, 'Api-User-Agent': USER_AGENT } });
       if (res.status === 404) return null;
       if (res.status === 429 || res.status >= 500) {
-        await sleep(400 * (attempt + 1) + 200 * attempt);
+        const ra = Number(res.headers.get('retry-after'));
+        const ms = Number.isFinite(ra) && ra > 0 ? Math.min(60, ra) * 1000 : 1000 * 2 ** attempt + Math.random() * 400;
+        if (res.status === 429) { coolUntil = Math.max(coolUntil, Date.now() + ms); getJSON.throttled = (getJSON.throttled || 0) + 1; }
+        await sleep(ms);
         continue;
       }
       if (!res.ok) return null;
       return await res.json();
     } catch {
-      await sleep(400 * (attempt + 1));
+      await sleep(1000 * 2 ** attempt);
     }
   }
+  getJSON.transient = (getJSON.transient || 0) + 1;
   return null;
 }
 

@@ -69,10 +69,11 @@ const SHELL = (base, css, theme) => `<!DOCTYPE html>
         <button class="btn icon" id="zoomOut" title="Zoom out (&minus;)">&minus;</button>
         <span id="ppyLab"></span>
         <button class="btn icon" id="zoomIn" title="Zoom in (+)">+</button>
+        <select class="btn" id="courseSel" title="Show only one topic's entries"><option value="">All topics</option></select>
         <button class="btn" id="fitBtn" title="Fit everything (0)">Fit</button>
         <button class="btn" id="dimBtn" title="Dim non-matches instead of hiding them">Dim</button>
         <button class="btn" id="railBtn" title="Collapse the cluster sidebar (r)">Rail</button>
-        <button class="btn" id="facetBtn" title="Toggle topic filters (f)">Topics</button>
+        <button class="btn" id="facetBtn" title="Toggle tag filters (f)">Tags</button>
         <button class="btn icon" id="themeBtn" title="Light / dark theme (t)">&#9683;</button>
         <button class="btn icon" id="helpBtn" title="Keyboard help (?)">?</button>
       </div>
@@ -131,7 +132,9 @@ const SHELL = (base, css, theme) => `<!DOCTYPE html>
 </body></html>`;
 
 export async function openAtlas({ title = 'Atlas' } = {}){
-  const base = location.href.replace(/[^/]*$/, '');
+  // Strip the hash first: opened from a topic page (#/topic/france) the base
+  // would otherwise end in "#/topic/".
+  const base = location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '');
   const w = window.open('', 'atlas');
   if(!w){ alert('Allow pop-ups to open the atlas.'); return; }
 
@@ -181,6 +184,7 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     query: '',
     topics: new Set(),
     datasets: new Set(),
+    course: '',          // a topic slug (datasets/topics), or '' for everything
     dimMode: true,
     railOpen: true,
     facetsOpen: false,
@@ -345,7 +349,7 @@ export async function openAtlas({ title = 'Atlas' } = {}){
 
     if(dirty.data){
       filter = runFilter(A, {
-        query: V.query, topics: V.topics, datasets: V.datasets, mode: V.dimMode ? 'dim' : 'hide',
+        query: V.query, topics: V.topics, datasets: V.datasets, mode: V.dimMode ? 'dim' : 'hide', course: courseSet,
         // Only apply a semantic result set if it was computed for the query
         // still live in the box — the async embed step can resolve after the
         // user has kept typing, and a stale set would reintroduce matches for
@@ -991,6 +995,46 @@ export async function openAtlas({ title = 'Atlas' } = {}){
   }
 
   /** Fit the active mode's whole domain. */
+  // ---- topic filter (datasets/topics) -------------------------------------
+  // One topic's entries, from members-all.json (written by topic.mjs). Hides
+  // the rest (or dims, with Dim on) and fits the time axis to the topic.
+  let courseSet = null, membersAll = null;
+  async function setCourse(slug){
+    V.course = slug || '';
+    $('courseSel').value = V.course;
+    if(!V.course){ courseSet = null; mark({ data: true, paint: true }); return; }
+    try { membersAll = membersAll || await (await w.fetch('datasets/topics/members-all.json', { cache: 'no-store' })).json(); }
+    catch { membersAll = {}; }
+    const set = new Set();
+    for(const [id, slugs] of Object.entries(membersAll)){
+      if(!slugs.includes(V.course)) continue;
+      const i = A.idIndex.get(id);
+      if(i != null) set.add(i);
+    }
+    courseSet = set;
+    // Fit time to the topic: 5th–95th percentile of its start years, so one
+    // Palaeolithic link does not stretch England across 80,000 years.
+    const xs = [...set].map((i) => A.x0[i]).sort((a, b) => a - b);
+    if(xs.length > 3){
+      measure();
+      const lo = xs[Math.floor(xs.length * 0.05)], hi = xs[Math.floor(xs.length * 0.95)];
+      const span = Math.max(20, hi - lo);
+      Object.assign(V, clampView({ ...V, x0: lo - span * 0.06, ppy: V.W / (span * 1.12), yTop: 0, yz: 1 }));
+    }
+    mark({ data: true, paint: true, prefs: true });
+  }
+  async function loadCourses(){
+    try {
+      const idx = await (await w.fetch('datasets/topics/index.json', { cache: 'no-store' })).json();
+      $('courseSel').innerHTML = '<option value="">All topics</option>' + idx.topics
+        .slice().sort((a, b) => a.title.localeCompare(b.title))
+        .map((t) => `<option value="${t.slug}">${t.title.replace(/</g, '&lt;')}</option>`).join('');
+    } catch { $('courseSel').style.display = 'none'; }
+    // A topic page's "Atlas" button leaves its slug here for us.
+    const want = w.localStorage.getItem('atlas:course');
+    if(want){ w.localStorage.removeItem('atlas:course'); await setCourse(want); }
+  }
+
   function fit(){
     measure();
     Object.assign(V, fitView({ mode: V.mode, domain: V.domain, W: V.W, H: V.H }));
@@ -1301,6 +1345,8 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     rail.setFolded(!V.railOpen);
     mark({ paint: true, prefs: true });
   };
+  $('courseSel').onchange = (ev) => setCourse(ev.target.value);
+  loadCourses();
   $('facetBtn').onclick = () => { V.facetsOpen = !V.facetsOpen; mark({ facets: true, paint: true, prefs: true }); };
   $('themeBtn').onclick = () => setTheme(V.theme === 'dark' ? 'light' : 'dark');
   $('helpBtn').onclick = () => $('help').classList.add('on');

@@ -1,0 +1,28 @@
+# Topics to build. One per line:
+#   <Wikipedia article> | name=<display name> | events=<timeline page>[; <another>] | group=<shelf> | key=<~essentials>
+# Only the article is required. Build everything pending:
+#   node datasets/topic.mjs --list --ingest
+# (add --force to rebuild topics that already exist)
+
+# Countries
+History of England | name=England | events=Timeline of English history | group=Countries
+History of France | name=France | events=Timeline of French history | group=Countries
+History of Japan | name=Japan | events=Timeline of Japanese history | group=Countries
+History of China | name=China | group=Countries
+History of the United States | name=United States | group=Countries
+
+# Ancient world
+Ancient Egypt | group=Ancient world
+Ancient Rome | group=Ancient world
+
+# Wars and conflicts
+World War II | group=Wars
+Cold War | group=Wars
+
+# Art and culture
+Impressionism | group=Art & culture
+Renaissance | group=Art & culture
+
+# Science
+History of science | name=Science | group=Science
+History of physics | name=Physics | group=Science

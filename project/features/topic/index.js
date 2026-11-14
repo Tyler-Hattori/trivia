@@ -98,50 +98,147 @@ async function loadTopic(slug){
   return t;
 }
 
-/** One or two sentences about an entry, as THIS topic tells it. */
-const lineOf = (it) => it.context || summary(it.excerpt, 200);
+/** entry id -> the topics it is in, for entries in two or more (topic.mjs). */
+let members = null;
+async function loadMembers(){
+  if(members) return members;
+  try { members = await getJSON('datasets/topics/members.json'); } catch { members = {}; }
+  topicTitles = topicTitles || await getJSON('datasets/topics/index.json').then((d) => new Map(d.topics.map((t) => [t.slug, t.title]))).catch(() => new Map());
+  return members;
+}
+let topicTitles = null;
+
+/**
+ * One or two sentences about an entry, as THIS topic tells it. A mined
+ * timeline event's title IS its sentence ("Charles VI died. He was succeeded
+ * by…"), so the part the title already says is dropped rather than read twice.
+ */
+const lineOf = (it) => {
+  const s = it.context || summary(it.excerpt, 200);
+  const t = String(it.title || '').replace(/[.…\s]+$/, '');
+  if(t.length > 25 && s.startsWith(t)){
+    const rest = s.slice(t.length).replace(/^[.…,;:\s]+/, '');
+    return rest.length > 20 ? rest : '';
+  }
+  return s;
+};
 
 // ---------------------------------------------------------------------------
 // List
 // ---------------------------------------------------------------------------
 
+/*
+ * Built to stay usable at hundreds of topics: a search box over titles and
+ * blurbs, shelf chips with counts, a sort, a "Continue" row for what you have
+ * started, compact cards, and per-topic hide (with a way to show them again).
+ */
+const LIST_KEY = 'topics:list:v1';
+const listPrefs = () => { try { return JSON.parse(localStorage.getItem(LIST_KEY)) || {}; } catch { return {}; } };
+const saveListPrefs = (p) => localStorage.setItem(LIST_KEY, JSON.stringify(p));
+const lastOpened = (slug) => Number(localStorage.getItem(`topic:opened:${slug}`) || 0);
+
 async function showList(){
   let idx;
   try { idx = await getJSON('datasets/topics/index.json'); }
   catch { idx = { topics: [] }; }
-  const tile = (t) => {
+  const L = { q: '', group: '', sort: 'group', showHidden: false, hidden: [], ...listPrefs() };
+  const all = idx.topics.map((t) => {
     const m = loadMastery(t.slug);
     const known = Object.values(m).filter(isKnown).length;
-    return `
-      <button class="tp-tile" data-topic="${esc(t.slug)}">
-        ${t.cover ? `<img src="${esc(thumbUrl(t.cover, 500))}" loading="lazy" alt="" onerror="imgRetry(this,'hide')">` : '<img alt="">'}
-        <div class="in">
-          <div class="t">${esc(t.title)}</div>
-          <div class="tp-meta">${esc(fmtYear(t.from))} – ${esc(fmtYear(t.to))} · ${t.chapters} chapters · ${t.key} essentials</div>
-          ${known ? `<div class="tp-prog" title="${known} of ${t.key} essentials answered right"><i style="width:${Math.min(100, 100 * known / Math.max(1, t.key))}%"></i></div>` : ''}
-          <div class="tp-meta">from <i>${esc(t.source.page)}</i></div>
-        </div>
-      </button>`;
-  };
+    const seen = Object.keys(m).length;
+    const touched = Math.max(lastOpened(t.slug), ...Object.values(m).map((x) => x.at || 0));
+    return { ...t, group: t.group || 'Other', known, seen, touched };
+  });
+
   root.innerHTML = `
     <div class="tp-bar">
-      <button class="tp-btn" data-act="home">← Home</button>
+      <button class="tp-btn" data-act="home" title="Home">←</button>
       <div class="tp-title">Topics</div>
-      <div class="tp-meta">Each topic is one Wikipedia article made into a short course: the story chapter by chapter, a timeline, and a quiz.</div>
+      <input class="tp-search" id="tlSearch" placeholder="Search ${all.length} topics…  ( / )" value="${esc(L.q)}">
+      <select class="tp-select" id="tlSort" title="Order">
+        ${[['group', 'By shelf'], ['az', 'A–Z'], ['size', 'Largest first'], ['progress', 'Most known first']].map(([v, l]) =>
+          `<option value="${v}" ${L.sort === v ? 'selected' : ''}>${l}</option>`).join('')}
+      </select>
+      <span class="tp-spacer"></span>
+      <span class="tp-meta">Each topic is one Wikipedia article as a short course: the story, a timeline, a quiz.</span>
     </div>
-    <div style="overflow:auto;flex:1">
-      ${idx.topics.length ? `<div class="tp-list">${idx.topics.map(tile).join('')}</div>`
-      : `<div class="tp-empty">
-          <p><b>No topics built yet.</b> A topic is made from one Wikipedia article — its sections become chapters,
-          its links become the entries:</p>
-          <p><code>node datasets/topic.mjs "History of England" --name England --events "Timeline of English history" --ingest</code></p>
-        </div>`}
-    </div>`;
+    <div class="tp-chiprow" id="tlGroups"></div>
+    <div style="overflow:auto;flex:1" id="tlBody"></div>`;
+
+  const draw = () => {
+    saveListPrefs({ q: L.q, group: L.group, sort: L.sort, hidden: L.hidden });
+    const hidden = new Set(L.hidden);
+    const q = L.q.trim().toLowerCase();
+    const match = (t) => !q || `${t.title} ${t.group} ${t.blurb || ''} ${t.source.page}`.toLowerCase().includes(q);
+    const pool = all.filter(match);
+    const groups = [...new Set(pool.filter((t) => !hidden.has(t.slug)).map((t) => t.group))].sort();
+    root.querySelector('#tlGroups').innerHTML = `
+      <button class="tp-chip ${L.group ? '' : 'on'}" style="--c:#0f172a" data-group="">All<span class="n">${pool.filter((t) => !hidden.has(t.slug)).length}</span></button>
+      ${groups.map((g) => `<button class="tp-chip ${L.group === g ? 'on' : ''}" style="--c:#475569" data-group="${esc(g)}">${esc(g)}<span class="n">${pool.filter((t) => t.group === g && !hidden.has(t.slug)).length}</span></button>`).join('')}
+      ${hidden.size ? `<span class="tp-spacer"></span><button class="tp-chip" style="--c:#94a3b8" data-act="hidden">${L.showHidden ? 'Hide' : 'Show'} ${hidden.size} hidden</button>` : ''}`;
+
+    const vis = pool.filter((t) => (L.showHidden || !hidden.has(t.slug)) && (!L.group || t.group === L.group));
+    const order = {
+      az: (a, b) => a.title.localeCompare(b.title),
+      size: (a, b) => b.count - a.count,
+      progress: (a, b) => b.known / Math.max(1, b.key) - a.known / Math.max(1, a.key) || a.title.localeCompare(b.title),
+      group: (a, b) => a.group.localeCompare(b.group) || a.title.localeCompare(b.title),
+    }[L.sort] || ((a, b) => 0);
+    vis.sort(order);
+
+    const card = (t) => `
+      <div class="tp-tcard ${hidden.has(t.slug) ? 'hid' : ''}" data-topic="${esc(t.slug)}" tabindex="0">
+        <div class="im">${t.cover ? `<img src="${esc(thumbUrl(t.cover, 330))}" loading="lazy" alt="" onerror="imgRetry(this,'hide')">` : ''}</div>
+        <div class="in">
+          <div class="t">${esc(t.title)}</div>
+          <div class="tp-meta">${esc(fmtYear(t.from))} – ${esc(fmtYear(t.to))} · ${t.chapters} ch · ${t.key} essentials</div>
+          ${t.blurb ? `<div class="bl">${esc(t.blurb)}</div>` : ''}
+          ${t.seen ? `<div class="tp-prog" title="${t.known} of ${t.key} essentials known"><i style="width:${Math.min(100, 100 * t.known / Math.max(1, t.key)).toFixed(0)}%"></i></div>` : ''}
+        </div>
+        <button class="x" data-hide="${esc(t.slug)}" title="${hidden.has(t.slug) ? 'Unhide' : 'Hide this topic'}">${hidden.has(t.slug) ? '↺' : '×'}</button>
+      </div>`;
+
+    const started = !q && !L.group ? vis.filter((t) => t.touched && !hidden.has(t.slug)).sort((a, b) => b.touched - a.touched).slice(0, 6) : [];
+    let html = '';
+    if(started.length) html += `<h2 class="tp-shelf">Continue</h2><div class="tp-tgrid">${started.map(card).join('')}</div>`;
+    if(L.sort === 'group' && !L.group){
+      for(const g of [...new Set(vis.map((t) => t.group))]){
+        const its = vis.filter((t) => t.group === g);
+        html += `<h2 class="tp-shelf">${esc(g)} <span class="tp-meta">${its.length}</span></h2><div class="tp-tgrid">${its.map(card).join('')}</div>`;
+      }
+    } else if(vis.length) html += `${started.length ? '<h2 class="tp-shelf">All</h2>' : ''}<div class="tp-tgrid">${vis.map(card).join('')}</div>`;
+    if(!vis.length) html += all.length
+      ? `<div class="tp-empty">No topic matches “${esc(L.q)}”${L.group ? ` in ${esc(L.group)}` : ''}.</div>`
+      : `<div class="tp-empty"><p><b>No topics built yet.</b> Add lines to <code>datasets/topics.txt</code> and run
+          <code>node datasets/topic.mjs --list --ingest</code>.</p></div>`;
+    root.querySelector('#tlBody').innerHTML = `<div class="tp-tlist">${html}</div>`;
+  };
+  draw();
+
+  const box = root.querySelector('#tlSearch');
+  box.oninput = () => { L.q = box.value; draw(); };
+  box.onkeydown = (ev) => {
+    if(ev.key === 'Escape'){ box.value = ''; L.q = ''; draw(); }
+    if(ev.key === 'Enter'){ const first = root.querySelector('.tp-tcard'); if(first) location.hash = `#/topic/${first.dataset.topic}`; }
+  };
+  root.querySelector('#tlSort').onchange = (ev) => { L.sort = ev.target.value; draw(); };
   root.onclick = (ev) => {
-    const b = ev.target.closest('[data-topic],[data-act]');
+    const b = ev.target.closest('[data-topic],[data-act],[data-group],[data-hide]');
     if(!b) return;
+    if(b.dataset.hide){
+      ev.stopPropagation();
+      const h = new Set(L.hidden);
+      if(h.has(b.dataset.hide)) h.delete(b.dataset.hide); else h.add(b.dataset.hide);
+      L.hidden = [...h]; draw(); return;
+    }
     if(b.dataset.act === 'home'){ location.hash = ''; return; }
+    if(b.dataset.act === 'hidden'){ L.showHidden = !L.showHidden; draw(); return; }
+    if(b.dataset.group != null){ L.group = b.dataset.group; draw(); return; }
     location.hash = `#/topic/${b.dataset.topic}`;
+  };
+  root.onkeydown = (ev) => {
+    if(ev.key === '/' && ev.target !== box){ ev.preventDefault(); box.focus(); }
+    if(ev.key === 'Enter' && ev.target.classList?.contains('tp-tcard')) location.hash = `#/topic/${ev.target.dataset.topic}`;
   };
 }
 
@@ -180,6 +277,8 @@ async function showTopic(slug, mode){
       selected: null,
     };
     kwIndex = bm25Index(T.items.map((it) => ({ id: it.id, text: docText(it) })));
+    localStorage.setItem(`topic:opened:${slug}`, String(Date.now()));
+    loadMembers();
   }
   const prev = V.mode;
   V.mode = mode;
@@ -187,9 +286,14 @@ async function showTopic(slug, mode){
   // arriving there from a chapter-focused timeline should not hide the rest.
   if(mode === 'learn' && prev !== 'learn') V.chapters.clear();
   V.mastery = loadMastery(T.slug);
+  // Arriving from another topic's "Also in": open the same entry here.
+  if(pendingSelect && T.byId.has(pendingSelect)){ V.selected = pendingSelect; if(!T.byId.get(pendingSelect).key) V.show = 'all'; }
+  pendingSelect = null;
   drawShell();
   drawMode();
+  if(V.selected && V.mode === 'learn') root.querySelector(`.tp-row[data-id="${CSS.escape(V.selected)}"]`)?.scrollIntoView({ block: 'center' });
 }
+let pendingSelect = null;
 
 /**
  * A zoom at which the key entries have room: aim for the median gap between
@@ -239,13 +343,19 @@ function drawShell(){
         <option value="">All subjects</option>
         ${subs.map(([s, n]) => `<option value="${esc(s)}" ${V.subject === s ? 'selected' : ''}>${esc(s)} (${n})</option>`).join('')}
       </select>` : ''}
+      ${V.mode === 'timeline' ? `<select class="tp-select" id="tpChap" title="Fit one chapter to the screen">
+        <option value="all">All chapters</option>
+        ${T.chapters.filter((c) => T.items.some((it) => it.onTimeline && it.chapter === c.id && (V.show === 'all' || it.key))).map((c) =>
+          `<option value="${c.id}" ${V.chapters.size === 1 && V.chapters.has(c.id) ? 'selected' : ''}>${esc(c.title)}</option>`).join('')}
+      </select>` : ''}
       ${V.mode !== 'quiz' ? `<input class="tp-search" id="tpSearch" placeholder="Search ${esc(T.title)}…  ( / )" value="${esc(V.query)}">` : ''}
       <span class="tp-meta" id="tpCount"></span>
       <span class="tp-spacer"></span>
       ${V.mode === 'timeline' ? `
         <button class="tp-btn" data-zoom="out" title="Zoom out (−)">−</button>
         <button class="tp-btn" data-zoom="in" title="Zoom in (+)">+</button>` : ''}
-      <a class="tp-src" href="${esc(T.source.url)}" target="_blank" rel="noopener" title="The article this topic is built from">${esc(T.source.page)} ↗</a>
+      <button class="tp-btn" data-act="atlas" title="See this topic's entries among everything else on the atlas">Atlas ↗</button>
+      ${V.mode !== 'timeline' ? `<a class="tp-src" href="${esc(T.source.url)}" target="_blank" rel="noopener" title="The article this topic is built from">${esc(T.source.page)} ↗</a>` : ''}
     </div>
     <div class="tp-body">
       ${V.mode !== 'timeline' ? '<nav class="tp-rail" id="tpRail"></nav>' : ''}
@@ -267,6 +377,8 @@ function drawShell(){
       if(ev.key === 'Escape'){ box.value = ''; runSearch(''); box.blur(); }
     };
   }
+  const chs = root.querySelector('#tpChap');
+  if(chs) chs.onchange = () => fitChapter(chs.value);
   const sel = root.querySelector('#tpSubj');
   if(sel) sel.onchange = () => { V.subject = sel.value; savePrefs(); drawShell(); drawMode(); };
   refreshCount();
@@ -354,7 +466,7 @@ function drawLearn(){
         <div class="yr">${esc(it.yearText || fmtYear(it.start))}</div>
         <div class="mid">
           <div class="t">${esc(it.title)}${known ? '<span class="ok" title="You answered this right">✓</span>' : ''}<span class="ty">${esc(TYPE_LABEL[it.type] || '')}</span></div>
-          <div class="s">${esc(lineOf(it))}</div>
+          ${lineOf(it) ? `<div class="s">${esc(lineOf(it))}</div>` : ''}
         </div>
         <div class="im">${it.image ? `<img src="${esc(thumbUrl(it.image, 120))}" loading="lazy" alt="" onerror="imgRetry(this)">` : ''}</div>
       </div>`;
@@ -376,7 +488,7 @@ function drawLearn(){
         <div class="tp-chhd" style="--c:${c.color}">
           <div class="num">Chapter ${ci + 1}</div>
           <h2>${esc(c.title)}</h2>
-          <div class="yr">${esc(fmtRange(c.from, c.to))} · ${its.length} ${V.show === 'key' ? 'essentials' : 'entries'}</div>
+          <div class="yr">${[fmtRange(c.from, c.to), `${its.length} ${V.show === 'key' ? 'essentials' : 'entries'}`].filter(Boolean).map(esc).join(' · ')}</div>
         </div>
         ${c.intro && !V.matches ? `<div class="tp-intro" style="--c:${c.color}">${paras(c.intro)}</div>` : ''}
         ${groups.map((g) => `
@@ -439,6 +551,9 @@ function drawTimeline(){
   const height = top + laneCount * laneH + 60;
 
   // Chapter bands: one row, or two when a chapter overlaps its neighbours.
+  // Bands are eras. In a thematic article ("Female Impressionists", "Beyond
+  // France") chapters overlap in time and the bands just pile up; there the
+  // card's colour strip and the Chapter menu carry the chapter instead.
   const extent = new Map();
   const bands = T.chapters.map((c) => {
     const its = items.filter((it) => it.chapter === c.id);
@@ -446,6 +561,7 @@ function drawTimeline(){
     const x0 = Math.min(...its.map((it) => pos.get(it.id).x)) - GEO.CARD_W / 2;
     const x1 = Math.max(...its.map((it) => pos.get(it.id).x)) + GEO.CARD_W / 2;
     extent.set(c.id, [x0, x1]);
+    if(!T.chronological) return '';
     const row = c.overlaps ? 1 : 0;
     return `<div class="tp-band" data-band="${c.id}" style="left:${x0}px;width:${Math.max(40, x1 - x0)}px;top:${6 + row * 24}px;background:${c.color}"
       title="${esc(c.title)} · ${esc(fmtRange(c.from, c.to))} — click to fit">${esc(c.title)} <span style="opacity:.75;font-weight:500">${esc(fmtRange(c.from, c.to))}</span></div>`;
@@ -515,7 +631,10 @@ function drawOverview(){
   const host = root.querySelector('#tpScroll');
   if(!el || !V.scale) return;
   const W = V.scale.width || 1;
-  const segs = T.chapters.filter((c) => V.extent.has(c.id)).map((c) => {
+  const segs = !T.chronological
+    ? ticks(V.scale).filter((_, i, a) => i % Math.max(1, Math.ceil(a.length / 12)) === 0).map((t) =>
+      `<span class="yr" style="left:${(100 * t.x / W).toFixed(2)}%">${esc(fmtYear(t.year))}</span>`).join('')
+    : T.chapters.filter((c) => V.extent.has(c.id)).map((c) => {
     const [x0, x1] = V.extent.get(c.id);
     return `<div class="seg" data-fit="${c.id}" style="left:${(100 * Math.max(0, x0) / W).toFixed(2)}%;width:${(100 * (x1 - x0) / W).toFixed(2)}%;background:${c.color}" title="${esc(c.title)} — click to fit">${esc(c.title)}</div>`;
   }).join('');
@@ -668,6 +787,11 @@ function showDetail(id, scroll = true){
       </div>
       ${it.context ? `<div class="tp-ctx" style="--c:${ch?.color || '#cbd5e1'}">
         <div class="lb">In ${esc(T.source.page)}${it.sub ? ` · ${esc(it.sub)}` : ''}</div>${esc(it.context)}</div>` : ''}
+      ${(() => {
+        const other = (members?.[it.id] || []).filter((x) => x !== T.slug);
+        return other.length ? `<div class="lb">Also in</div><div class="tp-rel">${other.map((x) =>
+          `<a class="tp-relc tp-also" href="#/topic/${esc(x)}" data-also="${esc(x)}">${esc(topicTitles?.get(x) || x)} →</a>`).join('')}</div>` : '';
+      })()}
       ${related.length ? `<div class="lb">Connected</div><div class="tp-rel">${related.map((r) =>
         `<button class="tp-relc" data-id="${esc(r.id)}">${esc(r.title)} <span>${esc(fmtYear(r.start))}</span></button>`).join('')}</div>` : ''}
       ${about.length ? `<div class="lb">About ${esc(it.title)}</div>
@@ -767,12 +891,15 @@ function jumpToFirstMatch(){
 
 function onClick(ev){
   const t = ev.target;
+  const also = t.closest('[data-also]');
+  if(also){ ev.preventDefault(); pendingSelect = V.selected; location.hash = `#/topic/${also.dataset.also}`; return; }
   const b = t.closest('[data-act],[data-mode],[data-show],[data-toc],[data-zoom],[data-nav],[data-band],[data-fit],[data-check],[data-goch],[data-id]');
   if(!b) return;
   if(b.tagName === 'A' && b.getAttribute('href') === '#') ev.preventDefault();
   const host = root.querySelector('#tpScroll');
   if(b.dataset.act === 'list'){ location.hash = '#/topics'; return; }
   if(b.dataset.act === 'close'){ closeDetail(); return; }
+  if(b.dataset.act === 'atlas'){ localStorage.setItem('atlas:course', T.slug); window.openAtlas?.(); return; }
   if(b.dataset.act === 'ontl'){
     const id = V.selected;
     V.chapters.clear(); go('timeline');

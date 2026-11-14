@@ -8,6 +8,32 @@ Two sessions on 2026-11-13 changed the direction of the project; a short one on
 2026-11-14 finished the crawl follow-up and reorganised the repo. Below: what
 exists now and what to do next.
 
+### Done 2026-11-14, session 3: 13 topics, batch pipeline
+
+- **Topics:** England, France, Japan, China, United States, Ancient Egypt,
+  Ancient Rome, World War II, Cold War, Impressionism, Renaissance, Science,
+  Physics. The store holds 12,058 entries; 366 are in 2+ topics.
+- **Pipeline:** `topics.txt` + `topic.mjs --list --ingest`, `--discover`,
+  and builder rules (chapter split, thematic detection, galleries, works by
+  member creators). See `docs/TOPICS.md`, "Many topics".
+- **Wikipedia throttling fixed** in `lib/wikilib.mjs`: a shared budget plus
+  retry/back-off.
+- **Bugs found by the new data:**
+  - `parseEraYear` capped years at 10 digits, so the Big Bang read a tenth of
+    its real age.
+  - `describe()` stored backwards Wikidata spans (Satsuma Rebellion
+    2005–1877). They're now repaired from the lead text, and 2 stored entries
+    were fixed.
+- **UI:**
+  - Topic list built for hundreds of topics.
+  - "Also in" across topics.
+  - A Topic filter on the atlas, plus an "Atlas ↗" button on each topic.
+  - A Chapter menu on the timeline; no bands for thematic topics.
+- **QA:** 285 topic checks. qa-atlas runs 91: its conditional "detail image
+  is contain" check is skipped because the entry it picks now has no image.
+- **Next:** reading content from websites other than Wikipedia (the Ideas of
+  Physics course), combined with Wikipedia for dates and images.
+
 ### Done 2026-11-14, session 2: Topics usability pass
 
 The aim: make a topic better than reading its Wikipedia article. See

@@ -58,6 +58,50 @@ The quiz remembers answers per entry (`topic:mastery:<slug>` in localStorage),
 draws missed and unseen entries more often, and drives the progress bars in the
 contents rail and on the topic list. "Known" = last answer right.
 
+## Many topics: the batch pipeline
+
+```
+datasets/topics.txt                          one topic per line: article | name= | events= | group=
+node datasets/topic.mjs --discover <source>  append candidates (category:, links:, search:)
+node datasets/topic.mjs --list --ingest      build everything pending (resumable; --force rebuilds)
+node datasets/topic.mjs --all                rebuild every built topic from the store (seconds each)
+```
+
+`--list --ingest` runs three phases: ingest each pending topic's missing linked
+pages (capped by `--ingest-limit`, default 250), classify and place them on the atlas
+once for the batch, then build each topic. One topic's failure doesn't stop the
+batch. Cost is network: ~7–13 min per topic at the default cap, because
+`lib/wikilib.mjs` shares one politeness budget across all parallel requests (a
+minimum gap, plus a cool-down every worker respects after any 429). Without
+that, Wikipedia started refusing even the topic articles, and 30% of the
+"no such page" skips were really throttling.
+
+Builder rules that came from the first 13 topics:
+
+- **A dominant chapter is split into its subsections.** The test is the
+  biggest chapter holding over 38% of the links to DATED store entries.
+  Examples: "History" in *Ancient Egypt* (Predynastic, Old Kingdom…) and
+  *Ancient Rome* (Kingdom, Republic, Empire…), and "Course of the war" in *World
+  War II*.
+- **Chronological only if the eras mostly don't overlap** (≤ 40% of dated
+  chapters). Otherwise the article is thematic: chapters stay, dates go.
+  The timeline then drops chapter bands (they pile up) and uses the Chapter
+  menu and card colours.
+- **Gallery sections aren't chapters.** Their works count; museums linked
+  only from a gallery are dropped.
+- **Works by member creators are pulled in from the store** (artist, director,
+  author, scientist… facets, up to 14 per person, spread across the career).
+  An art topic shows its paintings: Impressionism went from 22 works to 197
+  (346 on the timeline). The creator's two best-known works can be essentials.
+- **Reading lists ("Articles on…", "List of…") are apparatus**, cut like "See also".
+- **Places, groups and concepts are only essentials with a hatnote,** unless a
+  chapter has nothing else (it then gets its best two).
+
+Across topics: `topics/members.json` (entries in 2+ topics; the detail panel's
+"Also in") and `topics/members-all.json` (every entry; the atlas's Topic
+filter). The topic list has search, shelves, sorting, a Continue row, and
+per-topic hiding.
+
 ## Why a topic comes from an article and not from embeddings
 
 Measured (see `docs/SEARCH.md`): no similarity threshold returns "everything

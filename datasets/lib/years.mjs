@@ -37,9 +37,11 @@ export function parseEraYear(s){
   // Up to 10 digits, not 4. A 4-digit cap silently truncated deep-prehistory dates:
   // "113000 BC" matched only "1130" and became -1130, so the stored start (-113000,
   // read straight from Wikidata) and its own display text disagreed by 111,870 years.
-  // 10 digits because the age of the Earth is 4,540,000,000 years and Earth mode
-  // exists to hold it.
-  const m = s.match(/-?\d{1,10}/);
+  // 12 digits: the age of the Earth (4,540,000,000) fits in 10, but the Big
+  // Bang (13,786,500,000) needs 11, and at 10 "13786500000 BC" read as
+  // -1,378,650,000, a tenth of the real value. Same bug as the 4-digit cap, one
+  // order of magnitude later.
+  const m = s.match(/-?\d{1,12}/);
   if(!m) return null;
   const n = parseInt(m[0], 10);       // honours an explicit leading minus
   return bc ? -Math.abs(n) : n;

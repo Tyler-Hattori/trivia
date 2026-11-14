@@ -7,6 +7,24 @@
  *     node datasets/topic.mjs "History of England" --events "Timeline of English history"
  *     node datasets/topic.mjs "History of England" --ingest          # fill gaps first
  *     node datasets/topic.mjs --all                                  # rebuild every topic
+ *     node datasets/topic.mjs --list [file] [--ingest] [--force]      # build many (topics.txt)
+ *     node datasets/topic.mjs --discover <source> --group G [...]      # add many lines to topics.txt
+ *
+ * ## Finding topics: --discover
+ *
+ * Appends candidate articles to topics.txt (never duplicates a line). Sources:
+ *
+ *     category:Art movements            pages in a category
+ *     links:List of sovereign states    pages a list page links to
+ *     search:articletopic:military-and-warfare intitle:war     any Wikipedia search
+ *
+ * Options: --match <regex> keeps matching titles · --template "History of {}"
+ * maps each title to the article to use (countries -> their history articles) ·
+ * --min-kb N keeps articles at least N KB long (default 40: a topic needs
+ * chapters) · --limit N · --dry prints instead of writing. Longest first.
+ *
+ *     node datasets/topic.mjs --discover "links:List of sovereign states" \
+ *       --template "History of {}" --group Countries --limit 40
  *
  * Flags
  *     --name "England"        display name (default: the article title)
@@ -15,6 +33,22 @@
  *                             store before building (embeds new rows, throttled)
  *     --ingest-limit N        cap on linked pages ingested (default 250)
  *     --key N                 roughly how many entries "Key events" shows (default 90)
+ *     --group "Countries"     shelf on the topic list (default: guessed from the article)
+ *     --ingest-only           ingest what is missing, skip placing and building
+ *                             (used by --list, which places once for the batch)
+ *
+ * ## Many topics: --list
+ *
+ * datasets/topics.txt holds one topic per line:
+ *
+ *     History of France | name=France | events=Timeline of French history | group=Countries
+ *     Impressionism | group=Art
+ *
+ * `--list --ingest` runs three phases so a batch costs one atlas placement, not
+ * one per topic: (1) ingest the missing pages of every pending topic, (2)
+ * classify + place them once, (3) build each topic. A topic that is already
+ * built is skipped unless --force; a topic that fails is reported and the batch
+ * goes on. Re-running finishes whatever is left.
  *
  * Writes datasets/topics/<slug>.json and refreshes datasets/topics/index.json.
  *
@@ -56,7 +90,7 @@ const WP = 'https://en.wikipedia.org';
 const argv = process.argv.slice(2);
 const arg = (n, d = null) => (argv.includes(n) ? argv[argv.indexOf(n) + 1] : d);
 const args = (n) => argv.flatMap((a, i) => (a === n ? [argv[i + 1]] : []));
-const flagValues = new Set(['--name', '--events', '--ingest-limit', '--key'].flatMap((f) => args(f)));
+const flagValues = new Set(['--name', '--events', '--ingest-limit', '--key', '--group', '--list', '--discover', '--match', '--template', '--min-kb', '--limit'].flatMap((f) => args(f)));
 const positional = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && argv[i - 1].startsWith('--') && flagValues.has(a)));
 
 const OPT = {
@@ -67,6 +101,10 @@ const OPT = {
   ingestLimit: Number(arg('--ingest-limit', 250)),
   key: Number(arg('--key', 90)),
   all: argv.includes('--all'),
+  group: arg('--group'),
+  ingestOnly: argv.includes('--ingest-only'),
+  list: argv.includes('--list') ? (arg('--list') && !arg('--list').startsWith('--') ? arg('--list') : path.join(HERE, 'topics.txt')) : null,
+  force: argv.includes('--force'),
 };
 
 fs.mkdirSync(PATHS.topics, { recursive: true });
@@ -76,9 +114,122 @@ if(OPT.all){
   for(const t of idx.topics){
     const a = [path.join(HERE, 'topic.mjs'), t.source.page, '--name', t.title, '--key', String(t.keyTarget || 90)];
     for(const ev of t.events || []) a.push('--events', ev);
+    if(t.group) a.push('--group', t.group);
     spawnSync(process.execPath, a, { stdio: 'inherit' });
   }
   process.exit(0);
+}
+if(OPT.list){ runList(OPT.list); process.exit(0); }
+if(argv.includes('--discover')){ await discover(arg('--discover')); process.exit(0); }
+
+/** `--discover`: find candidate topic articles and append them to topics.txt. */
+async function discover(source){
+  const API = `${WP}/w/api.php?format=json&formatversion=2`;
+  const m = String(source || '').match(/^(category|links|search):\s*(.+)$/i);
+  if(!m){ console.error('  --discover needs category:<name>, links:<page> or search:<query>'); process.exit(1); }
+  const [, kind, what] = m;
+  const limit = Number(arg('--limit', 50));
+  const titles = [];
+  let cont = {};
+  for(let guard = 0; guard < 40; guard++){
+    const q = new URLSearchParams(cont);
+    let u;
+    if(/^category$/i.test(kind)) u = `${API}&action=query&list=categorymembers&cmnamespace=0&cmlimit=500&cmtitle=${encodeURIComponent(what.startsWith('Category:') ? what : 'Category:' + what)}&${q}`;
+    else if(/^links$/i.test(kind)) u = `${API}&action=query&prop=links&plnamespace=0&pllimit=500&redirects=1&titles=${encodeURIComponent(what)}&${q}`;
+    else u = `${API}&action=query&list=search&srnamespace=0&srlimit=500&srsearch=${encodeURIComponent(what)}&${q}`;
+    const d = await getJSON(u);
+    if(!d) break;
+    if(d.query?.categorymembers) titles.push(...d.query.categorymembers.map((x) => x.title));
+    if(d.query?.search) titles.push(...d.query.search.map((x) => x.title));
+    if(d.query?.pages) for(const p of d.query.pages) titles.push(...(p.links || []).map((x) => x.title));
+    if(!d.continue || titles.length > 5000) break;
+    cont = d.continue;
+  }
+  const match = arg('--match') ? new RegExp(arg('--match'), 'i') : null;
+  const tpl = arg('--template');
+  let cands = [...new Set(titles.filter((t) => !match || match.test(t)).map((t) => (tpl ? tpl.replace('{}', t) : t)))];
+  console.log(`\n  ${titles.length} titles from ${kind}:${what} -> ${cands.length} candidates`);
+
+  // Exists (after redirects) and long enough to have chapters.
+  const minBytes = Number(arg('--min-kb', 40)) * 1000;
+  const ok = new Map();   // canonical title -> length
+  for(let i = 0; i < cands.length; i += 50){
+    const chunk = cands.slice(i, i + 50);
+    const d = await getJSON(`${API}&action=query&prop=info&redirects=1&titles=${encodeURIComponent(chunk.join('|'))}`);
+    // With a template, a redirect away from its shape is not a hit: "History
+    // of The New York Times" redirects to "The New York Times".
+    const shape = tpl ? new RegExp('^' + tpl.split('{}').map((x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.+') + '$', 'i') : null;
+    for(const p of d?.query?.pages || []){
+      if(p.missing || p.length < minBytes || INDEX_TITLE.test(p.title) || (shape && !shape.test(p.title))) continue;
+      ok.set(p.title, p.length);
+    }
+  }
+  const file = OPT.list || path.join(HERE, 'topics.txt');
+  const existing = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+  const have = new Set(existing.split('\n').map((l) => l.replace(/#.*$/, '').split('|')[0].trim().toLowerCase()).filter(Boolean));
+  const fresh = [...ok].filter(([t]) => !have.has(t.toLowerCase())).sort((a, b) => b[1] - a[1]).slice(0, limit);
+  const group = arg('--group');
+  // Display name: the subject, not the article ("History of Peru" -> Peru).
+  const lines = fresh.map(([t]) => {
+    const name = t.replace(/^History of (the )?/i, '').replace(/^\w/, (c) => c.toUpperCase());
+    return [t, name !== t ? `name=${name}` : '', group ? `group=${group}` : ''].filter(Boolean).join(' | ');
+  });
+  console.log(`  ${ok.size} exist and are ≥ ${minBytes / 1000} KB · ${ok.size - fresh.length > 0 ? `${[...ok].length - fresh.length} already listed or over --limit · ` : ''}adding ${lines.length}:`);
+  for(const l of lines) console.log(`    ${l}`);
+  if(argv.includes('--dry') || !lines.length) return;
+  fs.appendFileSync(file, `${existing.endsWith('\n') ? '' : '\n'}\n# --discover ${source}${group ? ` (${group})` : ''}\n${lines.join('\n')}\n`);
+  console.log(`\n  appended to ${path.relative(process.cwd(), file)}. Build them: node datasets/topic.mjs --list --ingest`);
+}
+
+/** `--list`: build every topic in a list file, in three phases. */
+function runList(file){
+  const lines = fs.readFileSync(file, 'utf8').split('\n').map((l) => l.replace(/#.*$/, '').trim()).filter(Boolean);
+  const jobs = lines.map((l) => {
+    const [page, ...kv] = l.split('|').map((x) => x.trim());
+    const o = { page, events: [] };
+    for(const p of kv){
+      const m = p.match(/^(\w+)\s*=\s*(.+)$/);
+      if(!m) continue;
+      if(m[1] === 'events') o.events.push(...m[2].split(';').map((x) => x.trim()).filter(Boolean));
+      else o[m[1]] = m[2].trim();
+    }
+    o.slug = slugify(o.name || o.page);
+    return o;
+  });
+  const built = new Set(readIndex().topics.map((t) => t.slug));
+  const pending = jobs.filter((j) => OPT.force || !built.has(j.slug));
+  console.log(`\n  ${jobs.length} topics in ${path.basename(file)} · ${jobs.length - pending.length} already built · ${pending.length} to do`);
+  if(!pending.length) return;
+  const argsOf = (j) => {
+    const a = [path.join(HERE, 'topic.mjs'), j.page];
+    if(j.name) a.push('--name', j.name);
+    for(const e of j.events) a.push('--events', e);
+    if(j.group) a.push('--group', j.group);
+    if(j.key) a.push('--key', j.key);
+    return a;
+  };
+  const run = (a) => spawnSync(process.execPath, a, { stdio: 'inherit' }).status;
+  if(OPT.ingest){
+    for(const [i, j] of pending.entries()){
+      console.log(`\n  ── ingest ${i + 1}/${pending.length}: ${j.name || j.page}`);
+      // A failure here is almost always Wikipedia throttling, which clears in
+      // seconds to a minute: wait and try once more before moving on.
+      if(run([...argsOf(j), '--ingest', '--ingest-only', '--ingest-limit', String(OPT.ingestLimit)])){
+        console.log('  !! ingest failed; waiting 90 s and retrying once');
+        spawnSync('sleep', ['90']);
+        if(run([...argsOf(j), '--ingest', '--ingest-only', '--ingest-limit', String(OPT.ingestLimit)])) console.log(`  !! ingest failed again for ${j.page}; building from what the store has`);
+      }
+    }
+    console.log('\n  ── classify + place the new entries (once for the batch)');
+    run([path.join(HERE, 'classify.mjs')]);
+    run([path.join(HERE, 'atlas.mjs')]);
+  }
+  const failed = [];
+  for(const [i, j] of pending.entries()){
+    console.log(`\n  ── build ${i + 1}/${pending.length}: ${j.name || j.page}`);
+    if(run(argsOf(j))) failed.push(j.page);
+  }
+  console.log(`\n  done: ${pending.length - failed.length} built${failed.length ? `, ${failed.length} failed: ${failed.join(', ')}` : ''}`);
 }
 if(!OPT.page){
   console.error('usage: node datasets/topic.mjs "History of England" [--events "Timeline of English history"] [--ingest]');
@@ -90,7 +241,7 @@ if(!OPT.page){
 // ---------------------------------------------------------------------------
 
 /** Sections that are apparatus, not history. Everything from the first of these on is dropped. */
-const STOP_SECTIONS = /^(see also|references|notes|citations|sources|further reading|external links|bibliography|footnotes|historiography|primary sources|works cited|explanatory notes|general and cited references)$/i;
+const STOP_SECTIONS = /^(see also|references|notes|citations|sources|further reading|external links|bibliography|footnotes|historiography|primary sources|works cited|explanatory notes|general and cited references|articles on .+|lists? of .+|related (articles|topics))$/i;
 
 async function fetchArticle(page){
   const u = `${WP}/w/api.php?action=parse&format=json&formatversion=2&redirects=1&prop=text&page=${encodeURIComponent(page)}`;
@@ -136,8 +287,9 @@ function parseSections(html){
     s.paras = [...s.body.matchAll(/<(p|li)\b[^>]*>([\s\S]*?)<\/\1>/g)]
       .map((m) => ({ tag: m[1], ...proseText(m[2]) }))
       .filter((p) => p.text.length > 30);
-    s.links = s.links.filter((l) => !/^[A-Z][a-z]+( talk)?:/.test(l.target) || /^[A-Z][a-z]+:[^ ]/.test(l.target) === false);
-    s.links = s.links.filter((l) => !/^(File|Category|Help|Wikipedia|Template|Portal|Special|Talk):/i.test(l.target));
+    // Namespaces are not entries. "Template talk:History of Japan" got through
+    // when only the bare namespaces were listed.
+    s.links = s.links.filter((l) => !/^(File|Image|Category|Help|Wikipedia|WP|Template|Portal|Special|Talk|Module|Draft|User|MediaWiki|TimedText|Book|Wiktionary|Wikt)( talk)?:/i.test(l.target));
   }
   return kept;
 }
@@ -214,14 +366,39 @@ function opening(paras, max){
  * and -4 headings are its subsections. The lead is not a chapter; its links are
  * credited as "mentioned in the lead".
  */
-function chaptersFrom(sections){
-  const chapters = [];
+/** A picture gallery is not a chapter: its works count, its museums do not. */
+const GALLERY = /^(gallery|galleries|image gallery|gallery of works|selected works|images|paintings|works gallery)$/i;
+
+function chaptersFrom(sections, isDated = () => true){
+  let chapters = [];
   let cur = null;
   for(const s of sections){
-    if(s.title === '(lead)') continue;
+    if(s.title === '(lead)' || GALLERY.test(s.title)) continue;
     if(s.level === 2){ cur = { title: s.title, subsections: [], sections: [s] }; chapters.push(cur); }
     else if(cur){ cur.subsections.push(s.title); cur.sections.push(s); }
   }
+  /*
+   * A chapter that holds most of the article is the article's real structure
+   * one level down (measured in links to DATED store entries: Egypt's
+   * "History" has a third of the links but nearly all the dates). "History" in *Ancient Egypt* (Predynastic, Old Kingdom,
+   * Middle Kingdom…) and *Ancient Rome* (Kingdom, Republic, Empire…), "Course of
+   * the war" in *World War II*. Left whole, one chapter held 215 of 228 entries.
+   * Its subsections become chapters; its own opening goes with the first.
+   */
+  const links = (c) => new Set(c.sections.flatMap((x) => x.links.filter((l) => isDated(l.target)).map((l) => l.target))).size;
+  const total = chapters.reduce((n, c) => n + links(c), 0);
+  chapters = chapters.flatMap((c) => {
+    const subs = c.sections.filter((x) => x.level === 3);
+    // The biggest chapter, holding over 38% of the dated links.
+    if(subs.length < 3 || links(c) < total * 0.38 || chapters.some((o) => links(o) > links(c))) return [c];
+    const out = [];
+    for(const x of c.sections.slice(1)){
+      if(x.level === 3){ out.push({ title: x.title, subsections: [], sections: [x], parent: c.title }); }
+      else if(out.length){ out[out.length - 1].subsections.push(x.title); out[out.length - 1].sections.push(x); }
+    }
+    if(out.length) out[0].sections.unshift({ ...c.sections[0], level: 3, title: out[0].title });
+    return out.length ? out : [c];
+  });
   return chapters;
 }
 
@@ -344,19 +521,39 @@ function inferRanges(chapters){
 console.log(`\n  fetching "${OPT.page}"…`);
 const art = await fetchArticle(OPT.page);
 const sections = parseSections(art.html);
-const chapters = chaptersFrom(sections);
 const lead = sections[0];
-console.log(`  ${art.title}: ${chapters.length} chapters, ${sections.reduce((s, x) => s + x.links.length, 0)} prose links`);
 
 const allTargets = sections.flatMap((s) => s.links.map((l) => l.target));
 const redirects = await resolveRedirects(allTargets);
 const canon = (t) => redirects.get(t) || t;
+
+// The store, early: splitting a dominant chapter is decided by where the
+// article's DATED entries are, not where its links are.
+const slug = slugify(OPT.name || art.title);
+const domain = slug;
+const wikiKey = (u) => decodeURIComponent(String(u || '').replace(/^https?:\/\/en\.wikipedia\.org\/wiki\//, '')).replace(/_/g, ' ');
+
+let entries = readEntries();
+const indexStore = () => {
+  const byWiki = new Map(), byTitle = new Map();
+  for(const e of entries){
+    if(e.origin?.wiki && !e.origin?.manual) byWiki.set(wikiKey(e.origin.wiki).toLowerCase(), e);
+    if(!e.origin?.manual) byTitle.set(String(e.title).toLowerCase(), byTitle.get(String(e.title).toLowerCase()) || e);
+  }
+  return { byWiki, byTitle };
+};
+let { byWiki, byTitle } = indexStore();
+const findEntry = (t) => byWiki.get(t.toLowerCase()) || byTitle.get(t.toLowerCase()) || null;
+
+const chapters = chaptersFrom(sections, (target) => findEntry(canon(target))?.start != null);
+console.log(`  ${art.title}: ${chapters.length} chapters, ${sections.reduce((s, x) => s + x.links.length, 0)} prose links`);
 
 // Per canonical title: weighted mentions, which chapters/subsections, lead mention.
 const mention = new Map();
 const credit = (t, w, ch, sub, hat) => {
   let m = mention.get(t);
   if(!m) mention.set(t, (m = { weight: 0, count: 0, lead: false, hat: false, chapters: new Map(), firstChapter: ch, firstSub: sub }));
+  m.galleryOnly = false;
   m.weight += w; m.count++;
   if(hat) m.hat = true;
   if(ch == null) m.lead = true;
@@ -364,8 +561,18 @@ const credit = (t, w, ch, sub, hat) => {
   if(m.firstChapter == null && ch != null){ m.firstChapter = ch; m.firstSub = sub; }
 };
 for(const l of lead.links) credit(canon(l.target), 2, null, null, false);
+// Gallery sections: credit the works they show, flagged, with no chapter. A
+// museum there ("Metropolitan Museum of Art") is a caption, dropped below.
+for(const sec of sections.filter((x) => GALLERY.test(x.title))){
+  for(const l of sec.links){
+    const t = canon(l.target);
+    let m = mention.get(t);
+    if(!m) mention.set(t, (m = { weight: 0, count: 0, lead: false, hat: false, chapters: new Map(), firstChapter: null, firstSub: null, galleryOnly: true }));
+    m.weight += 1; m.count++;
+  }
+}
 chapters.forEach((c, ci) => {
-  for(const s of c.sections) for(const l of s.links) credit(canon(l.target), l.weight, ci, s.level === 2 ? null : s.title, l.hat);
+  c.sections.forEach((s, k) => { for(const l of s.links) credit(canon(l.target), l.weight, ci, k === 0 ? null : s.title, l.hat); });
 });
 mention.delete(art.title);   // the article linking to itself
 
@@ -386,8 +593,10 @@ const bump = (a, b, w) => {
   let m = cooc.get(a); if(!m) cooc.set(a, (m = new Map()));
   m.set(b, (m.get(b) || 0) + w);
 };
-function harvest(sec, ch){
-  const sub = sec.level > 2 ? sec.title : null;
+function harvest(sec, ch, first = false){
+  // A chapter's first section is its opening, whatever its heading level (a
+  // promoted subsection is level 3).
+  const sub = first || sec.level <= 2 ? null : sec.title;
   // A "Main article: Elizabethan era" hatnote means the section IS about it, so
   // the section's opening is its context.
   const hatOpen = opening((sec.paras || []).filter((p) => p.tag === 'p'), 320);
@@ -425,24 +634,9 @@ function harvest(sec, ch){
   }
 }
 harvest(lead, null);
-chapters.forEach((c, ci) => c.sections.forEach((sec) => harvest(sec, ci)));
+chapters.forEach((c, ci) => c.sections.forEach((sec, k) => harvest(sec, ci, k === 0)));
 
 // --- optional: fill gaps in the store first -------------------------------
-const slug = slugify(OPT.name || art.title);
-const domain = slug;
-const wikiKey = (u) => decodeURIComponent(String(u || '').replace(/^https?:\/\/en\.wikipedia\.org\/wiki\//, '')).replace(/_/g, ' ');
-
-let entries = readEntries();
-const indexStore = () => {
-  const byWiki = new Map(), byTitle = new Map();
-  for(const e of entries){
-    if(e.origin?.wiki && !e.origin?.manual) byWiki.set(wikiKey(e.origin.wiki).toLowerCase(), e);
-    if(!e.origin?.manual) byTitle.set(String(e.title).toLowerCase(), byTitle.get(String(e.title).toLowerCase()) || e);
-  }
-  return { byWiki, byTitle };
-};
-let { byWiki, byTitle } = indexStore();
-const findEntry = (t) => byWiki.get(t.toLowerCase()) || byTitle.get(t.toLowerCase()) || null;
 
 const missing = [...mention.entries()]
   .filter(([t]) => !findEntry(t) && !INDEX_TITLE.test(t))
@@ -465,11 +659,15 @@ if(OPT.ingest && (missing.length || missingEvents.length)){
     console.log(`\n  mining events from "${p}"…`);
     run(['--events', p, '--domain', domain, '--no-build']);
   }
+  if(OPT.ingestOnly){ console.log('  ingest only: not placing or building'); process.exit(0); }
   console.log('\n  placing new entries on the atlas…');
+  spawnSync(process.execPath, [path.join(HERE, 'classify.mjs')], { stdio: 'inherit' });
   spawnSync(process.execPath, [path.join(HERE, 'atlas.mjs')], { stdio: 'inherit' });
   entries = readEntries();
   ({ byWiki, byTitle } = indexStore());
 }
+
+if(OPT.ingestOnly){ console.log('  ingest only: nothing else to do'); process.exit(0); }
 
 // --- membership ------------------------------------------------------------
 const items = new Map();
@@ -515,9 +713,76 @@ const out = [...items.values()].map(({ e, m, via, t }) => ({
   sub: m?.firstSub || null,
 })).filter((it) => it.start != null);
 
+// Gallery-only places and groups are captions (museums), not members.
+for(let i = out.length - 1; i >= 0; i--){
+  const m = mention.get(out[i].canon);
+  if(m?.galleryOnly && ['place', 'group', 'concept'].includes(out[i].type)) out.splice(i, 1);
+}
+
+/*
+ * Works by the topic's people. The article links Monet but not the 26 Monets
+ * the store holds; an art topic without its paintings cannot show how the art
+ * developed, which was the whole point of the old art timeline. Any store entry
+ * whose creator facet (artist, director, author, scientist…) names a member
+ * person joins, under that person, up to WORKS_PER_PERSON each.
+ */
+const CREATOR_FACETS = ['artist', 'director', 'author', 'composer', 'creator', 'architect', 'scientist', 'philosopher'];
+const WORKS_PER_PERSON = 14;
+const nameKey = (s) => String(s || '').toLowerCase().normalize('NFKD').replace(/\([^)]*\)/g, '').replace(/[^a-z]/g, '');
+const people = new Map();
+for(const it of out) if(it.type === 'person') people.set(nameKey(it.title), it);
+const have = new Set(out.map((it) => it.id));
+const worksOf = new Map();
+for(const e of entries){
+  if(have.has(e.id) || e.start == null) continue;
+  for(const f of CREATOR_FACETS){
+    const p = e.facets?.[f] && people.get(nameKey(e.facets[f]));
+    if(!p) continue;
+    (worksOf.get(p.id) || worksOf.set(p.id, []).get(p.id)).push(e);
+    break;
+  }
+}
+let nWorks = 0;
+for(const [pid, list] of worksOf){
+  const p = out.find((it) => it.id === pid);
+  // Spread across the career rather than the first N in file order.
+  list.sort((a, b) => a.start - b.start);
+  const step = Math.max(1, list.length / WORKS_PER_PERSON);
+  const pick = [];
+  for(let k = 0; k < list.length && pick.length < WORKS_PER_PERSON; k += step) pick.push(list[Math.floor(k)]);
+  for(const e of pick){
+    have.add(e.id); nWorks++;
+    out.push({
+      id: e.id, canon: null, title: e.title, subtitle: e.subtitle || p.title, yearText: e.yearText || '',
+      start: e.start, end: e.end, kind: e.kind, circa: !!e.circa, openEnded: !!e.openEnded,
+      image: e.image || '', excerpt: e.excerpt || '', facets: e.facets || {}, dataset: e.origin?.dataset || '',
+      wiki: e.origin?.wiki || '', dateSource: e.origin?.dateSource || '', type: entryType(e),
+      subject: taxo?.entries?.[e.id]?.mid || '', region: taxo?.entries?.[e.id]?.region || '',
+      fame: e.sitelinks ? Math.log1p(e.sitelinks) / fameMax : 0,
+      via: 'works', by: pid, mentions: 0, weight: 0, lead: false, hat: false,
+      mentionedIn: [], chapterOfMention: p.chapterOfMention, sub: p.sub,
+    });
+  }
+}
+if(nWorks) console.log(`  + ${nWorks} works by ${worksOf.size} of the topic's people (from the store)`);
+
 // --- chapters & date checks -----------------------------------------------
 chapters.forEach((c, ci) => { c.members = out.filter((it) => it.chapterOfMention === ci); });
-const chronological = inferRanges(chapters);
+let chronological = inferRanges(chapters);
+/*
+ * Dated chapters only make sense if they mostly do not overlap. *History of
+ * science* passed the "medians ascend" test but 11 of its 13 chapters ended up
+ * overlapping, and *Ancient Egypt*'s "Government and economy" was dated to
+ * 665 million BC. Then the article is thematic: chapters stay, dates go.
+ */
+if(chronological){
+  const dated = chapters.filter((c) => c.members.length);
+  if(dated.filter((c) => c.overlaps).length > dated.length * 0.4){
+    chronological = false;
+    for(const c of chapters){ c.from = c.to = null; c.overlaps = false; }
+    console.log('  chapters overlap too much to be eras: treating the article as thematic');
+  }
+}
 
 const chapterOfYear = (y) => {
   for(let i = chapters.length - 1; i >= 0; i--) if(!chapters[i].overlaps && chapters[i].from != null && y >= chapters[i].from) return i;
@@ -627,6 +892,16 @@ for(const it of out){
   }
   it.importance = +imp.toFixed(4);
 }
+// A creator's works rank just under the creator: the best known two can be
+// essentials (so the default timeline of an art topic shows paintings), the
+// rest sit in Everything.
+const byWorks = new Map();
+for(const it of out) if(it.via === 'works') (byWorks.get(it.by) || byWorks.set(it.by, []).get(it.by)).push(it);
+for(const [pid, list] of byWorks){
+  const p = out.find((x) => x.id === pid);
+  list.sort((a, b) => (b.fame - a.fame) || (String(b.excerpt).length - String(a.excerpt).length));
+  list.forEach((it, k) => { it.importance = +((p?.importance || 0.3) * (k < 2 ? 0.92 : 0.45)).toFixed(4); });
+}
 
 /*
  * Context: the best-scoring sentence in the entry's own chapter; else in the
@@ -660,6 +935,8 @@ for(const [, arr] of byCh){
    * They stay Key only when a section is ABOUT them (a "Main article" hatnote).
    */
   const eligible = arr.filter((it) => !['place', 'group', 'concept'].includes(it.type) || it.hat);
+  // A chapter of nothing but places ("Legacy") still gets its best two.
+  if(eligible.length < Math.min(2, arr.length)) eligible.push(...arr.filter((it) => !eligible.includes(it)).slice(0, 2 - eligible.length));
   const keyIds = new Set(eligible.slice(0, quota).map((it) => it.id));
   arr.forEach((it) => { it.key = keyIds.has(it.id); });
 }
@@ -674,8 +951,9 @@ const chOut = chapters.map((c, i) => ({
   // The chapter's own opening, from the article: the narrative that the
   // entries hang off. If the heading goes straight into a subsection, that
   // subsection's opening stands in.
-  intro: opening(proseParas(c.sections[0]), 650) || opening(proseParas(c.sections[1]), 650),
+  intro: c.sections.map((x) => opening(proseParas(x), 650)).find(Boolean) || '',
   subsections: c.sections.slice(1).map((sec) => ({ title: sec.title, intro: opening(proseParas(sec), 280) })),
+  parent: c.parent || null,
   from: c.from ?? null,
   to: c.to ?? null,
   overlaps: !!c.overlaps,
@@ -686,8 +964,21 @@ const chOut = chapters.map((c, i) => ({
 
 out.sort((a, b) => a.start - b.start || b.importance - a.importance);
 
+/*
+ * The shelf on the topic list. From --group when the list gives one, else the
+ * commonest known subject among the key entries ("Visual arts", "Military and
+ * warfare"), with chronological "History of X" articles shelved as History.
+ */
+const guessGroup = () => {
+  if(chronological && /^history of /i.test(art.title)) return 'History';
+  const c = new Map();
+  for(const it of out) if(it.key && it.subject) c.set(it.subject, (c.get(it.subject) || 0) + 1);
+  return [...c].sort((a, b) => b[1] - a[1])[0]?.[0] || 'Other';
+};
+
 const topic = {
   slug,
+  group: OPT.group || guessGroup(),
   title: OPT.name || art.title,
   source: { page: art.title, url: `${WP}/wiki/${encodeURIComponent(art.title.replace(/ /g, '_'))}` },
   events: eventPages,
@@ -701,6 +992,7 @@ const topic = {
 
 fs.writeFileSync(path.join(PATHS.topics, `${slug}.json`), JSON.stringify(topic) + '\n');
 updateIndex(topic);
+updateMembers(topic);
 
 // --- report ---------------------------------------------------------------------
 const n = (f) => out.filter(f).length;
@@ -729,7 +1021,8 @@ function updateIndex(t){
   const idx = readIndex();
   const cover = t.items.filter((it) => it.key && it.image).sort((a, b) => b.importance - a.importance)[0]?.image || '';
   const row = {
-    slug: t.slug, title: t.title, source: t.source, events: t.events, keyTarget: t.keyTarget,
+    slug: t.slug, title: t.title, group: t.group, source: t.source, events: t.events, keyTarget: t.keyTarget,
+    blurb: (t.intro || '').split(/(?<=[.!?])\s/)[0].slice(0, 220),
     built: t.built, count: t.items.filter((it) => it.onTimeline).length, key: t.items.filter((it) => it.key).length,
     // The first chapter's start, not the oldest entry: one Palaeolithic link
     // made England read "4,000,000 BC – 2026".
@@ -739,4 +1032,24 @@ function updateIndex(t){
   };
   idx.topics = [...idx.topics.filter((x) => x.slug !== t.slug), row].sort((a, b) => a.title.localeCompare(b.title));
   fs.writeFileSync(path.join(PATHS.topics, 'index.json'), JSON.stringify(idx, null, 1) + '\n');
+}
+
+/**
+ * topics/members.json: entry id -> the topics it is on the timeline of, for
+ * entries in two or more. members-all.json is the same for every entry; the
+ * atlas loads it for its Topic filter. The detail panel's "Also in" line: Napoleon in France
+ * links to the same card in the other topics that cover him.
+ */
+function updateMembers(t){
+  const f = path.join(PATHS.topics, 'members-all.json');     // every entry: merging, and the atlas's topic filter
+  let all = {};
+  try { all = JSON.parse(fs.readFileSync(f, 'utf8')); } catch {}
+  for(const id of Object.keys(all)){
+    all[id] = all[id].filter((s) => s !== t.slug);
+    if(!all[id].length) delete all[id];
+  }
+  for(const it of t.items) if(it.onTimeline) (all[it.id] ||= []).push(t.slug);
+  const multi = Object.fromEntries(Object.entries(all).filter(([, v]) => v.length > 1));
+  fs.writeFileSync(f, JSON.stringify(all) + '\n');
+  fs.writeFileSync(path.join(PATHS.topics, 'members.json'), JSON.stringify(multi) + '\n');
 }
