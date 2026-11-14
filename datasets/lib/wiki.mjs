@@ -1061,7 +1061,7 @@ function topicFrom(heading){
  */
 const DATED_MIN_CHARS = 12;
 
-export async function mineEvents(page, { limit = 400, minChars = 40, maxChars = 700 } = {}){
+export async function mineEvents(page, opts = {}){
   const title = await resolveTitle(page);
   if(!title) return null;
 
@@ -1072,12 +1072,22 @@ export async function mineEvents(page, { limit = 400, minChars = 40, maxChars = 
   const pg = extract?.query?.pages ? Object.values(extract.query.pages)[0] : null;
   const body = String(pg?.extract || '');
   const html = String(parsed?.parse?.text?.['*'] || '');
+  const url = `${WP}/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`;
+  return mineEventsFrom({ title, url, body, html }, opts);
+}
+
+/**
+ * The miner itself, on any page: `body` is the page as plain text (one line per
+ * paragraph or list item), `html` the same page's markup (for its tables).
+ * Wikipedia pages come through `mineEvents`; other websites through
+ * `lib/site.mjs`, which is why this takes text rather than a title.
+ */
+export function mineEventsFrom({ title, url, body = '', html = '' }, { limit = 400, minChars = 40, maxChars = 700 } = {}){
   // `noHtml` matters enough to report: it means the second fetch failed and the
   // table path is silently off, which reads exactly like a page with no tables.
   const tally = { tables: 0, tablesSkipped: 0, rows: 0, noHtml: !html };
   if(!body && !html) return { page: title, drafts: [], skipped: [], scanned: 0, tally };
 
-  const url = `${WP}/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`;
   const drafts = [];
   /*
    * Prose drafts are collected apart from the strict ones and returned apart,

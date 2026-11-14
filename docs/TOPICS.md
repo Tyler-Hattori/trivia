@@ -102,6 +102,44 @@ Across topics: `topics/members.json` (entries in 2+ topics; the detail panel's
 filter). The topic list has search, shelves, sorting, a Continue row, and
 per-topic hiding.
 
+## Other websites: `--site`
+
+```
+node datasets/topic.mjs --site <index url> --name "Ideas of Physics" --hint physics \
+  --credit "David Taylor, Northwestern University" --group Science --ingest
+```
+
+or a line in `topics.txt` whose first field is the URL. `lib/site.mjs` reads
+any site shaped as an index page linking to pages of prose. The site supplies
+the structure and the words: chapters (the index's links, in order), intros,
+the sentence each entry is mentioned in, and a `note` from the entry's own page
+on the site. Wikipedia supplies each entry's dates, image and lead. The credit
+shows on the topic page and on every note.
+
+How names become entries:
+
+- **Links to the site's own pages:** "copernicus.html", titled "Phyx 103-0,
+  Copernicus", becomes *Nicolaus Copernicus*. The site-wide title prefix is
+  stripped. The order of trust:
+  1. the exact Wikipedia title, skipping disambiguation pages;
+  2. the link text, if it's a proper noun (so "shape" never becomes *Shape*);
+  3. a Wikipedia search with `--hint` plus the chapter title, kept only if
+     the result's title is close.
+
+  "Mercury" in an astronomy lecture is the planet.
+- **Names in unlinked prose** (most sites don't link). The store is the name
+  list: full titles, plus a person's surname when one person clearly owns it
+  ("Newton" is Isaac; "Thomson" is ambiguous and skipped). Unknown 2–3-word
+  capitalised names ("Edmond Halley") are tried as exact titles only.
+- **Timeline pages** (≥ 8 lines that open with a year) are mined as events
+  through `ingest.mjs --events <url>`. Their entries run long, so the limit is
+  2,500 characters. A line's leading "Name, a …" becomes a person, and the line
+  is that person's context. Events go into the timeline page's own chapter.
+- **PDFs** need `pdftotext` (`brew install poppler`); without it they are
+  skipped and reported.
+
+Requests to the site are one at a time, 400 ms apart (`SITE_GAP_MS`).
+
 ## Why a topic comes from an article and not from embeddings
 
 Measured (see `docs/SEARCH.md`): no similarity threshold returns "everything

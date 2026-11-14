@@ -26,3 +26,7 @@ Renaissance | group=Art & culture
 # Science
 History of science | name=Science | group=Science
 History of physics | name=Physics | group=Science
+
+# Other websites (any URL that is not Wikipedia): the site gives chapters and text,
+# Wikipedia gives each entry's dates, images and lead.
+https://faculty.wcas.northwestern.edu/infocom/Ideas/index.html | name=Ideas of Physics | group=Science | hint=physics | credit=David Taylor, Northwestern University (Phyx 103, Ideas of Physics)

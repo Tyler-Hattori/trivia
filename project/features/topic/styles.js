@@ -118,6 +118,9 @@ export const CSS = String.raw`
 .tp-detail .lb,.tp-ctx .lb{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#94a3b8;margin:16px 0 6px}
 .tp-ctx{border-left:3px solid var(--c);padding:2px 0 2px 12px;color:#1e293b;font-size:15px;line-height:1.6}
 .tp-ctx .lb{margin-top:0}
+.tp-note{margin-top:12px;font-size:14px}
+.tp-credit{font-size:13px;color:#475569;margin:2px 0 6px}
+.tp-credit a{color:#0f172a}
 .tp-rel{display:flex;flex-wrap:wrap;gap:6px}
 .tp-relc{border:1px solid #e2e8f0;background:#fff;border-radius:999px;padding:3px 10px;font-size:12.5px;color:#0f172a}
 .tp-relc:hover{background:#f8fafc;border-color:#cbd5e1}

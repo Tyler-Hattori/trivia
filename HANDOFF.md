@@ -8,6 +8,31 @@ Two sessions on 2026-11-13 changed the direction of the project; a short one on
 2026-11-14 finished the crawl follow-up and reorganised the repo. Below: what
 exists now and what to do next.
 
+### Done 2026-11-14, session 4: Impressionism fixed, website topics
+
+- **QA failures fixed** (now 306/306):
+  - gallery sections aren't chapters;
+  - a dominant chapter is split into its subsections;
+  - an article is thematic when its chapters overlap;
+  - intros come from the first section with prose;
+  - "Articles on…" sections are cut;
+  - a chapter with only places still gets essentials.
+- **Art topics show their art:** works by member creators come from the store,
+  only on the topic's subjects. Impressionism has 197 paintings, 346 entries
+  on its timeline.
+- **Thematic timelines:** no chapter bands; a Chapter menu on every timeline.
+- **Website topics** (`--site`, `lib/site.mjs`): first is *Ideas of Physics*
+  (David Taylor, Northwestern). It has 18 chapters, 229 entries on the
+  timeline and 81 events mined from its 3 timeline pages. See `docs/TOPICS.md`,
+  "Other websites".
+- **Fixes:**
+  - `etype`: present-day countries, and descriptions headed by a place word,
+    are places (England, Germany and Birmingham were "periods").
+  - Named HTML entities are decoded.
+- **Open:**
+  - the site's 4 PDF lectures need `brew install poppler`;
+  - rebuild with `node datasets/topic.mjs --all`.
+
 ### Done 2026-11-14, session 3: 13 topics, batch pipeline
 
 - **Topics:** England, France, Japan, China, United States, Ancient Egypt,

@@ -61,6 +61,10 @@ export function entryType(e){
   for(const text of [inst, desc]){
     if(!text) continue;
     if(/\bhuman\b/.test(text)) return 'person';
+    // A description's head noun decides before any later word can: "large city
+    // in the West Midlands… second city of the United Kingdom" is a city, not a
+    // kingdom (Birmingham was a period, and an essential of a physics course).
+    if(text === desc && RX.place.test(text.split(/\s+/).slice(0, 4).join(' ')) && !RX.event.test(text.split(/\s+/).slice(0, 4).join(' '))) return 'place';
     if(RX.artifact.test(text)) return 'work';
     if(RX.building.test(text)) return 'place';
     if(RX.language.test(text)) return 'concept';
@@ -68,6 +72,11 @@ export function entryType(e){
     if(RX.work.test(text)) return 'work';
     if(RX.person.test(text)) return 'person';
     if(RX.group.test(text)) return 'group';
+    // A present-day country is a place, not a period: "sovereign state" hit
+    // the period rule's "state", and "constituent country of the United
+    // KINGDOM" its "kingdom", so England and Germany were essentials of a
+    // physics course. A historical/former country stays a period.
+    if(/\b(sovereign state|country|nation)\b/.test(text) && !/\b(historical|former|ancient|medieval)\b/.test(text)) return 'place';
     if(RX.period.test(text)) return 'period';
     if(RX.place.test(text)) return 'place';
     if(RX.concept.test(text)) return 'concept';

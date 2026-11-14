@@ -9,6 +9,20 @@
  *     node datasets/topic.mjs --all                                  # rebuild every topic
  *     node datasets/topic.mjs --list [file] [--ingest] [--force]      # build many (topics.txt)
  *     node datasets/topic.mjs --discover <source> --group G [...]      # add many lines to topics.txt
+ *     node datasets/topic.mjs --site <index url> --name N --hint "physics" --credit "…" [--ingest]
+ *
+ * ## Other websites: --site
+ *
+ * A site shaped as an index page linking to pages of prose (a course, a set of
+ * essays) instead of a Wikipedia article. lib/site.mjs reads it: the index's
+ * links in order are the chapters; links inside them to the site's own pages
+ * name the entries ("copernicus.html" -> Nicolaus Copernicus on Wikipedia);
+ * pages of year-led lines are timelines, mined as events; a timeline line's
+ * leading "Name, a …" is a person. Wikipedia supplies each entry's dates, image
+ * and lead; the site supplies the chapters, intros, the sentence each entry is
+ * mentioned in, and a note from the entry's own page on the site (`note`).
+ * --hint disambiguates names ("Mercury" + "astronomy" -> the planet).
+ * In topics.txt: a line whose first field is a URL is a site.
  *
  * ## Finding topics: --discover
  *
@@ -90,7 +104,7 @@ const WP = 'https://en.wikipedia.org';
 const argv = process.argv.slice(2);
 const arg = (n, d = null) => (argv.includes(n) ? argv[argv.indexOf(n) + 1] : d);
 const args = (n) => argv.flatMap((a, i) => (a === n ? [argv[i + 1]] : []));
-const flagValues = new Set(['--name', '--events', '--ingest-limit', '--key', '--group', '--list', '--discover', '--match', '--template', '--min-kb', '--limit'].flatMap((f) => args(f)));
+const flagValues = new Set(['--name', '--events', '--ingest-limit', '--key', '--group', '--list', '--discover', '--match', '--template', '--min-kb', '--limit', '--site', '--hint', '--credit', '--max-subpages'].flatMap((f) => args(f)));
 const positional = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && argv[i - 1].startsWith('--') && flagValues.has(a)));
 
 const OPT = {
@@ -105,6 +119,10 @@ const OPT = {
   ingestOnly: argv.includes('--ingest-only'),
   list: argv.includes('--list') ? (arg('--list') && !arg('--list').startsWith('--') ? arg('--list') : path.join(HERE, 'topics.txt')) : null,
   force: argv.includes('--force'),
+  site: arg('--site'),               // a website index URL instead of a Wikipedia article
+  hint: arg('--hint'),               // words that disambiguate its names on Wikipedia ("physics")
+  credit: arg('--credit'),           // whose text it is, shown on every page of the topic
+  maxSubpages: Number(arg('--max-subpages', 250)),
 };
 
 fs.mkdirSync(PATHS.topics, { recursive: true });
@@ -112,7 +130,10 @@ fs.mkdirSync(PATHS.topics, { recursive: true });
 if(OPT.all){
   const idx = readIndex();
   for(const t of idx.topics){
-    const a = [path.join(HERE, 'topic.mjs'), t.source.page, '--name', t.title, '--key', String(t.keyTarget || 90)];
+    const a = t.source.kind === 'site'
+      ? [path.join(HERE, 'topic.mjs'), '--site', t.source.url, '--name', t.title, '--key', String(t.keyTarget || 90),
+         ...(t.source.hint ? ['--hint', t.source.hint] : []), ...(t.source.credit ? ['--credit', t.source.credit] : [])]
+      : [path.join(HERE, 'topic.mjs'), t.source.page, '--name', t.title, '--key', String(t.keyTarget || 90)];
     for(const ev of t.events || []) a.push('--events', ev);
     if(t.group) a.push('--group', t.group);
     spawnSync(process.execPath, a, { stdio: 'inherit' });
@@ -201,7 +222,9 @@ function runList(file){
   console.log(`\n  ${jobs.length} topics in ${path.basename(file)} · ${jobs.length - pending.length} already built · ${pending.length} to do`);
   if(!pending.length) return;
   const argsOf = (j) => {
-    const a = [path.join(HERE, 'topic.mjs'), j.page];
+    const a = /^https?:\/\//.test(j.page) ? [path.join(HERE, 'topic.mjs'), '--site', j.page] : [path.join(HERE, 'topic.mjs'), j.page];
+    if(j.hint) a.push('--hint', j.hint);
+    if(j.credit) a.push('--credit', j.credit);
     if(j.name) a.push('--name', j.name);
     for(const e of j.events) a.push('--events', e);
     if(j.group) a.push('--group', j.group);
@@ -231,7 +254,7 @@ function runList(file){
   }
   console.log(`\n  done: ${pending.length - failed.length} built${failed.length ? `, ${failed.length} failed: ${failed.join(', ')}` : ''}`);
 }
-if(!OPT.page){
+if(!OPT.page && !OPT.site){
   console.error('usage: node datasets/topic.mjs "History of England" [--events "Timeline of English history"] [--ingest]');
   process.exit(1);
 }
@@ -250,7 +273,14 @@ async function fetchArticle(page){
   return { title: d.parse.title, html: d.parse.text };
 }
 
-const decode = (s) => s.replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(+n)).replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
+// Named entities: hand-written sites use them freely (&mdash;, &times;, &deg;);
+// Wikipedia's markup only ever has the five below plus numeric ones.
+const NAMED = { nbsp: ' ', ndash: '–', mdash: '—', lsquo: '‘', rsquo: '’', ldquo: '“', rdquo: '”', hellip: '…', deg: '°', times: '×',
+  divide: '÷', middot: '·', plusmn: '±', micro: 'µ', frac12: '½', frac14: '¼', frac34: '¾', sup2: '²', sup3: '³', eacute: 'é', egrave: 'è',
+  aacute: 'á', agrave: 'à', ouml: 'ö', uuml: 'ü', auml: 'ä', ccedil: 'ç', iacute: 'í', oacute: 'ó', uacute: 'ú', ntilde: 'ñ', szlig: 'ß',
+  alpha: 'α', beta: 'β', gamma: 'γ', delta: 'δ', Delta: 'Δ', lambda: 'λ', mu: 'μ', pi: 'π', sigma: 'σ', omega: 'ω', Omega: 'Ω', theta: 'θ',
+  rarr: '→', larr: '←', harr: '↔', le: '≤', ge: '≥', ne: '≠', asymp: '≈', infin: '∞', minus: '−', prime: '′', Prime: '″', bull: '•', copy: '©' };
+const decode = (s) => s.replace(/&([A-Za-z][A-Za-z0-9]*);/g, (m, n) => NAMED[n] ?? m).replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(+n)).replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
   .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ');
 const stripTags = (s) => decode(s.replace(/<[^>]+>/g, '')).replace(/\[\d+\]/g, '').trim();
 
@@ -298,17 +328,22 @@ function parseSections(html){
  * A paragraph's plain text, with the position of every /wiki/ link in it, so a
  * link can be traced back to the sentence that mentions it.
  */
-function proseText(html){
+const wikiHref = (href) => {
+  const m = String(href).match(/^\/wiki\/([^#?]+)/);
+  return m ? decodeURIComponent(m[1]).replace(/_/g, ' ') : null;
+};
+
+function proseText(html, resolve = wikiHref){
   html = html.replace(/<sup\b[^>]*>[\s\S]*?<\/sup>/g, '')          // footnote markers, [citation needed]
     .replace(/<span[^>]*class="[^"]*(?:IPA|nowrap)[^"]*"[^>]*>[\s\S]*?<\/span>/g, (m) => (/IPA/.test(m) ? '' : m))
     .replace(/<(style|ul|ol|table)\b[\s\S]*?<\/\1>/g, '');            // nested lists are their own paragraphs
   let text = '';
   const links = [];
-  for(const m of html.matchAll(/<a\s[^>]*href="\/wiki\/([^"#?]+)"[^>]*>([\s\S]*?)<\/a>|<br\s*\/?>|<[^>]+>|[^<]+/g)){
+  for(const m of html.matchAll(/<a\s[^>]*?href\s*=\s*["']?([^"' >]+)["']?[^>]*>([\s\S]*?)<\/a>|<br\s*\/?>|<[^>]+>|[^<]+/gi)){
     if(m[1] != null){
-      const target = decodeURIComponent(m[1]).replace(/_/g, ' ');
       const t = stripTags(m[2]);
-      links.push({ target, at: text.length + 1, len: t.length });
+      const target = resolve(decode(m[1]), t);
+      if(target) links.push({ target, at: text.length + 1, len: t.length });
       text += t;
     } else if(m[0].startsWith('<')){
       if(/^<br/.test(m[0])) text += ' ';
@@ -421,6 +456,100 @@ async function resolveRedirects(titles){
 }
 
 // ---------------------------------------------------------------------------
+// 1b. A website instead of an article (--site)
+// ---------------------------------------------------------------------------
+
+/**
+ * The same shape `parseSections` makes from a Wikipedia article, from a site:
+ * a lead plus one level-2 section per chapter page, each with `paras` whose
+ * links already point at Wikipedia titles. Everything after this is shared.
+ */
+async function siteArticle(url){
+  const { readSite, chunks, linksOf, toWikipedia, leadingName, textOf, titleOf, gazetteer, namesIn } = await import('./lib/site.mjs');
+  const gaz = gazetteer(readEntries(), entryType);
+  const unknownTried = new Map();     // capitalised phrase -> exact Wikipedia title or null
+  console.log(`\n  reading ${url}…`);
+  const S = await readSite(url, { maxSubpages: OPT.maxSubpages });
+  const title = OPT.name || S.title;
+  const topicHint = OPT.hint || '';
+
+  // What each same-site page is called, from its own title and the link texts
+  // that point at it, then resolved to Wikipedia once.
+  const anchors = new Map();
+  for(const c of S.chapters) if(c.html) for(const l of linksOf(c.html, c.url)){
+    (anchors.get(l.href) || anchors.set(l.href, new Set()).get(l.href)).add(l.text);
+  }
+  const hrefTitle = new Map();     // href -> Wikipedia title (or null)
+  const notes = new Map();         // Wikipedia title -> { text, url } from the site's own page
+  const chapterUrls = new Set(S.chapters.map((c) => c.url));
+  let n = 0;
+  const resolveHref = async (href, text, hint) => {
+    if(hrefTitle.has(href)) return hrefTitle.get(href);
+    const sub = S.subpages.get(href);
+    if(chapterUrls.has(href) || /\.(jpe?g|png|gif|pdf|mov|mp4|avi)$/i.test(href)){ hrefTitle.set(href, null); return null; }
+    const names = [sub && S.strip(sub.title), ...(anchors.get(href) || []), text].filter(Boolean);
+    const t = await toWikipedia(names, { hint: `${hint} ${topicHint}`.trim() });
+    hrefTitle.set(href, t);
+    if(t && sub && !notes.has(t)) notes.set(t, { text: sub.text.split('\n').filter((l) => l.length > 60).slice(0, 2).join(' ').slice(0, 600), url: href });
+    if(++n % 20 === 0) process.stdout.write(`\r  resolved ${n} names…`);
+    return t;
+  };
+
+  const sections = [{ level: 1, title: '(lead)', body: '', links: [], paras: S.intro ? [{ tag: 'p', text: S.intro, links: [] }] : [] }];
+  const events = [];
+  for(const c of S.chapters){
+    if(!c.html){ continue; }
+    const sec = { level: 2, title: c.title, body: c.html, links: [], paras: [], url: c.url };
+    // The chapter's own subject ("Galileo", "Newton"), exact titles only: a
+    // lecture called "Energy" is about the concept, and that is fine too.
+    const own = await toWikipedia([c.title], { hint: topicHint, exactOnly: true });
+    if(own) sec.links.push({ target: own, weight: 4, hat: true });
+
+    // Resolve this page's links first (async), then parse paragraphs with them.
+    const map = new Map();
+    for(const l of linksOf(c.html, c.url)) if(!map.has(l.href)) map.set(l.href, await resolveHref(l.href, l.text, c.title));
+    const base = c.url;
+    const resolve = (href) => { try { return map.get(new URL(href, base).href.replace(/#.*$/, '')) || null; } catch { return null; } };
+    for(const ch of chunks(c.html)){
+      const p = proseText(`<p>${ch}</p>`, resolve);
+      if(p.text.length <= 30) continue;
+      /*
+       * Names the page mentions without linking. Known ones come from the
+       * store's gazetteer; an unknown "Edmond Halley" is tried as an exact
+       * Wikipedia title (proper names only, so no search guessing). A name
+       * already covered by a link is not added twice.
+       */
+      for(const nm of namesIn(p.text, gaz)){
+        if(p.links.some((l) => nm.at < l.at + l.len && l.at < nm.at + nm.len)) continue;
+        let tt = nm.title;
+        if(!tt){
+          if(!unknownTried.has(nm.name)) unknownTried.set(nm.name, await toWikipedia([nm.name], { exactOnly: true }));
+          tt = unknownTried.get(nm.name);
+        }
+        if(tt) p.links.push({ target: tt, at: nm.at, len: nm.len });
+      }
+      p.links.sort((a, b) => a.at - b.at);
+      sec.paras.push({ tag: 'p', ...p });
+    }
+    if(c.timeline){
+      events.push(c.url);
+      // "1814 - Joseph Fraunhofer, a German lens-maker…": the person, with that
+      // line as the sentence that mentions him.
+      for(const line of textOf(c.html).split('\n')){
+        const name = leadingName(line);
+        if(!name) continue;
+        const t = await toWikipedia([name], { hint: topicHint });
+        if(t) sec.paras.push({ tag: 'p', text: line, links: [{ target: t, at: line.indexOf(name), len: name.length }] });
+      }
+    }
+    for(const p of sec.paras) for(const l of p.links) sec.links.push({ target: l.target, weight: 1, hat: false });
+    sections.push(sec);
+  }
+  console.log(`\r  resolved ${[...hrefTitle.values()].filter(Boolean).length} of ${hrefTitle.size} linked pages to Wikipedia; ${events.length} timeline pages`);
+  return { title, html: '', sections, kind: 'site', url: S.url, events, notes, credit: OPT.credit || null };
+}
+
+// ---------------------------------------------------------------------------
 // 2. Chapter dates
 // ---------------------------------------------------------------------------
 
@@ -518,9 +647,8 @@ function inferRanges(chapters){
 // 3. Build
 // ---------------------------------------------------------------------------
 
-console.log(`\n  fetching "${OPT.page}"…`);
-const art = await fetchArticle(OPT.page);
-const sections = parseSections(art.html);
+const art = OPT.site ? await siteArticle(OPT.site) : (console.log(`\n  fetching "${OPT.page}"…`), await fetchArticle(OPT.page));
+const sections = art.sections || parseSections(art.html);
 const lead = sections[0];
 
 const allTargets = sections.flatMap((s) => s.links.map((l) => l.target));
@@ -642,8 +770,10 @@ const missing = [...mention.entries()]
   .filter(([t]) => !findEntry(t) && !INDEX_TITLE.test(t))
   .sort((a, b) => b[1].weight - a[1].weight);
 
-const eventPages = OPT.events;
-const missingEvents = eventPages.filter((p) => !entries.some((e) => wikiKey(e.origin?.wiki).toLowerCase() === p.toLowerCase() && e.origin?.manual));
+const eventPages = [...OPT.events, ...(art.events || [])];
+// A Wikipedia timeline is matched by title, another site's by its URL.
+const pageKey = (u) => (/^https?:\/\//.test(u) && !/wikipedia\.org/.test(u) ? String(u) : wikiKey(u)).toLowerCase();
+const missingEvents = eventPages.filter((p) => !entries.some((e) => e.origin?.manual && pageKey(e.origin?.wiki) === pageKey(p)));
 
 if(OPT.ingest && (missing.length || missingEvents.length)){
   const list = missing.slice(0, OPT.ingestLimit).map(([t]) => t);
@@ -680,7 +810,7 @@ for(const [t, m] of mention){
 }
 for(const p of eventPages){
   for(const e of entries){
-    if(e.origin?.manual && wikiKey(e.origin?.wiki).toLowerCase() === p.toLowerCase() && !items.has(e.id)) items.set(e.id, { e, m: null, via: 'events' });
+    if(e.origin?.manual && pageKey(e.origin?.wiki) === pageKey(p) && !items.has(e.id)) items.set(e.id, { e, m: null, via: 'events' });
   }
 }
 
@@ -711,7 +841,16 @@ const out = [...items.values()].map(({ e, m, via, t }) => ({
   mentionedIn: m ? [...m.chapters.keys()] : [],
   chapterOfMention: m ? ([...m.chapters].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null) : null,
   sub: m?.firstSub || null,
+  // A site topic: what the site's own page about this entry says.
+  note: (t && art.notes?.get(t)?.text) || '',
+  noteUrl: (t && art.notes?.get(t)?.url) || '',
 })).filter((it) => it.start != null);
+
+// A site's timeline page is a chapter: its mined events belong to it.
+if(art.kind === 'site'){
+  const chOfUrl = new Map(chapters.map((c, i) => [c.sections[0].url, i]));
+  for(const it of out) if(it.via === 'events' && chOfUrl.has(it.wiki)) it.chapterOfMention = chOfUrl.get(it.wiki);
+}
 
 // Gallery-only places and groups are captions (museums), not members.
 for(let i = out.length - 1; i >= 0; i--){
@@ -741,6 +880,18 @@ for(const e of entries){
     (worksOf.get(p.id) || worksOf.set(p.id, []).get(p.id)).push(e);
     break;
   }
+}
+/*
+ * Only works on the topic's own subjects. Aristotle is mentioned in the Galileo
+ * lecture; his *Metaphysics* and *Nicomachean Ethics* are not physics. The
+ * topic's subjects are the commonest among the article's own links.
+ */
+const subjCount = new Map();
+for(const it of out) if(it.subject) subjCount.set(it.subject, (subjCount.get(it.subject) || 0) + 1);
+const topSubjects = new Set([...subjCount].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([s]) => s));
+for(const [pid, list] of worksOf){
+  const keep = list.filter((e) => { const s = taxo?.entries?.[e.id]?.mid; return !s || topSubjects.has(s); });
+  if(keep.length) worksOf.set(pid, keep); else worksOf.delete(pid);
 }
 let nWorks = 0;
 for(const [pid, list] of worksOf){
@@ -980,8 +1131,10 @@ const topic = {
   slug,
   group: OPT.group || guessGroup(),
   title: OPT.name || art.title,
-  source: { page: art.title, url: `${WP}/wiki/${encodeURIComponent(art.title.replace(/ /g, '_'))}` },
-  events: eventPages,
+  source: art.kind === 'site'
+    ? { kind: 'site', page: art.title, url: art.url, credit: art.credit, hint: OPT.hint || null }
+    : { page: art.title, url: `${WP}/wiki/${encodeURIComponent(art.title.replace(/ /g, '_'))}` },
+  events: OPT.events,
   keyTarget: OPT.key,
   built: new Date().toISOString().slice(0, 10),
   chronological,

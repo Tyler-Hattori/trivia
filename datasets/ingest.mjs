@@ -68,6 +68,7 @@ import {
   leadText, resolveTitle, INDEX_TITLE, MIN_EXCERPT,
 } from './lib/wiki.mjs';
 import { mapPool, sleep, getJSON } from './lib/wikilib.mjs';
+import { mineSitePage } from './lib/site.mjs';
 import { embed, generate, ensureUp, EMBED_MODEL, WRITE_MODEL } from './lib/ollama.mjs';
 import { STYLE, styleReject } from './lib/style.mjs';
 import { nearestLeaf } from './lib/cluster.mjs';
@@ -329,7 +330,11 @@ if(OPT.events.length){
     process.stdout.write(`  mining "${page}"… `);
     let r;
     try {
-      r = await mineEvents(page, { limit: OPT.limit });
+      // A URL that is not Wikipedia is another website's timeline page
+      // (lib/site.mjs). Its entries run long, hence the higher cap.
+      r = /^https?:\/\//.test(page) && !/wikipedia\.org/.test(page)
+        ? await mineSitePage(page, { limit: OPT.limit, maxChars: 2500 })
+        : await mineEvents(page, { limit: OPT.limit });
     } catch(e){
       console.log('failed');
       console.error(`\n  ${e.message}`);

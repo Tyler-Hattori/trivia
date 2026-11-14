@@ -114,7 +114,7 @@ let topicTitles = null;
  * by…"), so the part the title already says is dropped rather than read twice.
  */
 const lineOf = (it) => {
-  const s = it.context || summary(it.excerpt, 200);
+  const s = it.context || (it.note ? summary(it.note, 220) : '') || summary(it.excerpt, 200);
   const t = String(it.title || '').replace(/[.…\s]+$/, '');
   if(t.length > 25 && s.startsWith(t)){
     const rest = s.slice(t.length).replace(/^[.…,;:\s]+/, '');
@@ -505,6 +505,8 @@ function drawLearn(){
   host.innerHTML = `<div class="tp-read">
     ${!V.matches ? `<header class="tp-head">
       <h1>${esc(T.title)}</h1>
+      ${T.source.credit ? `<div class="tp-credit">Text by <a href="${esc(T.source.url)}" target="_blank" rel="noopener">${esc(T.source.credit)}</a>.
+        Dates, pictures and the "About" sections come from Wikipedia.</div>` : ''}
       <div class="tp-meta">${T.chapters.length} chapters · ${items.length} ${V.show === 'key' ? 'essentials' : 'entries'} · about ${mins} min to read
         · from <a class="tp-src" href="${esc(T.source.url)}" target="_blank" rel="noopener">${esc(T.source.page)}</a>
         (${V.show === 'key' ? 'switch to <a href="#" data-show="all">Everything</a> for all ' + T.items.filter((it) => it.onTimeline).length : 'switch to <a href="#" data-show="key">Essentials</a> for the short version'})</div>
@@ -787,6 +789,8 @@ function showDetail(id, scroll = true){
       </div>
       ${it.context ? `<div class="tp-ctx" style="--c:${ch?.color || '#cbd5e1'}">
         <div class="lb">In ${esc(T.source.page)}${it.sub ? ` · ${esc(it.sub)}` : ''}</div>${esc(it.context)}</div>` : ''}
+      ${it.note ? `<div class="tp-ctx tp-note" style="--c:#94a3b8"><div class="lb">${esc(T.source.page)} on ${esc(it.title)}</div>${esc(it.note)}
+        ${it.noteUrl ? ` <a class="tp-src" href="${esc(it.noteUrl)}" target="_blank" rel="noopener">Read on the site ↗</a>` : ''}</div>` : ''}
       ${(() => {
         const other = (members?.[it.id] || []).filter((x) => x !== T.slug);
         return other.length ? `<div class="lb">Also in</div><div class="tp-rel">${other.map((x) =>
