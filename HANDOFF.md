@@ -2,11 +2,180 @@
 
 ---
 
-## START HERE — state as of 2026-11-14 (read this first)
+## START HERE: next session (written end of 2026-11-14)
 
-Two sessions on 2026-11-13 changed the direction of the project; a short one on
-2026-11-14 finished the crawl follow-up and reorganised the repo. Below: what
-exists now and what to do next.
+**State:**
+- 14 topics, 12,195 entries in the store.
+- All checks pass, and everything is committed and pushed (`fdc9079`).
+- The user's priority is unchanged: presentation and usability, "as usable as
+  possible, with as much information as possible", and better than reading the
+  Wikipedia article.
+
+The three tasks for this session, in order, are below. Read `docs/TOPICS.md`
+first: it holds the topic pipeline, the builder rules and the website input.
+
+### Setup (every session)
+
+```
+OLLAMA_MAX_LOADED_MODELS=1 OLLAMA_NUM_PARALLEL=1 OLLAMA_KEEP_ALIVE=2m ollama serve   # embedding + /api/search
+node datasets/serve.mjs &                                                            # http://localhost:8777
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --disable-gpu --no-sandbox \
+  --disable-popup-blocking --remote-debugging-port=9334 --user-data-dir=/tmp/chrome-atlas \
+  --window-size=1600,1000 about:blank &                                                # for the browser QA
+node datasets/qa/verify.mjs      # 31/31
+node datasets/qa/qa-topic.mjs    # 306/306, no browser
+node datasets/qa/qa-atlas.mjs    # 91/91 (see gotchas)
+node datasets/qa/qa-quiz.mjs     # 43/43
+```
+
+### Task 1: install poppler and read the course's PDF lectures
+
+*Ideas of Physics* (`--site`, David Taylor's Northwestern course) has 22
+lectures. Four are PDFs and were skipped because `pdftotext` isn't installed:
+
+- Summary of Quantum & Nuclear Physics
+- Radioactivity
+- The Five Common Particles
+- Summary of Particle Physics
+
+```
+brew install poppler && which pdftotext
+cd datasets
+node topic.mjs --site "https://faculty.wcas.northwestern.edu/infocom/Ideas/index.html" \
+  --name "Ideas of Physics" --hint physics --group Science --ingest \
+  --credit "David Taylor, Northwestern University (Phyx 103, Ideas of Physics)"
+```
+
+How the code reads PDFs: `lib/site.mjs` `fetchPage()` calls `pdfText()`, which
+runs `pdftotext -layout file -`. `readSite()` then splits the text on blank lines
+into `<p>` paragraphs for the chapter.
+
+What to check after the rebuild:
+- The "could not read 4" line is gone.
+- The four chapters have entries and an intro. Look at them in Learn.
+- `-layout` keeps column spacing and hyphenation; if the paragraphs come out
+  broken, try it without `-layout`.
+- Summary sheets may be tables or bullet lists rather than prose, in which case
+  names will come through but context sentences won't.
+- Run `qa-topic`.
+
+### Task 2: more topics from data already cached (cheap)
+
+**Cost model:**
+- A topic built **without** `--ingest` takes ~2–5 s: one article fetch plus
+  redirects, and everything else comes from the store.
+- **With** `--ingest`, the cost is fetching the linked pages missing from the
+  store: ~7–13 min per topic at the default cap (`--ingest-limit 250`), and
+  network-bound.
+- So prefer articles whose links the store already covers.
+
+**Not built yet, and the first thing to build: coverage-first ranking.** Add
+`--rank coverage` to `topic.mjs --discover`:
+1. For each candidate article, fetch its links (`prop=links`, one request per
+   500 links).
+2. Count how many resolve to DATED store entries, using `findEntry` and
+   `start != null`.
+3. Sort by that count, and append only candidates above a threshold (~60 dated
+   hits) to `topics.txt`.
+4. Build them with `node datasets/topic.mjs --list`, without `--ingest`.
+
+The candidates with the most cached data, because the old CSVs plus "works by
+member creators" give them a timeline full of images with no ingest at all:
+- **Art movements:** the store has 848 artworks with an `artist` facet
+  (`art.csv`), heaviest in Pissarro, Poussin, Canaletto, Turner, Renoir,
+  Boucher, Caravaggio, Rembrandt, Monet, Degas, Matisse and Picasso. Try
+  Baroque, Rococo, Romanticism, Post-Impressionism, Cubism, Neoclassicism and
+  Dutch Golden Age painting:
+  `--discover "category:Art movements" --min-kb 60` found 24 candidates.
+- **Film:** `film.csv` has a `director` facet. Try History of film, Film noir,
+  French New Wave and Italian neorealism.
+- **Science:** `science.csv` has a `scientist` facet. Try Scientific
+  Revolution, History of chemistry and History of astronomy.
+- **Philosophy:** `philosophy.csv` has a `philosopher` facet. Try Western
+  philosophy and Existentialism.
+- **English history:** the crawl covered English battles, the Wars of the
+  Roses and the English Civil War, so try Wars of the Roses, English Civil
+  War and Hundred Years' War.
+- **Countries:** `--discover "links:List of sovereign states" --template "History of {}"`
+  found 201 candidates of at least 40 KB. Rank them by coverage first; most
+  will need `--ingest`.
+
+**After each batch:**
+- Run `qa-topic`.
+- Open each new topic in Learn and Timeline. Look for chapters without an
+  intro, misdetected chronological/thematic articles, places or countries as
+  essentials, and thin topics (< 60 entries on the timeline: ingest them or
+  drop them).
+- Every builder rule so far came from looking at a new kind of article, so
+  expect a few more.
+- `topic.mjs --all` rebuilds every topic from the store after any rule change,
+  in about 2 minutes.
+
+### Task 3: usability of the global quiz and the atlas
+
+The same bar as Topics: more information per screen, fewer clicks, clear
+filtering. Both views predate Topics and haven't had the review Topics got
+(`docs/TOPICS.md`, "The bar").
+
+How to look at them: the review loop that worked for Topics was to screenshot
+every view, list the friction, fix it, and re-screenshot. A ~40-line Chrome
+DevTools driver made the screenshots; it was in `/tmp` and is gone, so rebuild
+it:
+- open a tab: `PUT http://localhost:9334/json/new?about:blank`
+- connect a WebSocket to its `webSocketDebuggerUrl`
+- use `Page.navigate`, `Runtime.evaluate` (with `returnByValue`) and
+  `Page.captureScreenshot`
+- the atlas popup is reachable from the page as `window.open('', 'atlas')`, and
+  exposes `__atlas` (view, filter, `select`, `setQuery`…)
+- `qa-atlas.mjs --shot /tmp/a.png` also works
+
+**Quiz** (`project/features/quiz/`, home → Quiz; `docs/QUIZ.md`). It's the
+cluster quiz over the whole corpus, where the scope is a node of the atlas's
+cluster tree. Known gaps against the topic quiz (`project/features/topic/quiz.js`):
+- No memory: the topic quiz records right/wrong per entry in localStorage
+  (`topic:mastery:<slug>`) and repeats misses.
+- It doesn't show the in-article `context` sentence after answering.
+- Cluster names are a hard way to choose a scope; topics and chapters are
+  easier.
+- Decide whether to merge the two quizzes (shared questions engine
+  `quiz/questions.js`, shared memory), or make the global quiz pick a topic or
+  chapter as its scope.
+
+**Atlas** (`project/features/atlas/`, `docs/ATLAS.md`):
+- **Load time:** 12k points; `atlas.json` is 5.5 MB and `details.json` 11 MB.
+  Measure first load and consider loading details lazily.
+- **Default view:** check what a newcomer sees at the default zoom, and whether
+  a thing can be found in one or two actions.
+- **Toolbar:** crowded. It now has a Topic dropdown (`#courseSel`), and
+  "Topics" was renamed "Tags".
+- **Detail panel:** it doesn't say which topics an entry is in. Add "In
+  topics: England, France" from `topics/members-all.json`, with a link that
+  opens the topic at that entry. The topic side already does this ("Also in",
+  `pendingSelect` in `topic/index.js`).
+- **Topic filter:** fits the time axis to the 5th–95th percentile of the
+  topic's years. Check that this is a good view for thematic topics.
+
+Keep `qa-atlas` and `qa-quiz` passing; `qa-quiz` expects three home doors.
+
+### Gotchas collected this session
+
+- **qa-atlas runs 91 checks, not 92.** "detail image is contain" runs only when
+  the entry it picks has an image, and with the new data it doesn't.
+- **QA closes Chrome tabs.** Open a new tab before driving a page by hand.
+- **Reading a screenshot straight after writing it sometimes fails** (file not
+  found). Read it again.
+- **No text inside inline `onerror`.** Use `onerror="imgRetry(this,'card'|'hide')"`
+  (`project/utils/helpers.js`).
+- **No backticks inside the CSS template in any `styles.js`.**
+- **Wikipedia throttling:** all requests go through `lib/wikilib.mjs`
+  `getJSON` (a shared gap plus a 429 cool-down). Don't add direct `fetch`es to
+  Wikipedia.
+- **Builder rule changes:** after changing `lib/etype.mjs` or `topic.mjs`
+  rules, rebuild every topic (`topic.mjs --all`). They're cached JSON.
+- **Atlas placement is separate:** new store entries only appear on the atlas
+  after `node datasets/atlas.mjs`. `--list --ingest` and `--ingest` run it.
+
+## Earlier state (2026-11-14), kept for reference
 
 ### Done 2026-11-14, session 4: Impressionism fixed, website topics
 
@@ -82,13 +251,10 @@ The aim: make a topic better than reading its Wikipedia article. See
   - The chip rows are gone; Subject is a dropdown.
 - **qa-topic** has 6 new data checks (21 total).
 
-### 0. What to do next
+### 0. What to do next (superseded: see "START HERE: next session" at the top)
 
-1. The user's priority is **presentation and usability**: "as usable as
-   possible, with as much information as possible". Prefer UI work over more
-   pipeline work.
-2. **A second topic, Impressionism** (`node datasets/topic.mjs "Impressionism"
-   --ingest`), to exercise a *thematic* article whose chapters aren't eras.
+1. Done: presentation work on Topics.
+2. Done: Impressionism and 12 more topics.
 3. Cleanup still open:
    - `thumbnails/` (8.2 MB, 643 files) and `datasets/scripts/build_thumbnails.js`
      are unused since the lane timeline was deleted. They weren't removed
