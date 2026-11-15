@@ -14,11 +14,6 @@
       "French Revolution"
     ],
     "unkey": [
-      "A siphon is a fluid-filled tube that allows fluids at a higher level",
-      "Otto von Guericke, Mayor of Magdeburg, Germany",
-      "Joseph Fraunhofer, a German lens-maker and optical scientist, has",
-      "Henri Becquerel, a French physicist, reads of William Roentgen's",
-      "It has long been thought that the Earth is no more than a few tens",
       "Canada"
     ]
   },
@@ -111,6 +106,212 @@
       "Fish",
       "Sickle",
       "Nature"
+    ]
+  },
+  "mathematics": {
+    "unkey": [
+      "Ancient Egypt",
+      "ArXiv",
+      "Cicero",
+      "Hellenistic period",
+      "Indus Valley Civilisation",
+      "Julius Caesar",
+      "Maya civilization",
+      "Middle Ages",
+      "Pre-Columbian era",
+      "Roman Empire",
+      "Seleucid Empire",
+      "Sumer"
+    ]
+  },
+  "chemistry": {
+    "unkey": [
+      "Agriculture",
+      "Ancient Egypt",
+      "Ancient Greece",
+      "Ancient history",
+      "Beer",
+      "Ben Jonson",
+      "Bronze Age",
+      "Carthage",
+      "Dante Alighieri",
+      "Divine Comedy",
+      "Geoffrey Chaucer",
+      "Islamic Golden Age",
+      "Roman Republic",
+      "Swedish Pomerania",
+      "Warring States period"
+    ]
+  },
+  "biology": {
+    "unkey": [
+      "Agriculture",
+      "Ancient history",
+      "Astronomy",
+      "Babylonia",
+      "Middle Ages",
+      "Scientific Revolution"
+    ]
+  },
+  "medicine": {
+    "unkey": [
+      "Akkadian Empire",
+      "Ancient Egypt",
+      "Ancient Greek",
+      "Ancient history",
+      "Byzantine Empire",
+      "Common Era",
+      "Henry V",
+      "Herodotus",
+      "Hyderabad",
+      "Jin dynasty",
+      "Nature",
+      "Science",
+      "Spanish conquest of the Aztec Empire",
+      "Sumer",
+      "World War I",
+      "World War II"
+    ]
+  },
+  "astronomy": {
+    "unkey": [
+      "Agriculture",
+      "Ancient Greece",
+      "Bronze Age",
+      "Charlemagne",
+      "Classical antiquity",
+      "Common Era",
+      "Geography",
+      "Gregory of Tours",
+      "Hellenistic period",
+      "Julius Caesar",
+      "Linear Pottery culture",
+      "Mammoth",
+      "Mesolithic",
+      "Plato",
+      "Reflecting telescope",
+      "Thirty Years' War",
+      "Urnfield culture"
+    ]
+  },
+  "computing": {
+    "unkey": [
+      "Age of Discovery",
+      "Astronomy",
+      "HP-25",
+      "High Middle Ages",
+      "Isaac Newton",
+      "Lee de Forest",
+      "Ludwig Wittgenstein",
+      "Nobel Prize",
+      "Richard Feynman",
+      "Rope",
+      "Sumer",
+      "Walther Bothe"
+    ]
+  },
+  "geology": {
+    "unkey": [
+      "Ancient Greece",
+      "Denis Diderot",
+      "Encyclopédie",
+      "Immanuel Kant",
+      "Industrial Revolution",
+      "Robert FitzRoy"
+    ]
+  },
+  "geography": {
+    "unkey": [
+      "Ancient Egypt",
+      "Assyria",
+      "Elam",
+      "English Civil War",
+      "Han dynasty",
+      "Homer",
+      "House of Normandy",
+      "Iliad",
+      "Jean-Jacques Rousseau",
+      "Khmer Empire",
+      "Northern and Southern dynasties",
+      "Reformation",
+      "Republic of Venice",
+      "Song dynasty",
+      "Sui dynasty",
+      "Three Kingdoms",
+      "Warring States period"
+    ]
+  },
+  "history-of-earth": {
+    "unkey": [
+      "Geology",
+      "Recombination",
+      "Western Australia"
+    ]
+  },
+  "geologic-time": {
+    "unkey": [
+      "19th century",
+      "20th century",
+      "Ancient Greece",
+      "Geography",
+      "Middle Ages"
+    ]
+  },
+  "history-of-life": {
+    "unkey": [
+      "Concentration",
+      "Hydrogen",
+      "Madagascar",
+      "Western Australia"
+    ]
+  },
+  "ice-ages": {
+    "unkey": [
+      "Cardiff University",
+      "Illinois",
+      "Iowa",
+      "Minnesota",
+      "Nature",
+      "Syracuse, New York",
+      "Thuringia"
+    ]
+  },
+  "dinosaurs": {
+    "unkey": [
+      "Chang Qu",
+      "Film",
+      "Isaac Newton",
+      "Jin dynasty",
+      "Madagascar",
+      "New Mexico"
+    ]
+  },
+  "plate-tectonics": {
+    "unkey": [
+      "Alexander von Humboldt",
+      "Augustus Edward Hough Love",
+      "Beno Gutenberg",
+      "Centrifugal force",
+      "Charles Richter",
+      "Density",
+      "Frank Press",
+      "Hannes Alfvén",
+      "James David Forbes",
+      "James Van Allen",
+      "Loránd Eötvös",
+      "Martin Hotine",
+      "Mikhail Molodenskii",
+      "Nature",
+      "Tasmania",
+      "Veikko Aleksanteri Heiskanen",
+      "Walter Munk",
+      "William Bowie",
+      "World War II"
+    ]
+  },
+  "cambrian-explosion": {
+    "unkey": [
+      "Concentration"
     ]
   }
 }

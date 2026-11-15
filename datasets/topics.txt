@@ -30,3 +30,82 @@ History of physics | name=Physics | group=Science
 # Other websites (any URL that is not Wikipedia): the site gives chapters and text,
 # Wikipedia gives each entry's dates, images and lead.
 https://faculty.wcas.northwestern.edu/infocom/Ideas/index.html | name=Ideas of Physics | group=Science | hint=physics | credit=David Taylor, Northwestern University (Phyx 103, Ideas of Physics)
+
+# Life & Earth
+History of Earth | name=History of Earth | group=Life & Earth
+Geologic time scale | name=Geologic time | group=Life & Earth
+History of life | name=History of life | events=Timeline of life | group=Life & Earth
+Human evolution | events=Timeline of human evolution | group=Life & Earth
+Ice age | name=Ice ages | group=Life & Earth
+Dinosaur | name=Dinosaurs | group=Life & Earth
+Plate tectonics | group=Life & Earth
+Cambrian explosion | group=Life & Earth
+
+# Mathematics & the sciences
+History of mathematics | name=Mathematics | events=Timeline of mathematics | group=Science
+History of chemistry | name=Chemistry | events=Timeline of chemistry | group=Science
+History of biology | name=Biology | events=Timeline of biology and organic chemistry | group=Science
+History of medicine | name=Medicine | events=Timeline of medicine and medical technology | group=Science
+History of astronomy | name=Astronomy | events=Timeline of astronomy | group=Science
+History of computing | name=Computing | group=Science
+History of geology | name=Geology | group=Science
+History of geography | name=Geography | group=Science
+
+# Civilisations (batch 3)
+Mesopotamia | group=Ancient world
+Ancient Greece | events=Timeline of ancient Greece | group=Ancient world
+Indus Valley Civilisation | name=Indus Valley | group=Ancient world
+Achaemenid Empire | name=Persian Empire (Achaemenid) | group=Ancient world
+Ancient Carthage | name=Carthage | group=Ancient world
+Kingdom of Kush | name=Kush | group=Ancient world
+Sasanian Empire | group=Ancient world
+Byzantine Empire | group=Empires & eras
+Middle Ages | group=Empires & eras
+Viking Age | group=Empires & eras
+Holy Roman Empire | group=Empires & eras
+Islamic Golden Age | group=Empires & eras
+Mongol Empire | events=Timeline of the Mongol Empire | group=Empires & eras
+Ottoman Empire | events=Timeline of the Ottoman Empire | group=Empires & eras
+Mughal Empire | group=Empires & eras
+Mali Empire | group=Empires & eras
+Maya civilization | name=Maya | group=Americas
+Aztec Empire | group=Americas
+Inca Empire | group=Americas
+
+# Continents and regions (batch 4)
+History of Africa | name=Africa | group=Continents & regions
+History of Europe | name=Europe | group=Continents & regions
+History of Asia | name=Asia | group=Continents & regions
+History of the Middle East | name=Middle East | group=Continents & regions
+History of Latin America | name=Latin America | group=Continents & regions
+History of Oceania | name=Oceania | group=Continents & regions
+
+# Countries (batch 4)
+History of India | name=India | group=Countries
+History of Germany | name=Germany | group=Countries
+History of Russia | name=Russia | group=Countries
+History of Italy | name=Italy | group=Countries
+History of Spain | name=Spain | group=Countries
+History of Iran | name=Iran | group=Countries
+History of Korea | name=Korea | group=Countries
+History of Mexico | name=Mexico | group=Countries
+History of Brazil | name=Brazil | group=Countries
+History of Egypt | name=Egypt | group=Countries
+History of Turkey | name=Turkey | group=Countries
+History of Greece | name=Greece | group=Countries
+History of Poland | name=Poland | group=Countries
+History of the Netherlands | name=Netherlands | group=Countries
+History of Canada | name=Canada | group=Countries
+History of Australia | name=Australia | group=Countries
+History of Indonesia | name=Indonesia | group=Countries
+History of Vietnam | name=Vietnam | group=Countries
+History of Pakistan | name=Pakistan | group=Countries
+History of Nigeria | name=Nigeria | group=Countries
+History of South Africa | name=South Africa | group=Countries
+History of Ethiopia | name=Ethiopia | group=Countries
+History of Argentina | name=Argentina | group=Countries
+History of Ireland | name=Ireland | group=Countries
+History of Scotland | name=Scotland | group=Countries
+History of Israel | name=Israel | group=Countries
+History of Ukraine | name=Ukraine | group=Countries
+History of Iraq | name=Iraq | group=Countries

@@ -11,37 +11,85 @@ Read them only for the history of a specific decision.
 
 ## State (2026-11-14, end of session 6)
 
-- 14 topics; about 12,200 dated store entries, plus about 940 undated ideas in
-  `atlas/ideas.jsonl`.
+- 30 topics built (batches 3–4 in progress); about 14,000 dated store entries, plus
+  undated ideas in `atlas/ideas.jsonl`.
 - Checks: verify 31/31, qa-topic 320/320, qa-atlas 91/91, qa-quiz 45/45.
 - `topic-report.mjs`: about 25 minor findings.
 - Committed and pushed.
 
-### Session 7 (this one, in progress)
+### Session 7 (ended mid-work: START HERE)
 
+Done and pushed:
 - **The home page is three doors again** (Topics, Atlas, Quiz), plus a search
   box and a Review banner. The topic list is at `#/topics`.
-- **Search** (`#/search/<q>`) builds a page from the whole store for a year,
-  a span or words (`project/features/topic/search.js`, `lib/lite.mjs`). Inside
-  a topic, a year filters by date.
-- **Quiz settings:** length 10/20/50/endless; question kinds (Order, Recall,
-  Ideas, Era) mixed at random; focus (everything / weak spots / new only); a
-  year span. Sessions end with a score and a list of misses. Saved as
-  `quiz:settings:v1`.
-- **Titles:** `datasets/titles.json` gives 898 mined events short titles.
-- **Batches running in the background:** 1–2 (16 Life & Earth and science
-  topics), then 3 (19 civilisations, `/tmp/batch3.txt`), then 4 (6 regions +
-  28 countries, `/tmp/batch4.txt`), via `/tmp/run34.sh` under caffeinate.
-  Logs are `/tmp/batch12.log`, `/tmp/batch3.log` and `/tmp/batch4.log`.
-  `/tmp/batch34.done` appears at the end.
+- **Search** (`#/search/<q>`, `project/features/topic/search.js`, and
+  `lib/lite.mjs` → `topics/store-lite.json`):
+  - years and spans ("1294", "1290s", "13th century", "66 million years ago")
+    build a page from the whole store;
+  - words give a timeline of matches;
+  - inside a topic, a year filters by date.
+- **Quiz settings:** length, question kinds (Order/Recall/Ideas/Era) mixed at
+  random, focus (everything / weak spots / new), and years. Sessions end with
+  a summary. Stored as `quiz:settings:v1`.
+- **`datasets/titles.json`:** short titles for 898 mined events in the first
+  14 topics. `topic.mjs` applies them and keeps `origTitle`.
 
-  After each batch:
-  - `--ideas` for the new topics;
-  - `topic-report`, then overrides;
-  - key points in `topic-notes/`;
-  - titles for new mined events in `titles.json`;
-  - QA, then commit, including `datasets/atlas/*`.
-- `readEntries` now skips a half-written LAST line (a build during an ingest).
+Done but NOT committed (commit early next session):
+- **Events first.**
+  - On site timeline pages, a person named only on timeline lines is no
+    longer a card (`tlOnly`); the event is the card.
+  - Mined events: twins of linked events are merged; each borrows the
+    picture of what it names (a case-sensitive title match, `about`); they are
+    scored by kind of happening (`minedBase`: battles and inventions up,
+    births down).
+  - Each chapter's essentials are now at least 50% events and at most 40%
+    people.
+  - Result: the Dateline of Thermodynamics is now events ("Pascal's mountain
+    barometer experiment"), and England has 37 mined events among its
+    essentials (was 4).
+- **Works by member creators** now covers artistic creators only (no
+  scientists or philosophers): Darwin's and Aristotle's books were turning up
+  in unrelated topics.
+- **`topic-overrides.json`:** unkey lists for the 16 batch 1–2 topics.
+- **`lib/store.mjs` `readEntries`** skips a half-written last line.
+- A `topic.mjs --all` was ABORTED midway, so topic files may be mixed old and
+  new. First thing: run `node datasets/topic.mjs --all` (about 5 minutes for
+  30+ topics), then `qa-topic` and `topic-report`.
+
+Batches (background via `/tmp/run34.sh` under caffeinate; `/tmp` may be gone
+after a reboot):
+- **1–2: built**, 16 topics:
+  - Life & Earth: History of Earth, Geologic time, History of life, Human
+    evolution, Ice ages, Dinosaurs, Plate tectonics, Cambrian explosion;
+  - Science: Mathematics, Chemistry, Biology, Medicine, Astronomy, Computing,
+    Geology, Geography.
+
+  Still to do for them:
+  - key points in `topic-notes/<slug>.json`;
+  - titles for their mined events (History of life, Human evolution,
+    Mathematics, Biology and Medicine have many sentence titles);
+  - fix Plate tectonics failing qa-topic's "most key links have an
+    in-article sentence" check (37/56).
+- **3 (19 civilisations, `/tmp/batch3.txt`):** was ingesting topic 11 of 19.
+  Check `/tmp/batch3.log`.
+- **4 (6 regions + 28 countries, `/tmp/batch4.txt`):** starts after 3. Check
+  `/tmp/batch4.log`; `/tmp/batch34.done` marks the end.
+
+  If `/tmp` is lost, re-run the pending ones:
+  `node datasets/topic.mjs --list --ingest` (topics.txt; built topics are
+  skipped).
+
+Per-batch review checklist:
+1. `topic.mjs --all` (applies titles and overrides).
+2. `topic-report.mjs`, plus a scan of each topic's essentials (in history-of-X
+   articles, look for eras, civilisations, journals and places mentioned in
+   passing), then add unkeys to `topic-overrides.json`.
+3. Key points: 3–5 per chapter in `topic-notes/<slug>.json` (titles match
+   with whitespace normalised).
+4. Titles: dump mined events with 4+ word titles (see `docs/TOPICS.md`,
+   "Titles for mined events"), write short titles, merge into `titles.json`.
+5. QA: `verify`, `qa-topic`, `qa-atlas`, `qa-quiz` (49 checks), then commit,
+   including `datasets/atlas/*`.
 
 ### Session 6
 

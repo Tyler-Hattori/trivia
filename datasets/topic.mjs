@@ -585,16 +585,19 @@ async function siteArticle(url){
     }
     if(c.timeline){
       events.push(c.url);
-      // "1814 - Joseph Fraunhofer, a German lens-maker…": the person, with that
-      // line as the sentence that mentions him.
+      // "1814 - Joseph Fraunhofer, a German lens-maker…": the line is an EVENT
+      // (mined from this page). The person it names is resolved so the event
+      // can borrow his picture and link to him, but a person named only on a
+      // timeline line is not a card of his own (`tl`): the Dateline of
+      // Thermodynamics was 21 people cards carrying the events as captions.
       for(const line of textOf(c.html).split('\n')){
         const name = leadingName(line);
         if(!name) continue;
         const t = await toWikipedia([name], { hint: topicHint });
-        if(t) sec.paras.push({ tag: 'p', text: line, links: [{ target: t, at: line.indexOf(name), len: name.length }] });
+        if(t) sec.paras.push({ tag: 'p', text: line, links: [{ target: t, at: line.indexOf(name), len: name.length, tl: true }] });
       }
     }
-    for(const p of sec.paras) for(const l of p.links) sec.links.push({ target: l.target, weight: 1, hat: false });
+    for(const p of sec.paras) for(const l of p.links) sec.links.push({ target: l.target, weight: l.tl ? 0.3 : 1, hat: false, tl: !!l.tl });
     sections.push(sec);
   }
   console.log(`\r  resolved ${[...hrefTitle.values()].filter(Boolean).length} of ${hrefTitle.size} linked pages to Wikipedia; ${events.length} timeline pages`);
@@ -735,10 +738,11 @@ console.log(`  ${art.title}: ${chapters.length} chapters, ${sections.reduce((s, 
 
 // Per canonical title: weighted mentions, which chapters/subsections, lead mention.
 const mention = new Map();
-const credit = (t, w, ch, sub, hat) => {
+const credit = (t, w, ch, sub, hat, tl = false) => {
   let m = mention.get(t);
-  if(!m) mention.set(t, (m = { weight: 0, count: 0, lead: false, hat: false, chapters: new Map(), firstChapter: ch, firstSub: sub }));
+  if(!m) mention.set(t, (m = { weight: 0, count: 0, lead: false, hat: false, chapters: new Map(), firstChapter: ch, firstSub: sub, prose: 0 }));
   m.galleryOnly = false;
+  if(!tl) m.prose++;
   m.weight += w; m.count++;
   if(hat) m.hat = true;
   if(ch == null) m.lead = true;
@@ -757,7 +761,7 @@ for(const sec of sections.filter((x) => GALLERY.test(x.title))){
   }
 }
 chapters.forEach((c, ci) => {
-  c.sections.forEach((s, k) => { for(const l of s.links) credit(canon(l.target), l.weight, ci, k === 0 ? null : s.title, l.hat); });
+  c.sections.forEach((s, k) => { for(const l of s.links) credit(canon(l.target), l.weight, ci, k === 0 ? null : s.title, l.hat, l.tl); });
 });
 mention.delete(art.title);   // the article linking to itself
 
@@ -924,6 +928,7 @@ const out = [...items.values()].map(({ e, m, via, t }) => ({
   mentions: m ? m.count : 0,
   weight: m ? m.weight : 0,
   lead: !!m?.lead, hat: !!m?.hat,
+  tlOnly: !!m && !m.prose,       // named only at the head of timeline lines
   mentionedIn: m ? [...m.chapters.keys()] : [],
   chapterOfMention: m ? ([...m.chapters].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null) : null,
   sub: m?.firstSub || null,
@@ -977,7 +982,11 @@ for(let i = out.length - 1; i >= 0; i--){
  * whose creator facet (artist, director, author, scientist…) names a member
  * person joins, under that person, up to WORKS_PER_PERSON each.
  */
-const CREATOR_FACETS = ['artist', 'director', 'author', 'composer', 'creator', 'architect', 'scientist', 'philosopher'];
+// Artistic creators only. With 'scientist' and 'philosopher' too, Darwin's *The
+// Structure and Distribution of Coral Reefs* turned up in Dinosaurs and
+// Aristotle's *Nicomachean Ethics* in Geologic time: a scientist's works are
+// not what a topic that mentions him is about, a painter's are.
+const CREATOR_FACETS = ['artist', 'director', 'author', 'composer', 'creator', 'architect'];
 const WORKS_PER_PERSON = 14;
 const nameKey = (s) => String(s || '').toLowerCase().normalize('NFKD').replace(/\([^)]*\)/g, '').replace(/[^a-z]/g, '');
 const people = new Map();
@@ -1094,7 +1103,53 @@ for(const it of out){
   it.onTimeline = !it.dateSuspect && it.type !== 'concept' &&
     !((it.type === 'place' || it.type === 'group') && it.dateSource === 'lead-text') &&
     // An open span stretching to today is not a date (*Catholic Church*).
-    !(it.openEnded && it.type !== 'person');
+    !(it.openEnded && it.type !== 'person') &&
+    // A person named only by timeline lines: the events are the cards.
+    !(it.tlOnly && it.type === 'person');
+}
+
+/*
+ * Mined events, made readable at a glance.
+ *
+ * 1. One card per happening. "Battle of Bosworth Field" mined from the timeline
+ *    page and the article's own link to *Battle of Bosworth Field* are the same
+ *    thing a year apart at most: the linked entry stays (it has a picture and a
+ *    lead) and takes the mined line as its sentence if it had none.
+ * 2. A picture. A mined line has none; it borrows the picture of the member it
+ *    is about, the longest title it names ("Birth of Henry VIII" → Henry VIII,
+ *    "Blaise Pascal, a French mathematician…" → Pascal), and links to it.
+ */
+{
+  const words = (t) => new Set(String(t).toLowerCase().normalize('NFKD').replace(/[^\w\s]/g, ' ').split(/\s+/).filter((w) => w.length > 2 && !/^(the|and|of|in|at|on|for|with|first|second)$/.test(w)));
+  const sim = (a, b) => { const A = words(a), B = words(b); if(!A.size || !B.size) return 0; let n = 0; for(const w of A) if(B.has(w)) n++; return n / Math.min(A.size, B.size); };
+  const linkedEvents = out.filter((it) => it.via === 'link' && it.onTimeline && (it.type === 'event' || it.type === 'work'));
+  const firstLine = (it) => String(it.excerpt || '').split(/(?<=[.!?])\s+(?=[A-Z0-9])/)[0] || '';
+  let merged = 0;
+  for(let i = out.length - 1; i >= 0; i--){
+    const ev = out[i];
+    if(ev.via !== 'events') continue;
+    const twin = linkedEvents.find((L) => Math.abs(L.start - ev.start) <= 1 && sim(L.title, ev.title) >= 0.75);
+    if(twin){
+      if(!twin.context) twin.context = firstLine(ev);
+      out.splice(i, 1); merged++;
+    }
+  }
+  const named = out.filter((it) => it.via !== 'events' && it.title.replace(/\s*\(.*\)$/, '').length >= 5)
+    // Case-sensitive: names are capitalised, and "the mercury falls" in a
+    // barometer experiment is not the planet Mercury.
+    .map((it) => ({ it, re: new RegExp(`\\b${it.title.replace(/\s*\(.*\)$/, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'u') }))
+    .sort((a, b) => b.it.title.length - a.it.title.length);
+  let lent = 0;
+  for(const ev of out){
+    if(ev.via !== 'events') continue;
+    const text = `${ev.title} ${firstLine(ev)}`;
+    const hit = named.find(({ it, re }) => it.image && re.test(text));
+    if(hit){
+      ev.about = hit.it.id;
+      if(!ev.image){ ev.image = hit.it.image; ev.imageFrom = hit.it.id; lent++; }
+    }
+  }
+  if(merged || lent) console.log(`  mined events: ${merged} merged into the article's own entries, ${lent} given the picture of what they are about`);
 }
 
 // --- in-context sentence & related entries ------------------------------------
@@ -1144,12 +1199,29 @@ const medFame = knownFame[Math.floor(knownFame.length / 2)] || 0.5;
 for(const it of out) if(it.via === 'link' && !it.fame){ it.fame = medFame; it.fameGuessed = true; }
 
 const maxW = Math.max(1, ...out.map((it) => it.weight));
+/*
+ * A mined event's worth: what kind of happening it is, and how much the
+ * article cares about what it is about. A battle, a treaty, an invention or a
+ * founding is history; "Birth of Henry VI" is a line in a genealogy (his own
+ * card covers it). Was a flat 0.32, so England's 154 mined events gave 4 of its
+ * 92 essentials, against 44 people.
+ */
+const NOTABLE = /\b(battle|war|treaty|peace|revolution|revolt|rebellion|uprising|invasion|invades|conquest|conquers|siege|massacre|founded|founds|founding|established|invent\w*|discover\w*|experiment|theory|law|act|charter|constitution|crowned|coronation|becomes (king|queen|emperor|president|prime minister|shogun)|assassinat\w*|executed|execution|independence|union|abolish\w*|annex\w*|surrender\w*|armistice|earthquake|eruption|plague|famine|epidemic|pandemic|first|publishes?|opens?|reform\w*|restoration|unification|reunif\w*)\b/i;
+function minedBase(it){
+  const text = `${it.title} ${String(it.excerpt || '').slice(0, 200)}`;
+  let b = 0.3;
+  if(NOTABLE.test(it.title) || NOTABLE.test(text.slice(0, 160))) b += 0.16;
+  if(/^(birth of|death of)\b|\bis born\b/i.test(it.title)) b *= 0.4;
+  const about = it.about && out.find((x) => x.id === it.about);
+  if(about) b += 0.25 * Math.min(1, (about.weight || 0) / Math.max(1, maxW) * 3 + (about.fame || 0) * 0.5);
+  return Math.min(0.75, b);
+}
 for(const it of out){
   const mention = Math.log1p(it.weight) / Math.log1p(maxW) + (it.hat ? 0.25 : 0) + (it.lead ? 0.15 : 0);
   // A mined event has no links and no QID; its signal is that an editor put it
   // in a curated timeline. A flat middling score, so it fills a chapter the
   // article is thin on without displacing the article's own headline links.
-  const base = it.via === 'events' ? 0.32 : 0.5 * mention + 0.35 * it.fame;
+  const base = it.via === 'events' ? minedBase(it) : 0.5 * mention + 0.35 * it.fame;
   let imp = base * (0.55 + 0.45 * (TYPE_W[it.type] ?? 0.5));
   /*
    * Umbrella penalty: an entry whose span dwarfs its chapter is context for the
@@ -1230,7 +1302,24 @@ for(const [, arr] of byCh){
   const eligible = arr.filter((it) => (!['place', 'group', 'concept'].includes(it.type) || it.hat) && !titleIn(OVR.unkey, it));
   // A chapter of nothing but places ("Legacy") still gets its best two.
   if(!eligible.length) eligible.push(...arr.filter((it) => !titleIn(OVR.unkey, it)).slice(0, 2));
-  const keyIds = new Set(eligible.slice(0, quota).map((it) => it.id));
+  /*
+   * What happened comes first: at least half of a chapter's essentials are
+   * events when it has them, and people at most 40%. Reading down a timeline
+   * should be a sequence of things that happened, with the people among them.
+   */
+  const isEv = (it) => it.type === 'event' && !/^(birth|death) of\b/i.test(it.title);
+  const picked = eligible.filter(isEv).slice(0, Math.ceil(quota * 0.5));
+  const personCap = Math.ceil(quota * 0.4);
+  let persons = 0;
+  for(const it of eligible){
+    if(picked.length >= quota) break;
+    if(picked.includes(it)) continue;
+    if(it.type === 'person'){ if(persons >= personCap) continue; persons++; }
+    picked.push(it);
+  }
+  // Not enough of anything else: fill with the people after all.
+  for(const it of eligible){ if(picked.length >= quota) break; if(!picked.includes(it)) picked.push(it); }
+  const keyIds = new Set(picked.map((it) => it.id));
   arr.forEach((it) => { it.key = keyIds.has(it.id); });
 }
 for(const it of out) if(!it.onTimeline) it.key = false;
