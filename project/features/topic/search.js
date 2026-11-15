@@ -131,8 +131,11 @@ function datePage(items, lo, hi){
     if(endsIn) out.ended.push(r);
     if(!startsIn && !endsIn && r.s < lo && (e == null ? false : e > hi) && (e - r.s) < 2000 + Math.abs(lo) * 0.5) out.ongoing.push(r);
   }
-  // Best first: in a topic, then famous, then has a picture.
-  const score = (r) => (r.x ? 20 : 0) + (r.f || 0) * 2 + (r.im ? 1 : 0);
+  // Best first: in a topic, then things that HAPPENED, then famous, then has a
+  // picture. A place or group dated by its founding (Iraq, 1932) is the weakest
+  // kind of happening, however famous the place.
+  const kind = (r) => r.ty === 'event' ? 3 : r.ty === 'place' || r.ty === 'group' ? -3 : 0;
+  const score = (r) => (r.x ? 20 : 0) + kind(r) + (r.f || 0) * 2 + (r.im ? 1 : 0);
   for(const k of Object.keys(out)) out[k].sort((a, b) => score(b) - score(a) || a.s - b.s);
   // Under way: the specific before the vast. A war or a reign says more about
   // 1294 than "the Middle Ages" or "the Goths (1–1475)".

@@ -1109,6 +1109,40 @@ for(const it of out){
 }
 
 /*
+ * A place or group is dated by its founding: Wikidata gives *Iraq* 1932, its
+ * independence. Mentioned in "Babylonian" mathematics ("Mesopotamia (modern
+ * Iraq)") it put a flag on the timeline and topped the search page for 1932.
+ * Chapters with years catch this above; a chapter WITHOUT years (most
+ * history-of-a-science articles) is measured by its other dated members.
+ * A present-day country far from their middle is not on the timeline.
+ */
+const PRESENT_STATE = /(^|\|)(sovereign state|country|constituent country of the United Kingdom|transcontinental country|landlocked country)(\||$)/;
+{
+  const THING = new Set(['place', 'group', 'concept']);
+  const era = new Map();
+  chapters.forEach((c, ci) => {
+    if(c.from != null) return;
+    const ys = out.filter((x) => x.chapter === ci && x.onTimeline && !THING.has(x.type)).map(anchorYear).sort((a, b) => a - b);
+    if(ys.length < 3) return;
+    const q = (f) => ys[Math.min(ys.length - 1, Math.floor(f * ys.length))];
+    const mid = ys.length % 2 ? ys[(ys.length - 1) / 2] : (ys[ys.length / 2 - 1] + ys[ys.length / 2]) / 2;
+    era.set(ci, { mid, tol: Math.max(150, 0.5 * (q(0.75) - q(0.25))) });
+  });
+  let off = 0;
+  for(const it of out){
+    if(!it.onTimeline || (it.type !== 'place' && it.type !== 'group') || it.via === 'events') continue;
+    // Only a present-day country: its date is the modern state's founding.
+    // A university, an ancient city or a historical country is dated by what
+    // made it matter, and a thin chapter's median is too rough to overrule it
+    // (it took Babylonia off the Babylonian chapter).
+    if(!PRESENT_STATE.test([].concat(it.facets?.instanceOf || []).join('|'))) continue;
+    const e = era.get(it.chapter);
+    if(e && Math.abs(anchorYear(it) - e.mid) > e.tol){ it.onTimeline = false; it.dateSuspect = true; off++; }
+  }
+  if(off) console.log(`  ${off} present-day countr${off === 1 ? 'y' : 'ies'} off the timeline: dated far from their chapter's era`);
+}
+
+/*
  * Mined events, made readable at a glance.
  *
  * 1. One card per happening. "Battle of Bosworth Field" mined from the timeline
