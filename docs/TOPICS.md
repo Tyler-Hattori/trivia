@@ -324,6 +324,16 @@ How this is enforced:
 - The miner reads three layouts: tables, lines that start with their date,
   and paragraphs under a heading that is only a date (`=== c. 450 BC ===`,
   as in *Timeline of chemistry* and *Timeline of astronomy*).
+- **Cards** (`layout.js` `cardTiers`): most entries are one-row chips (date over
+  title). A three-row picture card only for the top essentials with a picture
+  of their OWN; a borrowed picture (`imageFrom`) never makes one. People are
+  chips with a round portrait and a life line (grey, end ticks) above them; only
+  the top ~22% of essential people get a picture card.
+- **People <-> events** (`linkPeople` in `index.js`): `about`, `by`, a borrowed
+  picture, or the title naming the person (full name, or a surname no other
+  person in the topic has). Selecting either side lights up the other in
+  amber; the panel shows "By" chips on events and "<person> on this timeline"
+  on people.
 - Check with the person/event counts of each topic's essentials after every
   batch (see HANDOFF).
 - `resolveTitle` fuzzy-matches: "Timeline of geography" silently became

@@ -27,7 +27,7 @@
  */
 
 import { injectStyles } from './styles.js';
-import { GEO, makeScale, ticks, pack, anchorYear, fmtYear, fmtRange, summary } from './layout.js';
+import { GEO, makeScale, ticks, pack, anchorYear, fmtYear, fmtRange, summary, cardTiers, rowsOf, lineSpan, borrowedPortrait, setNarrow } from './layout.js';
 import { bm25Index, docText } from '../../../datasets/lib/textsearch.mjs';
 import { renderQuiz, loadMastery, isKnown, isDue, dueSummary } from './quiz.js';
 import { renderSearch, parseWhen } from './search.js';
@@ -102,8 +102,48 @@ async function loadTopic(slug){
   const t = await getJSON(`datasets/topics/${slug}.json`);
   t.byId = new Map(t.items.map((it) => [it.id, it]));
   t.items.forEach((it) => { it.anchor = anchorYear(it); });
+  linkPeople(t);
   cache.set(slug, t);
   return t;
+}
+
+/**
+ * People <-> what they did, within one topic. `it.who`: the people an entry is
+ * by or about; `it.did`: a person's entries, oldest first. From the builder's
+ * own links (`about`, `by`, a borrowed picture) and from the title naming the
+ * person ("Archimedes' principle", "Newton's laws of motion"), by full name or
+ * by a surname that no other person in the topic shares.
+ */
+function linkPeople(t){
+  const people = t.items.filter((it) => it.type === 'person');
+  const isPerson = (id) => t.byId.get(id)?.type === 'person';
+  const surname = new Map();
+  const count = new Map();
+  for(const p of people){
+    const w = String(p.title).replace(/\s*\(.*\)$/, '').split(/\s+/);
+    const last = w[w.length - 1];
+    if(w.length > 1 && last.length >= 4 && /^[A-Z][a-z]/.test(last) && !/^[IVXL]+$/.test(last)){
+      surname.set(p.id, last); count.set(last, (count.get(last) || 0) + 1);
+    }
+  }
+  const pats = people.map((p) => {
+    const names = [String(p.title).replace(/\s*\(.*\)$/, '')];
+    const s = surname.get(p.id);
+    if(s && count.get(s) === 1) names.push(s);
+    const esc = names.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    return [p, new RegExp(`(^|[^\\p{L}])(${esc.join('|')})($|[^\\p{L}])`, 'u')];
+  });
+  for(const it of t.items){
+    it.who = []; it.did = it.did || [];
+  }
+  for(const it of t.items){
+    if(it.type === 'person') continue;
+    const who = new Set([it.about, it.by, it.imageFrom].filter((id) => id && id !== it.id && isPerson(id)));
+    for(const [p, re] of pats) if(re.test(it.title)) who.add(p.id);
+    it.who = [...who];
+    for(const id of it.who) t.byId.get(id).did.push(it.id);
+  }
+  for(const p of people) p.did.sort((a, b) => (t.byId.get(a).start ?? 0) - (t.byId.get(b).start ?? 0));
 }
 
 /** entry id -> the topics it is in, for entries in two or more (topic.mjs). */
@@ -769,13 +809,14 @@ function highlightRail(){
 
 function drawTimeline(){
   const host = root.querySelector('#tpScroll');
+  setNarrow(narrow());
   const keepX = host.scrollLeft, keepW = host.scrollWidth || 1;
   const items = visibleItems();
   const scale = makeScale(items, V.ppy);
-  const { pos, laneCount } = pack(items, scale);
-  const laneH = GEO.CARD_H + GEO.LANE_GAP;
+  const tiers = cardTiers(items, (id) => T.byId.get(id));
+  const { pos, laneCount } = pack(items, scale, { rows: rowsOf(tiers), line: (it) => lineSpan(it, scale) });
   const top = GEO.BANDS_H + 16;
-  const height = top + laneCount * laneH + 60;
+  const height = top + laneCount * GEO.UNIT + 60;
 
   // Chapter bands: one row, or two when a chapter overlaps its neighbours.
   // Bands are eras. In a thematic article ("Female Impressionists", "Beyond
@@ -805,28 +846,35 @@ function drawTimeline(){
   const chColor = new Map(T.chapters.map((c) => [c.id, c.color]));
   const cards = items.map((it) => {
     const p = pos.get(it.id);
-    const y = top + p.lane * laneH;
+    const y = top + p.lane * GEO.UNIT;
     const c = chColor.get(it.chapter) || '#64748b';
     const dim = V.matches && !V.matches.has(it.id);
-    // A duration bar only when it is short enough to read as this card's own
-    // extent. A *Middle Ages* bar crossing half the canvas is the chapter band's
-    // job, and drawn across the lanes it is just clutter.
-    const sw = it.kind === 'span' && it.end != null ? scale.x(it.end) - scale.x(it.start) : 0;
-    const span = sw > 2 && sw <= GEO.CARD_W * 4 && it.type !== 'person'
-      ? `<div class="tp-span" style="left:${scale.x(it.start)}px;width:${sw}px;top:${y - 6}px;background:${c}"></div>` : '';
-    const known = isKnown(V.mastery[it.id]);
-    return `${span}
-      <div class="tp-card ${dim ? 'dim' : ''} ${it.key ? '' : 'minor'} ${V.selected === it.id ? 'sel' : ''}" data-id="${esc(it.id)}"
-        style="--w:${GEO.CARD_W}px;--ih:${GEO.IMG_H}px;left:${p.x - GEO.CARD_W / 2}px;top:${y}px">
-        <div class="strip" style="background:${c}"></div>
-        ${it.image
-          // A dead image swaps to the text fallback that follows it. No text
-          // inside the handler: an apostrophe ("Britain's") once broke it as JS.
-          ? `<img src="${esc(thumbUrl(it.image, 330))}" loading="lazy" alt="" onerror="imgRetry(this,'card')"><div class="noimg" style="display:none">${esc(summary(lineOf(it), 180))}</div>`
-          : `<div class="noimg">${esc(summary(lineOf(it), 180))}</div>`}
+    const person = it.type === 'person';
+    const full = tiers.get(it.id) === 'full';
+    // The line in the gap above the card: a life (people) or a duration.
+    const line = p.line
+      ? `<div class="${person ? 'tp-life' : 'tp-span'}" style="left:${p.line[0]}px;width:${p.line[1] - p.line[0]}px;top:${y - 5}px;${person ? '' : `background:${c}`}"></div>` : '';
+    const known = isKnown(V.mastery[it.id]) ? '<span class="ok">✓</span> ' : '';
+    const when = esc(it.yearText || fmtYear(it.start));
+    const cls = `tp-card ${full ? 'full' : 'chip'} ${person ? 'person' : ''} ${dim ? 'dim' : ''} ${it.key ? '' : 'minor'} ${V.selected === it.id ? 'sel' : ''}`;
+    const box = `data-id="${esc(it.id)}" style="--w:${GEO.CARD_W}px;--ih:${GEO.IMG_H}px;--h:${full ? GEO.CARD_H : GEO.CHIP_H}px;--c:${c};left:${p.x - GEO.CARD_W / 2}px;top:${y}px"`;
+    if(full) return `${line}
+      <div class="${cls}" ${box}>
+        <div class="strip"></div>
+        <img src="${esc(thumbUrl(it.image, 330))}" loading="lazy" alt="" onerror="imgRetry(this,'card')"><div class="noimg" style="display:none"></div>
         <div class="cap">
-          <div class="t">${known ? '<span class="ok">✓</span> ' : ''}${esc(it.title)}</div>
-          <div class="y">${esc(it.yearText || fmtYear(it.start))}${it.type ? ` · <span class="ty">${esc(TYPE_LABEL[it.type] || it.type)}</span>` : ''}</div>
+          <div class="t">${known}${esc(it.title)}</div>
+          <div class="y">${when}${it.type ? ` · <span class="ty">${esc(TYPE_LABEL[it.type] || it.type)}</span>` : ''}</div>
+        </div>
+      </div>`;
+    // A chip: date over title. A person's chip has a round portrait.
+    const face = person && it.image ? `<img class="av" src="${esc(thumbUrl(it.image, 120))}" loading="lazy" alt="" onerror="imgRetry(this,'hide')">` : '';
+    return `${line}
+      <div class="${cls}" ${box}>
+        ${face}
+        <div class="tx">
+          <div class="y">${when}${person ? '' : it.type && it.type !== 'event' ? ` · <span class="ty">${esc(TYPE_LABEL[it.type] || it.type)}</span>` : ''}</div>
+          <div class="t">${known}${esc(it.title)}</div>
         </div>
       </div>`;
   }).join('');
@@ -851,6 +899,7 @@ function drawTimeline(){
     if(y0 != null) host.scrollLeft = Math.max(0, scale.x(y0) - GEO.CARD_W);
   } else if(keepW > 1) host.scrollLeft = (keepX / keepW) * host.scrollWidth;
   V.scale = scale; V.pos = pos; V.extent = extent;
+  if(V.selected) markLinked(T.byId.get(V.selected));
   bindTimelineGestures(host);
   drawOverview();
 }
@@ -990,6 +1039,7 @@ function showDetail(id, scroll = true){
   V.selected = id;
   root.querySelectorAll('.tp-card.sel,.tp-row.sel').forEach((n) => n.classList.remove('sel'));
   root.querySelector(`.tp-card[data-id="${CSS.escape(id)}"]`)?.classList.add('sel');
+  markLinked(it);
   root.querySelector(`.tp-row[data-id="${CSS.escape(id)}"]`)?.classList.add('sel');
   const ch = T.chapters[it.chapter];
   const list = stepList();
@@ -1001,7 +1051,13 @@ function showDetail(id, scroll = true){
   const next = undated ? null : k >= 0 ? list[k + 1] : list[at < 0 ? list.length : at];
   const related = (it.related || []).map((r) => T.byId.get(r)).filter(Boolean).slice(0, 8);
   const m = V.mastery[it.id];
-  const about = String(it.excerpt || '').split(/\n+/).filter(Boolean);
+  // Wikipedia leads open with pronunciation and date clutter: "( ; (1643-01-04)4 January 1643 [O.S. 25 December 1642]".
+  const about = String(it.excerpt || '')
+    .replace(/\((\d{4}-\d\d-\d\d)\)/g, '').replace(/\s*\[O\.S\.[^\]]*\]/g, '')
+    .replace(/\(\s*[;,]\s*/g, '(').replace(/\(\s*\)\s*/g, '').replace(/ {2,}/g, ' ')
+    .split(/\n+/).filter(Boolean);
+  const who = (it.who || []).map((x) => T.byId.get(x)).filter(Boolean);
+  const did = (it.did || []).map((x) => T.byId.get(x)).filter((d) => d && d.start != null);
   el.classList.add('open');
   el.innerHTML = `
     <div class="hd">
@@ -1010,7 +1066,7 @@ function showDetail(id, scroll = true){
       <span class="tp-meta" style="flex:1;text-align:center">${undated ? 'idea' : k >= 0 ? `${k + 1} of ${list.length}` : 'not in this view'}</span>
       <button class="tp-btn" data-act="close" title="Close (Esc)">✕</button>
     </div>
-    ${it.image ? `<a href="${esc(fullUrl(it.image))}" target="_blank" rel="noopener"><img src="${esc(thumbUrl(it.image, 960))}" alt="" onerror="imgRetry(this)"></a>` : ''}
+    ${it.image && !borrowedPortrait(it, (x) => T.byId.get(x)) ? `<a href="${esc(fullUrl(it.image))}" target="_blank" rel="noopener"><img src="${esc(thumbUrl(it.image, 960))}" alt="" onerror="imgRetry(this)"></a>` : ''}
     <div class="in">
       <h2>${esc(it.title)}</h2>
       <div class="sub">${[it.yearText || fmtYear(it.start), it.subtitle].filter(Boolean).map(esc).join(' · ')}</div>
@@ -1021,6 +1077,13 @@ function showDetail(id, scroll = true){
         ${it.key ? '<span class="tp-badge" style="border-color:#f59e0b;color:#b45309">Essential</span>' : ''}
         ${m ? `<span class="tp-badge" style="${isKnown(m) ? 'border-color:#16a34a;color:#15803d' : 'border-color:#f87171;color:#b91c1c'}">${isKnown(m) ? '✓ known' : 'missed'} · ${m.r}/${m.r + m.w}</span>` : ''}
       </div>
+      ${who.length ? `<div class="tp-who">${who.map((p) => `<button class="tp-person" data-id="${esc(p.id)}">
+        ${p.image ? `<img src="${esc(thumbUrl(p.image, 120))}" alt="" onerror="imgRetry(this,'hide')">` : ''}<span><b>${esc(p.title)}</b>
+        <i>${esc(p.yearText || fmtYear(p.start))}</i></span></button>`).join('')}</div>` : ''}
+      ${about.length ? `<div class="tp-about">${about.slice(0, 1).map((p) => `<p>${esc(p)}</p>`).join('')}
+        ${about.length > 1 ? `<details><summary>More about ${esc(it.title)}</summary>${about.slice(1).map((p) => `<p>${esc(p)}</p>`).join('')}</details>` : ''}</div>` : ''}
+      ${did.length ? `<div class="lb">${esc(it.title)} on this timeline</div><div class="tp-did">${did.map((d) =>
+        `<button class="tp-didrow" data-id="${esc(d.id)}"><span>${esc(d.yearText || fmtYear(d.start))}</span>${esc(d.title)}</button>`).join('')}</div>` : ''}
       ${it.context ? `<div class="tp-ctx" style="--c:${ch?.color || '#cbd5e1'}">
         <div class="lb">In ${esc(T.source.page)}${it.sub ? ` · ${esc(it.sub)}` : ''}</div>${esc(it.context)}</div>` : ''}
       ${it.note ? `<div class="tp-ctx tp-note" style="--c:#94a3b8"><div class="lb">${esc(T.source.page)} on ${esc(it.title)}</div>${esc(it.note)}
@@ -1033,9 +1096,6 @@ function showDetail(id, scroll = true){
       ${related.length ? `<div class="lb">Connected</div><div class="tp-rel">${related.map((r) =>
         `<button class="tp-relc" data-id="${esc(r.id)}">${esc(r.title)} <span>${esc(fmtYear(r.start))}</span></button>`).join('')}</div>` : ''}
       <div id="tpMeanwhile"></div>
-      ${about.length ? `<div class="lb">About ${esc(it.title)}</div>
-        <div class="tp-about">${about.slice(0, 1).map((p) => `<p>${esc(p)}</p>`).join('')}
-        ${about.length > 1 ? `<details><summary>More</summary>${about.slice(1).map((p) => `<p>${esc(p)}</p>`).join('')}</details>` : ''}</div>` : ''}
       <div class="tp-nav2">
         ${prev ? `<button class="tp-btn" data-nav="-1">← ${esc(prev.title)}</button>` : '<span></span>'}
         ${next ? `<button class="tp-btn" data-nav="1">${esc(next.title)} →</button>` : ''}
@@ -1094,7 +1154,16 @@ function step(dir){
   showDetail(list[k].id);
 }
 
+/** Light up the cards linked to the selected one: a person's doings, an event's people. */
+function markLinked(it){
+  root.querySelectorAll('.tp-card.rel').forEach((n) => n.classList.remove('rel'));
+  for(const id of it ? [...(it.did || []), ...(it.who || [])] : []){
+    root.querySelector(`.tp-card[data-id="${CSS.escape(id)}"]`)?.classList.add('rel');
+  }
+}
+
 function closeDetail(){
+  markLinked(null);
   V.selected = null;
   root.querySelector('#tpDetail')?.classList.remove('open');
   root.querySelectorAll('.tp-card.sel,.tp-row.sel').forEach((n) => n.classList.remove('sel'));

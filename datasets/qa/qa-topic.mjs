@@ -10,7 +10,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { PATHS } from '../lib/store.mjs';
-import { makeScale, pack, GEO, anchorYear } from '../../project/features/topic/layout.js';
+import { makeScale, pack, GEO, anchorYear, cardTiers, rowsOf, lineSpan } from '../../project/features/topic/layout.js';
 
 const want = process.argv[2];
 const idx = JSON.parse(fs.readFileSync(path.join(PATHS.topics, 'index.json'), 'utf8'));
@@ -76,9 +76,12 @@ for(const row of idx.topics){
     const items = T.items.filter((it) => it.onTimeline && (show === 'all' || it.key));
     for(const ppy of [0.5, 3, 12]){
       const scale = makeScale(items, ppy);
-      const { pos } = pack(items, scale);
+      const byId = new Map(T.items.map((it) => [it.id, it]));
+      const tiers = cardTiers(items, (id) => byId.get(id));
+      const { pos } = pack(items, scale, { rows: rowsOf(tiers), line: (it) => lineSpan(it, scale) });
+      // A card of several rows occupies each of them.
       const lanes = new Map();
-      for(const p of pos.values()) (lanes.get(p.lane) || lanes.set(p.lane, []).get(p.lane)).push(p.x);
+      for(const p of pos.values()) for(let k = 0; k < p.rows; k++) (lanes.get(p.lane + k) || lanes.set(p.lane + k, []).get(p.lane + k)).push(p.x);
       let overlaps = 0;
       for(const xs of lanes.values()){
         xs.sort((a, b) => a - b);

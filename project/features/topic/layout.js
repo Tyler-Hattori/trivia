@@ -14,24 +14,87 @@
  *
  * ## y: lanes, most important first
  *
- * Cards are packed first-fit into lanes, in IMPORTANCE order rather than time
- * order, so the top lane is the headline sequence of the topic and you can read
+ * Cards are packed first-fit into rows, in IMPORTANCE order rather than time
+ * order, so the top row is the headline sequence of the topic and you can read
  * it left to right without looking down. That is the "piece several important
  * events together at once" requirement.
  */
 
 export const GEO = {
-  CARD_W: 168,
-  IMG_H: 104,
-  CARD_H: 104 + 6 + 52,   // image + strip + caption
-  LANE_GAP: 14,
-  CARD_GAP: 12,           // horizontal clearance between cards in one lane
+  CARD_W: 168,            // narrower on a phone: see setNarrow()
+  UNIT: 64,               // one row: a chip (CHIP_H) plus the gap under it
+  CHIP_H: 56,
+  FULL_ROWS: 3,           // a picture card spans three rows...
+  IMG_H: 128,             // ...of which this much is picture
+  CARD_GAP: 12,           // horizontal clearance between cards in one row
   LEFT: 90,
   RIGHT: 220,
   BREAK_PX: 520,          // an empty stretch wider than this is cut out...
   BREAK_W: 46,            // ...and replaced by a break this wide
   BANDS_H: 64,            // chapter bands + ticks
+  MAX_LINE: 6,            // a span/life line wider than this many cards is not drawn
 };
+GEO.CARD_H = GEO.FULL_ROWS * GEO.UNIT - (GEO.UNIT - GEO.CHIP_H);
+
+/** On a phone: narrower cards, and picture cards two rows tall instead of three. */
+export function setNarrow(on){
+  GEO.CARD_W = on ? 148 : 168;
+  GEO.FULL_ROWS = on ? 2 : 3;
+  GEO.IMG_H = on ? 60 : 128;
+  GEO.CARD_H = GEO.FULL_ROWS * GEO.UNIT - (GEO.UNIT - GEO.CHIP_H);
+}
+
+/*
+ * ## Two sizes of card
+ *
+ * The timeline is for seeing what happened at a glance, so most entries are
+ * CHIPS: one row, date and title, no picture. A picture card (three rows) is
+ * kept for the most important essentials that have a picture OF THEMSELVES.
+ * A mined event that borrowed its person's portrait ("Pascal's barometer
+ * experiment" wearing Pascal's face) is a chip linked to the person: the same
+ * face three times over says nothing and costs three cards of space.
+ *
+ * People are chips with a round portrait and a life line; only the most
+ * important people of the view get a picture card.
+ */
+export function borrowedPortrait(it, lookup){
+  if(!it.imageFrom || it.imageFrom === it.id) return false;
+  const src = lookup?.(it.imageFrom);
+  // A person's face, a country's flag, an era's emblem: none of them is a
+  // picture OF this event. The picture of a thing it is about (the Ishango
+  // bone, a book) is, and the detail panel keeps it.
+  return !src || ['person', 'place', 'group', 'period'].includes(src.type);
+}
+
+export function cardTiers(items, lookup){
+  const tiers = new Map();
+  const key = items.filter((it) => it.key).sort((a, b) => b.importance - a.importance);
+  const rank = new Map(key.map((it, i) => [it.id, i / Math.max(1, key.length)]));
+  for(const it of items){
+    // Only a picture of its own earns a picture card; any borrowed one makes a chip.
+    const own = !!it.image && (!it.imageFrom || it.imageFrom === it.id) && it.type !== 'concept';
+    const r = rank.get(it.id);
+    const full = own && r != null && r < (it.type === 'person' ? 0.22 : 0.45);
+    tiers.set(it.id, full ? 'full' : 'chip');
+  }
+  return tiers;
+}
+
+export const rowsOf = (tiers) => (it) => tiers.get(it.id) === 'full' ? GEO.FULL_ROWS : 1;
+
+/**
+ * The line drawn in the gap above a card: a person's life, or an event's
+ * duration. Null when there is none, or when it is too long to read as this
+ * card's own extent (a Middle Ages bar across half the canvas is the chapter
+ * band's job).
+ */
+export function lineSpan(it, scale){
+  if(it.kind !== 'span' || it.end == null || it.end === it.start) return null;
+  if(it.type === 'person' && it.openEnded) return null;
+  const a = scale.x(it.start), b = scale.x(it.end);
+  if(b - a < 3 || b - a > GEO.CARD_W * GEO.MAX_LINE) return null;
+  return [a, b];
+}
 
 /** The year an item is drawn at (and sorted by). People sit at their prime. */
 export function anchorYear(it){
@@ -118,26 +181,43 @@ export function ticks(scale){
 }
 
 /**
- * Pack cards into lanes. `items` must already be filtered; they are placed in
- * importance order (desc), each into the first lane where it does not collide.
- * Returns Map(id -> {x, lane}) and the lane count.
+ * Pack cards into rows. `items` must already be filtered; they are placed in
+ * importance order (desc), each into the first row where it fits: a card of
+ * `rows(it)` rows needs every one of those rows free across its width, and its
+ * line (`line(it)`, drawn in the gap above it) must not cross another line or
+ * a taller card spanning that gap.
+ * Returns Map(id -> {x, lane, rows, line}) and the row count.
  */
-export function pack(items, scale){
+export function pack(items, scale, { rows = () => 1, line = () => null } = {}){
   const order = [...items].sort((a, b) => (b.importance - a.importance) || (a.start - b.start));
-  const lanes = [];   // per lane: sorted array of [left, right] intervals
+  const cards = [];   // per row: [left, right] intervals of cards in that row
+  const gaps = [];    // per row: intervals blocked in the gap ABOVE that row
+  const hit = (L, l, r) => !!L && L.some(([a, b]) => l < b && r > a);
+  const add = (A, i, iv) => (A[i] || (A[i] = [])).push(iv);
   const pos = new Map();
+  let used = 0;
   const W = GEO.CARD_W + GEO.CARD_GAP;
   for(const it of order){
     const cx = scale.x(anchorYear(it));
     const l = cx - W / 2, r = cx + W / 2;
-    let lane = 0;
-    for(;; lane++){
-      const L = lanes[lane] || (lanes[lane] = []);
-      if(!L.some(([a, b]) => l < b && r > a)){ L.push([l, r]); break; }
+    const h = rows(it);
+    const ln = line(it);
+    let row = 0;
+    for(;; row++){
+      let ok = true;
+      for(let k = 0; k < h && ok; k++) if(hit(cards[row + k], l, r)) ok = false;
+      // a tall card covers the gaps inside it: no line may run there
+      for(let k = 1; k < h && ok; k++) if(hit(gaps[row + k], l, r)) ok = false;
+      if(ok && ln && hit(gaps[row], ln[0] - 4, ln[1] + 4)) ok = false;
+      if(ok) break;
     }
-    pos.set(it.id, { x: cx, lane });
+    for(let k = 0; k < h; k++) add(cards, row + k, [l, r]);
+    for(let k = 1; k < h; k++) add(gaps, row + k, [l, r]);
+    if(ln) add(gaps, row, ln);
+    pos.set(it.id, { x: cx, lane: row, rows: h, line: ln });
+    used = Math.max(used, row + h);
   }
-  return { pos, laneCount: lanes.length };
+  return { pos, laneCount: used };
 }
 
 /** "1066", "55 BC", "c. 10,000 BC", "1485–1603". */

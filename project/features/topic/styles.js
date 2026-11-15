@@ -85,23 +85,49 @@ export const CSS = String.raw`
   background:repeating-linear-gradient(135deg,#fff 0 6px,#f8fafc 6px 12px);border-left:1px dashed #cbd5e1;border-right:1px dashed #cbd5e1}
 .tp-break span{background:#fff;padding:2px 6px;border-radius:6px;writing-mode:vertical-rl;transform:rotate(180deg)}
 
-/* cards */
-.tp-card{position:absolute;width:var(--w);background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;
-  box-shadow:0 4px 12px rgba(15,23,42,.06);cursor:pointer;transition:box-shadow .15s,opacity .15s}
+/* cards: a picture card (.full) for the headline entries, a chip for the rest */
+.tp-card{position:absolute;width:var(--w);height:var(--h);background:#fff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;
+  box-shadow:0 2px 8px rgba(15,23,42,.05);cursor:pointer;transition:box-shadow .15s,opacity .15s,transform .15s}
 .tp-card:hover{box-shadow:0 8px 20px rgba(15,23,42,.14);z-index:5}
 .tp-card.sel{box-shadow:0 0 0 2px #0f172a,0 8px 20px rgba(15,23,42,.14);z-index:6}
+.tp-card.rel{box-shadow:0 0 0 2px #f59e0b,0 6px 16px rgba(245,158,11,.25);z-index:5}
 .tp-card.dim{opacity:.16}
 .tp-card.minor{box-shadow:none;border-color:#eef2f7}
-.tp-card .strip{height:6px}
-.tp-card img{display:block;width:100%;height:var(--ih);object-fit:contain;background:#f8fafc}
-.tp-card .noimg{height:var(--ih);padding:8px 9px;background:#f8fafc;font-size:11px;color:#475569;overflow:hidden;
-  display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical}
-.tp-card .cap{padding:6px 9px 8px}
-.tp-card .t{font-size:12px;font-weight:700;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.tp-card .y{font-size:11px;color:#64748b;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tp-card .t{font-size:12px;font-weight:700;line-height:1.25;color:#0f172a;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tp-card .y{font-size:11px;line-height:1.3;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tp-card .ty{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#94a3b8}
 .tp-card .ok{color:#16a34a}
+.tp-card.full .strip{height:4px;background:var(--c)}
+.tp-card.full img{display:block;width:100%;height:var(--ih);object-fit:cover;object-position:50% 25%;background:#f1f5f9}
+.tp-card.full .noimg{height:var(--ih);background:color-mix(in srgb,var(--c) 14%,#fff)}
+.tp-card.full .cap{padding:6px 9px 0}
+.tp-card.full .y{margin-top:2px}
+.tp-card.chip{display:flex;align-items:center;gap:8px;padding:0 9px 0 10px;border-left:4px solid var(--c)}
+.tp-card.chip .tx{min-width:0;flex:1}
+.tp-card.chip .y{margin-bottom:1px}
+.tp-card.chip.person{border-left-width:1px;border-left-color:#e5e7eb;padding-left:6px;background:#fbfcfe}
+.tp-card.chip .av{width:40px;height:40px;flex:none;border-radius:50%;object-fit:cover;object-position:50% 20%;
+  background:#e2e8f0;box-shadow:0 0 0 2px var(--c)}
+.tp-card.full.person .strip{background:#94a3b8}
 .tp-span{position:absolute;height:3px;border-radius:2px;opacity:.55;pointer-events:none}
+.tp-life{position:absolute;height:0;border-top:2px solid #94a3b8;pointer-events:none;opacity:.8}
+.tp-life::before,.tp-life::after{content:"";position:absolute;top:-5px;width:2px;height:8px;background:#94a3b8;border-radius:1px}
+.tp-life::before{left:0}
+.tp-life::after{right:0}
+
+/* the detail panel: people an entry is about, a person's entries */
+.tp-who{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 12px}
+.tp-person{display:flex;align-items:center;gap:8px;border:1px solid #e2e8f0;background:#fff;border-radius:999px;padding:3px 12px 3px 3px;
+  cursor:pointer;text-align:left;font:inherit}
+.tp-person:hover{background:#f8fafc;border-color:#cbd5e1}
+.tp-detail .tp-person img{width:34px;height:34px;max-height:none;border-radius:50%;object-fit:cover;object-position:50% 20%}
+.tp-person b{display:block;font-size:13px;color:#0f172a}
+.tp-person i{display:block;font-style:normal;font-size:11.5px;color:#64748b}
+.tp-did{display:flex;flex-direction:column;margin:0 0 14px}
+.tp-didrow{display:flex;gap:10px;align-items:baseline;text-align:left;border:0;background:none;padding:6px 4px;border-bottom:1px solid #f1f5f9;
+  cursor:pointer;font:inherit;font-size:13.5px;color:#0f172a}
+.tp-didrow:hover{background:#f8fafc}
+.tp-didrow span{flex:none;min-width:58px;color:#64748b;font-size:12px;font-variant-numeric:tabular-nums}
 .tp-subj{padding-top:6px;padding-bottom:6px;background:#fafafa}
 .tp-subj .tp-chip{font-weight:600}
 .tp-pin{position:absolute;width:1px;background:#cbd5e1}
@@ -261,9 +287,9 @@ a.tp-btn{text-decoration:none;display:inline-flex;align-items:center;gap:5px}
   .tp-hide-m{display:none !important}
   .tp-bar{gap:6px;padding:8px 10px}
   .tp-title{font-size:17px;margin-right:0}
-  .tp-search{width:100%;order:10}
-  .tp-src,.tp-bar>.tp-meta{display:none}
-  .tp-select{max-width:46vw}
+  .tp-search{flex:1 1 40%;width:auto;min-width:0;order:10}
+  .tp-src,.tp-bar>.tp-meta,.tp-bar>.tp-spacer{display:none}
+  .tp-select{flex:1 1 40%;max-width:none;min-width:0;order:9}
   .tp-seg button{padding:5px 9px}
   .tp-rail{position:fixed;left:0;top:0;bottom:0;width:86vw;max-width:340px;z-index:75;transform:translateX(-102%);
     transition:transform .2s;box-shadow:0 0 40px rgba(15,23,42,.25);padding-top:16px}
