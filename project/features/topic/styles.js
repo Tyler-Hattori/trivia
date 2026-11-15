@@ -114,6 +114,13 @@ export const CSS = String.raw`
 .tp-life::before,.tp-life::after{content:"";position:absolute;top:-5px;width:2px;height:8px;background:#94a3b8;border-radius:1px}
 .tp-life::before{left:0}
 .tp-life::after{right:0}
+/* clipped at a break: the life goes on beyond it, so the end fades instead of stopping */
+.tp-life.openl::before,.tp-life.openr::after,.tp-span.openl::before,.tp-span.openr::after{display:none}
+.tp-life.openl{border-image:linear-gradient(90deg,transparent,#94a3b8 24px) 1}
+.tp-life.openr{border-image:linear-gradient(90deg,#94a3b8 calc(100% - 24px),transparent) 1}
+.tp-life.openl.openr{border-image:linear-gradient(90deg,transparent,#94a3b8 24px,#94a3b8 calc(100% - 24px),transparent) 1}
+.tp-span.openl{-webkit-mask-image:linear-gradient(90deg,transparent,#000 24px);mask-image:linear-gradient(90deg,transparent,#000 24px)}
+.tp-span.openr{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent)}
 
 /* the detail panel: people an entry is about, a person's entries */
 .tp-who{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 12px}

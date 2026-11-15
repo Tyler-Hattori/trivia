@@ -853,7 +853,7 @@ function drawTimeline(){
     const full = tiers.get(it.id) === 'full';
     // The line in the gap above the card: a life (people) or a duration.
     const line = p.line
-      ? `<div class="${person ? 'tp-life' : 'tp-span'}" style="left:${p.line[0]}px;width:${p.line[1] - p.line[0]}px;top:${y - 5}px;${person ? '' : `background:${c}`}"></div>` : '';
+      ? `<div class="${person ? 'tp-life' : 'tp-span'}${p.line.openL ? ' openl' : ''}${p.line.openR ? ' openr' : ''}" style="left:${p.line[0]}px;width:${p.line[1] - p.line[0]}px;top:${y - 5}px;${person ? '' : `background:${c}`}"></div>` : '';
     const known = isKnown(V.mastery[it.id]) ? '<span class="ok">✓</span> ' : '';
     const when = esc(it.yearText || fmtYear(it.start));
     const cls = `tp-card ${full ? 'full' : 'chip'} ${person ? 'person' : ''} ${dim ? 'dim' : ''} ${it.key ? '' : 'minor'} ${V.selected === it.id ? 'sel' : ''}`;

@@ -91,9 +91,22 @@ export const rowsOf = (tiers) => (it) => tiers.get(it.id) === 'full' ? GEO.FULL_
 export function lineSpan(it, scale){
   if(it.kind !== 'span' || it.end == null || it.end === it.start) return null;
   if(it.type === 'person' && it.openEnded) return null;
-  const a = scale.x(it.start), b = scale.x(it.end);
+  let a = scale.x(it.start), b = scale.x(it.end);
   if(b - a < 3 || b - a > GEO.CARD_W * GEO.MAX_LINE) return null;
-  return [a, b];
+  // Never draw across a break: the years in it are not on the axis, so a line
+  // through the hatching claims time that is not shown. Clip to the segment
+  // the card sits in; a clipped end is drawn open (faded, no end tick).
+  const cx = scale.x(anchorYear(it));
+  let openL = false, openR = false;
+  for(const br of scale.breaks || []){
+    const l = br.x, r = br.x + br.w;
+    if(r <= cx && a < r){ a = r + 2; openL = true; }
+    if(l >= cx && b > l){ b = l - 2; openR = true; }
+  }
+  if(b - a < 3) return null;
+  const line = [a, b];
+  line.openL = openL; line.openR = openR;
+  return line;
 }
 
 /** The year an item is drawn at (and sorted by). People sit at their prime. */
