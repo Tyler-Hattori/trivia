@@ -20,6 +20,27 @@
    "cover": "https://upload.wikimedia.org/wikipedia/commons/7/7a/Predynastic_collage_%28new_version%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
   },
   {
+   "slug": "ancient-greece",
+   "title": "Ancient Greece",
+   "group": "Ancient world",
+   "source": {
+    "page": "Ancient Greece",
+    "url": "https://en.wikipedia.org/wiki/Ancient_Greece"
+   },
+   "events": [
+    "Timeline of ancient Greece"
+   ],
+   "keyTarget": 90,
+   "blurb": "Ancient Greece was an ancient civilization existing from the Greek Dark Ages of the 12th–9th centuries BC to the end of classical antiquity (c.",
+   "built": "2026-11-15",
+   "count": 163,
+   "key": 90,
+   "chapters": 1,
+   "from": -1100,
+   "to": 1100,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/8/8e/Pelop_war_en.png"
+  },
+  {
    "slug": "ancient-rome",
    "title": "Ancient Rome",
    "group": "Ancient world",
@@ -60,6 +81,25 @@
    "cover": "https://upload.wikimedia.org/wikipedia/commons/a/ac/100inchHooker.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
   },
   {
+   "slug": "aztec-empire",
+   "title": "Aztec Empire",
+   "group": "Americas",
+   "source": {
+    "page": "Aztec Empire",
+    "url": "https://en.wikipedia.org/wiki/Aztec_Empire"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Aztec Empire, also known as the Triple Alliance or historiographically as the Tenochca Empire but most accurately known as the Mexica, was an alliance of three Nahua city-states: Mexico-Tenochtitlan, Tetzcoco, and Tl",
+   "built": "2026-11-15",
+   "count": 70,
+   "key": 58,
+   "chapters": 12,
+   "from": 1080,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/2/20/Conquista-de-M%C3%A9xico-por-Cort%C3%A9s-Tenochtitlan-Painting.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+  },
+  {
    "slug": "biology",
    "title": "Biology",
    "group": "Science",
@@ -81,6 +121,25 @@
    "cover": "https://upload.wikimedia.org/wikipedia/commons/a/ae/Aristotle_Altemps_Inv8575.jpg"
   },
   {
+   "slug": "byzantine-empire",
+   "title": "Byzantine Empire",
+   "group": "Empires & eras",
+   "source": {
+    "page": "Byzantine Empire",
+    "url": "https://en.wikipedia.org/wiki/Byzantine_Empire"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Byzantine Empire, also known as the Eastern Roman Empire, was the continuation of the Eastern part of the Roman Empire centred on Constantinople during late antiquity and the Middle Ages.",
+   "built": "2026-11-15",
+   "count": 261,
+   "key": 95,
+   "chapters": 14,
+   "from": -242,
+   "to": 1913,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f2/Byzantine_imperial_flag%2C_14th_century.svg/960px-Byzantine_imperial_flag%2C_14th_century.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+  },
+  {
    "slug": "cambrian-explosion",
    "title": "Cambrian explosion",
    "group": "Life & Earth",
@@ -98,6 +157,25 @@
    "from": -1000000000,
    "to": 2026,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/6/6d/Kimberella_quadrata.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+  },
+  {
+   "slug": "carthage",
+   "title": "Carthage",
+   "group": "Ancient world",
+   "source": {
+    "page": "Ancient Carthage",
+    "url": "https://en.wikipedia.org/wiki/Ancient_Carthage"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "French Algeria (19th–20th centuries)\n\nAncient Carthage was an ancient civilization based in North Africa.",
+   "built": "2026-11-15",
+   "count": 79,
+   "key": 63,
+   "chapters": 1,
+   "from": -2500,
+   "to": 2012,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f9/Domain_changes_during_the_Punic_Wars_BC.gif"
   },
   {
    "slug": "chemistry",
@@ -336,6 +414,25 @@
    "cover": "https://upload.wikimedia.org/wikipedia/commons/c/ce/Rhodomonas_salina_CCMP_322_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
   },
   {
+   "slug": "holy-roman-empire",
+   "title": "Holy Roman Empire",
+   "group": "Empires & eras",
+   "source": {
+    "page": "Holy Roman Empire",
+    "url": "https://en.wikipedia.org/wiki/Holy_Roman_Empire"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Holy Roman Empire, also known as the Holy Roman Empire of the German Nation after 1512, was a polity comprising and controlling much of Central Europe and Western Europe, headed by the Holy Roman Emperor and characte",
+   "built": "2026-11-15",
+   "count": 265,
+   "key": 92,
+   "chapters": 11,
+   "from": -50,
+   "to": 1918,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/1/17/Carl_Friedrich_Lessing_-_The_Siege_%28Defense_of_a_Church_Courtyard_During_the_Thirty_Years%E2%80%99_War%29_-_Google_Art_Project.jpg"
+  },
+  {
    "slug": "human-evolution",
    "title": "Human evolution",
    "group": "Life & Earth",
@@ -417,6 +514,63 @@
    "cover": "https://upload.wikimedia.org/wikipedia/commons/a/a4/Claude_Monet_1899_Nadar_crop.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
   },
   {
+   "slug": "inca-empire",
+   "title": "Inca Empire",
+   "group": "Americas",
+   "source": {
+    "page": "Inca Empire",
+    "url": "https://en.wikipedia.org/wiki/Inca_Empire"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Inca Empire, officially known as the Realm of the Four Parts, was the largest empire in pre-Columbian America.",
+   "built": "2026-11-15",
+   "count": 80,
+   "key": 58,
+   "chapters": 16,
+   "from": -48000,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/e/ef/La_Captura_de_Atahualpa_-_Juan_Lepiani_1920s.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+  },
+  {
+   "slug": "indus-valley",
+   "title": "Indus Valley",
+   "group": "Ancient world",
+   "source": {
+    "page": "Indus Valley Civilisation",
+    "url": "https://en.wikipedia.org/wiki/Indus_Valley_Civilisation"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Indus Valley Civilisation (IVC), also known as the Indus Civilisation, was a Bronze Age civilisation in the northwestern regions of South Asia, lasting from 3300 BCE to 1300 BCE, and in its mature form from 2600 BCE ",
+   "built": "2026-11-15",
+   "count": 95,
+   "key": 65,
+   "chapters": 10,
+   "from": -7000,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Indus_seal_impression.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+  },
+  {
+   "slug": "islamic-golden-age",
+   "title": "Islamic Golden Age",
+   "group": "Empires & eras",
+   "source": {
+    "page": "Islamic Golden Age",
+    "url": "https://en.wikipedia.org/wiki/Islamic_Golden_Age"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Islamic Golden Age was a period of cultural flourishing in the history of Islam, dated from the 8th century CE to the 14th century.",
+   "built": "2026-11-15",
+   "count": 120,
+   "key": 85,
+   "chapters": 14,
+   "from": -406,
+   "to": 2012,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Al-Andalus732.svg/960px-Al-Andalus732.svg.png"
+  },
+  {
    "slug": "japan",
    "title": "Japan",
    "group": "Countries",
@@ -436,6 +590,44 @@
    "from": -43000,
    "to": 2022,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/d/de/Emperor_Meiji_by_Takahashi_Yuichi.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+  },
+  {
+   "slug": "kush",
+   "title": "Kush",
+   "group": "Ancient world",
+   "source": {
+    "page": "Kingdom of Kush",
+    "url": "https://en.wikipedia.org/wiki/Kingdom_of_Kush"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Kingdom of Kush, also known as the Kushite Empire, or simply Kush, was an ancient kingdom in Nubia, centered along the Nile Valley in what is now northern Sudan and southern Egypt.",
+   "built": "2026-11-15",
+   "count": 84,
+   "key": 70,
+   "chapters": 12,
+   "from": -3500,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/e/e6/NubianMeroePyramids30sep2005%282%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+  },
+  {
+   "slug": "mali-empire",
+   "title": "Mali Empire",
+   "group": "Empires & eras",
+   "source": {
+    "page": "Mali Empire",
+    "url": "https://en.wikipedia.org/wiki/Mali_Empire"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Mali Empire was an empire in West Africa from c.",
+   "built": "2026-11-15",
+   "count": 23,
+   "key": 22,
+   "chapters": 0,
+   "from": 100,
+   "to": 1797,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/4/46/Catalan_Atlas_BNF_Sheet_6_Mansa_Musa_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
   },
   {
    "slug": "mathematics",
@@ -459,6 +651,25 @@
    "cover": "https://upload.wikimedia.org/wikipedia/commons/0/06/Titan_in_front_of_the_ring_and_Saturn.jpg"
   },
   {
+   "slug": "maya",
+   "title": "Maya",
+   "group": "Americas",
+   "source": {
+    "page": "Maya civilization",
+    "url": "https://en.wikipedia.org/wiki/Maya_civilization"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Maya civilization was a Mesoamerican civilization that existed from antiquity to the early modern period.",
+   "built": "2026-11-15",
+   "count": 61,
+   "key": 45,
+   "chapters": 24,
+   "from": -500000,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/fd/Pedro_de_Alvarado_%28Tom%C3%A1s_Povedano%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+  },
+  {
    "slug": "medicine",
    "title": "Medicine",
    "group": "Science",
@@ -478,6 +689,124 @@
    "from": -2784,
    "to": 2026,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/a/a4/ScuolaMedicaMiniatura.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+  },
+  {
+   "slug": "mesopotamia",
+   "title": "Mesopotamia",
+   "group": "Ancient world",
+   "source": {
+    "page": "Mesopotamia",
+    "url": "https://en.wikipedia.org/wiki/Mesopotamia"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Mesopotamia is a historical region of West Asia situated within the Tigris–Euphrates river system, in the northern part of the Fertile Crescent.",
+   "built": "2026-11-15",
+   "count": 129,
+   "key": 88,
+   "chapters": 13,
+   "from": -19000,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/Empire_akkad.svg/1920px-Empire_akkad.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+  },
+  {
+   "slug": "middle-ages",
+   "title": "Middle Ages",
+   "group": "Empires & eras",
+   "source": {
+    "page": "Middle Ages",
+    "url": "https://en.wikipedia.org/wiki/Middle_Ages"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "In the history of Europe, the Middle Ages or medieval period lasted approximately from the 5th to late 15th centuries, comparable with the post-classical period of global history.",
+   "built": "2026-11-15",
+   "count": 311,
+   "key": 97,
+   "chapters": 17,
+   "from": -350,
+   "to": 2015,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f5/Combat_deuxi%C3%A8me_croisade.jpg"
+  },
+  {
+   "slug": "mongol-empire",
+   "title": "Mongol Empire",
+   "group": "Empires & eras",
+   "source": {
+    "page": "Mongol Empire",
+    "url": "https://en.wikipedia.org/wiki/Mongol_Empire"
+   },
+   "events": [
+    "Timeline of the Mongol Empire"
+   ],
+   "keyTarget": 90,
+   "blurb": "The Mongol Empire was the largest contiguous empire in history.",
+   "built": "2026-11-15",
+   "count": 364,
+   "key": 99,
+   "chapters": 12,
+   "from": 1038,
+   "to": 1547,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/3/35/1236-1242_Mongol_invasions_of_Europe.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+  },
+  {
+   "slug": "mughal-empire",
+   "title": "Mughal Empire",
+   "group": "Empires & eras",
+   "source": {
+    "page": "Mughal Empire",
+    "url": "https://en.wikipedia.org/wiki/Mughal_Empire"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Mughal Empire was an early modern empire in South Asia.",
+   "built": "2026-11-15",
+   "count": 111,
+   "key": 82,
+   "chapters": 8,
+   "from": -1200,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/b/b7/Shah_Jahan.jpg"
+  },
+  {
+   "slug": "ottoman-empire",
+   "title": "Ottoman Empire",
+   "group": "Empires & eras",
+   "source": {
+    "page": "Ottoman Empire",
+    "url": "https://en.wikipedia.org/wiki/Ottoman_Empire"
+   },
+   "events": [
+    "Timeline of the Ottoman Empire"
+   ],
+   "keyTarget": 90,
+   "blurb": "The Ottoman Empire, also known historically as Turkey or the Turkish Empire, was a state that spanned much of Southeastern Europe, West Asia, and North Africa from the 14th century to the early 20th century, centred in m",
+   "built": "2026-11-15",
+   "count": 348,
+   "key": 100,
+   "chapters": 13,
+   "from": 733,
+   "to": 1922,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/e/eb/Column_of_deportees_walking_through_Harput_vilayet_during_the_Armenian_genocide_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+  },
+  {
+   "slug": "persian-empire-achaemenid",
+   "title": "Persian Empire (Achaemenid)",
+   "group": "Ancient world",
+   "source": {
+    "page": "Achaemenid Empire",
+    "url": "https://en.wikipedia.org/wiki/Achaemenid_Empire"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Achaemenid Empire was an ancient Iranian empire founded by Cyrus the Great of the Achaemenid dynasty in 550 BC.",
+   "built": "2026-11-15",
+   "count": 179,
+   "key": 93,
+   "chapters": 13,
+   "from": -2025,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/5/57/Cyrus_II_%28The_Great%29_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
   },
   {
    "slug": "physics",
@@ -537,6 +866,25 @@
    "cover": "https://commons.wikimedia.org/wiki/Special:FilePath/95Thesen_facsimile_colour.png"
   },
   {
+   "slug": "sasanian-empire",
+   "title": "Sasanian Empire",
+   "group": "Ancient world",
+   "source": {
+    "page": "Sasanian Empire",
+    "url": "https://en.wikipedia.org/wiki/Sasanian_Empire"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Sasanian Empire, officially Eranshahr (Middle Persian: 𐭠𐭩𐭥𐭠𐭭𐭱𐭲𐭥𐭩, romanized: Ērānšahr, lit.",
+   "built": "2026-11-15",
+   "count": 176,
+   "key": 93,
+   "chapters": 16,
+   "from": -553,
+   "to": 1520,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/93/Piero_della_Francesca_021.jpg/3840px-Piero_della_Francesca_021.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+  },
+  {
    "slug": "science",
    "title": "Science",
    "group": "Science",
@@ -573,6 +921,25 @@
    "from": -5000000,
    "to": 2026,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/6/69/Battle_of_Gettysburg%2C_by_Currier_and_Ives.png"
+  },
+  {
+   "slug": "viking-age",
+   "title": "Viking Age",
+   "group": "Empires & eras",
+   "source": {
+    "page": "Viking Age",
+    "url": "https://en.wikipedia.org/wiki/Viking_Age"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Viking Age was the period during the Middle Ages when Norsemen, referred to as Vikings, undertook large-scale raiding, colonising, conquest, and trading throughout Europe and reached North America.",
+   "built": "2026-11-15",
+   "count": 141,
+   "key": 88,
+   "chapters": 16,
+   "from": 395,
+   "to": 2022,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/0/08/Viking_longship.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
   },
   {
    "slug": "world-war-ii",

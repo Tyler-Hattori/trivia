@@ -34,6 +34,14 @@ Done and pushed:
   Computing, Geology, Geography. Before this, essentials were mostly people
   (Chemistry 69/86, Physics 59/91, Geology 31/40).
 - **Key points written** for all 16 batch 1–2 topics (`topic-notes/`).
+- **Timeline redesign** (see `docs/TOPICS.md`, Events first): most entries are
+  chips, with picture cards only for top essentials with their own picture.
+  People are portrait chips with life lines. People and events link both ways,
+  and selecting one lights up the other in amber. The panel leads with the
+  description. The phone toolbar is three rows.
+- Ideas, not done: pinch-zoom on phones (there are only +/- buttons); a short
+  line under each event chip's title; clean Wikipedia leads in the builder
+  rather than the browser.
 
 Running: `/tmp/run-next.sh` under caffeinate.
 1. Batch 3 finishes (its node pid is 38566).
