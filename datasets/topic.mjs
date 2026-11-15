@@ -1123,7 +1123,7 @@ const PRESENT_STATE = /(^|\|)(sovereign state|country|constituent country of the
   chapters.forEach((c, ci) => {
     if(c.from != null) return;
     const ys = out.filter((x) => x.chapter === ci && x.onTimeline && !THING.has(x.type)).map(anchorYear).sort((a, b) => a - b);
-    if(ys.length < 3) return;
+    if(ys.length < 2) return;
     const q = (f) => ys[Math.min(ys.length - 1, Math.floor(f * ys.length))];
     const mid = ys.length % 2 ? ys[(ys.length - 1) / 2] : (ys[ys.length / 2 - 1] + ys[ys.length / 2]) / 2;
     era.set(ci, { mid, tol: Math.max(150, 0.5 * (q(0.75) - q(0.25))) });
