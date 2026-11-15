@@ -27,7 +27,7 @@
  */
 
 import { injectStyles } from './styles.js';
-import { GEO, makeScale, ticks, pack, anchorYear, fmtYear, fmtRange, summary, cardTiers, rowsOf, lineSpan, borrowedPortrait, setNarrow } from './layout.js';
+import { GEO, BAR, makeScale, ticks, anchorYear, fmtYear, fmtRange, fmtWhen, summary, borrowedPortrait, setNarrow, layoutTimeline } from './layout.js';
 import { bm25Index, docText } from '../../../datasets/lib/textsearch.mjs';
 import { renderQuiz, loadMastery, isKnown, isDue, dueSummary } from './quiz.js';
 import { renderSearch, parseWhen } from './search.js';
@@ -547,6 +547,13 @@ function visibleItems({ ignoreChapters = false } = {}){
     (!V.subject || it.subject === V.subject));
 }
 
+/** Timeline candidates: on the timeline and in the chapter/subject focus, essential or not. */
+function timelinePool(){
+  return T.items.filter((it) => it.onTimeline &&
+    (!V.chapters.size || V.chapters.has(it.chapter)) &&
+    (!V.subject || it.subject === V.subject));
+}
+
 /** Subjects present in this topic (under the current show), biggest first. */
 function subjectsOf(){
   const c = new Map();
@@ -700,10 +707,10 @@ function drawLearn(){
     const known = isKnown(V.mastery[it.id]);
     return `
       <div class="tp-row ${it.key ? 'key' : ''} ${V.selected === it.id ? 'sel' : ''}" data-id="${esc(it.id)}">
-        <div class="yr">${esc(it.yearText || fmtYear(it.start))}</div>
+        <div class="yr">${esc(fmtWhen(it))}</div>
         <div class="mid">
           <div class="t">${esc(it.title)}${known ? '<span class="ok" title="You answered this right">✓</span>' : ''}<span class="ty">${esc(TYPE_LABEL[it.type] || '')}</span></div>
-          <div class="yr2">${esc(it.yearText || fmtYear(it.start))}</div>
+          <div class="yr2">${esc(fmtWhen(it))}</div>
           ${lineOf(it) ? `<div class="s">${esc(lineOf(it))}</div>` : ''}
         </div>
         <div class="im">${it.image ? `<img src="${esc(thumbUrl(it.image, 120))}" loading="lazy" alt="" onerror="imgRetry(this)">` : ''}</div>
@@ -811,11 +818,16 @@ function drawTimeline(){
   const host = root.querySelector('#tpScroll');
   setNarrow(narrow());
   const keepX = host.scrollLeft, keepW = host.scrollWidth || 1;
-  const items = visibleItems();
-  const scale = makeScale(items, V.ppy);
-  const tiers = cardTiers(items, (id) => T.byId.get(id));
-  const { pos, laneCount } = pack(items, scale, { rows: rowsOf(tiers), line: (it) => lineSpan(it, scale) });
-  const top = GEO.BANDS_H + 16;
+  // Essentials or everything; periods become bars in the eras track, and in
+  // Essentials the free space fills with more entries as you zoom in.
+  const L = layoutTimeline(timelinePool(), { show: V.show, ppy: V.ppy, lookup: (id) => T.byId.get(id), eraRows: narrow() ? 2 : 4, rulerRows: narrow() ? 1 : 2 });
+  const { scale, pos, laneCount, tiers } = L;
+  const items = L.cards;
+  const trackRows = L.eraRows + L.rulerRows;
+  // Chapter bands only for a chronological article; without them the ticks move up.
+  const head = T.chronological ? GEO.BANDS_H : 26;
+  const bandsH = head + (trackRows ? trackRows * BAR.ROW + 6 : 0);
+  const top = bandsH + 16;
   const height = top + laneCount * GEO.UNIT + 60;
 
   // Chapter bands: one row, or two when a chapter overlaps its neighbours.
@@ -832,18 +844,27 @@ function drawTimeline(){
     if(!T.chronological) return '';
     const row = c.overlaps ? 1 : 0;
     return `<div class="tp-band" data-band="${c.id}" style="left:${x0}px;width:${Math.max(40, x1 - x0)}px;top:${6 + row * 24}px;background:${c.color}"
-      title="${esc(c.title)} · ${esc(fmtRange(c.from, c.to))} — click to fit">${esc(c.title)} <span style="opacity:.75;font-weight:500">${esc(fmtRange(c.from, c.to))}</span></div>`;
+      title="${esc(c.title)} · ${esc(fmtRange(c.from, c.to))} — click to fit"><span>${esc(c.title)} <i style="opacity:.75;font-weight:500;font-style:normal">${esc(fmtRange(c.from, c.to))}</i></span></div>`;
   }).join('');
 
   const tk = ticks(scale);
-  const tickHtml = tk.map((t) => `<div class="tp-tick" style="left:${t.x}px;top:${GEO.BANDS_H - 16}px">${esc(fmtYear(t.year))}</div>`).join('');
-  const gridHtml = tk.map((t) => `<div class="tp-grid" style="left:${t.x}px;top:${GEO.BANDS_H}px;height:${height - GEO.BANDS_H}px"></div>`).join('');
+  const tickHtml = tk.map((t) => `<div class="tp-tick" style="left:${t.x}px;top:${head - 16}px">${esc(fmtYear(t.year, { short: true }))}</div>`).join('');
+  const gridHtml = tk.map((t) => `<div class="tp-grid" style="left:${t.x}px;top:${bandsH}px;height:${height - bandsH}px"></div>`).join('');
 
   const brk = scale.breaks.map((b) => `
-    <div class="tp-break" style="left:${b.x}px;width:${b.w}px;top:${GEO.BANDS_H}px;height:${height - GEO.BANDS_H}px">
+    <div class="tp-break" style="left:${b.x}px;width:${b.w}px;top:${bandsH}px;height:${height - bandsH}px">
       <span>${esc(gapLabel(b.years))}</span></div>`).join('');
 
   const chColor = new Map(T.chapters.map((c) => [c.id, c.color]));
+  // The eras track (dynasties, kingdoms, eras) and the rulers track under it.
+  const bar = (b, y, ruler) => {
+    const c = ruler ? '#64748b' : chColor.get(b.it.chapter) || '#64748b';
+    const dim = V.matches && !V.matches.has(b.it.id);
+    return `<div class="tp-era${ruler ? ' ruler' : ''}${b.clipL ? ' clipl' : ''}${b.clipR ? ' clipr' : ''}${dim ? ' dim' : ''}${V.selected === b.it.id ? ' sel' : ''}" data-id="${esc(b.it.id)}"
+      style="left:${b.x0}px;width:${b.x1 - b.x0}px;top:${y}px;--c:${c}" title="${esc(b.it.title)} · ${esc(fmtWhen(b.it))}">${b.x1 - b.x0 > 34 ? `<span>${esc(b.it.title)}</span>` : ''}</div>`;
+  };
+  const eraHtml = L.eras.map((b) => bar(b, head + 2 + b.row * BAR.ROW, false)).join('')
+    + L.rulers.map((b) => bar(b, head + 2 + (L.eraRows + b.row) * BAR.ROW, true)).join('');
   const cards = items.map((it) => {
     const p = pos.get(it.id);
     const y = top + p.lane * GEO.UNIT;
@@ -855,8 +876,8 @@ function drawTimeline(){
     const line = p.line
       ? `<div class="${person ? 'tp-life' : 'tp-span'}${p.line.openL ? ' openl' : ''}${p.line.openR ? ' openr' : ''}" style="left:${p.line[0]}px;width:${p.line[1] - p.line[0]}px;top:${y - 5}px;${person ? '' : `background:${c}`}"></div>` : '';
     const known = isKnown(V.mastery[it.id]) ? '<span class="ok">✓</span> ' : '';
-    const when = esc(tidyYear(it.yearText) || fmtYear(it.start));
-    const cls = `tp-card ${full ? 'full' : 'chip'} ${person ? 'person' : ''} ${dim ? 'dim' : ''} ${it.key ? '' : 'minor'} ${V.selected === it.id ? 'sel' : ''}`;
+    const when = esc(fmtWhen(it));
+    const cls = `tp-card ${full ? 'full' : 'chip'} ${person ? 'person' : ''} ${dim ? 'dim' : ''} ${it.key ? '' : 'minor'} ${L.minor.has(it.id) ? 'fill' : ''} ${V.selected === it.id ? 'sel' : ''}`;
     const box = `data-id="${esc(it.id)}" style="--w:${GEO.CARD_W}px;--ih:${GEO.IMG_H}px;--h:${full ? GEO.CARD_H : GEO.CHIP_H}px;--c:${c};left:${p.x - GEO.CARD_W / 2}px;top:${y}px"`;
     if(full) return `${line}
       <div class="${cls}" ${box}>
@@ -881,8 +902,8 @@ function drawTimeline(){
 
   host.innerHTML = items.length ? `
     <div class="tp-canvas" style="width:${scale.width}px;height:${height}px">
-      <div class="tp-bands" style="width:${scale.width}px;height:${GEO.BANDS_H}px">
-        <div style="position:relative;height:100%">${bands}${tickHtml}</div>
+      <div class="tp-bands" style="width:${scale.width}px;height:${bandsH}px">
+        <div style="position:relative;height:100%">${bands}${tickHtml}${eraHtml}</div>
       </div>
       ${gridHtml}
       ${brk}
@@ -899,6 +920,9 @@ function drawTimeline(){
     if(y0 != null) host.scrollLeft = Math.max(0, scale.x(y0) - GEO.CARD_W);
   } else if(keepW > 1) host.scrollLeft = (keepX / keepW) * host.scrollWidth;
   V.scale = scale; V.pos = pos; V.extent = extent;
+  // What ←/→ steps through on the timeline: what is drawn, cards and bars.
+  V.drawn = [...new Map([...items, ...L.eras.map((b) => b.it), ...L.rulers.map((b) => b.it)].map((it) => [it.id, it])).values()];
+  for(const b of [...L.eras, ...L.rulers]) if(!pos.has(b.it.id)) pos.set(b.it.id, { x: (b.x0 + b.x1) / 2, bar: true });
   if(V.selected) markLinked(T.byId.get(V.selected));
   bindTimelineGestures(host);
   drawOverview();
@@ -915,8 +939,8 @@ function drawOverview(){
   if(!el || !V.scale) return;
   const W = V.scale.width || 1;
   const segs = !T.chronological
-    ? ticks(V.scale).filter((_, i, a) => i % Math.max(1, Math.ceil(a.length / 12)) === 0).map((t) =>
-      `<span class="yr" style="left:${(100 * t.x / W).toFixed(2)}%">${esc(fmtYear(t.year))}</span>`).join('')
+    ? (() => { let last = -1e9; const k = (el.clientWidth || 800) / W; return ticks(V.scale).filter((t) => (t.x * k - last >= 72 ? (last = t.x * k, true) : false)); })().map((t) =>
+      `<span class="yr" style="left:${(100 * t.x / W).toFixed(2)}%">${esc(fmtYear(t.year, { short: true }))}</span>`).join('')
     : T.chapters.filter((c) => V.extent.has(c.id)).map((c) => {
     const [x0, x1] = V.extent.get(c.id);
     return `<div class="seg" data-fit="${c.id}" style="left:${(100 * Math.max(0, x0) / W).toFixed(2)}%;width:${(100 * (x1 - x0) / W).toFixed(2)}%;background:${c.color}" title="${esc(c.title)} — click to fit">${esc(c.title)}</div>`;
@@ -925,11 +949,21 @@ function drawOverview(){
     ${V.chapters.size ? `<button class="tp-btn sm" data-fit="all" title="Show every chapter">← All chapters</button>` : ''}
     <div class="strip" id="tpStrip">${segs}<div class="win" id="tpWin"></div></div>`;
   const win = el.querySelector('#tpWin');
+  // An era bar or chapter band wider than the view keeps its name in view: the label slides
+  // along the bar as you scroll, like a sticky heading.
+  const eras = [...host.querySelectorAll('.tp-era > span, .tp-band > span')].map((sp) => ({ sp, x0: parseFloat(sp.parentElement.style.left), w: parseFloat(sp.parentElement.style.width), lw: sp.offsetWidth }));
   const sync = () => {
     win.style.left = `${(100 * host.scrollLeft / W).toFixed(2)}%`;
     win.style.width = `${Math.min(100, 100 * host.clientWidth / W).toFixed(2)}%`;
+    for(const e of eras){
+      const dx = Math.max(0, Math.min(host.scrollLeft - e.x0 + 4, e.w - e.lw - 14));
+      e.sp.style.transform = dx ? `translateX(${dx}px)` : '';
+    }
   };
   sync();
+  // One listener: a redraw replaces the last one rather than adding another.
+  if(host._sync) host.removeEventListener('scroll', host._sync);
+  host._sync = sync;
   host.addEventListener('scroll', sync, { passive: true });
   el.querySelector('#tpStrip').onclick = (ev) => {
     if(ev.target.closest('[data-fit]')) return;      // a chapter: fitted by onClick
@@ -963,7 +997,7 @@ function bindTimelineGestures(host){
   host.dataset.gestures = '1';
   let drag = null;
   host.addEventListener('pointerdown', (ev) => {
-    if(ev.button !== 0 || ev.target.closest('.tp-card,.tp-band')) return;
+    if(ev.button !== 0 || ev.target.closest('.tp-card,.tp-band,.tp-era')) return;
     drag = { x: ev.clientX, y: ev.clientY, l: host.scrollLeft, t: host.scrollTop, moved: false };
     host.setPointerCapture(ev.pointerId);
   });
@@ -991,13 +1025,13 @@ function bindTimelineGestures(host){
 function hover(ev){
   const tip = root?.querySelector('#tpHover');
   if(!tip) return;
-  const card = ev?.target.closest?.('.tp-card');
+  const card = ev?.target.closest?.('.tp-card,.tp-era');
   if(!card || V.mode !== 'timeline'){ tip.classList.remove('on'); return; }
   const it = T.byId.get(card.dataset.id);
   if(!it) return;
   if(tip.dataset.id !== it.id){
     tip.dataset.id = it.id;
-    tip.innerHTML = `<b>${esc(it.title)}</b> <span class="tp-meta">${esc(it.yearText || fmtYear(it.start))}</span><div>${esc(summary(lineOf(it), 320))}</div>`;
+    tip.innerHTML = `<b>${esc(it.title)}</b> <span class="tp-meta">${esc(fmtWhen(it))}</span><div>${esc(summary(lineOf(it), 320))}</div>`;
   }
   const r = card.getBoundingClientRect();
   const left = Math.min(window.innerWidth - 340, r.right + 8);
@@ -1037,8 +1071,8 @@ function showDetail(id, scroll = true){
   const el = root.querySelector('#tpDetail');
   if(!it || !el) return;
   V.selected = id;
-  root.querySelectorAll('.tp-card.sel,.tp-row.sel').forEach((n) => n.classList.remove('sel'));
-  root.querySelector(`.tp-card[data-id="${CSS.escape(id)}"]`)?.classList.add('sel');
+  root.querySelectorAll('.tp-card.sel,.tp-row.sel,.tp-era.sel').forEach((n) => n.classList.remove('sel'));
+  root.querySelectorAll(`.tp-card[data-id="${CSS.escape(id)}"],.tp-era[data-id="${CSS.escape(id)}"]`).forEach((n) => n.classList.add('sel'));
   markLinked(it);
   root.querySelector(`.tp-row[data-id="${CSS.escape(id)}"]`)?.classList.add('sel');
   const ch = T.chapters[it.chapter];
@@ -1069,7 +1103,7 @@ function showDetail(id, scroll = true){
     ${it.image && !borrowedPortrait(it, (x) => T.byId.get(x)) ? `<a href="${esc(fullUrl(it.image))}" target="_blank" rel="noopener"><img src="${esc(thumbUrl(it.image, 960))}" alt="" onerror="imgRetry(this)"></a>` : ''}
     <div class="in">
       <h2>${esc(it.title)}</h2>
-      <div class="sub">${[tidyYear(it.yearText) || fmtYear(it.start), it.subtitle].filter(Boolean).map(esc).join(' · ')}</div>
+      <div class="sub">${[fmtWhen(it), it.subtitle].filter(Boolean).map(esc).join(' · ')}</div>
       ${undated && defOf(it) ? `<div class="tp-ctx" style="--c:#0f172a"><div class="lb">What it is</div>${esc(defOf(it))}</div>` : ''}
       <div style="margin-bottom:12px">
         ${ch ? `<span class="tp-badge" style="border-color:${ch.color};color:${ch.color}">${esc(ch.title)}</span>` : ''}
@@ -1079,11 +1113,11 @@ function showDetail(id, scroll = true){
       </div>
       ${who.length ? `<div class="tp-who">${who.map((p) => `<button class="tp-person" data-id="${esc(p.id)}">
         ${p.image ? `<img src="${esc(thumbUrl(p.image, 120))}" alt="" onerror="imgRetry(this,'hide')">` : ''}<span><b>${esc(p.title)}</b>
-        <i>${esc(p.yearText || fmtYear(p.start))}</i></span></button>`).join('')}</div>` : ''}
+        <i>${esc(fmtWhen(p))}</i></span></button>`).join('')}</div>` : ''}
       ${about.length ? `<div class="tp-about">${about.slice(0, 1).map((p) => `<p>${esc(p)}</p>`).join('')}
         ${about.length > 1 ? `<details><summary>More about ${esc(it.title)}</summary>${about.slice(1).map((p) => `<p>${esc(p)}</p>`).join('')}</details>` : ''}</div>` : ''}
       ${did.length ? `<div class="lb">${esc(it.title)} on this timeline</div><div class="tp-did">${did.map((d) =>
-        `<button class="tp-didrow" data-id="${esc(d.id)}"><span>${esc(d.yearText || fmtYear(d.start))}</span>${esc(d.title)}</button>`).join('')}</div>` : ''}
+        `<button class="tp-didrow" data-id="${esc(d.id)}"><span>${esc(fmtWhen(d))}</span>${esc(d.title)}</button>`).join('')}</div>` : ''}
       ${it.context ? `<div class="tp-ctx" style="--c:${ch?.color || '#cbd5e1'}">
         <div class="lb">In ${esc(T.source.page)}${it.sub ? ` · ${esc(it.sub)}` : ''}</div>${esc(it.context)}</div>` : ''}
       ${it.note ? `<div class="tp-ctx tp-note" style="--c:#94a3b8"><div class="lb">${esc(T.source.page)} on ${esc(it.title)}</div>${esc(it.note)}
@@ -1094,7 +1128,7 @@ function showDetail(id, scroll = true){
           `<a class="tp-relc tp-also" href="#/topic/${esc(x)}" data-also="${esc(x)}">${esc(topicTitles?.get(x) || x)} →</a>`).join('')}</div>` : '';
       })()}
       ${related.length ? `<div class="lb">Connected</div><div class="tp-rel">${related.map((r) =>
-        `<button class="tp-relc" data-id="${esc(r.id)}">${esc(r.title)} <span>${esc(fmtYear(r.start))}</span></button>`).join('')}</div>` : ''}
+        `<button class="tp-relc" data-id="${esc(r.id)}">${esc(r.title)} <span>${esc(fmtWhen(r))}</span></button>`).join('')}</div>` : ''}
       <div id="tpMeanwhile"></div>
       <div class="tp-nav2">
         ${prev ? `<button class="tp-btn" data-nav="-1">← ${esc(prev.title)}</button>` : '<span></span>'}
@@ -1137,7 +1171,7 @@ async function drawMeanwhile(it){
 /** What ←/→ steps through: visible (and matching) entries, in time order. */
 function stepList(){
   const ignore = V.mode === 'learn';
-  return visibleItems({ ignoreChapters: ignore }).filter((it) => !V.matches || V.matches.has(it.id))
+  return (V.mode === 'timeline' && V.drawn ? V.drawn : visibleItems({ ignoreChapters: ignore })).filter((it) => !V.matches || V.matches.has(it.id))
     .sort((a, b) => a.anchor - b.anchor || a.start - b.start);
 }
 
@@ -1154,16 +1188,6 @@ function step(dir){
   showDetail(list[k].id);
 }
 
-/** A mined date as the sentence put it ("from 3000 to 1800 BC", "around 2500 BC") → "3000–1800 BC", "c. 2500 BC". */
-function tidyYear(t){
-  return String(t || '').trim()
-    .replace(/^\((.*)\)$/, '$1')
-    .replace(/^(around|about|circa|approximately|roughly|ca\.?)\s+/i, 'c. ')
-    .replace(/^(from|between|in|by|since|until)\s+/i, '')
-    .replace(/^(\S+(?:\s+(?:BC|BCE|AD|CE))?)\s+(?:to|and|until)\s+/i, '$1–')
-    .replace(/^(early|mid|late)\s+/i, (m) => m[0].toUpperCase() + m.slice(1));
-}
-
 /** Light up the cards linked to the selected one: a person's doings, an event's people. */
 function markLinked(it){
   root.querySelectorAll('.tp-card.rel').forEach((n) => n.classList.remove('rel'));
@@ -1176,7 +1200,7 @@ function closeDetail(){
   markLinked(null);
   V.selected = null;
   root.querySelector('#tpDetail')?.classList.remove('open');
-  root.querySelectorAll('.tp-card.sel,.tp-row.sel').forEach((n) => n.classList.remove('sel'));
+  root.querySelectorAll('.tp-card.sel,.tp-row.sel,.tp-era.sel').forEach((n) => n.classList.remove('sel'));
 }
 
 // ---------------------------------------------------------------------------
@@ -1226,7 +1250,7 @@ function redraw(){
   // The outline drops non-matching rows AND empty chapters, so it is rebuilt.
   if(V.mode === 'learn'){ drawLearn(); refreshCount(); return; }
   // Dim in place rather than rebuilding, so the scroll position and images stay put.
-  root.querySelectorAll('.tp-card').forEach((n) => n.classList.toggle('dim', !!V.matches && !V.matches.has(n.dataset.id)));
+  root.querySelectorAll('.tp-card,.tp-era').forEach((n) => n.classList.toggle('dim', !!V.matches && !V.matches.has(n.dataset.id)));
   refreshCount();
 }
 
@@ -1287,7 +1311,7 @@ function onClick(ev){
   if(b.dataset.nav){ step(Number(b.dataset.nav)); return; }
   if(b.dataset.id && V.mode !== 'quiz'){
     if(host?.classList.contains('dragging')) return;
-    if(V.selected === b.dataset.id && b.classList.contains('tp-card')){ closeDetail(); return; }
+    if(V.selected === b.dataset.id && (b.classList.contains('tp-card') || b.classList.contains('tp-era'))){ closeDetail(); return; }
     showDetail(b.dataset.id);
   }
   else if(b.dataset.id && V.mode === 'quiz') showDetail(b.dataset.id);

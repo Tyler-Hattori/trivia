@@ -10,7 +10,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { PATHS } from '../lib/store.mjs';
-import { makeScale, pack, GEO, anchorYear, cardTiers, rowsOf, lineSpan } from '../../project/features/topic/layout.js';
+import { GEO, anchorYear, layoutTimeline } from '../../project/features/topic/layout.js';
 
 const want = process.argv[2];
 const idx = JSON.parse(fs.readFileSync(path.join(PATHS.topics, 'index.json'), 'utf8'));
@@ -39,8 +39,11 @@ for(const row of idx.topics){
   check('key ideas are concepts, off the timeline', T.items.filter((it) => it.keyIdea).every((it) => it.type === 'concept' && !it.onTimeline && !it.key));
   // Except chapters a hand override keeps out of the essentials (noKeyChapters).
   const noKey = new Set((OVR[T.slug]?.noKeyChapters || []).map((x) => x.toLowerCase()));
-  check('every non-empty chapter has key items', T.chapters.every((c) => !c.count || c.key > 0 || noKey.has(c.title.toLowerCase())),
-    T.chapters.filter((c) => c.count && !c.key && !noKey.has(c.title.toLowerCase())).map((c) => c.title).join(', '));
+  // Non-empty: with entries the audit did not judge off-topic (a "Waves"
+  // chapter holding only the Hoover Dam has nothing to make essential).
+  const onTopic = (c) => T.items.some((it) => it.onTimeline && it.chapter === c.id && !it.offTopic);
+  check('every non-empty chapter has key items', T.chapters.every((c) => !c.count || c.key > 0 || !onTopic(c) || noKey.has(c.title.toLowerCase())),
+    T.chapters.filter((c) => c.count && !c.key && onTopic(c) && !noKey.has(c.title.toLowerCase())).map((c) => c.title).join(', '));
   if(T.chronological){
     const main = T.chapters.filter((c) => !c.overlaps && c.from != null);
     check('chronological chapters ascend', main.every((c, i) => i === 0 || c.from >= main[i - 1].from));
@@ -66,33 +69,41 @@ for(const row of idx.topics){
   check('related ids all resolve, never self', T.items.every((it) => (it.related || []).every((r) => ids.has(r) && r !== it.id)));
   // Exempt: a chapter with nothing else to offer gets its best two anyway.
   const thing = (it) => ['place', 'group', 'concept'].includes(it.type) && !it.hat;
-  const onlyThings = (ch) => T.items.filter((it) => it.onTimeline && it.chapter === ch).every(thing);
+  const unkeyed = new Set((OVR[T.slug]?.unkey || []).map((x) => x.toLowerCase()));
+  const onlyThings = (ch) => T.items.filter((it) => it.onTimeline && it.chapter === ch && !it.offTopic && !unkeyed.has(it.title.toLowerCase())).every(thing);
   const badKey = key.filter((it) => thing(it) && !onlyThings(it.chapter));
   check('no place/group/concept is key without a main-article hatnote', !badKey.length, badKey.map((it) => it.title).join(', '));
   check('works pulled in by a creator name a member creator', T.items.filter((it) => it.via === 'works').every((it) => ids.has(it.by)));
 
-  // Layout: in every lane, no two cards overlap, at several zooms and both modes.
+  // Layout (layoutTimeline, as the page draws it): in every lane no two cards
+  // overlap; time runs left to right; era bars do not overlap in their row;
+  // in Essentials every essential is drawn (a card or a bar) and the fill
+  // stays within max(essential rows, 8).
+  const byId = new Map(T.items.map((it) => [it.id, it]));
+  const pool = T.items.filter((it) => it.onTimeline);
   for(const show of ['key', 'all']){
-    const items = T.items.filter((it) => it.onTimeline && (show === 'all' || it.key));
     for(const ppy of [0.5, 3, 12]){
-      const scale = makeScale(items, ppy);
-      const byId = new Map(T.items.map((it) => [it.id, it]));
-      const tiers = cardTiers(items, (id) => byId.get(id));
-      const { pos } = pack(items, scale, { rows: rowsOf(tiers), line: (it) => lineSpan(it, scale) });
-      // A card of several rows occupies each of them.
+      const L = layoutTimeline(pool, { show, ppy, lookup: (id) => byId.get(id) });
       const lanes = new Map();
-      for(const p of pos.values()) for(let k = 0; k < p.rows; k++) (lanes.get(p.lane + k) || lanes.set(p.lane + k, []).get(p.lane + k)).push(p.x);
+      for(const it of L.cards){ const p = L.pos.get(it.id); for(let k = 0; k < p.rows; k++) (lanes.get(p.lane + k) || lanes.set(p.lane + k, []).get(p.lane + k)).push(p.x); }
       let overlaps = 0;
       for(const xs of lanes.values()){
         xs.sort((a, b) => a - b);
         for(let i = 1; i < xs.length; i++) if(xs[i] - xs[i - 1] < GEO.CARD_W) overlaps++;
       }
-      // x must be monotone in time: an earlier anchor never draws right of a later one.
-      const sorted = [...items].sort((a, b) => anchorYear(a) - anchorYear(b));
+      const sorted = [...L.cards].sort((a, b) => anchorYear(a) - anchorYear(b));
       let back = 0;
-      for(let i = 1; i < sorted.length; i++) if(pos.get(sorted[i].id).x < pos.get(sorted[i - 1].id).x - 0.5) back++;
-      check(`layout ${show} @${ppy}px/yr: no overlaps, time runs left to right`, !overlaps && !back,
-        `${items.length} cards, ${lanes.size} lanes, ${scale.breaks.length} breaks${overlaps ? `, ${overlaps} overlaps` : ''}${back ? `, ${back} out of order` : ''}`);
+      for(let i = 1; i < sorted.length; i++) if(L.pos.get(sorted[i].id).x < L.pos.get(sorted[i - 1].id).x - 0.5) back++;
+      let barOver = 0;
+      for(const list of [L.eras, L.rulers]){
+        const rows = new Map();
+        for(const b of list) (rows.get(b.row) || rows.set(b.row, []).get(b.row)).push(b);
+        for(const r of rows.values()){ r.sort((a, b) => a.x0 - b.x0); for(let i = 1; i < r.length; i++) if(r[i].x0 < r[i - 1].x1) barOver++; }
+      }
+      const drawn = new Set([...L.cards.map((it) => it.id), ...L.eras.map((b) => b.it.id), ...(L.umbrellas || []).map((it) => it.id)]);
+      const lost = show === 'key' ? pool.filter((it) => it.key && !drawn.has(it.id)) : [];
+      check(`layout ${show} @${ppy}px/yr: no overlaps, time runs left to right, essentials all drawn`, !overlaps && !back && !barOver && !lost.length,
+        `${L.cards.length} cards (${L.minor.size} fill), ${L.eras.length} era bars, ${lanes.size} lanes, ${L.scale.breaks.length} breaks${overlaps ? `, ${overlaps} overlaps` : ''}${back ? `, ${back} out of order` : ''}${barOver ? `, ${barOver} bar overlaps` : ''}${lost.length ? `, lost: ${lost.slice(0, 3).map((it) => it.title).join(', ')}` : ''}`);
     }
   }
 }

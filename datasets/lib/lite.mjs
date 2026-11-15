@@ -18,6 +18,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { PATHS } from './store.mjs';
 import { entryType } from './etype.mjs';
+import { auditType } from './audit.mjs';
 import { readIdeas } from './ideas.mjs';
 import { stripApparatus } from './wiki.mjs';
 
@@ -45,7 +46,7 @@ export function writeLite({ entries, taxo }){
   const rows = [];
   for(const e of entries){
     if(e.start == null) continue;
-    const r = { id: e.id, t: titles[e.id] || e.title, s: e.start, ty: entryType(e) };
+    const r = { id: e.id, t: titles[e.id] || e.title, s: e.start, ty: auditType(e.id) || entryType(e) };
     if(e.end != null && e.end !== e.start) r.e = e.end;
     if(e.kind === 'span') r.k = 1;
     if(e.openEnded) r.o = 1;

@@ -35,7 +35,7 @@
 
 import { questionsFor, gradeField } from '../quiz/questions.js';
 import { thumbUrl } from '../../utils/helpers.js';
-import { fmtYear, summary } from './layout.js';
+import { fmtYear, fmtWhen, summary } from './layout.js';
 import { parseWhen } from './search.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -360,12 +360,12 @@ function drawOrder(c){
       const k = c.picked.indexOf(it.id);
       const cls = c.done ? (sorted[k]?.id === it.id ? 'ok' : 'bad') : '';
       return `<button class="tp-opt ${cls}" data-pick="${esc(it.id)}" ${c.done ? 'disabled' : ''}>
-        ${card(it, c.done ? ` <span class="tp-meta">· ${esc(it.yearText || fmtYear(it.start))}</span>` : '')}
+        ${card(it, c.done ? ` <span class="tp-meta">· ${esc(fmtWhen(it))}</span>` : '')}
         <span class="num ${k < 0 ? 'empty' : ''}" style="position:relative;float:right;margin-top:-30px">${k < 0 ? '' : k + 1}</span>
       </button>`;
     }).join('')}
     ${c.done ? `<div style="margin-top:12px"><div class="tp-meta" style="margin-bottom:4px">Correct order</div>
-      ${sorted.map((it, i) => `<div class="tp-ordr"><b>${i + 1}. ${esc(it.yearText || fmtYear(it.start))}</b> — <a href="#" data-open="${esc(it.id)}">${esc(it.title)}</a>
+      ${sorted.map((it, i) => `<div class="tp-ordr"><b>${i + 1}. ${esc(fmtWhen(it))}</b> — <a href="#" data-open="${esc(it.id)}">${esc(it.title)}</a>
         <div class="tp-meta">${esc(summary(it.context || it.excerpt, 200))}</div></div>`).join('')}
       <button class="tp-btn primary" style="margin-top:12px" data-qact="next">Next → <span class="tp-meta" style="color:#cbd5e1">Enter</span></button></div>` : ''}
   </div>`;
@@ -407,7 +407,7 @@ function drawRecall(c){
 function reveal(it){
   const ch = Q.T.chapters[it.chapter];
   return `<div style="margin-top:14px;border-left:3px solid ${ch?.color || '#cbd5e1'};padding-left:12px">
-    <div class="tp-meta">${esc([it.start == null ? it.title : it.yearText || fmtYear(it.start), ch?.title].filter(Boolean).join(' · '))}</div>
+    <div class="tp-meta">${esc([it.start == null ? it.title : fmtWhen(it), ch?.title].filter(Boolean).join(' · '))}</div>
     ${it.start == null && defOf(it) ? `<div style="color:#334155;margin-top:4px">${esc(defOf(it))}</div>` : ''}
     ${it.start == null && !it.context ? '' : `<div style="color:#334155;margin-top:4px">${esc(it.context || summary(it.excerpt, 420))}</div>`}
     <a href="#" class="tp-src" data-open="${esc(it.id)}">More about ${esc(it.title)}</a>
@@ -445,7 +445,7 @@ function drawEnd(){
   return `<div class="tp-q">
     <h3>${r} of ${n} right · ${n ? Math.round(100 * r / n) : 0}%</h3>
     ${missed.length ? `<div class="tp-meta" style="margin-bottom:6px">To go over (they will come back sooner):</div>
-      ${missed.map((it) => `<div class="tp-ordr"><a href="#" data-open="${esc(it.id)}">${esc(it.title)}</a> <span class="tp-meta">${esc(it.yearText || fmtYear(it.start) || '')}</span>
+      ${missed.map((it) => `<div class="tp-ordr"><a href="#" data-open="${esc(it.id)}">${esc(it.title)}</a> <span class="tp-meta">${esc(fmtWhen(it))}</span>
         <div class="tp-meta">${esc(summary(it.context || it.def || it.excerpt, 180))}</div></div>`).join('')}` : '<div class="tp-meta">Nothing missed.</div>'}
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
       <button class="tp-btn primary" data-qact="again">Another ${Q.set.length}</button>

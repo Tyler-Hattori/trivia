@@ -6,7 +6,7 @@
  *     node datasets/topic.mjs "History of England"
  *     node datasets/topic.mjs "History of England" --events "Timeline of English history"
  *     node datasets/topic.mjs "History of England" --ingest          # fill gaps first
- *     node datasets/topic.mjs --all                                  # rebuild every topic
+ *     node datasets/topic.mjs --all [--only slug,slug]               # rebuild every topic (or some)
  *     node datasets/topic.mjs --list [file] [--ingest] [--force]      # build many (topics.txt)
  *     node datasets/topic.mjs --discover <source> --group G [...]      # add many lines to topics.txt
  *     node datasets/topic.mjs --site <index url> --name N --hint "physics" --credit "…" [--ingest]
@@ -96,6 +96,8 @@ import { fileURLToPath } from 'node:url';
 
 import { readEntries, PATHS, slugify } from './lib/store.mjs';
 import { entryType, TIMELINE_TYPES } from './lib/etype.mjs';
+import { readAudit, auditType } from './lib/audit.mjs';
+import { dupCandidates, pairKey, jaccard, readDupes } from './lib/dupes.mjs';
 import { loadTaxonomy } from './lib/taxotree.mjs';
 import { getJSON } from './lib/wikilib.mjs';
 import { INDEX_TITLE, stripApparatus } from './lib/wiki.mjs';
@@ -108,7 +110,7 @@ const WP = 'https://en.wikipedia.org';
 const argv = process.argv.slice(2);
 const arg = (n, d = null) => (argv.includes(n) ? argv[argv.indexOf(n) + 1] : d);
 const args = (n) => argv.flatMap((a, i) => (a === n ? [argv[i + 1]] : []));
-const flagValues = new Set(['--name', '--events', '--prose', '--ingest-limit', '--key', '--group', '--list', '--discover', '--match', '--template', '--min-kb', '--limit', '--site', '--hint', '--credit', '--max-subpages'].flatMap((f) => args(f)));
+const flagValues = new Set(['--name', '--events', '--prose', '--ingest-limit', '--key', '--group', '--list', '--discover', '--match', '--template', '--min-kb', '--limit', '--site', '--hint', '--credit', '--max-subpages', '--only'].flatMap((f) => args(f)));
 const positional = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && argv[i - 1].startsWith('--') && flagValues.has(a)));
 
 const OPT = {
@@ -135,7 +137,10 @@ fs.mkdirSync(PATHS.topics, { recursive: true });
 
 if(OPT.all){
   const idx = readIndex();
+  // --only a,b: just those slugs.
+  const only = arg('--only') ? new Set(arg('--only').split(',').map((x) => x.trim())) : null;
   for(const t of idx.topics){
+    if(only && !only.has(t.slug)) continue;
     const a = t.source.kind === 'site'
       ? [path.join(HERE, 'topic.mjs'), '--site', t.source.url, '--name', t.title, '--key', String(t.keyTarget || 90),
          ...(t.source.hint ? ['--hint', t.source.hint] : []), ...(t.source.credit ? ['--credit', t.source.credit] : [])]
@@ -1061,7 +1066,7 @@ const out = [...items.values()].map(({ e, m, via, t, prose }) => ({
   // is really an event ("Civil Rights Act of 1964", "Battle of Appomattox
   // Court House"; the store just never ingested it) keeps its own type and
   // stays out of Key ideas. It belongs in the store, via --ingest.
-  type: e.idea ? (NOT_IDEA_PAGE.test(e.title) ? 'other' : entryType(e)) : entryType(e),
+  type: e.idea ? (NOT_IDEA_PAGE.test(e.title) ? 'other' : entryType(e)) : (auditType(e.id) || entryType(e)),
   idea: !!e.idea,
   // Known subject + region (classify.mjs) — the topic page's second filter row.
   subject: taxo?.entries?.[e.id]?.mid || '',
@@ -1091,6 +1096,17 @@ for(const it of out){
   if(it.type !== 'period' || (it.end != null && it.end !== it.start)) continue;
   const m = String(it.subtitle || '').match(/\b(\d{3,4})\s*(?:[–-]|to)\s*(\d{3,4})\b/);
   if(m && +m[1] === it.start && +m[2] > it.start && +m[2] <= new Date().getFullYear()){ it.end = +m[2]; it.kind = 'span'; it.yearText = `${m[1]}-${m[2]}`; }
+}
+
+/*
+ * A description that is only a name says nothing about a place, group or
+ * period: Wikidata's description slot for *Spain* held "Pedro Sánchez" and
+ * for *Ontario* "Kathleen Wynne" (the head of government). For a work or a
+ * discovery a name is its maker (*SN 1572* — Tycho Brahe) and stays.
+ */
+{
+  const BARE = /^[A-Z][\p{L}'’.-]*( (de|da|von|van|al|bin|ibn|[A-Z][\p{L}'’.-]*)){0,4}$/u;
+  for(const it of out) if(['place', 'group', 'period'].includes(it.type) && BARE.test(it.subtitle || '')) it.subtitle = '';
 }
 
 // The subject itself is the whole topic, not one of its entries: Cold War had
@@ -1172,7 +1188,7 @@ for(const [pid, list] of worksOf){
       id: e.id, canon: null, title: e.title, subtitle: e.subtitle || p.title, yearText: e.yearText || '',
       start: e.start, end: e.end, kind: e.kind, circa: !!e.circa, openEnded: !!e.openEnded,
       image: e.image || '', excerpt: e.excerpt || '', facets: e.facets || {}, dataset: e.origin?.dataset || '',
-      wiki: e.origin?.wiki || '', dateSource: e.origin?.dateSource || '', type: entryType(e),
+      wiki: e.origin?.wiki || '', dateSource: e.origin?.dateSource || '', type: auditType(e.id) || entryType(e),
       subject: taxo?.entries?.[e.id]?.mid || '', region: taxo?.entries?.[e.id]?.region || '',
       fame: e.sitelinks ? Math.log1p(e.sitelinks) / fameMax : 0,
       via: 'works', by: pid, mentions: 0, weight: 0, lead: false, hat: false,
@@ -1181,6 +1197,67 @@ for(const [pid, list] of worksOf){
   }
 }
 if(nWorks) console.log(`  + ${nWorks} works by ${worksOf.size} of the topic's people (from the store)`);
+
+/*
+ * The content audit (audit-entries.mjs, Claude Haiku; audit.json by hand wins).
+ * Types were applied above. Here:
+ *   - a date judged wrong is replaced by the audit's year when it gives one far
+ *     from the stored one (*On Floating Bodies* stored at 1891, its edition, is
+ *     c. 250 BC; the Mesoproterozoic ends 1.0 billion years ago, not in 1 BC);
+ *     with no year it is suspect and off the timeline (*Halley's Comet* at 1986);
+ *     a year or two out (Newton's Julian birth year) is not wrong;
+ *   - relevance to this topic: 'off' is never an essential (the First Punic
+ *     War in Physics), 'context' ranks lower.
+ */
+const AUDIT = readAudit();
+const RELEVANCE = AUDIT.topics[slug] || {};
+{
+  let fixed = 0, suspect = 0;
+  const tolAt = (y) => Math.max(3, 0.05 * (new Date().getFullYear() - y));
+  let spans = 0;
+  for(const it of out){
+    if(it.via === 'events' || it.start == null) continue;
+    const a = AUDIT.entries[it.id];
+    // A period with no end: the span the audit gave (--spans), when its start
+    // agrees with ours. The Akkadian Empire was "2334 BC"; it is 2334–2154 BC.
+    if(it.type === 'period' && (it.end == null || it.end === it.start) && Array.isArray(a?.span) && Number.isInteger(a.span[1])){
+      let [sy, ey] = a.span;
+      if(it.start < 0 && sy > 0 && ey <= sy){ sy = -sy; ey = -ey; }
+      if(ey > sy && Math.abs(sy - it.start) <= tolAt(Math.min(sy, it.start))){
+        it.end = ey; it.kind = 'span'; it.yearText = ''; it.openEnded = false; it.spanAdded = true; spans++;
+        continue;
+      }
+    }
+    if(a?.d !== 'wrong') continue;
+    // A ruler's stored span is the reign, on purpose; the model "corrects" it
+    // to the life (Puyi 1908–1912 → 1906–1967).
+    if(it.dataset === 'leaders') continue;
+    if(!Number.isInteger(a.y)){ it.auditWrong = true; suspect++; continue; }
+    // The model often drops the minus of a BC year (Demosthenes "384..322"):
+    // a stored BC date with a positive, descending or single answer means BC.
+    let y = a.y, e = Number.isInteger(a.e) ? a.e : null;
+    if(it.start < 0 && y > 0 && (e == null || e <= y)){ y = -y; e = e == null ? null : -e; }
+    const startOk = Math.abs(y - it.start) <= tolAt(Math.min(y, it.start));
+    const endOk = e == null || it.end == null || Math.abs(e - it.end) <= tolAt(Math.min(e, it.end));
+    // Right start, no end stored: the span it gives (Russian Empire 1721 → 1721–1917).
+    if(startOk && (it.end == null || it.end === it.start) && e != null && e > it.start && it.type !== 'person' && it.type !== 'place'){
+      it.end = e; it.kind = 'span'; it.yearText = ''; it.spanAdded = true; spans++;
+      continue;
+    }
+    if(startOk && endOk) continue;
+    a.y = y; a.e = e;
+    it.storedYears = it.end != null && it.end !== it.start ? [it.start, it.end] : [it.start];
+    it.start = a.y;
+    it.end = Number.isInteger(a.e) && a.e > a.y ? a.e : null;
+    it.kind = it.end != null ? 'span' : 'point';
+    it.openEnded = false;
+    it.yearText = '';
+    it.dateFixed = true;
+    fixed++;
+  }
+  const rel = Object.values(RELEVANCE);
+  if(fixed || suspect || spans || rel.length) console.log(`  audit: ${fixed} dates corrected, ${spans} spans completed, ${suspect} suspect; relevance ${rel.filter((r) => r === 'off').length} off, ${rel.filter((r) => r === 'context').length} context`);
+}
 
 // --- chapters & date checks -----------------------------------------------
 chapters.forEach((c, ci) => { c.members = out.filter((it) => it.chapterOfMention === ci && it.start != null); });
@@ -1197,10 +1274,15 @@ for(const c of chapters){
  */
 if(chronological){
   const dated = chapters.filter((c) => c.members.length);
-  if(dated.filter((c) => c.overlaps).length > dated.length * 0.4){
+  // Nor if the eras do not run in order: *Aztec Empire* has eight chapters of
+  // history, then administration, rulers and law, whose inferred years
+  // ("List of rulers" 1299–1524 after "Spanish conquest") go back in time.
+  const main = chapters.filter((c) => !c.overlaps && c.from != null);
+  const backwards = main.some((c, i) => i > 0 && c.from < main[i - 1].from);
+  if(backwards || dated.filter((c) => c.overlaps).length > dated.length * 0.4){
     chronological = false;
     for(const c of chapters){ c.from = c.to = null; c.overlaps = false; }
-    console.log('  chapters overlap too much to be eras: treating the article as thematic');
+    console.log(`  chapters ${backwards ? 'go back in time' : 'overlap too much'} to be eras: treating the article as thematic`);
   }
 }
 
@@ -1240,6 +1322,8 @@ for(const it of out){
     it.dateSuspect = false;
     it.chapter = it.chapterOfMention ?? 0;
   }
+
+  if(it.auditWrong) it.dateSuspect = true;
 
   // On the timeline: things that happened, dated plausibly. A place or group
   // dated only by prose ("lead-text") is the classic false date. Concepts —
@@ -1447,6 +1531,9 @@ for(const it of out){
   // whose length we do not know: *British Empire* (1583) and *Soviet Union*
   // (1922) were essentials of World War II's "Start and end dates".
   if(it.type === 'period' && it.end == null && !it.hat && POLITY.test(it.subtitle)) imp *= 0.55;
+  const rel = it.via === 'events' ? 'core' : RELEVANCE[it.id];
+  if(rel === 'context') imp *= 0.8;
+  else if(rel === 'off'){ imp *= 0.5; it.offTopic = true; }
   it.importance = +imp.toFixed(4);
 }
 // A creator's works rank just under the creator: the best known two can be
@@ -1458,6 +1545,48 @@ for(const [pid, list] of byWorks){
   const p = out.find((x) => x.id === pid);
   list.sort((a, b) => (b.fame - a.fame) || (String(b.excerpt).length - String(a.excerpt).length));
   list.forEach((it, k) => { it.importance = +((p?.importance || 0.3) * (k < 2 ? 0.92 : 0.45)).toFixed(4); });
+}
+
+/*
+ * One card per happening, among mined events too. Related-article mining finds
+ * the same event on several pages: Pizarro reaching Peru three times, "Spain
+ * licenses Pizarro to conquer Peru" next to "Pizarro receives royal approval".
+ * Pairs judged the same by dedupe-events.mjs (lib/dupes.mjs) merge; a pair not
+ * yet judged only when its titles are nearly identical. The survivor is the
+ * timeline-page line over a prose sentence, then the more important; it keeps
+ * the other's sentence and picture if it has none.
+ */
+{
+  const DUP = readDupes();
+  const ev = out.filter((it) => it.via === 'events' && it.onTimeline);
+  const parent = new Map(ev.map((it) => [it.id, it.id]));
+  const find = (x) => { while(parent.get(x) !== x){ parent.set(x, parent.get(parent.get(x))); x = parent.get(x); } return x; };
+  for(const [a, b] of dupCandidates(ev)){
+    const v = DUP[pairKey(a, b)];
+    if(v === true || (v === undefined && jaccard(a.title, b.title) >= 0.6)) parent.set(find(a.id), find(b.id));
+  }
+  const groups = new Map();
+  for(const it of ev) (groups.get(find(it.id)) || groups.set(find(it.id), []).get(find(it.id))).push(it);
+  const gone = new Set();
+  for(const g of groups.values()){
+    if(g.length < 2) continue;
+    g.sort((a, b) => (!!a.prose - !!b.prose) || (b.importance - a.importance) || (!!b.image - !!a.image));
+    const [keep, ...rest] = g;
+    for(const r of rest){
+      if(!keep.excerpt && r.excerpt) keep.excerpt = r.excerpt;
+      if(!keep.image && r.image){ keep.image = r.image; if(r.imageFrom) keep.imageFrom = r.imageFrom; }
+      if(!keep.about && r.about) keep.about = r.about;
+      keep.importance = Math.max(keep.importance, r.importance);
+      gone.add(r.id);
+    }
+    // Told on several pages: a little more central.
+    keep.importance = +Math.min(1, keep.importance * (1 + 0.1 * rest.length)).toFixed(4);
+    keep.alsoTold = rest.length;
+  }
+  if(gone.size){
+    for(let i = out.length - 1; i >= 0; i--) if(gone.has(out[i].id)) out.splice(i, 1);
+    console.log(`  mined events: ${gone.size} duplicates merged`);
+  }
 }
 
 /*
@@ -1507,9 +1636,9 @@ for(const [, arr] of byCh){
    * They stay Key only when a section is ABOUT them (a "Main article" hatnote).
    */
   if(OVR.noKeyChapters.has(String(chapters[arr[0].chapter]?.title).toLowerCase())){ arr.forEach((it) => { it.key = false; }); continue; }
-  const eligible = arr.filter((it) => (!['place', 'group', 'concept'].includes(it.type) || it.hat) && !titleIn(OVR.unkey, it));
+  const eligible = arr.filter((it) => (!['place', 'group', 'concept'].includes(it.type) || it.hat) && !it.offTopic && !titleIn(OVR.unkey, it));
   // A chapter of nothing but places ("Legacy") still gets its best two.
-  if(!eligible.length) eligible.push(...arr.filter((it) => !titleIn(OVR.unkey, it)).slice(0, 2));
+  if(!eligible.length) eligible.push(...arr.filter((it) => !it.offTopic && !titleIn(OVR.unkey, it)).slice(0, 2));
   /*
    * What happened comes first: at least half of a chapter's essentials are
    * events when it has them, and people at most 40%. Reading down a timeline

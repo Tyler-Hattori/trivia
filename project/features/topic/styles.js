@@ -80,6 +80,17 @@ export const CSS = String.raw`
 .tp-band:hover{opacity:1}
 .tp-band.dim{opacity:.25}
 .tp-tick{position:absolute;font-size:11px;color:#64748b;transform:translateX(-50%);white-space:nowrap}
+/* the eras track: dynasties, kingdoms and eras as bars across their years; rulers under them */
+.tp-era{position:absolute;height:15px;border-radius:3px;font-size:10.5px;font-weight:600;line-height:15px;padding:0 5px;
+  color:#1e293b;background:color-mix(in srgb,var(--c) 20%,#fff);border-left:3px solid var(--c);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;box-sizing:border-box}
+.tp-era > span,.tp-band > span{display:inline-block}
+.tp-era:hover{background:color-mix(in srgb,var(--c) 32%,#fff);z-index:2}
+.tp-era.sel{box-shadow:0 0 0 2px #0f172a;z-index:3}
+.tp-era.dim{opacity:.25}
+.tp-era.ruler{font-weight:500;color:#334155;background:#f1f5f9;border-left-color:#94a3b8}
+.tp-era.clipl{border-left-style:dashed}
+.tp-era.clipr{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 18px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 18px),transparent)}
 .tp-grid{position:absolute;width:1px;background:#f1f5f9}
 .tp-break{position:absolute;display:flex;align-items:flex-start;justify-content:center;padding-top:24px;font-size:11px;color:#94a3b8;
   background:repeating-linear-gradient(135deg,#fff 0 6px,#f8fafc 6px 12px);border-left:1px dashed #cbd5e1;border-right:1px dashed #cbd5e1}
@@ -93,6 +104,10 @@ export const CSS = String.raw`
 .tp-card.rel{box-shadow:0 0 0 2px #f59e0b,0 6px 16px rgba(245,158,11,.25);z-index:5}
 .tp-card.dim{opacity:.16}
 .tp-card.minor{box-shadow:none;border-color:#eef2f7}
+/* filled in by zooming (Essentials): quieter than the essentials around them */
+.tp-card.fill{background:#fafbfc;border-left-width:2px}
+.tp-card.fill .t{font-weight:600;color:#334155}
+.tp-card.fill:not(:hover) .av{opacity:.85}
 .tp-card .t{font-size:12px;font-weight:700;line-height:1.25;color:#0f172a;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .tp-card .y{font-size:11px;line-height:1.3;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tp-card .ty{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#94a3b8}

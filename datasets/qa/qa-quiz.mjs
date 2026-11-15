@@ -176,7 +176,8 @@ check('#/review renders', rev.ok, rev.value);
 
 await evaluate(app, `location.hash = '#/topic/world-war-ii'`);
 await until(app, `document.querySelectorAll('.tp-row[data-id]').length > 5 || null`, { label: 'learn rows' });
-await evaluate(app, `document.querySelectorAll('.tp-row[data-id]')[3].click()`);
+// A dated row: Key ideas (undated, first in a chapter) have no Meanwhile.
+await evaluate(app, `[...document.querySelectorAll('.tp-row[data-id]')].filter((r) => !/^\\s*idea\\b/.test(r.textContent))[1].click()`);
 const mw = await until(app, `
   (() => { const g = document.querySelectorAll('#tpMeanwhile .tp-mw .g'); return g.length ? g.length : null; })()`, { label: 'meanwhile' });
 check('detail panel shows Meanwhile from other topics', mw.ok && mw.value >= 2, String(mw.value));
