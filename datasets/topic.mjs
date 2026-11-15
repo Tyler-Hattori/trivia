@@ -301,7 +301,33 @@ const stripTags = (s) => decode(s.replace(/<[^>]+>/g, '')).replace(/\[\d+\]/g, '
  * link to everything (every monarch, every county) and would make membership
  * mean "appears anywhere on the page".
  */
+/**
+ * Cut out boxes that are not the article's prose: a "History of Algeria"
+ * sidebar beside *Ancient Carthage*'s first section put the Algerian War, the
+ * Évian Accords and COVID-19 in Algeria into its "Etymology" chapter, because
+ * the sidebar's <li>s read as prose. Nested tags are matched by counting.
+ */
+const BOX = /class="[^"]*\b(sidebar|navbox|vertical-navbox|infobox|metadata|ambox|side-box|thumb|toc)\b[^"]*"/;
+function stripBoxes(html){
+  const open = /<(table|div|ul)\b[^>]*>/g;
+  let out = '', i = 0, m;
+  while((m = open.exec(html))){
+    if(!BOX.test(m[0])) continue;
+    const tag = m[1];
+    const re = new RegExp(`<${tag}\\b[^>]*>|</${tag}>`, 'g');
+    re.lastIndex = m.index + m[0].length;
+    let depth = 1, t;
+    while(depth && (t = re.exec(html))) depth += t[0][1] === '/' ? -1 : 1;
+    const end = depth ? html.length : re.lastIndex;
+    out += html.slice(i, m.index);
+    i = end;
+    open.lastIndex = end;
+  }
+  return out + html.slice(i);
+}
+
 function parseSections(html){
+  html = stripBoxes(html);
   // References inside prose link to sources, not subjects.
   html = html.replace(/<sup[^>]*class="[^"]*reference[^"]*"[^>]*>[\s\S]*?<\/sup>/g, '');
   const parts = html.split(/(<div class="mw-heading mw-heading[234]"[^>]*>[\s\S]*?<\/h[234]>)/);
