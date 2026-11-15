@@ -17,7 +17,45 @@ Read them only for the history of a specific decision.
 - `topic-report.mjs`: about 25 minor findings.
 - Committed and pushed.
 
-### Session 7 (ended mid-work: START HERE)
+### Session 8 (START HERE)
+
+**The user's rule (read it):** the timeline must show *events* (discoveries,
+inventions, battles) at a glance. A discovery gets its own card, not an
+excerpt in its discoverer's card. People cards explain the person. See
+`docs/TOPICS.md`, "Events first".
+
+Done and pushed:
+- The session 7 work and data are committed.
+- **Miner fix** (`lib/wiki.mjs`): a heading that is only a date now dates the
+  paragraphs under it. Timeline of chemistry went from 0 to 138 events,
+  astronomy from 1 to 88.
+- **`events=` pages added in `topics.txt`** for the people-heavy topics:
+  Science, Physics, History of Earth, Geologic time, Ice ages, Plate tectonics,
+  Computing, Geology, Geography. Before this, essentials were mostly people
+  (Chemistry 69/86, Physics 59/91, Geology 31/40).
+- **Key points written** for all 16 batch 1–2 topics (`topic-notes/`).
+
+Running: `/tmp/run-next.sh` under caffeinate.
+1. Batch 3 finishes (its node pid is 38566).
+2. Then `/tmp/science.txt` (those 11 topics) is rebuilt with
+   `--ingest --force` → `/tmp/science.log`, `/tmp/science.done`.
+3. Then batch 4 → `/tmp/batch4.log`, `/tmp/batch34.done`.
+
+Next:
+- After the queue: `topic.mjs --all` (applies key points to the 8 batch 1–2
+  topics not in science.txt), then QA.
+- Compare person/event counts of the essentials (one-liner: count
+  `items.filter(x=>x.key)` by `type`). Expect events to dominate in Chemistry,
+  Astronomy and Physics now.
+- Titles for the new mined events (they are sentence fragments).
+- Computing's 1980s and 2000s timeline pages are tables the miner skips (10
+  tables each, about 0 rows).
+- Data oddities seen in essentials: "Apollo program(person)", "Agriculture
+  (person)", "Science(person)", "Nature(person)", "Columbia (period) 2002",
+  Mesoproterozoic ending in 1 BC, "Smallpox(person)", "Goseck Circle(person)".
+- Plate tectonics qa-topic check (recheck after the rebuild).
+
+### Session 7
 
 Done and pushed:
 - **The home page is three doors again** (Topics, Atlas, Quiz), plus a search

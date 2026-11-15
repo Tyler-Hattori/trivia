@@ -305,6 +305,30 @@ can't define a set. The article already holds what the clustering was guessing a
 The same types keep year questions away from places and concepts in **both**
 quizzes. "What year: Trinovantes?" (an Iron Age tribe) is gone.
 
+### Events first (the user's rule)
+
+The timeline exists to show **what happened, at a glance**: discoveries,
+inventions, experiments, battles, treaties. A discovery is its own card
+("Pascal's mountain barometer experiment"), never an excerpt inside the
+discoverer's card. People cards are welcome, but they explain the *person*, not
+one event. If scrolling a timeline shows mostly faces, it is broken.
+
+How this is enforced:
+- `tlOnly`: a person named only on timeline lines is not a card; the event is.
+- Mined events merge with linked twins, borrow the picture of what they name,
+  and are scored by kind (`minedBase`).
+- Each chapter's essentials are at least 50% events and at most 40% people,
+  **but only if events exist**. A topic needs an `events=` timeline page in
+  `topics.txt`, or a history-of-a-science topic ends up all people (Chemistry
+  had 69 people and 3 events among its essentials).
+- The miner reads three layouts: tables, lines that start with their date,
+  and paragraphs under a heading that is only a date (`=== c. 450 BC ===`,
+  as in *Timeline of chemistry* and *Timeline of astronomy*).
+- Check with the person/event counts of each topic's essentials after every
+  batch (see HANDOFF).
+- `resolveTitle` fuzzy-matches: "Timeline of geography" silently became
+  *Timeline of paleontology*. Test each `events=` page with `mineEvents` first.
+
 ## Design decisions
 
 - **Looks like the original art timeline**:
