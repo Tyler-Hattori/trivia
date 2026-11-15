@@ -11,12 +11,12 @@
    "events": [],
    "keyTarget": 90,
    "blurb": "Ancient Egypt was a cradle of civilization concentrated along the lower reaches of the Nile River in the eastern part of North Africa.",
-   "built": "2026-11-14",
-   "count": 123,
-   "key": 82,
+   "built": "2026-11-15",
+   "count": 133,
+   "key": 84,
    "chapters": 18,
    "from": -5500,
-   "to": 2013,
+   "to": 2026,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/7/7a/Predynastic_collage_%28new_version%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
   },
   {
@@ -30,13 +30,95 @@
    "events": [],
    "keyTarget": 90,
    "blurb": "In modern historiography, ancient Rome is the Roman civilization from the founding of the Italian city of Rome in the 8th century BC to the collapse of the Western Roman Empire in the 5th century AD.",
-   "built": "2026-11-14",
-   "count": 233,
-   "key": 96,
+   "built": "2026-11-15",
+   "count": 253,
+   "key": 97,
    "chapters": 11,
    "from": -753,
    "to": 1992,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/e/ea/Roman_Republic_Empire_map.gif"
+  },
+  {
+   "slug": "astronomy",
+   "title": "Astronomy",
+   "group": "Science",
+   "source": {
+    "page": "History of astronomy",
+    "url": "https://en.wikipedia.org/wiki/History_of_astronomy"
+   },
+   "events": [
+    "Timeline of astronomy"
+   ],
+   "keyTarget": 90,
+   "blurb": "The history of astronomy focuses on the efforts of civilizations to understand the universe beyond earth's atmosphere.",
+   "built": "2026-11-15",
+   "count": 147,
+   "key": 84,
+   "chapters": 11,
+   "from": -3000,
+   "to": 2008,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/a/ac/100inchHooker.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+  },
+  {
+   "slug": "biology",
+   "title": "Biology",
+   "group": "Science",
+   "source": {
+    "page": "History of biology",
+    "url": "https://en.wikipedia.org/wiki/History_of_biology"
+   },
+   "events": [
+    "Timeline of biology and organic chemistry"
+   ],
+   "keyTarget": 90,
+   "blurb": "The history of biology traces the study of the living world from ancient to modern times.",
+   "built": "2026-11-15",
+   "count": 213,
+   "key": 95,
+   "chapters": 10,
+   "from": -670000000,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/a/ae/Aristotle_Altemps_Inv8575.jpg"
+  },
+  {
+   "slug": "cambrian-explosion",
+   "title": "Cambrian explosion",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Cambrian explosion",
+    "url": "https://en.wikipedia.org/wiki/Cambrian_explosion"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Cambrian explosion (also known as the Cambrian radiation or Cambrian diversification) is a major evolutionary radiation event of the Earth's lifeforms beginning approximately 538.8 million years ago in the early Camb",
+   "built": "2026-11-15",
+   "count": 75,
+   "key": 65,
+   "chapters": 13,
+   "from": -1000000000,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/6/6d/Kimberella_quadrata.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+  },
+  {
+   "slug": "chemistry",
+   "title": "Chemistry",
+   "group": "Science",
+   "source": {
+    "page": "History of chemistry",
+    "url": "https://en.wikipedia.org/wiki/History_of_chemistry"
+   },
+   "events": [
+    "Timeline of chemistry"
+   ],
+   "keyTarget": 90,
+   "blurb": "The history of chemistry represents a time span from ancient history to the present.",
+   "built": "2026-11-15",
+   "count": 135,
+   "key": 86,
+   "chapters": 7,
+   "from": -4400,
+   "to": 1987,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/c/c7/Josiah_Willard_Gibbs_-from_MMS-.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
   },
   {
    "slug": "china",
@@ -49,8 +131,8 @@
    "events": [],
    "keyTarget": 90,
    "blurb": "The history of China spans several millennia across a wide geographical area.",
-   "built": "2026-11-14",
-   "count": 206,
+   "built": "2026-11-15",
+   "count": 209,
    "key": 90,
    "chapters": 7,
    "from": -12000000,
@@ -68,13 +150,51 @@
    "events": [],
    "keyTarget": 90,
    "blurb": "The Cold War was a period of international geopolitical rivalry between the United States (US) and the Soviet Union (USSR) and their respective allies, the capitalist Western Bloc and communist Eastern Bloc.",
-   "built": "2026-11-14",
-   "count": 236,
-   "key": 98,
-   "chapters": 18,
+   "built": "2026-11-15",
+   "count": 240,
+   "key": 90,
+   "chapters": 10,
    "from": 1923,
-   "to": 2022,
+   "to": 2026,
    "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/50/Map_of_USSR_with_SSR_names.svg/330px-Map_of_USSR_with_SSR_names.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+  },
+  {
+   "slug": "computing",
+   "title": "Computing",
+   "group": "Science",
+   "source": {
+    "page": "History of computing",
+    "url": "https://en.wikipedia.org/wiki/History_of_computing"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of computing extends beyond the history of computing hardware and modern computing technology including earlier methods that relied on pen and paper or chalk and slate, with or without the aid of tables.",
+   "built": "2026-11-15",
+   "count": 86,
+   "key": 61,
+   "chapters": 8,
+   "from": -100,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/6/6c/ENIAC_Penn1.jpg"
+  },
+  {
+   "slug": "dinosaurs",
+   "title": "Dinosaurs",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Dinosaur",
+    "url": "https://en.wikipedia.org/wiki/Dinosaur"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Dinosaurs are a diverse group of warm-blooded reptiles of the clade Dinosauria.",
+   "built": "2026-11-15",
+   "count": 118,
+   "key": 83,
+   "chapters": 9,
+   "from": -410000000,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/c/cb/Impact_event.jpg"
   },
   {
    "slug": "england",
@@ -89,12 +209,12 @@
    ],
    "keyTarget": 90,
    "blurb": "The territory today known as England became inhabited more than 800,000 years ago, as the discovery of stone tools and footprints at Happisburgh in Norfolk have indicated.",
-   "built": "2026-11-14",
-   "count": 485,
-   "key": 93,
+   "built": "2026-11-15",
+   "count": 473,
+   "key": 95,
    "chapters": 10,
    "from": -79000,
-   "to": 1925,
+   "to": 1939,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/b/b3/Battle_of_Naseby%2C_hand-coloured_copper_engraving.jpg"
   },
   {
@@ -110,13 +230,150 @@
    ],
    "keyTarget": 90,
    "blurb": "The first written records for the history of France appeared in the Iron Age.",
-   "built": "2026-11-14",
-   "count": 642,
-   "key": 99,
+   "built": "2026-11-15",
+   "count": 624,
+   "key": 97,
    "chapters": 11,
    "from": -3300,
-   "to": 1995,
+   "to": 1981,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/5/57/Anonymous_-_Prise_de_la_Bastille.jpg"
+  },
+  {
+   "slug": "geography",
+   "title": "Geography",
+   "group": "Science",
+   "source": {
+    "page": "History of geography",
+    "url": "https://en.wikipedia.org/wiki/History_of_geography"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of geography includes many histories of geography which have differed over time and between different cultural and political groups.",
+   "built": "2026-11-15",
+   "count": 131,
+   "key": 88,
+   "chapters": 10,
+   "from": -3500,
+   "to": 1947,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/a/a2/Portrait_of_Eratosthenes.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+  },
+  {
+   "slug": "geologic-time",
+   "title": "Geologic time",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Geologic time scale",
+    "url": "https://en.wikipedia.org/wiki/Geologic_time_scale"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The geologic time scale or geological time scale describes how geologic time is divided into standardised intervals.",
+   "built": "2026-11-15",
+   "count": 79,
+   "key": 70,
+   "chapters": 11,
+   "from": -4100000000,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/1/14/Sir_Henry_Raeburn_-_James_Hutton%2C_1726_-_1797._Geologist_-_PG_2686_-_National_Galleries_of_Scotland.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+  },
+  {
+   "slug": "geology",
+   "title": "Geology",
+   "group": "Science",
+   "source": {
+    "page": "History of geology",
+    "url": "https://en.wikipedia.org/wiki/History_of_geology"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of geology is concerned with the development of the natural science of geology.",
+   "built": "2026-11-15",
+   "count": 51,
+   "key": 40,
+   "chapters": 7,
+   "from": -1200,
+   "to": 1995,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/a/ae/Aristotle_Altemps_Inv8575.jpg"
+  },
+  {
+   "slug": "history-of-earth",
+   "title": "History of Earth",
+   "group": "Life & Earth",
+   "source": {
+    "page": "History of Earth",
+    "url": "https://en.wikipedia.org/wiki/History_of_Earth"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The natural history of Earth concerns the development of planet Earth from its formation to the present day.",
+   "built": "2026-11-15",
+   "count": 102,
+   "key": 82,
+   "chapters": 12,
+   "from": -4600000000,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f2/Archean.png"
+  },
+  {
+   "slug": "history-of-life",
+   "title": "History of life",
+   "group": "Life & Earth",
+   "source": {
+    "page": "History of life",
+    "url": "https://en.wikipedia.org/wiki/History_of_life"
+   },
+   "events": [
+    "Timeline of life"
+   ],
+   "keyTarget": 90,
+   "blurb": "The history of life on Earth traces the processes by which living and extinct organisms evolved, from the earliest emergence of life to the present day.",
+   "built": "2026-11-15",
+   "count": 209,
+   "key": 101,
+   "chapters": 19,
+   "from": -4600000000,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/c/ce/Rhodomonas_salina_CCMP_322_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+  },
+  {
+   "slug": "human-evolution",
+   "title": "Human evolution",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Human evolution",
+    "url": "https://en.wikipedia.org/wiki/Human_evolution"
+   },
+   "events": [
+    "Timeline of human evolution"
+   ],
+   "keyTarget": 90,
+   "blurb": "Homo sapiens is a distinct species of the hominid family of primates, which includes all the great apes.",
+   "built": "2026-11-15",
+   "count": 126,
+   "key": 93,
+   "chapters": 9,
+   "from": -3600000000,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/9/9c/Members_of_Genus_Homo_2.png"
+  },
+  {
+   "slug": "ice-ages",
+   "title": "Ice ages",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Ice age",
+    "url": "https://en.wikipedia.org/wiki/Ice_age"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "An ice age is a period of time when decreased temperature of Earth's surface and atmosphere results in the prolonged presence or expansion of continental alpine glaciers and polar ice caps.",
+   "built": "2026-11-15",
+   "count": 53,
+   "key": 41,
+   "chapters": 9,
+   "from": -2400000000,
+   "to": 2026,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9a/Mollweide.jpg/3840px-Mollweide.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
   },
   {
    "slug": "ideas-of-physics",
@@ -132,12 +389,12 @@
    "events": [],
    "keyTarget": 90,
    "blurb": "Astronomy has very old, prehistoric origins.",
-   "built": "2026-11-14",
-   "count": 221,
-   "key": 98,
+   "built": "2026-11-15",
+   "count": 224,
+   "key": 99,
    "chapters": 22,
    "from": 146,
-   "to": 2004,
+   "to": 1984,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/2/28/Albert_Einstein_Head_cleaned.jpg"
   },
   {
@@ -151,12 +408,12 @@
    "events": [],
    "keyTarget": 90,
    "blurb": "Impressionism was a 19th-century art movement characterised by visible brush strokes, open composition, emphasis on accurate depiction of light in its changing qualities (often accentuating the effects of the passage of ",
-   "built": "2026-11-14",
-   "count": 353,
-   "key": 100,
+   "built": "2026-11-15",
+   "count": 345,
+   "key": 99,
    "chapters": 12,
-   "from": 1813,
-   "to": 1942,
+   "from": 1658,
+   "to": 1997,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/a/a4/Claude_Monet_1899_Nadar_crop.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
   },
   {
@@ -172,13 +429,55 @@
    ],
    "keyTarget": 90,
    "blurb": "The first human inhabitants of the Japanese archipelago have been traced to the Paleolithic, around 38–39,000 years ago.",
-   "built": "2026-11-14",
-   "count": 708,
+   "built": "2026-11-15",
+   "count": 665,
    "key": 91,
    "chapters": 6,
    "from": -43000,
-   "to": 2026,
+   "to": 2022,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/d/de/Emperor_Meiji_by_Takahashi_Yuichi.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+  },
+  {
+   "slug": "mathematics",
+   "title": "Mathematics",
+   "group": "Science",
+   "source": {
+    "page": "History of mathematics",
+    "url": "https://en.wikipedia.org/wiki/History_of_mathematics"
+   },
+   "events": [
+    "Timeline of mathematics"
+   ],
+   "keyTarget": 90,
+   "blurb": "The history of mathematics deals with the origin of discoveries in mathematics and the mathematical methods and notation of the past.",
+   "built": "2026-11-15",
+   "count": 480,
+   "key": 108,
+   "chapters": 14,
+   "from": -3400,
+   "to": 1945,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/0/06/Titan_in_front_of_the_ring_and_Saturn.jpg"
+  },
+  {
+   "slug": "medicine",
+   "title": "Medicine",
+   "group": "Science",
+   "source": {
+    "page": "History of medicine",
+    "url": "https://en.wikipedia.org/wiki/History_of_medicine"
+   },
+   "events": [
+    "Timeline of medicine and medical technology"
+   ],
+   "keyTarget": 90,
+   "blurb": "The history of medicine is both a study of medicine throughout history as well as a multidisciplinary field of study that seeks to explore and understand medical practices, both past and present, throughout human societi",
+   "built": "2026-11-15",
+   "count": 395,
+   "key": 101,
+   "chapters": 12,
+   "from": -2784,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/a/a4/ScuolaMedicaMiniatura.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
   },
   {
    "slug": "physics",
@@ -191,13 +490,32 @@
    "events": [],
    "keyTarget": 90,
    "blurb": "Physics is a branch of science in which the primary objects of study are matter and energy.",
-   "built": "2026-11-14",
-   "count": 157,
+   "built": "2026-11-15",
+   "count": 166,
    "key": 91,
    "chapters": 7,
    "from": -1200,
    "to": 2001,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Galileo_Galilei_%281564-1642%29_RMG_BHC2700.tiff/lossy-page1-1920px-Galileo_Galilei_%281564-1642%29_RMG_BHC2700.tiff.jpg"
+  },
+  {
+   "slug": "plate-tectonics",
+   "title": "Plate tectonics",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Plate tectonics",
+    "url": "https://en.wikipedia.org/wiki/Plate_tectonics"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Plate tectonics (from Latin tectonicus, from Ancient Greek τεκτονικός (tektonikós) 'pertaining to building') is the scientific theory that Earth's lithosphere comprises a number of large tectonic plates, which have been ",
+   "built": "2026-11-15",
+   "count": 63,
+   "key": 56,
+   "chapters": 13,
+   "from": -600000000,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/6/65/Alfred_Wegener_ca.1924-30.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
   },
   {
    "slug": "renaissance",
@@ -210,9 +528,9 @@
    "events": [],
    "keyTarget": 90,
    "blurb": "The Renaissance was a European period of history and cultural movement taking place at the end of the Late Middle Ages and the beginning of the early modern era.",
-   "built": "2026-11-14",
-   "count": 211,
-   "key": 90,
+   "built": "2026-11-15",
+   "count": 212,
+   "key": 89,
    "chapters": 5,
    "from": 697,
    "to": 1800,
@@ -229,12 +547,12 @@
    "events": [],
    "keyTarget": 90,
    "blurb": "The history of science covers the development of science from ancient times to the present.",
-   "built": "2026-11-14",
-   "count": 247,
-   "key": 73,
+   "built": "2026-11-15",
+   "count": 284,
+   "key": 77,
    "chapters": 13,
    "from": -6700,
-   "to": 2004,
+   "to": 1980,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/0/06/Titan_in_front_of_the_ring_and_Saturn.jpg"
   },
   {
@@ -248,11 +566,11 @@
    "events": [],
    "keyTarget": 90,
    "blurb": "The history of the United States spans tens of thousands of years of Indigenous civilization; their descendants include but may not be limited to 575 federally recognized tribes.",
-   "built": "2026-11-14",
-   "count": 191,
+   "built": "2026-11-15",
+   "count": 193,
    "key": 91,
    "chapters": 10,
-   "from": -120000,
+   "from": -5000000,
    "to": 2026,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/6/69/Battle_of_Gettysburg%2C_by_Currier_and_Ives.png"
   },
@@ -267,7 +585,7 @@
    "events": [],
    "keyTarget": 90,
    "blurb": "World War II, or the Second World War, was a global conflict between two coalitions: the Allies and the Axis powers.",
-   "built": "2026-11-14",
+   "built": "2026-11-15",
    "count": 308,
    "key": 100,
    "chapters": 17,
