@@ -26,7 +26,8 @@ These scripts run one after another under caffeinate:
 2. `/tmp/run-c.sh`: waits for `batch34.done`, then rebuilds 14 older topics
    that need related articles: Dinosaurs, Cambrian explosion, Ice ages, Plate
    tectonics, Geologic time, Geology, Ancient Egypt, Ancient Rome, China, US,
-   Renaissance, Impressionism, Cold War and WWII (`/tmp/batch12b.log`, then
+   Renaissance, Impressionism, Cold War and WWII, then batch 3 again to mine
+   main-article pages beyond the old top 10 (`/tmp/batch12b.log`, then
    `/tmp/batch12b.done`).
 
 Mined events stay OFF the timeline until they have a short title in

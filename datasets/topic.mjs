@@ -887,8 +887,10 @@ const missing = [...mention.entries()]
  * Without (2), Kush had 2 events among 70 essentials and the Islamic Golden
  * Age 7 against 56 people.
  */
+// In the article's own order: ranked by link count, *Quechua languages* and
+// *Inca education* pushed *Spanish conquest of the Inca Empire* out of the top 10.
 const hatTargets = OPT.site ? [] : [...mention.entries()].filter(([, m]) => m.hat)
-  .sort((a, b) => b[1].weight - a[1].weight).map(([t]) => { try { return decodeURIComponent(String(t)).replace(/_/g, ' '); } catch { return String(t).replace(/_/g, ' '); } });
+  .sort((a, b) => (a[1].firstChapter ?? 1e9) - (b[1].firstChapter ?? 1e9)).map(([t]) => { try { return decodeURIComponent(String(t)).replace(/_/g, ' '); } catch { return String(t).replace(/_/g, ' '); } });
 // Resolved through redirects: the store records the page a timeline really is.
 // "Timeline of natural history" is *Timeline of Earth*, and History of Earth
 // matched none of its own 253 events.
@@ -904,7 +906,7 @@ const minedFrom = (p) => entries.some((e) => e.origin?.manual && pageKey(e.origi
  * from what the timeline pages actually yielded, so after they are mined.
  */
 const PROSE_BELOW = 40;
-const proseCandidates = [art.title, ...hatTargets.filter((t) => !/^(timeline|list|lists|outline|index|glossary|bibliography) of /i.test(t)).slice(0, 10)];
+const proseCandidates = [art.title, ...hatTargets.filter((t) => !/^(timeline|list|lists|outline|index|glossary|bibliography) of /i.test(t)).slice(0, 25)];
 const eventYield = () => { const keys = new Set(eventPages.map(pageKey)); return entries.filter((e) => e.origin?.manual && keys.has(pageKey(e.origin?.wiki))).length; };
 const prosePagesNow = () => OPT.site ? [] : [...new Set([...OPT.prose, ...(eventYield() >= PROSE_BELOW ? [] : proseCandidates)])]
   .filter((p) => !eventPages.some((q) => pageKey(q) === pageKey(p)));
