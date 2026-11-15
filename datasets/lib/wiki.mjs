@@ -1243,26 +1243,45 @@ export function mineEventsFrom({ title, url, body = '', html = '' }, { limit = 4
    * A page's trustworthy events can no longer be crowded out of the budget by
    * sentences the caller may well discard.
    */
+  /*
+   * A heading that is nothing but a date ("=== c. 450 BC ===", "=== AD 1070
+   * ===") dates the paragraphs under it. *Timeline of chemistry* and *Timeline of
+   * astronomy* are written this way, and without it they yielded 0 and 1 events,
+   * so those topics' essentials fell back to people. Only a year or a short span
+   * qualifies: a "17th century" heading dates nothing in particular.
+   */
+  const headDateOf = (h) => {
+    const d = findDate(h, { anchored: true });
+    if(!d || clean(h.slice(d.index + d.text.length)).replace(/^[\s.,:;–—-]+/, '')) return null;
+    if(d.end != null && d.end - d.start > 25) return null;
+    return h;
+  };
   const eachLine = (fn) => {
     section = '';
+    let headDate = null;
     let n = 0;
     for(const raw of body.split('\n')){
       const line = clean(raw);
       if(!line) continue;
       const head = line.match(/^(=+)\s*(.*?)\s*\1$/);
-      if(head){ section = head[2]; continue; }
+      if(head){ section = head[2]; headDate = headDateOf(section); continue; }
       if(SKIP_SECTION.test(section)) continue;
       n++;
-      fn(line);
+      fn(line, headDate);
     }
     return n;
   };
 
   const anchoredOf = new Map();
-  const scanned = eachLine((line) => {
-    const anchored = findDate(line, { anchored: true });
+  const scanned = eachLine((line, headDate) => {
+    let anchored = findDate(line, { anchored: true });
+    let chunk = line;
+    if(!anchored && headDate){
+      chunk = `${headDate} – ${line}`;
+      anchored = findDate(chunk, { anchored: true });
+    }
     anchoredOf.set(line, anchored);
-    if(anchored) addChunk(line, anchored, 'mined-line');
+    if(anchored) addChunk(chunk, anchored, 'mined-line');
   });
 
   sink = prose;

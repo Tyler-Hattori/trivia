@@ -24,21 +24,21 @@ Impressionism | group=Art & culture
 Renaissance | group=Art & culture
 
 # Science
-History of science | name=Science | group=Science
-History of physics | name=Physics | group=Science
+History of science | name=Science | events=Timeline of scientific discoveries | group=Science
+History of physics | name=Physics | events=Timeline of fundamental physics discoveries; Timeline of thermodynamics; Timeline of classical mechanics; Timeline of electromagnetism and classical optics | group=Science
 
 # Other websites (any URL that is not Wikipedia): the site gives chapters and text,
 # Wikipedia gives each entry's dates, images and lead.
 https://faculty.wcas.northwestern.edu/infocom/Ideas/index.html | name=Ideas of Physics | group=Science | hint=physics | credit=David Taylor, Northwestern University (Phyx 103, Ideas of Physics)
 
 # Life & Earth
-History of Earth | name=History of Earth | group=Life & Earth
-Geologic time scale | name=Geologic time | group=Life & Earth
+History of Earth | name=History of Earth | events=Timeline of natural history | group=Life & Earth
+Geologic time scale | name=Geologic time | events=Timeline of geology | group=Life & Earth
 History of life | name=History of life | events=Timeline of life | group=Life & Earth
 Human evolution | events=Timeline of human evolution | group=Life & Earth
-Ice age | name=Ice ages | group=Life & Earth
+Ice age | name=Ice ages | events=Timeline of glaciation | group=Life & Earth
 Dinosaur | name=Dinosaurs | group=Life & Earth
-Plate tectonics | group=Life & Earth
+Plate tectonics | events=Timeline of the development of tectonophysics (before 1954) | group=Life & Earth
 Cambrian explosion | group=Life & Earth
 
 # Mathematics & the sciences
@@ -47,9 +47,9 @@ History of chemistry | name=Chemistry | events=Timeline of chemistry | group=Sci
 History of biology | name=Biology | events=Timeline of biology and organic chemistry | group=Science
 History of medicine | name=Medicine | events=Timeline of medicine and medical technology | group=Science
 History of astronomy | name=Astronomy | events=Timeline of astronomy | group=Science
-History of computing | name=Computing | group=Science
-History of geology | name=Geology | group=Science
-History of geography | name=Geography | group=Science
+History of computing | name=Computing | events=Timeline of computing hardware before 1950; Timeline of computing 1950–1979; Timeline of computing 1990–1999; Timeline of computing 2010–2019 | group=Science
+History of geology | name=Geology | events=Timeline of geology | group=Science
+History of geography | name=Geography | events=Timeline of European exploration | group=Science
 
 # Civilisations (batch 3)
 Mesopotamia | group=Ancient world
