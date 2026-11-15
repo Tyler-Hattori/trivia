@@ -108,13 +108,14 @@ const WP = 'https://en.wikipedia.org';
 const argv = process.argv.slice(2);
 const arg = (n, d = null) => (argv.includes(n) ? argv[argv.indexOf(n) + 1] : d);
 const args = (n) => argv.flatMap((a, i) => (a === n ? [argv[i + 1]] : []));
-const flagValues = new Set(['--name', '--events', '--ingest-limit', '--key', '--group', '--list', '--discover', '--match', '--template', '--min-kb', '--limit', '--site', '--hint', '--credit', '--max-subpages'].flatMap((f) => args(f)));
+const flagValues = new Set(['--name', '--events', '--prose', '--ingest-limit', '--key', '--group', '--list', '--discover', '--match', '--template', '--min-kb', '--limit', '--site', '--hint', '--credit', '--max-subpages'].flatMap((f) => args(f)));
 const positional = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && argv[i - 1].startsWith('--') && flagValues.has(a)));
 
 const OPT = {
   page: positional[0],
   name: arg('--name'),
   events: args('--events'),
+  prose: args('--prose'),   // narrative pages to mine dated sentences from
   ingest: argv.includes('--ingest'),
   ingestLimit: Number(arg('--ingest-limit', 250)),
   key: Number(arg('--key', 90)),
@@ -218,6 +219,7 @@ function runList(file){
       const m = p.match(/^(\w+)\s*=\s*(.+)$/);
       if(!m) continue;
       if(m[1] === 'events') o.events.push(...m[2].split(';').map((x) => x.trim()).filter(Boolean));
+      else if(m[1] === 'prose') (o.prose ||= []).push(...m[2].split(';').map((x) => x.trim()).filter(Boolean));
       else o[m[1]] = m[2].trim();
     }
     o.slug = slugify(o.name || o.page);
@@ -233,6 +235,7 @@ function runList(file){
     if(j.credit) a.push('--credit', j.credit);
     if(j.name) a.push('--name', j.name);
     for(const e of j.events) a.push('--events', e);
+    for(const e of j.prose || []) a.push('--prose', e);
     if(j.group) a.push('--group', j.group);
     if(j.key) a.push('--key', j.key);
     return a;
@@ -307,8 +310,18 @@ function parseSections(html){
     const m = parts[i].match(/mw-heading([234])[\s\S]*?<h[234][^>]*>([\s\S]*?)<\/h[234]>/);
     sections.push({ level: Number(m[1]), title: stripTags(m[2]), body: parts[i + 1] || '' });
   }
-  const stop = sections.findIndex((s) => s.level === 2 && STOP_SECTIONS.test(s.title));
-  const kept = stop > 0 ? sections.slice(0, stop) : sections;
+  // The tail (See also, Notes, References…) is where every remaining top-level
+  // section is one of these. A "Historiography" or "Sources" section EARLIER on
+  // is skipped on its own: stopping at it cut *Ancient Greece* to its first
+  // section, and *Mali Empire*, which opens with one, to nothing.
+  const top = sections.map((s, i) => [s, i]).filter(([s]) => s.level === 2);
+  let tail = sections.length;
+  for(let k = top.length - 1; k >= 0 && STOP_SECTIONS.test(top[k][0].title); k--) tail = top[k][1];
+  let skipping = false;
+  const kept = sections.slice(0, tail).filter((s) => {
+    if(s.level === 2) skipping = STOP_SECTIONS.test(s.title);
+    return !skipping;
+  });
 
   for(const s of kept){
     s.links = [];
@@ -474,7 +487,10 @@ function chaptersFrom(sections, isDated = () => true){
   chapters = chapters.flatMap((c) => {
     const subs = c.sections.filter((x) => x.level === 3);
     // The biggest chapter, holding over 38% of the dated links.
-    if(subs.length < 3 || links(c) < total * 0.38 || chapters.some((o) => links(o) > links(c))) return [c];
+    // Or a chapter called "History": in an article about a civilisation that IS
+    // the narrative, even when Culture is as big (*Ancient Greece*).
+    const narrative = /^history$/i.test(c.title) && subs.length >= 3;
+    if(!narrative && (subs.length < 3 || links(c) < total * 0.38 || chapters.some((o) => links(o) > links(c)))) return [c];
     const out = [];
     for(const x of c.sections.slice(1)){
       if(x.level === 3){ out.push({ title: x.title, subsections: [], sections: [x], parent: c.title }); }
@@ -831,10 +847,31 @@ const missing = [...mention.entries()]
   .filter(([t]) => !findEntry(t) && !INDEX_TITLE.test(t))
   .sort((a, b) => b[1].weight - a[1].weight);
 
-const eventPages = [...OPT.events, ...(art.events || [])];
+/*
+ * Where dated events come from.
+ *
+ * 1. Timeline pages: `events=` in topics.txt, and any "Timeline of …" page a
+ *    "Main article:" note points to.
+ * 2. Narrative pages, for a topic with no timeline page: the article itself and
+ *    the pages its "Main article:" notes point to (*Inca Empire* → *Spanish
+ *    conquest of the Inca Empire*, *Inca civil war*…), plus `prose=` pages.
+ *    Their dated SENTENCES are mined (ingest --events-prose). They are noisier,
+ *    so below they must fall within the topic's era, and they stay off the
+ *    timeline until they have a short title in titles.json.
+ * Without (2), Kush had 2 events among 70 essentials and the Islamic Golden
+ * Age 7 against 56 people.
+ */
+const hatTargets = OPT.site ? [] : [...mention.entries()].filter(([, m]) => m.hat)
+  .sort((a, b) => b[1].weight - a[1].weight).map(([t]) => { try { return decodeURIComponent(String(t)).replace(/_/g, ' '); } catch { return String(t).replace(/_/g, ' '); } });
+const eventPages = [...new Set([...OPT.events, ...(art.events || []), ...hatTargets.filter((t) => /^timeline of /i.test(t))])];
+const prosePages = OPT.site ? [] : [...new Set([...OPT.prose, ...(eventPages.length ? [] : [art.title,
+  ...hatTargets.filter((t) => !/^(timeline|list|lists|outline|index|glossary|bibliography) of /i.test(t)).slice(0, 10)])])]
+  .filter((p) => !eventPages.includes(p));
 // A Wikipedia timeline is matched by title, another site's by its URL.
 const pageKey = (u) => (/^https?:\/\//.test(u) && !/wikipedia\.org/.test(u) ? String(u) : wikiKey(u)).toLowerCase();
-const missingEvents = eventPages.filter((p) => !entries.some((e) => e.origin?.manual && pageKey(e.origin?.wiki) === pageKey(p)));
+const minedFrom = (p) => entries.some((e) => e.origin?.manual && pageKey(e.origin?.wiki) === pageKey(p));
+const missingEvents = eventPages.filter((p) => !minedFrom(p));
+const missingProse = prosePages.filter((p) => !minedFrom(p));
 
 /*
  * Ideas: what is still missing after ingest is mostly undated (Energy, Wave,
@@ -851,7 +888,7 @@ async function fetchIdeasFor(){
   await ensureIdeas(want);
 }
 
-if(OPT.ingest && (missing.length || missingEvents.length)){
+if(OPT.ingest && (missing.length || missingEvents.length || missingProse.length)){
   const list = missing.slice(0, OPT.ingestLimit).map(([t]) => t);
   const run = (a) => spawnSync(process.execPath, [path.join(HERE, 'ingest.mjs'), ...a], { stdio: 'inherit' });
   if(list.length){
@@ -865,6 +902,10 @@ if(OPT.ingest && (missing.length || missingEvents.length)){
     console.log(`\n  mining events from "${p}"…`);
     run(['--events', p, '--domain', domain, '--no-build']);
   }
+  for(const p of missingProse){
+    console.log(`\n  mining dated sentences from "${p}"…`);
+    run(['--events', p, '--events-prose', '--domain', domain, '--no-build']);
+  }
   await fetchIdeasFor();
   if(OPT.ingestOnly){ console.log('  ingest only: not placing or building'); process.exit(0); }
   console.log('\n  placing new entries on the atlas…');
@@ -874,7 +915,7 @@ if(OPT.ingest && (missing.length || missingEvents.length)){
   ({ byWiki, byTitle } = indexStore());
 }
 
-if(OPT.ideas || (OPT.ingest && !missing.length && !missingEvents.length)) await fetchIdeasFor();
+if(OPT.ideas || (OPT.ingest && !missing.length && !missingEvents.length && !missingProse.length)) await fetchIdeasFor();
 if(OPT.ingestOnly){ console.log('  ingest only: nothing else to do'); process.exit(0); }
 
 // --- membership ------------------------------------------------------------
@@ -896,9 +937,68 @@ for(const p of eventPages){
     if(e.origin?.manual && pageKey(e.origin?.wiki) === pageKey(p) && !items.has(e.id)) items.set(e.id, { e, m: null, via: 'events' });
   }
 }
+/*
+ * A number in the middle of a sentence is a year when the sentence says so:
+ * "in 785", "by 1572", "(c. 530 BC)", "1438–1471". "Around 750 verses" and "a
+ * catalogue of 1022 stars" are counts.
+ */
+function readsAsDate(e){
+  const yt = String(e.yearText || '').trim();
+  if(/\b(BC|BCE|AD|CE|century|millennium|Ma|ka|ago)\b|^c\.|^\d{1,4}\s*[–-]\s*\d{1,4}$/i.test(yt)) return true;
+  const x = String(e.excerpt || '');
+  const num = (yt.match(/\d{3,4}/) || [])[0];
+  if(!num) return false;
+  if(x.startsWith(num) || x.startsWith(yt)) return true;               // a line that opens with its date
+  if(!x.includes(num)) return true;                                     // a table row: the date is its own column
+  for(const m of x.matchAll(new RegExp(`(^|[^\\d])${num}(?!\\d)`, 'g'))){
+    const before = x.slice(Math.max(0, m.index - 14), m.index + m[1].length);
+    const after = x.slice(m.index + m[0].length, m.index + m[0].length + 14);
+    if(/\b(in|by|from|until|till|since|after|before|during|between|circa|year)\s*$/i.test(before)) return true;
+    if(/\b(summer|winter|spring|autumn|end|beginning|start|middle|January|February|March|April|May|June|July|August|September|October|November|December)\s+of\s*$/i.test(before)) return true;
+    if(/\(\s*$/.test(before) && /^\s*[)–-]/.test(after)) return true;   // "(1070)", "(994–1064)"
+    if(/\b(around|about)\s*$/i.test(before) && !/^\s+[a-z]/.test(after.replace(/^\s+(and|to|or|when|the)\b/, ','))) return true;
+  }
+  return false;
+}
+
+/*
+ * Prose events: only inside the topic's era. The era is the topic's own span
+ * when the store has one (*Inca Empire* 1438–1572; generous before, for the
+ * rise), else the bulk of the article's dated links (Tukey fences). This drops
+ * "a Handbook for Travelers in 1868" and "physicists argued in 2007" from the
+ * Islamic Golden Age. Small number ranges ("3–7", "170–180") are ages and
+ * head-counts, not years.
+ */
+{
+  const self = findEntry(art.title);
+  let lo, hi;
+  if(self?.start != null && self.end != null && self.end > self.start){
+    const len = self.end - self.start;
+    lo = self.start - Math.min(len, 1000) - 200; hi = self.end + Math.min(0.25 * len, 200) + 50;
+  } else {
+    const ys = [...items.values()].filter((x) => x.via === 'link' && x.e.start != null).map((x) => x.e.start).sort((a, b) => a - b);
+    if(ys.length >= 8){
+      const q = (f) => ys[Math.floor(f * (ys.length - 1))];
+      const iqr = q(0.75) - q(0.25);
+      lo = q(0.25) - 1.5 * iqr; hi = q(0.75) + 1.5 * iqr;
+    }
+  }
+  let kept = 0, dropped = 0;
+  for(const p of prosePages){
+    for(const e of entries){
+      if(!e.origin?.manual || pageKey(e.origin?.wiki) !== pageKey(p) || items.has(e.id)) continue;
+      const small = /^\(?\s*\d{1,3}\s*[–-]\s*\d{1,3}\s*\)?$/.test(String(e.yearText).trim()) || !readsAsDate(e);
+      const end = e.end ?? e.start;
+      if(small || (lo != null && (end < lo || e.start > hi))){ dropped++; continue; }
+      items.set(e.id, { e, m: null, via: 'events', prose: true });
+      kept++;
+    }
+  }
+  if(prosePages.length) console.log(`  prose events from ${prosePages.length} page${prosePages.length === 1 ? '' : 's'}: ${kept} kept, ${dropped} outside ${lo != null ? `${Math.round(lo)}–${Math.round(hi)}` : 'the era'} or not years`);
+}
 
 const taxo = loadTaxonomy();
-const out = [...items.values()].map(({ e, m, via, t }) => ({
+const out = [...items.values()].map(({ e, m, via, t, prose }) => ({
   id: e.id,
   canon: t || null,
   title: TITLES[e.id] || e.title,
@@ -925,6 +1025,7 @@ const out = [...items.values()].map(({ e, m, via, t }) => ({
   region: taxo?.entries?.[e.id]?.region || '',
   fame: e.sitelinks ? Math.log1p(e.sitelinks) / fameMax : 0,
   via,
+  ...(prose ? { prose: true } : {}),
   mentions: m ? m.count : 0,
   weight: m ? m.weight : 0,
   lead: !!m?.lead, hat: !!m?.hat,
@@ -1101,6 +1202,8 @@ for(const it of out){
   // dated only by prose ("lead-text") is the classic false date. Concepts —
   // languages, overview articles, legal ideas — never.
   it.onTimeline = !it.dateSuspect && it.type !== 'concept' &&
+    // A sentence mined from prose shows once it has a short title of its own.
+    !(it.prose && !it.origTitle) &&
     !((it.type === 'place' || it.type === 'group') && it.dateSource === 'lead-text') &&
     // An open span stretching to today is not a date (*Catholic Church*).
     !(it.openEnded && it.type !== 'person') &&
