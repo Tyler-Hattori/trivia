@@ -33,11 +33,11 @@
    "keyTarget": 90,
    "blurb": "Ancient Greece was an ancient civilization existing from the Greek Dark Ages of the 12th–9th centuries BC to the end of classical antiquity (c.",
    "built": "2026-11-15",
-   "count": 163,
-   "key": 90,
-   "chapters": 1,
-   "from": -1100,
-   "to": 1100,
+   "count": 233,
+   "key": 93,
+   "chapters": 9,
+   "from": -808,
+   "to": 500,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/8/8e/Pelop_war_en.png"
   },
   {
@@ -73,12 +73,12 @@
    "keyTarget": 90,
    "blurb": "The history of astronomy focuses on the efforts of civilizations to understand the universe beyond earth's atmosphere.",
    "built": "2026-11-15",
-   "count": 147,
-   "key": 84,
-   "chapters": 11,
-   "from": -3000,
-   "to": 2008,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/a/ac/100inchHooker.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+   "count": 224,
+   "key": 90,
+   "chapters": 5,
+   "from": -9000,
+   "to": 2019,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/3/36/William_Herschel01.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
   },
   {
    "slug": "aztec-empire",
@@ -168,14 +168,14 @@
    },
    "events": [],
    "keyTarget": 90,
-   "blurb": "French Algeria (19th–20th centuries)\n\nAncient Carthage was an ancient civilization based in North Africa.",
+   "blurb": "Ancient Carthage was an ancient civilization based in North Africa.",
    "built": "2026-11-15",
-   "count": 79,
-   "key": 63,
-   "chapters": 1,
-   "from": -2500,
-   "to": 2012,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f9/Domain_changes_during_the_Punic_Wars_BC.gif"
+   "count": 107,
+   "key": 75,
+   "chapters": 15,
+   "from": -1200,
+   "to": 1946,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/1/16/City_of_Carthage_circa_149_BC.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
   },
   {
    "slug": "chemistry",
@@ -191,11 +191,11 @@
    "keyTarget": 90,
    "blurb": "The history of chemistry represents a time span from ancient history to the present.",
    "built": "2026-11-15",
-   "count": 135,
-   "key": 86,
+   "count": 279,
+   "key": 91,
    "chapters": 7,
    "from": -4400,
-   "to": 1987,
+   "to": 1968,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/c/c7/Josiah_Willard_Gibbs_-from_MMS-.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
   },
   {
@@ -244,16 +244,21 @@
     "page": "History of computing",
     "url": "https://en.wikipedia.org/wiki/History_of_computing"
    },
-   "events": [],
+   "events": [
+    "Timeline of computing hardware before 1950",
+    "Timeline of computing 1950–1979",
+    "Timeline of computing 1990–1999",
+    "Timeline of computing 2010–2019"
+   ],
    "keyTarget": 90,
    "blurb": "The history of computing extends beyond the history of computing hardware and modern computing technology including earlier methods that relied on pen and paper or chalk and slate, with or without the aid of tables.",
    "built": "2026-11-15",
-   "count": 86,
-   "key": 61,
+   "count": 250,
+   "key": 90,
    "chapters": 8,
-   "from": -100,
+   "from": 788,
    "to": 2026,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/6/6c/ENIAC_Penn1.jpg"
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ef/Shield_of_the_University_of_Manchester.svg/960px-Shield_of_the_University_of_Manchester.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
   },
   {
    "slug": "dinosaurs",
@@ -288,11 +293,11 @@
    "keyTarget": 90,
    "blurb": "The territory today known as England became inhabited more than 800,000 years ago, as the discovery of stone tools and footprints at Happisburgh in Norfolk have indicated.",
    "built": "2026-11-15",
-   "count": 473,
-   "key": 95,
+   "count": 462,
+   "key": 94,
    "chapters": 10,
    "from": -79000,
-   "to": 1939,
+   "to": 1918,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/b/b3/Battle_of_Naseby%2C_hand-coloured_copper_engraving.jpg"
   },
   {
@@ -324,16 +329,18 @@
     "page": "History of geography",
     "url": "https://en.wikipedia.org/wiki/History_of_geography"
    },
-   "events": [],
+   "events": [
+    "Timeline of European exploration"
+   ],
    "keyTarget": 90,
    "blurb": "The history of geography includes many histories of geography which have differed over time and between different cultural and political groups.",
    "built": "2026-11-15",
-   "count": 131,
-   "key": 88,
+   "count": 439,
+   "key": 94,
    "chapters": 10,
    "from": -3500,
-   "to": 1947,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/a/a2/Portrait_of_Eratosthenes.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+   "to": 1911,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/98/Roman_Empire_-_Africa_Proconsularis_%28125_AD%29.svg/3840px-Roman_Empire_-_Africa_Proconsularis_%28125_AD%29.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
   },
   {
    "slug": "geologic-time",
@@ -343,16 +350,18 @@
     "page": "Geologic time scale",
     "url": "https://en.wikipedia.org/wiki/Geologic_time_scale"
    },
-   "events": [],
+   "events": [
+    "Timeline of geology"
+   ],
    "keyTarget": 90,
    "blurb": "The geologic time scale or geological time scale describes how geologic time is divided into standardised intervals.",
    "built": "2026-11-15",
-   "count": 79,
-   "key": 70,
+   "count": 117,
+   "key": 90,
    "chapters": 11,
    "from": -4100000000,
    "to": 2026,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/1/14/Sir_Henry_Raeburn_-_James_Hutton%2C_1726_-_1797._Geologist_-_PG_2686_-_National_Galleries_of_Scotland.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f3/Georges_Cuvier.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
   },
   {
    "slug": "geology",
@@ -362,16 +371,18 @@
     "page": "History of geology",
     "url": "https://en.wikipedia.org/wiki/History_of_geology"
    },
-   "events": [],
+   "events": [
+    "Timeline of geology"
+   ],
    "keyTarget": 90,
    "blurb": "The history of geology is concerned with the development of the natural science of geology.",
    "built": "2026-11-15",
-   "count": 51,
-   "key": 40,
+   "count": 89,
+   "key": 78,
    "chapters": 7,
    "from": -1200,
-   "to": 1995,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/a/ae/Aristotle_Altemps_Inv8575.jpg"
+   "to": 1993,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/ff/Biruni-russian.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
   },
   {
    "slug": "history-of-earth",
@@ -381,12 +392,14 @@
     "page": "History of Earth",
     "url": "https://en.wikipedia.org/wiki/History_of_Earth"
    },
-   "events": [],
+   "events": [
+    "Timeline of natural history"
+   ],
    "keyTarget": 90,
    "blurb": "The natural history of Earth concerns the development of planet Earth from its formation to the present day.",
    "built": "2026-11-15",
-   "count": 102,
-   "key": 82,
+   "count": 483,
+   "key": 93,
    "chapters": 12,
    "from": -4600000000,
    "to": 2026,
@@ -461,16 +474,18 @@
     "page": "Ice age",
     "url": "https://en.wikipedia.org/wiki/Ice_age"
    },
-   "events": [],
+   "events": [
+    "Timeline of glaciation"
+   ],
    "keyTarget": 90,
    "blurb": "An ice age is a period of time when decreased temperature of Earth's surface and atmosphere results in the prolonged presence or expansion of continental alpine glaciers and polar ice caps.",
    "built": "2026-11-15",
-   "count": 53,
-   "key": 41,
+   "count": 59,
+   "key": 47,
    "chapters": 9,
    "from": -2400000000,
    "to": 2026,
-   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9a/Mollweide.jpg/3840px-Mollweide.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/3/3c/Proterozoic_collage_new.png"
   },
   {
    "slug": "ideas-of-physics",
@@ -506,7 +521,7 @@
    "keyTarget": 90,
    "blurb": "Impressionism was a 19th-century art movement characterised by visible brush strokes, open composition, emphasis on accurate depiction of light in its changing qualities (often accentuating the effects of the passage of ",
    "built": "2026-11-15",
-   "count": 345,
+   "count": 334,
    "key": 99,
    "chapters": 12,
    "from": 1658,
@@ -525,12 +540,12 @@
    "keyTarget": 90,
    "blurb": "The Inca Empire, officially known as the Realm of the Four Parts, was the largest empire in pre-Columbian America.",
    "built": "2026-11-15",
-   "count": 80,
-   "key": 58,
+   "count": 104,
+   "key": 86,
    "chapters": 16,
-   "from": -48000,
+   "from": -2784,
    "to": 2026,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/e/ef/La_Captura_de_Atahualpa_-_Juan_Lepiani_1920s.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/4/41/John_Harris_Valda_-_Huscar_and_Atahualpa_fighting_over_the_Inca_Empire.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
   },
   {
    "slug": "indus-valley",
@@ -622,11 +637,11 @@
    "keyTarget": 90,
    "blurb": "The Mali Empire was an empire in West Africa from c.",
    "built": "2026-11-15",
-   "count": 23,
-   "key": 22,
-   "chapters": 0,
+   "count": 35,
+   "key": 33,
+   "chapters": 11,
    "from": 100,
-   "to": 1797,
+   "to": 1974,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/4/46/Catalan_Atlas_BNF_Sheet_6_Mansa_Musa_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
   },
   {
@@ -816,15 +831,20 @@
     "page": "History of physics",
     "url": "https://en.wikipedia.org/wiki/History_of_physics"
    },
-   "events": [],
+   "events": [
+    "Timeline of fundamental physics discoveries",
+    "Timeline of thermodynamics",
+    "Timeline of classical mechanics",
+    "Timeline of electromagnetism and classical optics"
+   ],
    "keyTarget": 90,
    "blurb": "Physics is a branch of science in which the primary objects of study are matter and energy.",
    "built": "2026-11-15",
-   "count": 166,
-   "key": 91,
+   "count": 632,
+   "key": 90,
    "chapters": 7,
    "from": -1200,
-   "to": 2001,
+   "to": 2012,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Galileo_Galilei_%281564-1642%29_RMG_BHC2700.tiff/lossy-page1-1920px-Galileo_Galilei_%281564-1642%29_RMG_BHC2700.tiff.jpg"
   },
   {
@@ -835,14 +855,16 @@
     "page": "Plate tectonics",
     "url": "https://en.wikipedia.org/wiki/Plate_tectonics"
    },
-   "events": [],
+   "events": [
+    "Timeline of the development of tectonophysics (before 1954)"
+   ],
    "keyTarget": 90,
    "blurb": "Plate tectonics (from Latin tectonicus, from Ancient Greek τεκτονικός (tektonikós) 'pertaining to building') is the scientific theory that Earth's lithosphere comprises a number of large tectonic plates, which have been ",
    "built": "2026-11-15",
-   "count": 63,
-   "key": 56,
+   "count": 84,
+   "key": 58,
    "chapters": 13,
-   "from": -600000000,
+   "from": -850000000,
    "to": 2026,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/6/65/Alfred_Wegener_ca.1924-30.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
   },
@@ -892,15 +914,17 @@
     "page": "History of science",
     "url": "https://en.wikipedia.org/wiki/History_of_science"
    },
-   "events": [],
+   "events": [
+    "Timeline of scientific discoveries"
+   ],
    "keyTarget": 90,
    "blurb": "The history of science covers the development of science from ancient times to the present.",
    "built": "2026-11-15",
-   "count": 284,
-   "key": 77,
+   "count": 548,
+   "key": 83,
    "chapters": 13,
-   "from": -6700,
-   "to": 1980,
+   "from": -2000,
+   "to": 1998,
    "cover": "https://upload.wikimedia.org/wikipedia/commons/0/06/Titan_in_front_of_the_ring_and_Saturn.jpg"
   },
   {

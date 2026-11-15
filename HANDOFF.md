@@ -17,7 +17,25 @@ Read them only for the history of a specific decision.
 - `topic-report.mjs`: about 25 minor findings.
 - Committed and pushed.
 
-### Session 8 (START HERE)
+### Queue (end of session 8)
+
+These scripts run one after another under caffeinate:
+1. `/tmp/run-b.sh`: re-runs batch 3 with `--ingest --force` to mine related
+   articles (`/tmp/batch3b.log`, then `/tmp/batch3b.done`). Then batch 4
+   (`/tmp/batch4.log`, then `/tmp/batch34.done`), about 18 to 20 hours.
+2. `/tmp/run-c.sh`: waits for `batch34.done`, then rebuilds 14 older topics
+   that need related articles: Dinosaurs, Cambrian explosion, Ice ages, Plate
+   tectonics, Geologic time, Geology, Ancient Egypt, Ancient Rome, China, US,
+   Renaissance, Impressionism, Cold War and WWII (`/tmp/batch12b.log`, then
+   `/tmp/batch12b.done`).
+
+Mined events stay OFF the timeline until they have a short title in
+`titles.json` (`it.prose && !it.origTitle`). Inca Empire is done (32 titles).
+Every other prose topic needs its titles written:
+`node -e` over `topics/<slug>.json` items with `prose: true`, sorted by start;
+title the real events and skip commentary and restatements.
+
+### Session 8
 
 **The user's rule (read it):** the timeline must show *events* (discoveries,
 inventions, battles) at a glance. A discovery gets its own card, not an
