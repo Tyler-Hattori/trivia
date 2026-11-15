@@ -1,0 +1,69 @@
+{
+  "topic": [
+    "Astronomy is one of the oldest sciences, rooted in calendars, religion and astrology; the Babylonians kept systematic records from about 1000 BC.",
+    "Greek astronomers built geometric models of the heavens; Ptolemy's Earth-centred system in the 'Almagest' lasted 1,400 years.",
+    "Islamic astronomers refined it with better observations; Copernicus, Kepler, Galileo and Newton replaced it with a Sun-centred system governed by gravity.",
+    "From the 19th century, photography and spectroscopy revealed the stars' composition; the 20th century found galaxies, the expanding universe and the Big Bang."
+  ],
+  "chapters": {
+    "Prehistory": [
+      "Carvings and cave paintings may show star patterns: a 32,500-year-old mammoth tusk may depict Orion.",
+      "Monuments such as Stonehenge and the Goseck Circle are aligned with the Sun at the solstices.",
+      "The Nebra sky disc (about 1600 BC) is the oldest known realistic depiction of the sky."
+    ],
+    "Mesopotamia": [
+      "Mesopotamian priests treated the heavens as signs from the gods, the origin of astrology.",
+      "Babylonians kept records of the sky for centuries and could predict lunar eclipses and planetary positions mathematically.",
+      "They divided the zodiac into 12 signs of 30 degrees, using their base-60 numbers."
+    ],
+    "India": [
+      "Indian astronomy began with calendars; the Vedanga Jyotisha is the oldest astronomical text.",
+      "Aryabhata (499) proposed that the Earth rotates on its axis.",
+      "Brahmagupta and Bhāskara II developed mathematical astronomy."
+    ],
+    "Greece and Hellenistic world": [
+      "Greeks treated astronomy as geometry; Eudoxus modelled planetary motion with nested spheres around the Earth.",
+      "Aristarchus proposed that the Earth goes round the Sun; Eratosthenes measured Earth's circumference.",
+      "Hipparchus catalogued stars, discovered the precession of the equinoxes and founded trigonometry.",
+      "The Antikythera mechanism (about 100 BC) was a geared calculator of astronomical positions."
+    ],
+    "Ptolemaic system": [
+      "Ptolemy's 'Almagest' (about 150) set out an Earth-centred system with epicycles and deferents.",
+      "It predicted planetary positions well enough to be used until the Renaissance.",
+      "It was translated into Arabic and then Latin, shaping astronomy in both worlds."
+    ],
+    "Egypt": [
+      "Egyptians aligned their calendar and monuments to the heliacal rising of Sirius, which heralded the Nile flood.",
+      "They used a 365-day solar calendar.",
+      "Pyramids and temples were aligned with the cardinal directions and with stars."
+    ],
+    "China": [
+      "Chinese astronomers kept detailed records from about the 6th century BC.",
+      "They recorded comets, novae, sunspots and the supernova of 1054 (which formed the Crab Nebula).",
+      "Gan De and Shi Shen compiled early star catalogues; they could predict eclipses."
+    ],
+    "Mesoamerica": [
+      "Maya astronomers tracked the cycles of the Sun, Moon, Venus and other planets.",
+      "The Dresden Codex contains tables predicting eclipses and the appearances of Venus.",
+      "Their calendars combined a 260-day ritual cycle with a 365-day year."
+    ],
+    "Middle Ages": [
+      "Islamic astronomers translated Greek and Indian works, built observatories (Maragheh, Samarkand) and made precise observations.",
+      "Al-Sufi's 'Book of Fixed Stars' (964) described the Andromeda galaxy; Ibn al-Haytham and al-Tusi criticised Ptolemy.",
+      "Supernova SN 1006 was recorded across the world.",
+      "Western Europe relearned Greek astronomy from Arabic translations; the Alfonsine tables (1252) were used for centuries."
+    ],
+    "Renaissance and Early Modern Europe": [
+      "Copernicus's 'De revolutionibus' (1543) placed the Sun at the centre.",
+      "Tycho Brahe made the most accurate naked-eye observations; Kepler used them to find that planets move in ellipses (1609).",
+      "Galileo's telescope (1610) showed Jupiter's moons and the phases of Venus, supporting Copernicus; the Church condemned him in 1633.",
+      "Newton's 'Principia' (1687) explained planetary motion by universal gravitation; Uranus (1781) and Neptune (1846) were discovered."
+    ],
+    "Modern astronomy": [
+      "Photography (from 1840) and spectroscopy (from Fraunhofer) revealed the stars' composition and motion.",
+      "The Hertzsprung–Russell diagram (about 1910) classified stars and led to theories of stellar evolution.",
+      "Hubble showed that other galaxies exist (1924) and that the universe is expanding (1929); the Big Bang theory was confirmed by the cosmic background radiation (1965).",
+      "Space telescopes, radio astronomy and probes, along with exoplanets (1995) and gravitational waves (2015), have transformed the field."
+    ]
+  }
+}

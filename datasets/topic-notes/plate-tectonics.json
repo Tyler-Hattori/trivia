@@ -1,0 +1,78 @@
+{
+  "topic": [
+    "Plate tectonics is the theory that Earth's rigid outer shell (the lithosphere) is broken into plates that move slowly over the weaker asthenosphere.",
+    "Plates meet at three kinds of boundary: divergent (spreading apart), convergent (one sinks under another) and transform (sliding past).",
+    "It grew from Alfred Wegener's continental drift (1912) and was accepted in the 1960s once seafloor spreading was confirmed.",
+    "It explains earthquakes, volcanoes, mountain ranges, ocean trenches and the past arrangement of continents."
+  ],
+  "chapters": {
+    "Key principles": [
+      "The lithosphere (crust and uppermost mantle) is cool and rigid; the asthenosphere below is hotter and flows slowly.",
+      "The lithosphere is broken into about seven or eight major plates and many minor ones.",
+      "Plates move a few centimetres a year, about as fast as fingernails grow.",
+      "Oceanic crust is thin and dense (basalt); continental crust is thicker and lighter (granite)."
+    ],
+    "Types of plate boundaries": [
+      "Divergent boundaries: plates move apart and new crust forms, as at mid-ocean ridges.",
+      "Convergent boundaries: plates collide; oceanic plates sink (subduct) into the mantle, creating trenches, volcanoes and mountains.",
+      "Transform boundaries: plates slide past each other, as along California's San Andreas Fault."
+    ],
+    "Driving forces of plate motion": [
+      "Heat escaping from Earth's interior drives plate motion through mantle convection.",
+      "The main force is 'slab pull': cold, dense oceanic plates sinking at subduction zones drag the rest of the plate.",
+      "'Ridge push' at mid-ocean ridges adds a smaller force.",
+      "Arthur Holmes proposed mantle convection as the driver in the 1930s."
+    ],
+    "Summary": [
+      "Plate tectonics replaced the old view of fixed continents in a 50-year debate, a scientific revolution.",
+      "The matching shapes of coastlines and fossils such as Glossopteris and Lystrosaurus across continents hinted that continents had moved.",
+      "Critics such as Harold Jeffreys argued no known force could move continents."
+    ],
+    "Continental drift": [
+      "Most geologists assumed fixed continents and explained mountains by vertical movement on a cooling, shrinking Earth.",
+      "Abraham Ortelius in 1596 already noticed that the Atlantic coastlines seem to fit together.",
+      "In 1912 Alfred Wegener proposed that continents drift, and that they had once formed a supercontinent, Pangaea.",
+      "Wegener's theory was rejected for lack of a mechanism."
+    ],
+    "Floating continents, paleomagnetism, and seismicity zones": [
+      "Continents were known to 'float' on denser rock (isostasy), as Airy and Pratt showed in the 19th century.",
+      "In the 1950s, rock magnetism (paleomagnetism) showed that continents had moved relative to the poles.",
+      "Earthquakes cluster in narrow zones and slope down beneath ocean trenches (Wadati–Benioff zones), marking where plates sink."
+    ],
+    "Mid-oceanic ridge spreading and convection": [
+      "Ocean surveys after 1947, led by Maurice Ewing, found a mid-Atlantic ridge and thin basalt crust under the oceans.",
+      "Harry Hess and Robert Dietz proposed seafloor spreading around 1960–1962: new crust forms at ridges and sinks at trenches.",
+      "Seafloor rocks turned out to be young, none older than about 200 million years."
+    ],
+    "Magnetic striping": [
+      "From the 1950s, magnetometers revealed stripes of alternately magnetised rock on the ocean floor.",
+      "In 1963 Vine, Matthews and Morley explained them: new crust records Earth's magnetic field as it reverses over time.",
+      "The stripes are symmetrical on either side of the ridges, confirming seafloor spreading."
+    ],
+    "Definition and refining of the theory": [
+      "By 1967–1968 seafloor spreading and continental drift were combined into 'plate tectonics'.",
+      "John Tuzo Wilson described transform faults and hotspots; Dan McKenzie and Jason Morgan worked out plate motions on a sphere.",
+      "Within a few years the theory was accepted by almost all geologists."
+    ],
+    "Implications for life": [
+      "Plate tectonics recycles carbon between rock and atmosphere, stabilising climate over long periods.",
+      "Some scientists argue this makes it necessary for complex life.",
+      "Moving continents explain why related animals and plants live on continents now far apart."
+    ],
+    "Plate reconstruction": [
+      "Geologists reconstruct past plate positions from magnetic stripes, paleomagnetism and matching rocks.",
+      "Supercontinents have formed and broken up repeatedly: Columbia, Rodinia, Pannotia and Pangaea.",
+      "When plate tectonics began is debated, with estimates from over 4 billion to about 1 billion years ago."
+    ],
+    "Modern plates": [
+      "The seven or eight major plates are the African, Antarctic, Eurasian, North American, South American, Pacific and Indo-Australian (sometimes split into Indian and Australian).",
+      "The Pacific Plate is the largest.",
+      "Smaller plates include the Arabian, Caribbean, Juan de Fuca, Cocos, Nazca, Philippine Sea, Scotia and Somali."
+    ],
+    "Other celestial bodies": [
+      "Earth is the only planet known to have active plate tectonics.",
+      "Venus and Mars show signs of past crustal movement but have a single, unbroken shell today.",
+      "Icy moons such as Europa may have a kind of ice tectonics."
+    ]
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "topic": [
+    "The geologic time scale divides Earth's 4.54-billion-year history into eons, eras, periods, epochs and ages.",
+    "Its order comes from the sequence of rock layers and fossils (chronostratigraphy); radiometric dating gives the numbers.",
+    "It was built over three centuries: Steno's rules of stratigraphy, Hutton's deep time, the 19th-century naming of the periods, and 20th-century radiometric dating.",
+    "The International Commission on Stratigraphy maintains the official chart."
+  ],
+  "chapters": {
+    "Principles": [
+      "The scale arranges the rock record in time order, using major changes in the rock layers and in their fossils.",
+      "Chronostratigraphy fixes the relative order of rock layers; geochronology measures their absolute ages.",
+      "Each boundary is defined at a single reference point in a real rock section, a 'golden spike' (GSSP)."
+    ],
+    "Divisions of geologic time": [
+      "The units, from largest to smallest, are eon, era, period, epoch and age; in rock terms, eonothem, erathem, system, series and stage.",
+      "There are four eons: Hadean, Archean, Proterozoic and Phanerozoic.",
+      "Dates are given in Ma (millions of years ago), with error margins, e.g. the Jurassic began 201.4 ± 0.2 Ma.",
+      "We live in the Holocene epoch of the Quaternary period, Cenozoic era, Phanerozoic eon."
+    ],
+    "Naming of geologic time": [
+      "The Phanerozoic eras are named for the life in them: Paleozoic ('old life'), Mesozoic ('middle life') and Cenozoic ('new life').",
+      "Many periods are named after places where their rocks were first studied: the Cambrian after Wales (Cambria), the Devonian after Devon, the Permian after Perm in Russia.",
+      "Others are named for their rocks or for peoples: the Carboniferous for its coal, the Ordovician and Silurian for ancient Welsh tribes."
+    ],
+    "Early history": [
+      "Ancient Greeks such as Xenophanes and Aristotle noted fossil shells on mountains and inferred slow change.",
+      "Avicenna and Shen Kuo in the 11th century described how mountains and rock layers formed over long periods.",
+      "James Hutton's idea that the Earth changes by slow, uniform processes (uniformitarianism) implied vast time; Arthur Holmes produced the first radiometric time scale in 1913."
+    ],
+    "Establishment of primary principles": [
+      "In 1669 Nicolas Steno set out the founding principles of stratigraphy.",
+      "Superposition: lower layers are older. Original horizontality: layers are laid down flat.",
+      "Lateral continuity: layers extend sideways until they thin out. Cross-cutting: whatever cuts a layer is younger than it."
+    ],
+    "Formulation of a modern geologic time scale": [
+      "Early schemes split rocks into 'primary' (from Creation or the Flood) and 'secondary'; Giovanni Arduino added tertiary and quaternary in 1760.",
+      "William Smith, Cuvier and Brongniart showed that fossils identify and correlate rock layers.",
+      "In the 19th century geologists named the periods we still use, and Charles Lyell's Principles of Geology popularised uniformitarianism."
+    ],
+    "The advent of geochronometry": [
+      "In the 19th century, estimates of Earth's age ranged from 75,000 to billions of years; Lord Kelvin's figure of 20–400 million years carried great weight.",
+      "The discovery of radioactivity (Becquerel, the Curies, Rutherford) showed both why Earth stays warm and how to date rocks.",
+      "In 1907 Bertram Boltwood dated rocks by uranium–lead decay, and in 1913 Arthur Holmes published 'The Age of the Earth'.",
+      "Isotope studies, including Nier's, later put Earth's age at about 4.5 billion years."
+    ],
+    "Modern international geological time scale": [
+      "The International Union of Geological Sciences was founded in 1961, and its International Commission on Stratigraphy publishes the official chart.",
+      "Boundaries are being fixed by golden spikes in reference rock sections, with ages refined by new dating.",
+      "Long-running editions of the Geologic Time Scale (GTS2012, GTS2020) collect the latest ages."
+    ],
+    "Table of geologic time": [
+      "The table lists the divisions from youngest at the top to oldest at the bottom.",
+      "Each row gives the division's age and its major events, such as mass extinctions, ice ages and the appearance of new life.",
+      "The rows are not drawn to scale: the Precambrian fills almost 90% of Earth's history."
+    ],
+    "Major proposed revisions to the ICC": [
+      "The Anthropocene, first proposed in 2000, would mark the time of human impact on the planet; in 2024 it was rejected as a formal epoch.",
+      "Proposals would redefine the Precambrian by events in Earth's history rather than by round numbers.",
+      "One proposal adds a 'Chaotian' eon for the time of Earth's formation, before the Hadean."
+    ],
+    "Extraterrestrial geologic time scales": [
+      "Bodies with rigid surfaces, such as the Moon, Mars and Venus, preserve their own histories.",
+      "The Moon's scale (Pre-Nectarian, Nectarian, Imbrian, Eratosthenian, Copernican) is based on major impact basins and crater ages.",
+      "Mars's eras are the Noachian, Hesperian and Amazonian."
+    ]
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "topic": [
+    "Geography means 'Earth-writing'; the word was first used by Eratosthenes, who also measured the Earth's circumference.",
+    "Ancient Babylonians, Greeks, Chinese and Indians mapped and described their known worlds; Ptolemy's 'Geography' set the method for 1,400 years.",
+    "Islamic and Chinese geographers advanced mapmaking in the Middle Ages; the European voyages of exploration remade the world map from the 15th century.",
+    "Geography became a university discipline in the 19th century (Humboldt, Ritter); since then it has moved through regional, quantitative and critical schools, and GIS."
+  ],
+  "chapters": {
+    "Egypt": [
+      "Egyptians saw the Nile as the centre of the world.",
+      "They knew oases to the east and west, Kush to the south and Punt along the Red Sea.",
+      "Neighbouring peoples were named Retenu, Canaan and the Hittites (Khatti)."
+    ],
+    "Babylon": [
+      "The oldest known world maps come from Babylon.",
+      "The Babylonian Map of the World (about 600 BC) shows Babylon at the centre of a circular land surrounded by a 'bitter river' (ocean).",
+      "Seven islands beyond the ocean form a seven-pointed star."
+    ],
+    "Greco-Roman world": [
+      "Greeks saw Homer as the first geographer; Anaximander drew the first Greek world map.",
+      "Herodotus described the peoples and lands of the known world; Aristotle argued that the Earth is a sphere.",
+      "Eratosthenes measured the Earth's circumference and coined the word 'geography'; Strabo wrote a 17-volume 'Geography'.",
+      "Ptolemy's 'Geography' (2nd century) listed places by latitude and longitude, a method used until the Renaissance."
+    ],
+    "India": [
+      "The Vedas and Puranas describe rivers, mountains and the regions of India.",
+      "Indian geography was interwoven with Hindu mythology and pilgrimage.",
+      "The 'Arthashastra' and astronomers such as Aryabhata dealt with territory and the Earth's size."
+    ],
+    "China": [
+      "The 'Yu Gong' (5th century BC) describes China's nine provinces, their soils and products.",
+      "Zhang Qian's travels opened routes to Central Asia; Pei Xiu (3rd century) set out principles of mapmaking with a grid scale.",
+      "The 'Commentary on the Water Classic' described China's rivers; Shen Kuo made relief maps and described the magnetic compass."
+    ],
+    "Middle Ages": [
+      "Byzantine scholars such as Stephanus of Byzantium compiled geographical dictionaries.",
+      "Islamic geographers such as al-Khwarizmi, Ibn Khordadbeh, al-Balkhi and Ibn Hawqal mapped and described the Muslim world.",
+      "Al-Idrisi's world map (1154) for Roger II of Sicily was one of the most accurate of its time.",
+      "In Europe, T-and-O maps showed a religious world view; travellers such as Marco Polo widened knowledge of Asia."
+    ],
+    "Early modern period": [
+      "Ptolemy's 'Geography' was rediscovered in Europe around 1400.",
+      "Voyages of discovery (Columbus, da Gama, Magellan) remade the world map; Waldseemüller's map (1507) first named 'America'.",
+      "Mercator's projection (1569) made navigation easier; Kant lectured on physical geography."
+    ],
+    "19th century": [
+      "Geography became a university discipline, especially in Germany and France.",
+      "Alexander von Humboldt and Carl Ritter founded modern geography; Humboldt linked climate, plants and landscape.",
+      "Geographical societies sponsored exploration of Africa, the Arctic and Antarctica."
+    ],
+    "20th century": [
+      "Geography passed through four main approaches: environmental determinism, regional geography, the quantitative revolution and critical geography.",
+      "Halford Mackinder's 'heartland' theory (1904) linked geography to world power.",
+      "The quantitative revolution of the 1950s–60s brought statistics and models; Tobler's 'first law' says near things are more related than distant ones.",
+      "Critical geographers from the 1970s studied power, inequality and society."
+    ],
+    "21st century": [
+      "Geographic information systems (GIS) and satellite data dominate much of the field.",
+      "Quantitative and critical geographers have moved from conflict to coexistence.",
+      "Human–environment questions, such as climate change, are central."
+    ]
+  }
+}

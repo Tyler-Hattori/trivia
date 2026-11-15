@@ -1,0 +1,59 @@
+{
+  "topic": [
+    "Humans are great apes; our lineage split from the chimpanzees' about 6–7 million years ago in Africa.",
+    "Bipedal australopithecines were followed by the genus Homo about 2.8 million years ago; Homo erectus was the first to leave Africa.",
+    "Homo sapiens arose in Africa about 300,000 years ago, spread worldwide from about 70,000 years ago and interbred with Neanderthals and Denisovans.",
+    "The evidence comes from fossils, stone tools and, since the 1970s, genetics."
+  ],
+  "chapters": {
+    "Before Homo": [
+      "Primates evolved about 65 million years ago; apes split from Old World monkeys about 25 million years ago.",
+      "The human line diverged from chimpanzees about 6–7 million years ago; Sahelanthropus, Orrorin and Ardipithecus are early candidates.",
+      "Australopithecines such as 'Lucy' (A. afarensis, 3.2 million years old) walked upright but had ape-sized brains.",
+      "Robust Paranthropus species lived alongside early Homo until about 1 million years ago."
+    ],
+    "Evolution of genus Homo": [
+      "The earliest known Homo fossil is the Ledi jaw, about 2.8 million years old; Homo habilis made Oldowan stone tools.",
+      "Homo erectus, from about 1.9 million years ago, had a larger body and brain and spread across Asia.",
+      "Homo heidelbergensis gave rise to Neanderthals in Europe and Denisovans in Asia.",
+      "Small-bodied species, Homo floresiensis and Homo luzonensis, survived on islands until about 50,000 years ago.",
+      "Homo sapiens appeared in Africa about 300,000 years ago."
+    ],
+    "Anatomical changes": [
+      "Key changes were bipedalism, a much larger brain (encephalisation), less difference in size between males and females, and a more precise hand.",
+      "Bipedalism came first, millions of years before the big brain.",
+      "A large brain is costly: it uses about a fifth of the body's resting energy."
+    ],
+    "Use of tools": [
+      "Tool use is seen as a sign of intelligence and may have driven brain growth.",
+      "The Oldowan industry (from 2.6 million years ago) made simple flakes and choppers; the Acheulean (from 1.76 million) made hand axes.",
+      "Control of fire, perhaps by 1 million years ago, allowed cooking."
+    ],
+    "Transition to behavioral modernity": [
+      "Modern behaviour includes symbolic art, jewellery, burial rituals, specialised tools and long-distance trade.",
+      "Some scholars see a sudden 'Upper Paleolithic revolution' about 50,000 years ago; others see gradual change in Africa from 300,000 years ago.",
+      "Cave art, such as at Chauvet and Lascaux, and Aurignacian figurines date from the Upper Paleolithic."
+    ],
+    "Recent and ongoing human evolution": [
+      "Humans are still evolving through natural selection and genetic drift.",
+      "Examples include lactase persistence (digesting milk as adults) since herding began, and adaptations to high altitude.",
+      "Agriculture, cities and industry have changed the pressures on human populations."
+    ],
+    "History of study": [
+      "Linnaeus classed humans with the apes as Homo sapiens in 1758.",
+      "Darwin's 'The Descent of Man' (1871) argued humans evolved from apes, probably in Africa; Huxley's 'Man's Place in Nature' (1863) compared their anatomy.",
+      "Fossil finds followed: Neanderthal (1856), Java Man (Dubois, 1891), the Taung Child (Dart, 1924), and the Leakeys' East African finds from the 1950s.",
+      "Genetics since the 1980s supports a recent African origin and shows interbreeding with archaic humans."
+    ],
+    "Evidence": [
+      "The evidence comes from the fossil record, genetics, stone tools and comparative anatomy.",
+      "DNA comparisons show humans and chimpanzees are close relatives; ancient DNA from Neanderthals and Denisovans shows interbreeding.",
+      "Non-Africans carry about 1–2% Neanderthal DNA."
+    ],
+    "Species list": [
+      "The list orders hominin species chronologically by genus.",
+      "Many species, especially within Homo, are debated: some may be variants of one species.",
+      "Homo sapiens is the only surviving species of its genus."
+    ]
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "topic": [
+    "Medicine began with herbs, rituals and surgery such as trepanation; Egypt, Mesopotamia, India and China developed written medical traditions.",
+    "Greek medicine (Hippocrates, Galen) explained disease by the four humours, a theory that lasted until the 19th century.",
+    "Islamic physicians preserved and extended Greek medicine; Renaissance anatomy (Vesalius) and Harvey's circulation of the blood began modern medicine.",
+    "Germ theory, anaesthesia, antiseptics, vaccines and antibiotics transformed medicine from the 19th century and greatly extended life expectancy."
+  ],
+  "chapters": {
+    "Prehistoric medicine": [
+      "Prehistoric healing relied on medicinal plants, rituals and practical care.",
+      "Trepanation, drilling holes in the skull, was practised from at least 7000 BC, and many patients survived.",
+      "Plant remedies were learned by trial and passed on orally."
+    ],
+    "Ancient Mesopotamian medicine": [
+      "Mesopotamian healers were of two kinds: the asû (physician, using herbs) and the āšipu (exorcist, using rituals).",
+      "Disease was often blamed on gods, demons or sin.",
+      "The Diagnostic Handbook (about 1050 BC) records symptoms and prognoses systematically."
+    ],
+    "Ancient Egyptian medicine": [
+      "Egyptian physicians were famous across the ancient world; Imhotep was later worshipped as a god of medicine.",
+      "The Edwin Smith Papyrus describes injuries and surgery rationally; the Ebers Papyrus (about 1550 BC) lists hundreds of remedies.",
+      "Physicians specialised, according to Herodotus, in particular body parts or diseases."
+    ],
+    "Ancient Chinese medicine": [
+      "Traditional Chinese medicine took shape from the Zhou dynasty onward.",
+      "The 'Huangdi Neijing' (Yellow Emperor's Inner Classic) explains health as the balance of yin and yang and the flow of qi.",
+      "Treatments included herbs, acupuncture and moxibustion."
+    ],
+    "Ancient Indian medicine": [
+      "The Atharvaveda contains charms and herbal remedies against disease.",
+      "Ayurveda explains health by the balance of three doshas.",
+      "The Charaka Samhita covers internal medicine; the Sushruta Samhita describes surgery, including plastic surgery of the nose."
+    ],
+    "Ancient Greek medicine": [
+      "Hippocrates (5th century BC) sought natural causes of disease and stressed observation; the Hippocratic Oath bears his name.",
+      "Disease was explained by an imbalance of four humours: blood, phlegm, yellow bile and black bile.",
+      "Herophilus and Erasistratus dissected human bodies in Alexandria.",
+      "Galen's writings (2nd century) dominated Western medicine until the 17th century."
+    ],
+    "Ancient Roman medicine": [
+      "Romans invented many surgical instruments, including forceps, scalpels and specula, and performed cataract surgery.",
+      "Dioscorides' 'De materia medica' was the standard guide to medicinal plants for 1,500 years.",
+      "Roman public health, with aqueducts, baths and sewers, and military hospitals, was advanced."
+    ],
+    "Post-classical medicine": [
+      "Byzantine medicine preserved Greco-Roman knowledge; physicians such as Paul of Aegina compiled it.",
+      "Islamic scholars such as Hunayn ibn Ishaq translated Greek texts; Al-Razi distinguished smallpox from measles.",
+      "Avicenna's 'Canon of Medicine' (1025) was a standard textbook in Europe and the Islamic world for centuries.",
+      "Hospitals (bimaristans) spread across the Islamic world, and medical schools at Salerno and Montpellier arose in Europe."
+    ],
+    "Early modern medicine": [
+      "Vesalius's anatomy (1543) corrected Galen through dissection.",
+      "William Harvey showed that blood circulates (1628).",
+      "European diseases such as smallpox devastated the Americas after 1492.",
+      "Edward Jenner introduced smallpox vaccination in 1796."
+    ],
+    "Late modern medicine": [
+      "Pasteur and Koch established the germ theory of disease and identified the bacteria behind diseases such as tuberculosis and cholera.",
+      "Anaesthesia (1840s) and Lister's antiseptic surgery (1867) made surgery far safer.",
+      "Florence Nightingale reformed nursing; Landsteiner discovered blood groups (1901), making transfusion safe.",
+      "Fleming discovered penicillin (1928); the 1918 influenza pandemic killed tens of millions."
+    ],
+    "Contemporary medicine": [
+      "Antibiotics made infections curable and enabled organ transplants and open-heart surgery; resistance to them is a growing threat.",
+      "Smallpox was eradicated in 1980.",
+      "HIV/AIDS, identified in the 1980s, and the COVID-19 pandemic (from 2019) were the major modern pandemics; mRNA vaccines were developed rapidly against COVID-19.",
+      "Robotics, telemedicine and personalised (genome-based) medicine are recent developments."
+    ],
+    "Themes in medical history": [
+      "Racism has shaped medicine, through unequal treatment and scientific racism.",
+      "Women long practised as healers and midwives but were excluded from universities and medical schools.",
+      "Elizabeth Blackwell became the first woman to earn a medical degree in the United States, in 1849."
+    ]
+  }
+}

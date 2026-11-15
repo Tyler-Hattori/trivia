@@ -1,0 +1,75 @@
+{
+  "topic": [
+    "Earth formed about 4.54 billion years ago from the disc of dust and gas around the young Sun; the Moon formed soon after, probably from a giant impact.",
+    "Its history is divided into four eons: Hadean, Archean, Proterozoic and Phanerozoic.",
+    "Life appeared before 3.5 billion years ago; photosynthesis filled the air with oxygen about 2.4 billion years ago, and complex animals spread from about 540 million years ago.",
+    "Five mass extinctions reshaped life; after the last, 66 million years ago, mammals spread, and our genus Homo appeared about 2.8 million years ago."
+  ],
+  "chapters": {
+    "Eons": [
+      "Geologists measure deep time in Ma (millions of years ago) and Ga (billions of years ago).",
+      "Earth's history is split into four eons: Hadean, Archean, Proterozoic and Phanerozoic.",
+      "Eons divide into eras, eras into periods, and periods into epochs."
+    ],
+    "Geologic time scale": [
+      "The geologic time scale orders Earth's history by the layers of rock laid down in each interval.",
+      "The first four billion years (the Precambrian) take up almost 90% of Earth's history, but the record is sparse.",
+      "The Phanerozoic, the last 539 million years, is the eon of abundant visible fossils and is divided most finely."
+    ]
+    ,
+    "Solar System formation": [
+      "In the solar nebula hypothesis, the Sun and planets formed from a rotating cloud of gas and dust.",
+      "The cloud held hydrogen and helium from the Big Bang (13.8 billion years ago) and heavier elements made in exploded stars.",
+      "About 4.6 billion years ago the cloud began to collapse, perhaps set off by a nearby supernova; Earth grew by accretion within a few tens of millions of years."
+    ],
+    "Hadean and Archean Eons": [
+      "The Hadean began with Earth's formation; the oldest mineral grains (zircons) are 4.4 billion years old and the oldest rocks about 4.0 billion.",
+      "A Mars-sized body, Theia, probably struck the young Earth; the debris formed the Moon (the giant-impact hypothesis).",
+      "Oceans condensed early, and the first continents began to form in the Archean, which started 4.03 billion years ago.",
+      "Life arose by at least 3.5 billion years ago; competing theories include an RNA world, iron–sulfur metabolism and lipid membranes first.",
+      "All living things descend from a last universal common ancestor (LUCA)."
+    ],
+    "Proterozoic Eon": [
+      "The Proterozoic ran from 2.5 billion to 538.8 million years ago; cratons grew into continents of modern size.",
+      "Cyanobacteria's photosynthesis produced the Great Oxygenation Event, which made the atmosphere oxygen-rich.",
+      "Eukaryotes (cells with a nucleus) emerged, followed by multicellular life.",
+      "Severe 'Snowball Earth' glaciations covered much of the planet; after the last, about 600 million years ago, life evolved faster.",
+      "Supercontinents such as Columbia and Rodinia assembled and broke apart."
+    ],
+    "Tectonics, paleogeography and climate": [
+      "The Phanerozoic (538.8 million years ago to now) has three eras: Paleozoic, Mesozoic and Cenozoic.",
+      "Continents gathered into the supercontinent Pangaea by about 300 million years ago, which then broke up into today's continents.",
+      "Climate swung between warm greenhouse periods and icehouse periods with polar ice caps."
+    ],
+    "Cambrian explosion": [
+      "From about 538 million years ago, most major animal groups appear in the fossil record within a few tens of millions of years.",
+      "It was an adaptive radiation into niches left empty by the extinct Ediacaran organisms.",
+      "Animals with shells and skeletons, including trilobites, molluscs and the first vertebrates, appeared."
+    ],
+    "Colonization of land": [
+      "Oxygen from photosynthesis built an ozone layer that blocked ultraviolet light, making land habitable.",
+      "Microbes may have reached land by 3 billion years ago; plants and fungi followed in the Ordovician and Silurian.",
+      "Arthropods were among the first animals to live on land."
+    ],
+    "Evolution of tetrapods": [
+      "A mass extinction ended the Ordovician about 443 million years ago, perhaps due to an ice age.",
+      "About 380–375 million years ago, the first tetrapods evolved from lobe-finned fish; fins became limbs.",
+      "Amniotes, whose eggs survive on dry land, later split into synapsids (the mammal line) and sauropsids (reptiles and birds)."
+    ],
+    "Extinctions": [
+      "There have been five great mass extinctions: end-Ordovician, Late Devonian, end-Permian, end-Triassic and end-Cretaceous.",
+      "The end-Permian extinction, 252 million years ago, was the worst, killing about 90% of marine species.",
+      "The end-Cretaceous extinction, 66 million years ago, caused by an asteroid impact, wiped out the non-avian dinosaurs."
+    ],
+    "Diversification of mammals": [
+      "The first true mammals were small, probably nocturnal animals living alongside the dinosaurs from the late Triassic.",
+      "Mammals diversified rapidly only after the dinosaurs died out 66 million years ago.",
+      "Primates appeared early in the Cenozoic."
+    ],
+    "Human evolution": [
+      "About 6 million years ago, a small African ape was the last common ancestor of humans and chimpanzees.",
+      "One branch soon walked upright; the first members of the genus Homo appeared by about 2 million years ago.",
+      "Farming began about 10,000 years ago, leading to cities, writing and the first civilisations."
+    ]
+  }
+}

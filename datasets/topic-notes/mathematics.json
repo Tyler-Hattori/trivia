@@ -1,0 +1,84 @@
+{
+  "topic": [
+    "Written mathematics began in Mesopotamia and Egypt around 3000 BC, for taxes, trade, building and astronomy.",
+    "The Greeks made mathematics a deductive science of proof; Euclid's 'Elements' was the model for 2,000 years.",
+    "India gave the decimal place-value system with zero; the Islamic world developed algebra and passed the numerals to Europe.",
+    "Calculus (Newton and Leibniz) launched modern mathematics, which since the 19th century has grown ever more abstract and rigorous."
+  ],
+  "chapters": {
+    "Prehistoric": [
+      "Number, pattern and shape were part of everyday life long before writing.",
+      "Tally sticks such as the Ishango bone (about 20,000 BC) may record counting.",
+      "The Sumerians invented the first numeral system around 3400 BC."
+    ],
+    "Babylonian": [
+      "Babylonian mathematics used a base-60 place-value system, which survives in our 60 minutes and 360 degrees.",
+      "Clay tablets show tables of multiplication, reciprocals and squares, and the solving of quadratic equations.",
+      "The tablet Plimpton 322 lists Pythagorean triples, and YBC 7289 gives √2 to six decimal places."
+    ],
+    "Egyptian": [
+      "Egyptian mathematics was practical: surveying, building, accounting and the calendar.",
+      "The Rhind Papyrus (about 1550 BC) and Moscow Papyrus (about 1850 BC) are the main sources.",
+      "Egyptians wrote fractions as sums of unit fractions and could find the volume of a truncated pyramid."
+    ],
+    "Greek": [
+      "Thales and Pythagoras (6th century BC) began proving statements rather than just using rules.",
+      "Euclid's 'Elements' (about 300 BC) built geometry from axioms and was the standard textbook into the 20th century.",
+      "Archimedes found areas and volumes with methods close to calculus; Apollonius studied conic sections.",
+      "Diophantus studied equations with whole-number solutions; Ptolemy developed trigonometry for astronomy."
+    ],
+    "Roman": [
+      "Romans prized applied mathematics, for surveying, engineering and accounting, over Greek theory.",
+      "Roman numerals were clumsy for calculation; reckoning was done on the abacus.",
+      "Greek mathematicians, such as Heron and Ptolemy, continued to work under Roman rule."
+    ],
+    "Chinese": [
+      "Chinese mathematics developed independently; it used a decimal place-value system with counting rods.",
+      "'The Nine Chapters on the Mathematical Art' (about 200 BC – AD 100) solved systems of linear equations with a method like Gaussian elimination.",
+      "Liu Hui and Zu Chongzhi calculated π precisely; Zu's value 355/113 was the best for nearly 1,000 years."
+    ],
+    "Indian": [
+      "The decimal place-value system with a symbol for zero was developed in India by about the 5th–7th century.",
+      "Aryabhata (5th century) worked on trigonometry and π; Brahmagupta (628) gave rules for calculating with zero and negative numbers.",
+      "The Kerala school (14th–16th centuries) found infinite series for sine, cosine and π."
+    ],
+    "Islamic empires": [
+      "Scholars in Baghdad and beyond translated Greek and Indian works and extended them.",
+      "Al-Khwarizmi's book on solving equations (about 820) gave algebra its name; 'algorithm' comes from his name.",
+      "Omar Khayyam solved cubic equations geometrically; others developed trigonometry.",
+      "Hindu–Arabic numerals passed to Europe through Arabic texts."
+    ],
+    "Maya": [
+      "Maya mathematics developed independently in Central America.",
+      "It used a base-20 place-value system with a symbol for zero.",
+      "It served a precise calendar and astronomy."
+    ],
+    "Medieval European": [
+      "Medieval scholars saw mathematics as the key to God's ordered creation.",
+      "Fibonacci's 'Liber Abaci' (1202) popularised Hindu–Arabic numerals in Europe.",
+      "Thomas Bradwardine and Nicole Oresme in the 14th century used mathematics to describe motion and change, anticipating graphs."
+    ],
+    "Renaissance": [
+      "Merchants' needs drove mathematics; Pacioli's 'Summa' (1494) included double-entry bookkeeping.",
+      "Italian mathematicians Tartaglia and Cardano solved cubic and quartic equations; Bombelli worked with complex numbers.",
+      "Symbols such as + − and = came into use."
+    ],
+    "Mathematics during the Scientific Revolution": [
+      "Viète introduced letters for unknowns; Napier invented logarithms (1614).",
+      "Descartes and Fermat joined algebra and geometry in coordinate geometry (1637).",
+      "Newton and Leibniz independently invented calculus in the late 17th century.",
+      "In the 18th century Euler, the Bernoullis and Lagrange extended calculus and applied it to physics."
+    ],
+    "Modern": [
+      "Gauss, Cauchy and Riemann transformed number theory, analysis and geometry in the 19th century; non-Euclidean geometry was discovered.",
+      "Galois founded group theory; Cantor's set theory dealt with different sizes of infinity.",
+      "Hilbert's 23 problems (1900) set the agenda; Gödel (1931) proved that some true statements can never be proved, and Turing (1936) defined computation.",
+      "Computers changed mathematics; Fermat's Last Theorem was proved in 1994 and the Poincaré conjecture in 2003."
+    ],
+    "Future": [
+      "Computers and artificial intelligence are increasingly used to find and check proofs.",
+      "Proof assistants such as Lean and Rocq formally verify complex theorems.",
+      "How this will change mathematical practice is debated."
+    ]
+  }
+}

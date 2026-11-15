@@ -1,0 +1,48 @@
+{
+  "topic": [
+    "Geology, the study of the Earth's origin, history and structure, grew from ancient observations of fossils and rocks.",
+    "In the 17th–18th centuries Steno laid down the principles of rock layers, and Hutton showed that the Earth is immensely old.",
+    "In the 19th century Smith, Cuvier and Lyell turned geology into a science of Earth's history told by its layers and fossils.",
+    "In the 20th century radiometric dating gave the Earth's age, and plate tectonics explained continents, mountains and earthquakes."
+  ],
+  "chapters": {
+    "Antiquity": [
+      "Xenophanes (about 540 BC) described fossil shells on mountains and concluded that the land had once been under the sea.",
+      "Aristotle noted that geological change is very slow; Theophrastus wrote 'On Stones', an early work on minerals.",
+      "Pliny the Elder's 'Natural History' described minerals and metals."
+    ],
+    "Middle Ages": [
+      "Al-Biruni suggested that India had once been a sea.",
+      "Avicenna explained how mountains form by erosion and uplift, and described how rock layers are laid down.",
+      "Shen Kuo, in 11th-century China, inferred land formation from fossils and erosion."
+    ],
+    "17th century": [
+      "Geology began to become a separate science.",
+      "Nicolas Steno (1669) set out the principles of superposition, original horizontality and lateral continuity, and recognised fossils as remains of living things.",
+      "Most scholars still explained the Earth's rocks by the biblical Flood."
+    ],
+    "18th century": [
+      "Mining created a need for knowledge of rocks and ores.",
+      "Abraham Werner's 'Neptunism' held that rocks settled out of a primeval ocean.",
+      "James Hutton argued that slow processes such as erosion and volcanism shaped the Earth over immense time ('no vestige of a beginning, no prospect of an end').",
+      "Buffon estimated the Earth's age at tens of thousands of years, far older than the biblical figure."
+    ],
+    "19th century": [
+      "William Smith used fossils to identify rock layers and made the first geological map of a country (Britain, 1815).",
+      "Cuvier showed that species had gone extinct and proposed past catastrophes.",
+      "Charles Lyell's 'Principles of Geology' (1830–1833) championed slow, uniform change and influenced Darwin.",
+      "Geologists named the periods of the geologic time scale; Lord Kelvin's estimate of the Earth's age (20–400 million years) conflicted with geology's need for more time."
+    ],
+    "20th century": [
+      "Radiometric dating, pioneered by Arthur Holmes from 1911, showed that the Earth is billions of years old.",
+      "Alfred Wegener proposed continental drift in 1912; it was rejected for lack of a mechanism.",
+      "Seafloor spreading (Hess, Dietz) and magnetic striping led to plate tectonics in the 1960s.",
+      "Eugene Shoemaker brought geology to the Moon and the study of impact craters."
+    ],
+    "Modern geology": [
+      "Geology now studies the Earth as a system, linking rock, water, air and life.",
+      "Planetary geology applies its methods to the Moon, Mars and other bodies.",
+      "Geologists also study hazards, resources and climate change."
+    ]
+  }
+}

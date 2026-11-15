@@ -1,0 +1,63 @@
+{
+  "topic": [
+    "Biology grew from medicine and natural history; Aristotle founded the systematic study of animals, and Galen of anatomy and physiology.",
+    "The microscope revealed cells and microbes in the 17th century; Linnaeus classified living things in the 18th.",
+    "The 19th century brought cell theory, Darwin's evolution by natural selection, Mendel's genetics and germ theory.",
+    "The 20th century united genetics and evolution, found DNA's structure (1953) and created molecular biology and genomics."
+  ],
+  "chapters": {
+    "Prehistoric times": [
+      "Early humans passed on knowledge of plants, animals and the body to survive.",
+      "The Neolithic Revolution, about 10,000 years ago, domesticated plants and animals.",
+      "Farming required practical knowledge of breeding and plant growth."
+    ],
+    "Earliest roots": [
+      "Egyptian and Mesopotamian medicine, astronomy and mathematics shaped later Greek natural philosophy.",
+      "Egyptian papyri such as the Edwin Smith Papyrus describe anatomy and treatments.",
+      "Hippocrates and his followers (5th century BC) sought natural causes of disease; Aristotle classified animals and studied their anatomy and development."
+    ],
+    "Separate developments in China and India": [
+      "China and India developed theories of nature and health independently.",
+      "Chinese herbalists, physicians and Taoist alchemists studied plants and health, seeking the elixir of life.",
+      "In India, Ayurveda and texts such as the Sushruta Samhita described diseases, plants and surgery."
+    ],
+    "Classical antiquity": [
+      "Hippocratic medicine's theory of the four humours lasted until the 19th century.",
+      "Theophrastus, Aristotle's student, founded botany; Herophilus dissected human bodies in Alexandria.",
+      "Pliny the Elder compiled the 'Natural History'; Galen's anatomy and physiology dominated medicine for 1,400 years."
+    ],
+    "Middle Ages": [
+      "After Rome fell, Greek works were preserved and translated in Byzantium and the Islamic world.",
+      "Avicenna's 'Canon of Medicine' (1025) was a standard medical text in Europe and the Islamic world for centuries.",
+      "In Europe, Hildegard of Bingen and Albertus Magnus wrote on plants and animals."
+    ],
+    "Renaissance": [
+      "Artists such as Leonardo da Vinci and Dürer drew plants, animals and anatomy from life.",
+      "Vesalius's 'De humani corporis fabrica' (1543), based on dissection, corrected Galen and began modern anatomy.",
+      "Naturalists began to describe and illustrate plants and animals, including new species from the Americas."
+    ],
+    "Age of Enlightenment": [
+      "William Harvey showed that blood circulates, pumped by the heart (1628).",
+      "Robert Hooke named cells (1665), and Leeuwenhoek saw bacteria and other microorganisms (1670s–1680s).",
+      "Linnaeus's 'Systema Naturae' (1735) introduced the two-part scientific names used today.",
+      "Buffon suggested that species can change over time."
+    ],
+    "19th century: the emergence of biological disciplines": [
+      "Lamarck proposed a theory of evolution (1809); Humboldt studied how life is distributed across the globe.",
+      "Schleiden and Schwann's cell theory (1838–1839) said all living things are made of cells; Virchow added that cells come from cells.",
+      "Darwin and Wallace proposed evolution by natural selection; Darwin's 'On the Origin of Species' appeared in 1859.",
+      "Mendel discovered the laws of inheritance (1866); Pasteur and Koch established the germ theory of disease."
+    ],
+    "Twentieth century biological sciences": [
+      "Mendel's work was rediscovered in 1900; Thomas Hunt Morgan showed that genes lie on chromosomes.",
+      "The 'modern synthesis' of the 1930s–1940s united Darwin's natural selection with genetics.",
+      "Fleming discovered penicillin (1928); Watson and Crick described the double helix of DNA (1953).",
+      "Recombinant DNA (1970s) and DNA sequencing (Sanger) made genetic engineering and genomics possible."
+    ],
+    "Twenty-first century biological sciences": [
+      "The first draft of the human genome was published in 2001.",
+      "Biology increasingly merges with physics, chemistry and computing, as in biophysics and bioinformatics.",
+      "CRISPR gene editing (2012) made precise changes to DNA cheap and easy."
+    ]
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "topic": [
+    "Computing began with counting aids such as tally sticks, the abacus and mathematical tables.",
+    "Mechanical calculators (Pascal, Leibniz) were followed by Babbage's designs for programmable machines in the 19th century, with Ada Lovelace's first program.",
+    "Turing and Shannon laid the theory in the 1930s; electronic computers arrived during and after the Second World War.",
+    "Transistors, integrated circuits and microprocessors led to personal computers, the internet and today's ubiquitous computing."
+  ],
+  "chapters": {
+    "Concrete devices": [
+      "Before abstract numbers, people used concrete aids: tally marks, pebbles and knotted cords.",
+      "Counting boards and the abacus made arithmetic faster.",
+      "Such devices are the ancestors of mechanical calculators."
+    ],
+    "Numbers": [
+      "Computing depends on representing numbers.",
+      "Almost every language has words for at least 'one' and 'two'.",
+      "Place-value systems, especially the Hindu–Arabic decimal system, made written calculation practical."
+    ],
+    "Early computation": [
+      "The Antikythera mechanism (about 100 BC) was a geared analogue computer of astronomical positions.",
+      "Al-Khwarizmi's methods gave us the word 'algorithm'; Leibniz built a calculator and studied binary arithmetic.",
+      "Charles Babbage designed the Difference Engine and the programmable Analytical Engine (1830s); Ada Lovelace published the first program for it (1843).",
+      "Punched cards from the Jacquard loom were used in Hollerith's tabulating machines for the 1890 US census."
+    ],
+    "Digital electronic computers": [
+      "Claude Shannon (1937) showed that relay circuits can carry out Boolean logic; Alan Turing (1936) defined what any computer can compute.",
+      "Zuse's Z3 (1941), Colossus (1943) and ENIAC (1945) were early programmable computers.",
+      "The transistor (1947) and the integrated circuit (1958) made computers smaller, faster and cheaper.",
+      "Microprocessors led to personal computers in the 1970s–1980s; supercomputers serve science and engineering."
+    ],
+    "Navigation and astronomy": [
+      "Navigation and astronomy relied on printed tables of logarithms and trigonometric functions.",
+      "Human 'computers' calculated these tables by hand, often with interpolation.",
+      "Errors in tables motivated Babbage's mechanical engines."
+    ],
+    "Weather prediction": [
+      "Lewis Fry Richardson tried forecasting weather by numerical calculation in 1922.",
+      "The first computerised weather forecast was made on ENIAC in 1950 by Charney, Fjørtoft and von Neumann.",
+      "Weather and climate modelling remain major uses of supercomputers."
+    ],
+    "Symbolic computations": [
+      "Computers can manipulate symbols as well as numbers, for example in algebra.",
+      "By the late 1960s, computer algebra systems could pass college-level calculus courses.",
+      "Programs such as Mathematica and Maple followed."
+    ],
+    "Important women and their contributions": [
+      "Before the 1960s, programming was often seen as 'women's work'; human computers were mostly women.",
+      "The six original ENIAC programmers were women; Grace Hopper wrote the first compiler and helped create COBOL.",
+      "Margaret Hamilton led the software for the Apollo missions; Frances Allen pioneered optimising compilers and was the first woman to win the Turing Award (2006)."
+    ]
+  }
+}

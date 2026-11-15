@@ -1,0 +1,107 @@
+{
+  "topic": [
+    "Life appeared on Earth by at least 3.5 billion years ago, possibly by 3.7; all living things descend from a common ancestor.",
+    "For about two billion years life was single-celled; eukaryotes, then multicellular life, followed.",
+    "Animals diversified in the Cambrian explosion about 538 million years ago; plants and animals colonised land from about 470 million years ago.",
+    "Mass extinctions repeatedly cleared the way for new groups: dinosaurs after the Permian–Triassic extinction, mammals after the Cretaceous–Paleogene."
+  ],
+  "chapters": {
+    "Earliest history of Earth": [
+      "Earth formed about 4.54 billion years ago; the Moon probably formed when a Mars-sized body, Theia, struck it.",
+      "Liquid water existed by about 4.4 billion years ago, judging from zircon crystals.",
+      "Early Earth was bombarded by asteroids and comets, which may have delivered water and organic compounds."
+    ],
+    "Earliest evidence for life on Earth": [
+      "The oldest undisputed fossils, of bacteria, are about 3 billion years old; disputed finds go back to 3.5 billion years and more.",
+      "Stromatolites, layered mounds built by microbial mats, are among the oldest fossils.",
+      "Carbon isotope signatures in rocks from Greenland suggest life by 3.7–3.8 billion years ago."
+    ],
+    "Origins of life on Earth": [
+      "All organisms share a last universal common ancestor (LUCA), since their core biochemistry is shared.",
+      "Theories differ on what came first: self-copying RNA (the RNA world), a metabolism on mineral surfaces (iron–sulfur world), or membranes (lipid world).",
+      "Candidate birthplaces include deep-sea hydrothermal vents and land-based hot springs.",
+      "Panspermia holds that life was seeded from space; it moves the question rather than answering it."
+    ],
+    "Environmental and evolutionary impact of microbial mats": [
+      "Microbial mats are thin, layered colonies of microbes, each layer feeding on the by-products of the next.",
+      "Cyanobacteria in the mats invented oxygen-producing photosynthesis.",
+      "Their oxygen, building up from about 2.4 billion years ago (the Great Oxygenation Event), transformed the atmosphere and made complex life possible."
+    ],
+    "Diversification of eukaryotes": [
+      "Eukaryotes are cells with a nucleus and internal compartments; they appear in the fossil record about 1.8–2 billion years ago.",
+      "Mitochondria and chloroplasts were once free-living bacteria engulfed by other cells (endosymbiosis).",
+      "Most eukaryotes use oxygen, which their mitochondria burn to make energy."
+    ],
+    "Sexual reproduction and multicellular organisms": [
+      "Sexual reproduction (meiosis and fertilisation) mixes genes; it evolved in early eukaryotes, perhaps 1.2 billion years ago or more.",
+      "Multicellularity evolved independently many times, in animals, plants, fungi and algae.",
+      "The Ediacaran biota, 580–539 million years ago, were the first large, complex multicellular organisms."
+    ],
+    "Emergence of animals": [
+      "Animals are multicellular eukaryotes without cell walls; all but sponges have tissues such as muscle and nerves.",
+      "In the Cambrian explosion, from about 538 million years ago, most major animal groups appeared within some 20 million years.",
+      "Fossil beds such as the Burgess Shale preserve soft-bodied Cambrian animals.",
+      "The first chordates and vertebrates (jawless fish) appeared in the Cambrian."
+    ],
+    "Evolution of terrestrial antioxidants": [
+      "Life on land had to solve drying out, supporting weight against gravity, breathing air and reproducing without water.",
+      "Land plants and animals evolved antioxidants to cope with stronger sunlight and more oxygen.",
+      "Plants were on land by about 470 million years ago, in the Ordovician."
+    ],
+    "Evolution of soil": [
+      "Before life colonised land there was no soil, only bare rock and sand.",
+      "Lichens, microbes and early plants broke down rock and added organic matter, building the first soils.",
+      "Plant roots in the Devonian deepened soils and sped up rock weathering."
+    ],
+    "Plants and the Late Devonian wood crisis": [
+      "Land plants evolved vascular tissue to carry water, and later roots, leaves, wood and seeds.",
+      "The first trees and forests arose in the Devonian, about 385 million years ago.",
+      "By drawing down carbon dioxide and releasing nutrients into the sea, they may have helped cause the Late Devonian extinction."
+    ],
+    "Land invertebrates": [
+      "Arthropods, such as early myriapods and arachnids, were among the first land animals, in the Silurian and Devonian.",
+      "Land animals evolved internal fertilisation, new eyes for air, and in many cases hearing.",
+      "Insects appeared by the Devonian and became the first animals to fly, in the Carboniferous."
+    ],
+    "Amphibians": [
+      "Tetrapods (four-limbed vertebrates) evolved from lobe-finned fish in the Late Devonian, 370–360 million years ago.",
+      "Early forms such as Acanthostega had limbs but still lived mainly in water.",
+      "Amphibians keep an aquatic larval stage (tadpoles); they dominated land until the Carboniferous rainforest collapse."
+    ],
+    "Reptiles": [
+      "Amniotes, whose eggs survive on dry land, evolved in the Late Carboniferous.",
+      "They split into synapsids (the line to mammals) and sauropsids (reptiles and birds) about 313 million years ago.",
+      "Synapsids dominated the Permian; after the end-Permian extinction, archosaurs, including dinosaurs, took over."
+    ],
+    "Birds": [
+      "Birds evolved from small, feathered theropod dinosaurs in the Late Jurassic; Archaeopteryx is an early example.",
+      "Early birds had teeth and long bony tails; beaks and short tails followed.",
+      "Birds are the only dinosaurs that survived the extinction 66 million years ago."
+    ],
+    "Mammals": [
+      "Mammals descend from therapsids, synapsids that survived the end-Permian extinction.",
+      "Early mammals were small, mostly nocturnal insectivores living alongside dinosaurs; nocturnal life may have favoured warm blood and fur.",
+      "After the dinosaurs' extinction, mammals diversified into most of today's groups."
+    ],
+    "Flowering plants": [
+      "Flowering plants (angiosperms) appeared about 130 million years ago and diversified rapidly in the Cretaceous.",
+      "Their rise went hand in hand with pollinating insects.",
+      "With about 300,000 species, they now dominate most land vegetation."
+    ],
+    "Social insects": [
+      "In eusocial insects (ants, bees, termites, wasps), most colony members are sterile workers.",
+      "Eusociality has evolved independently only about a dozen times among arthropods.",
+      "Kin selection explains it: helping close relatives breed passes on shared genes."
+    ],
+    "Humans": [
+      "Robert Chambers in 1844 and Charles Darwin in 1871 proposed that humans evolved from a common ancestor with other animals.",
+      "The human line split from the chimpanzee line about 6–7 million years ago; Sahelanthropus is a very early member.",
+      "The first known stone tools were made about 2.6 million years ago; modern humans appeared in Africa about 300,000 years ago."
+    ],
+    "Mass extinctions": [
+      "Life has suffered at least five mass extinctions in the last 540 million years.",
+      "Extinctions remove dominant groups and open niches for others: mammals spread after the dinosaurs died out.",
+      "The end-Permian extinction, 252 million years ago, was the largest; the end-Cretaceous, 66 million years ago, was caused by an asteroid impact."
+    ]
+  }
+}

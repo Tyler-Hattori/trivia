@@ -1,0 +1,51 @@
+{
+  "topic": [
+    "Chemistry grew from ancient crafts (metallurgy, dyes, glass, medicines) and from alchemy.",
+    "In the 17th–18th centuries Boyle, Lavoisier and others made it an experimental science; Lavoisier explained combustion by oxygen, overthrowing the phlogiston theory.",
+    "In the 19th century Dalton's atomic theory, organic chemistry and Mendeleev's periodic table (1869) gave it its modern shape.",
+    "In the 20th century quantum mechanics explained chemical bonds, and the chemical industry transformed farming, medicine and materials."
+  ],
+  "chapters": {
+    "Ancient history": [
+      "Fire was the first chemical reaction put to use, for cooking, pottery and smelting metals.",
+      "Copper smelting began by about 5000 BC, then bronze (copper and tin) and, from about 1200 BC, iron.",
+      "Greek philosophers proposed four elements (earth, water, air and fire); Leucippus and Democritus proposed atoms.",
+      "Aristotle's four-element theory dominated thought for nearly 2,000 years."
+    ],
+    "Medieval alchemy": [
+      "Alchemists sought to turn base metals into gold and to make an elixir of life (the philosopher's stone).",
+      "Works attributed to Jabir ibn Hayyan added sulphur and mercury as principles of metals.",
+      "Islamic alchemists developed distillation, crystallisation and other lab techniques, and classified substances.",
+      "Paracelsus in the 16th century turned alchemy towards making medicines."
+    ],
+    "17th and 18th centuries: Early chemistry": [
+      "Agricola's 'De re metallica' (1556) described mining and metallurgy without mysticism.",
+      "Robert Boyle's 'The Sceptical Chymist' (1661) attacked the four elements and championed experiment; Boyle's law relates gas pressure and volume.",
+      "In the 18th century Black, Cavendish, Priestley and Scheele discovered gases, including carbon dioxide, hydrogen and oxygen.",
+      "Lavoisier showed that combustion is combination with oxygen, refuting the phlogiston theory, and stated the conservation of mass."
+    ],
+    "19th century": [
+      "John Dalton's atomic theory (1803–1808) said each element is made of atoms of a characteristic weight.",
+      "Avogadro's hypothesis (1811) said equal volumes of gas hold equal numbers of molecules; Berzelius introduced modern chemical symbols.",
+      "Wöhler's synthesis of urea (1828) helped end the belief that living things' chemicals need a 'vital force'; Kekulé described the structure of benzene.",
+      "Mendeleev's periodic table (1869) arranged the elements and predicted undiscovered ones.",
+      "Late in the century came the noble gases (Ramsay), radioactivity (Becquerel, the Curies) and chemical thermodynamics (Gibbs)."
+    ],
+    "20th century": [
+      "The Haber–Bosch process (1909–1913) made ammonia for fertiliser, feeding billions.",
+      "Rutherford found the atomic nucleus (1911); Bohr's model and quantum mechanics explained the periodic table.",
+      "Gilbert Lewis described the shared-electron chemical bond (1916); Linus Pauling explained bonding with quantum mechanics.",
+      "Hahn and Meitner discovered nuclear fission (1938); chemistry joined biology in biochemistry and molecular biology."
+    ],
+    "Mathematics and chemistry": [
+      "Chemistry long remained a descriptive, experimental science, unlike mathematical physics.",
+      "Atomic weights, combining proportions and thermodynamics gave it a quantitative foundation in the 19th century.",
+      "Quantum chemistry and computer simulation made it more mathematical in the 20th century."
+    ],
+    "Scope of chemistry": [
+      "Chemistry studies the composition, structure and changes of matter.",
+      "It sits between physics and biology and is often called the 'central science'.",
+      "The chemical industry, from dyes and explosives to plastics and drugs, grew from 19th-century discoveries."
+    ]
+  }
+}

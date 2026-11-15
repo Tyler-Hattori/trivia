@@ -1,0 +1,76 @@
+{
+  "topic": [
+    "The Cambrian explosion was a burst of evolution starting about 538.8 million years ago, when most major animal groups (phyla) appear in the fossil record.",
+    "It lasted about 13–25 million years and produced animals with hard parts, eyes and complex bodies.",
+    "Its causes are debated: rising oxygen, new genes for body plans, and an arms race between predators and prey.",
+    "Fossil beds such as the Burgess Shale and Chengjiang preserve its soft-bodied animals."
+  ],
+  "chapters": {
+    "Dating the Cambrian": [
+      "William Buckland noticed the sudden appearance of fossils in the oldest Cambrian rocks in the 1840s.",
+      "Darwin saw the lack of earlier fossils as a serious difficulty for his theory in 'On the Origin of Species' (1859).",
+      "Radiometric dating puts the start of the Cambrian at about 538.8 million years ago."
+    ],
+    "Body fossils": [
+      "Body fossils are the most informative evidence, but fossilisation is rare and the record is incomplete.",
+      "Exceptional deposits ('Lagerstätten') such as the Burgess Shale in Canada and Chengjiang in China preserve soft tissues.",
+      "Small shelly fossils, tiny tubes and plates, are among the earliest Cambrian fossils."
+    ],
+    "Trace fossils": [
+      "Trace fossils are tracks, burrows and feeding marks.",
+      "They record soft-bodied animals and their behaviour, often before body fossils of the animals that made them.",
+      "Burrows become deeper and more complex at the start of the Cambrian."
+    ],
+    "Geochemical observations": [
+      "Chemical markers show sharp changes in the environment around the start of the Cambrian.",
+      "Changes in carbon isotope ratios may reflect a mass extinction or a release of methane.",
+      "They may be a cause of the explosion, or a result of new biological activity."
+    ],
+    "Phylogenetic techniques": [
+      "Cladistics builds family trees by grouping organisms that share derived traits.",
+      "Molecular clocks estimate when groups split from differences in their DNA.",
+      "Molecular clocks suggest many animal lineages split long before the Cambrian, earlier than the fossils show."
+    ],
+    "Explanation of key scientific terms": [
+      "A phylum is a major grouping of animals by basic body plan, such as arthropods, molluscs or chordates.",
+      "A stem group consists of extinct relatives of a living group that lack some of its features.",
+      "Bilaterians have left–right symmetry and three tissue layers (triploblastic); coelomates have a body cavity."
+    ],
+    "Precambrian life": [
+      "Stromatolites, built by microbial mats, declined after about 1.25 billion years ago, possibly due to grazing animals.",
+      "The Ediacaran biota (about 575–539 million years ago) were large, soft-bodied organisms, many unlike any living animal.",
+      "Some Ediacaran forms, such as Kimberella, may be early animals."
+    ],
+    "Cambrian life": [
+      "Burrowing, shells and skeletons appear at the start of the Cambrian.",
+      "Trilobites appear about 521 million years ago and became one of the most successful Cambrian groups.",
+      "Burgess Shale animals such as Anomalocaris, Opabinia and Wiwaxia show a great variety of body plans.",
+      "Early chordates, including the first vertebrates, appear in Chengjiang."
+    ],
+    "Stages": [
+      "The fastest diversification came in the first 20–25 million years of the Cambrian.",
+      "It ended around the base of Cambrian Series 2, 521 million years ago, when the first trilobites appear.",
+      "Authors divide the interval differently, depending on which fossils they emphasise."
+    ],
+    "Validity": [
+      "Some animal groups, such as sponges and cnidarians, existed before the Cambrian.",
+      "Part of the 'explosion' may reflect better preservation of hard parts rather than a true burst of evolution.",
+      "Survivorship bias also matters: groups that survived to today look as if they appeared suddenly."
+    ],
+    "Possible causes": [
+      "Environmental: rising oxygen levels, an ozone layer, the end of the Snowball Earth glaciations, and more calcium in seawater.",
+      "Developmental: the evolution of Hox genes and other genetic tool-kits for building complex bodies.",
+      "Ecological: predators and prey in an arms race, eyes, burrowing, and empty niches after the end-Ediacaran extinction."
+    ],
+    "Relationship with the Great Ordovician Biodiversification Event": [
+      "After an extinction at the end of the Cambrian, a second radiation followed: the Great Ordovician Biodiversification Event.",
+      "It established the groups that dominated the rest of the Paleozoic.",
+      "Some studies see the two as one long radiation."
+    ],
+    "Uniqueness of the early Cambrian biodiversification": [
+      "The rate of evolution in the early Cambrian is unmatched among marine animals.",
+      "It may have come in two waves: first on the Ediacaran sea floor, then into the open water.",
+      "No new phyla have appeared since; later radiations only varied existing body plans."
+    ]
+  }
+}
