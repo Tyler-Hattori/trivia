@@ -17,6 +17,79 @@ Read them only for the history of a specific decision.
 - `topic-report.mjs`: about 25 minor findings.
 - Committed and pushed.
 
+### NEXT SESSION: the plan the user approved (START HERE)
+
+Work through these in order and commit after each. Before rebuilding, check
+the queue status (below): don't run `--ingest` while a batch is ingesting.
+Builds without `--ingest` are safe.
+
+**A. Content audit with Haiku.** New script `datasets/audit-entries.mjs`,
+modelled on `title-events.mjs` (30 per call, concurrency 4, retries).
+- Input: every timeline entry that comes from Wikidata (`via !== 'events'`):
+  about 7,900 across 49 topics, 5,307 unique, 4,443 essentials.
+- Ask, per entry, with the topic name, title, subtitle, years, type and the
+  first sentence:
+  1. Is the date plausible for this entry? (`ok` or `wrong`)
+  2. What type is it? (`person`, `event`, `period`, `work`, `place`, `group`
+     or `concept`)
+  3. How relevant is it to this topic? (`core`, `context` or `off`)
+- Write `datasets/audit-auto.json`. Store date and type by entry id (they
+  hold for every topic); store relevance under `topic slug -> id`.
+- Apply in `topic.mjs`:
+  - `wrong` date: `dateSuspect` and off the timeline.
+  - A type fix overrides the type from `etype`.
+  - `off`: never key (exclude from `eligible`, like unkey).
+  - `context`: importance × 0.8.
+- Known bad cases to verify:
+  - Meroë dated 2450 BC; the Mesoproterozoic ending in 1 BC; YBC 7289 dated
+    1945 (its publication year); Columbia (period) 2002.
+  - Apollo program, Agriculture, Smallpox, Science and Nature typed as
+    people; Illinois as a period (Ideas of Physics); Goseck Circle as a person.
+  - Off-topic essentials in Physics: First Punic War, Roman Empire,
+    Parallel Lives, Iliad.
+- Spot-check the output. Haiku once gave Prigogine the Physics Nobel instead
+  of Chemistry.
+
+**B. Merge duplicate mined events.** Related-article mining finds the same
+event on several pages (Pizarro reaching Peru in 1532, about 3 times). In
+`topic.mjs`, next to the existing twin merge (mined vs linked, around "Mined
+events, made readable at a glance"), also merge mined vs mined:
+- Same topic, years within 1, and similar titles (content-word Jaccard ≥ 0.5
+  on the short titles, or the same named entities).
+- Keep the timeline-line event over the prose one, then the higher
+  importance; keep the other's sentence if it has none.
+- Log how many were merged.
+
+**C. Timeline UI: detail by zoom.** In `project/features/topic`:
+- In Essentials mode, pack the essentials first. Then fill the free space with
+  non-essential timeline entries, in importance order, as chips (class
+  `minor`), only in rows below `max(rows used by essentials, 8)`. Drop any
+  that don't fit.
+- Zooming in leaves more room, so more entries appear, the way a map adds
+  street names. Everything mode stays as it is.
+- Implementation: give `pack()` an option of optional items plus a row cap,
+  and return which were placed. `visibleItems()` returns essentials plus
+  candidates.
+- Update qa-topic's layout check if `pack`'s signature changes.
+
+**D. Timeline UI: an eras/rulers track.** A thin strip under the chapter
+bands, with periods (type `period`: dynasties, kingdoms, eras) drawn as
+labelled bars across their years, stacked in 1–3 rows. Those periods then
+stop being cards.
+- Rulers, if the data allows: entries with `dataset === 'leaders'` store
+  reigns (`anchorYear` uses `start` for them). Otherwise show only periods.
+- Clicking a bar opens the panel.
+- Check on Inca Empire, Ancient Egypt, Japan and England, on desktop and at
+  390 px (phone).
+
+Later (agreed, not started): a "why it matters" line for event panels; key
+points for batches 3 and 4 (`topic-notes/`, none yet); wars and reigns as bars;
+deep-time spacing (Kush is mostly hatched breaks); phone pinch-zoom and maybe a
+vertical layout; comparing two topics' timelines.
+
+Screenshots: `/tmp/shots/shot.mjs "<#hash>" out.png [w h mobile js]` (it
+may be gone after a reboot; it's a small CDP script, see Setup).
+
 ### Queue (end of session 8)
 
 These scripts run one after another under caffeinate:
