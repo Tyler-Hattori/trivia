@@ -889,13 +889,26 @@ const missing = [...mention.entries()]
  */
 const hatTargets = OPT.site ? [] : [...mention.entries()].filter(([, m]) => m.hat)
   .sort((a, b) => b[1].weight - a[1].weight).map(([t]) => { try { return decodeURIComponent(String(t)).replace(/_/g, ' '); } catch { return String(t).replace(/_/g, ' '); } });
-const eventPages = [...new Set([...OPT.events, ...(art.events || []), ...hatTargets.filter((t) => /^timeline of /i.test(t))])];
-const prosePages = OPT.site ? [] : [...new Set([...OPT.prose, ...(eventPages.length ? [] : [art.title,
-  ...hatTargets.filter((t) => !/^(timeline|list|lists|outline|index|glossary|bibliography) of /i.test(t)).slice(0, 10)])])]
-  .filter((p) => !eventPages.includes(p));
+// Resolved through redirects: the store records the page a timeline really is.
+// "Timeline of natural history" is *Timeline of Earth*, and History of Earth
+// matched none of its own 253 events.
+const rawEventPages = [...new Set([...OPT.events, ...(art.events || []), ...hatTargets.filter((t) => /^timeline of /i.test(t))])];
+const evRedir = OPT.site ? new Map() : await resolveRedirects(rawEventPages.filter((p) => !/^https?:\/\//.test(p)));
+const eventPages = [...new Set(rawEventPages.map((p) => evRedir.get(p) || p))];
 // A Wikipedia timeline is matched by title, another site's by its URL.
 const pageKey = (u) => (/^https?:\/\//.test(u) && !/wikipedia\.org/.test(u) ? String(u) : wikiKey(u)).toLowerCase();
 const minedFrom = (p) => entries.some((e) => e.origin?.manual && pageKey(e.origin?.wiki) === pageKey(p));
+/*
+ * Narrative pages are mined when the timeline pages are missing OR thin: Ice
+ * ages' *Timeline of glaciation* gives 6 events, Plate tectonics' 12. Decided
+ * from what the timeline pages actually yielded, so after they are mined.
+ */
+const PROSE_BELOW = 40;
+const proseCandidates = [art.title, ...hatTargets.filter((t) => !/^(timeline|list|lists|outline|index|glossary|bibliography) of /i.test(t)).slice(0, 10)];
+const eventYield = () => { const keys = new Set(eventPages.map(pageKey)); return entries.filter((e) => e.origin?.manual && keys.has(pageKey(e.origin?.wiki))).length; };
+const prosePagesNow = () => OPT.site ? [] : [...new Set([...OPT.prose, ...(eventYield() >= PROSE_BELOW ? [] : proseCandidates)])]
+  .filter((p) => !eventPages.some((q) => pageKey(q) === pageKey(p)));
+let prosePages = prosePagesNow();
 const missingEvents = eventPages.filter((p) => !minedFrom(p));
 const missingProse = prosePages.filter((p) => !minedFrom(p));
 
@@ -928,7 +941,8 @@ if(OPT.ingest && (missing.length || missingEvents.length || missingProse.length)
     console.log(`\n  mining events from "${p}"…`);
     run(['--events', p, '--domain', domain, '--no-build']);
   }
-  for(const p of missingProse){
+  if(missingEvents.length){ entries = readEntries(); prosePages = prosePagesNow(); }
+  for(const p of prosePages.filter((x) => !minedFrom(x))){
     console.log(`\n  mining dated sentences from "${p}"…`);
     run(['--events', p, '--events-prose', '--domain', domain, '--no-build']);
   }
@@ -995,6 +1009,7 @@ function readsAsDate(e){
  * Islamic Golden Age. Small number ranges ("3–7", "170–180") are ages and
  * head-counts, not years.
  */
+prosePages = prosePagesNow();
 {
   const self = findEntry(art.title);
   let lo, hi;
