@@ -1229,8 +1229,36 @@ const PRESENT_STATE = /(^|\|)(sovereign state|country|constituent country of the
     if(ys.length < 2) return;
     const q = (f) => ys[Math.min(ys.length - 1, Math.floor(f * ys.length))];
     const mid = ys.length % 2 ? ys[(ys.length - 1) / 2] : (ys[ys.length / 2 - 1] + ys[ys.length / 2]) / 2;
-    era.set(ci, { mid, tol: Math.max(150, 0.5 * (q(0.75) - q(0.25))) });
+    era.set(ci, { mid, tol: Math.max(150, 0.5 * (q(0.75) - q(0.25))), q1: q(0.25), q3: q(0.75) });
   });
+  /*
+   * A mined event no chapter mentions went to chapter 0: all 246 events of
+   * *Timeline of scientific discoveries* landed in "Approaches to history of
+   * science" and none became essential. Without chapter years, it goes to the
+   * chapter whose dated members' middle half is nearest its year, narrow
+   * chapters preferred.
+   */
+  if(era.size >= 2){
+    let moved = 0;
+    for(const it of out){
+      if(it.via !== 'events' || it.start == null || (it.chapterOfMention != null && chapters[it.chapterOfMention]?.from != null)) continue;
+      if(it.chapterOfMention != null && era.has(it.chapterOfMention)){
+        const e = era.get(it.chapterOfMention);
+        if(Math.abs(anchorYear(it) - e.mid) <= e.tol) continue;
+      }
+      const y = anchorYear(it);
+      // Distance outside the chapter's middle half, plus a tenth of its width:
+      // a broad chapter ("Approaches to history of science") spans every year
+      // and would otherwise take everything near a narrow one's edge.
+      let best = null, bestS = Infinity;
+      for(const [ci, e] of era){
+        const sc = (y < e.q1 ? e.q1 - y : y > e.q3 ? y - e.q3 : 0) + 0.1 * (e.q3 - e.q1);
+        if(sc < bestS){ bestS = sc; best = ci; }
+      }
+      if(best != null && best !== it.chapter){ it.chapter = best; moved++; }
+    }
+    if(moved) console.log(`  ${moved} mined events placed in the chapter of their era`);
+  }
   let off = 0;
   for(const it of out){
     if(!it.onTimeline || (it.type !== 'place' && it.type !== 'group') || it.via === 'events') continue;
