@@ -117,6 +117,21 @@ applies them (keeping `origTitle`, so overrides naming the old title still
 match) and so does the search index. Write them for each new batch: dump the
 mined events with 4+ word titles, title them, merge into `titles.json`.
 
+### Titles by a small model (`title-events.mjs`)
+
+`node datasets/title-events.mjs [slug…]` asks Claude Haiku (`ANTHROPIC_API_KEY`;
+`TITLE_MODEL` overrides the model), 30 at a time, for a short timeline label
+for every untitled mined event. Those are all prose events, and timeline lines
+of 5+ words. It returns `null` for sentences that are not events: historians'
+arguments, citations, statistics, restated spans.
+- Results go to `datasets/titles-auto.json`. `null` means rejected, and it is
+  never asked again.
+- Hand titles in `titles.json` win (`lib/lite.mjs` `readTitles`).
+- Run it after a batch, then rebuild the affected topics.
+- First run: 4,900 events, 4,150 titled, 870 rejected, about $1.60.
+- Spot-check: it occasionally "corrects" a fact ("Prigogine wins Nobel Prize
+  in Physics": it was Chemistry). Fix such cases in `titles.json`.
+
 ## The search page (#/search/<query>)
 
 `topics/store-lite.json` (`lib/lite.mjs`, rewritten by every topic build) is

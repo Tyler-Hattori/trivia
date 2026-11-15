@@ -30,6 +30,8 @@ These scripts run one after another under caffeinate:
    main-article pages beyond the old top 10 (`/tmp/batch12b.log`, then
    `/tmp/batch12b.done`).
 
+After each batch: `node datasets/title-events.mjs` (Haiku, about $0.30 per
+1,000 events), then rebuild the topics that gained titles.
 Mined events stay OFF the timeline until they have a short title in
 `titles.json` (`it.prose && !it.origTitle`). Inca Empire is done (32 titles).
 Every other prose topic needs its titles written:

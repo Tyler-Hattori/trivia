@@ -273,7 +273,7 @@ if(!OPT.page && !OPT.site){
 // ---------------------------------------------------------------------------
 
 /** Sections that are apparatus, not history. Everything from the first of these on is dropped. */
-const STOP_SECTIONS = /^(see also|references|notes|citations|sources|further reading|external links|bibliography|footnotes|historiography|primary sources|works cited|explanatory notes|general and cited references|articles on .+|lists? of .+|related (articles|topics))$/i;
+const STOP_SECTIONS = /^(see also|references|notes|citations|sources|cited sources|notes and quotes|notes and references|sources and further reading|further reading|external links|bibliography|footnotes|historiography|primary sources|works cited|explanatory notes|general and cited references|articles on .+|lists? of .+|related (articles|topics))$/i;
 
 async function fetchArticle(page){
   const u = `${WP}/w/api.php?action=parse&format=json&formatversion=2&redirects=1&prop=text&page=${encodeURIComponent(page)}`;

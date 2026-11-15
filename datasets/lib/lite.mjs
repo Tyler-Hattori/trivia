@@ -31,7 +31,11 @@ const shortImg = (u) => String(u).replace(/^https:\/\/upload\.wikimedia\.org\/wi
 
 /** datasets/titles.json: { <entry id>: "short title" } for mined events whose title is a sentence fragment. */
 export function readTitles(){
-  try { return JSON.parse(fs.readFileSync(path.join(PATHS.topics, '..', 'titles.json'), 'utf8')); } catch { return {}; }
+  // titles-auto.json: written by a small model (title-events.mjs); null = not an
+  // event, so no title. titles.json, written by hand, wins.
+  const read = (f) => { try { return JSON.parse(fs.readFileSync(path.join(PATHS.topics, '..', f), 'utf8')); } catch { return {}; } };
+  const auto = Object.fromEntries(Object.entries(read('titles-auto.json')).filter(([, t]) => typeof t === 'string' && t));
+  return { ...auto, ...read('titles.json') };
 }
 
 export function writeLite({ entries, taxo }){

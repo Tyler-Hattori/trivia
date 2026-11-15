@@ -116,7 +116,6 @@
       "Hellenistic period",
       "Indus Valley Civilisation",
       "Julius Caesar",
-      
       "Middle Ages",
       "Pre-Columbian era",
       "Roman Empire",
@@ -313,5 +312,20 @@
     "unkey": [
       "Concentration"
     ]
+  },
+  "aztec-empire": {
+    "chapterIntro": {
+      "List of rulers": "The Aztec Empire was led by the huey tlatoani of Tenochtitlan, from Acamapichtli (1376) to Cuauhtémoc, the last, captured by the Spanish in 1521. The rulers of the allied cities of Texcoco and Tlacopan are listed alongside."
+    }
+  },
+  "sasanian-empire": {
+    "chapterIntro": {
+      "Chronology": "The Sasanian Empire ruled Iran from Ardashir I's victory over the Parthians in 224 to the Arab conquest, completed with the death of Yazdegerd III in 651. Its later centuries were dominated by wars with the Byzantine Empire, ending in the great war of 602–628."
+    }
+  },
+  "viking-age": {
+    "chapterIntro": {
+      "Settlements outside Scandinavia": "Norse raiders became settlers across the North Atlantic and beyond: in Britain and Ireland (the Danelaw, Dublin), Normandy, the Faroe Islands, Iceland from about 870, Greenland from about 985, briefly Vinland in North America, and, as the Rus', along the rivers of Eastern Europe."
+    }
   }
 }

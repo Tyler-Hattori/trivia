@@ -855,7 +855,7 @@ function drawTimeline(){
     const line = p.line
       ? `<div class="${person ? 'tp-life' : 'tp-span'}${p.line.openL ? ' openl' : ''}${p.line.openR ? ' openr' : ''}" style="left:${p.line[0]}px;width:${p.line[1] - p.line[0]}px;top:${y - 5}px;${person ? '' : `background:${c}`}"></div>` : '';
     const known = isKnown(V.mastery[it.id]) ? '<span class="ok">✓</span> ' : '';
-    const when = esc(it.yearText || fmtYear(it.start));
+    const when = esc(tidyYear(it.yearText) || fmtYear(it.start));
     const cls = `tp-card ${full ? 'full' : 'chip'} ${person ? 'person' : ''} ${dim ? 'dim' : ''} ${it.key ? '' : 'minor'} ${V.selected === it.id ? 'sel' : ''}`;
     const box = `data-id="${esc(it.id)}" style="--w:${GEO.CARD_W}px;--ih:${GEO.IMG_H}px;--h:${full ? GEO.CARD_H : GEO.CHIP_H}px;--c:${c};left:${p.x - GEO.CARD_W / 2}px;top:${y}px"`;
     if(full) return `${line}
@@ -1069,7 +1069,7 @@ function showDetail(id, scroll = true){
     ${it.image && !borrowedPortrait(it, (x) => T.byId.get(x)) ? `<a href="${esc(fullUrl(it.image))}" target="_blank" rel="noopener"><img src="${esc(thumbUrl(it.image, 960))}" alt="" onerror="imgRetry(this)"></a>` : ''}
     <div class="in">
       <h2>${esc(it.title)}</h2>
-      <div class="sub">${[it.yearText || fmtYear(it.start), it.subtitle].filter(Boolean).map(esc).join(' · ')}</div>
+      <div class="sub">${[tidyYear(it.yearText) || fmtYear(it.start), it.subtitle].filter(Boolean).map(esc).join(' · ')}</div>
       ${undated && defOf(it) ? `<div class="tp-ctx" style="--c:#0f172a"><div class="lb">What it is</div>${esc(defOf(it))}</div>` : ''}
       <div style="margin-bottom:12px">
         ${ch ? `<span class="tp-badge" style="border-color:${ch.color};color:${ch.color}">${esc(ch.title)}</span>` : ''}
@@ -1152,6 +1152,16 @@ function step(dir){
     k = dir > 0 ? (at < 0 ? list.length - 1 : at) : Math.max(0, (at < 0 ? list.length : at) - 1);
   } else k = Math.max(0, Math.min(list.length - 1, k + dir));
   showDetail(list[k].id);
+}
+
+/** A mined date as the sentence put it ("from 3000 to 1800 BC", "around 2500 BC") → "3000–1800 BC", "c. 2500 BC". */
+function tidyYear(t){
+  return String(t || '').trim()
+    .replace(/^\((.*)\)$/, '$1')
+    .replace(/^(around|about|circa|approximately|roughly|ca\.?)\s+/i, 'c. ')
+    .replace(/^(from|between|in|by|since|until)\s+/i, '')
+    .replace(/^(\S+(?:\s+(?:BC|BCE|AD|CE))?)\s+(?:to|and|until)\s+/i, '$1–')
+    .replace(/^(early|mid|late)\s+/i, (m) => m[0].toUpperCase() + m.slice(1));
 }
 
 /** Light up the cards linked to the selected one: a person's doings, an event's people. */
