@@ -132,6 +132,61 @@ arguments, citations, statistics, restated spans.
 - Spot-check: it occasionally "corrects" a fact ("Prigogine wins Nobel Prize
   in Physics": it was Chemistry). Fix such cases in `titles.json`.
 
+## Content audit (`audit-entries.mjs`)
+
+Wikidata dates and types are often wrong for a timeline: *YBC 7289* (a
+Babylonian tablet) at 1945, its publication; the Mesoproterozoic ending in
+1 BC; *Apollo program* and *Smallpox* typed as people; the First Punic War and
+the *Iliad* among Physics' essentials because the article mentions them.
+
+`node datasets/audit-entries.mjs [slug…]` asks Claude Haiku (`AUDIT_MODEL`),
+30 per call, about every dated entry that is not a mined event:
+
+1. Is the stored date the one that matters? `ok`, or `wrong` with the right
+   start and end (`y`, `e`).
+2. What is it? person, event, period, work, place, group or concept.
+3. How relevant is it to this topic? `core`, `context` or `off`.
+
+Output: `datasets/audit-auto.json` (`entries`: id → `{d, t, y, e, span}`;
+`topics`: slug → id → relevance). Hand corrections in `datasets/audit.json`
+(same shape) win (`lib/audit.mjs`). `--spans` asks for the years of periods
+stored with a start only (the Akkadian Empire was "2334 BC"); the eras track
+needs them. `--bare` re-asks entries whose description is only a name (see
+below). First run: 9,740 judgments, 353 spans, about $2.70.
+
+`topic.mjs` applies it:
+- **Type:** the audit's type overrides `etype` (also in the search index).
+- **Date:** `wrong` with a year far from the stored one (5% of its distance
+  from today, at least 3 years) is corrected (`dateFixed`, `storedYears`
+  keeps the old one); a year or two out is left alone; `wrong` with no year is
+  `dateSuspect`, off the timeline. A right start with no stored end gets the
+  audit's end. Rulers (`dataset: leaders`) are skipped: their span is the
+  reign, which the model "corrects" to the life.
+- **BC signs:** the model often drops the minus (Demosthenes "384..322"). A
+  stored BC date with a positive, descending or single answer is read as BC.
+- **Relevance:** `off` is never an essential (`offTopic`, importance ×0.5,
+  not an era bar, not zoom fill); `context` ranks ×0.8. A chapter with only
+  off-topic entries (the Hoover Dam in "Waves") has no essentials.
+- **Bare-name descriptions:** Wikidata's description of *Spain* was "Pedro
+  Sánchez" (the head of government). On places, groups and periods a
+  description that is only a name is dropped.
+
+Spot-check after each run: it is mostly right, but confident.
+
+## Duplicate events (`dedupe-events.mjs`)
+
+Related-article mining finds one happening on several pages ("Spain licenses
+Pizarro to conquer Peru", "Pizarro receives royal approval to conquer Peru").
+Title words cannot tell those apart from "Túpac Amaru becomes Inca" vs
+"Execution of Túpac Amaru", a year apart. `lib/dupes.mjs` finds loose
+candidates (years ±1, shared words with plurals folded, or 2 shared names);
+`node datasets/dedupe-events.mjs` asks Haiku "same happening?" for each pair
+and writes `datasets/dupes-auto.json`. `topic.mjs` merges confirmed pairs:
+mined with mined (timeline-page line over prose, then importance; the
+survivor keeps the other's sentence and picture), and mined into the
+article's own linked event. Unjudged pairs merge only at title Jaccard ≥ 0.6.
+First run: 650 pairs judged ($0.11); the rebuild merged 254 mined duplicates, and 337 mined events into linked twins (most by title, as before). Haiku is not fully consistent on granularity ("Mongol invasions of Japan" vs "First Mongol invasion repelled" was judged same once, different once).
+
 ## The search page (#/search/<query>)
 
 `topics/store-lite.json` (`lib/lite.mjs`, rewritten by every topic build) is
@@ -362,6 +417,22 @@ How this is enforced:
   - chapter chips that filter; horizontal scroll
 - **Lanes are packed in importance order**, so the top lane is the headline
   sequence of the topic and can be read left to right.
+- **Periods are bars, not cards** (`layout.js` `layoutTimeline`, `packBars`).
+  Dynasties, kingdoms and eras with a span are drawn in a thin eras track
+  under the chapter bands (4 rows; 2 on a phone), packed essentials first,
+  then by importance. A period with no room stays a card; one spanning far
+  more than the whole view (Pre-Columbian era on the Inca timeline) is left
+  out; two bars for one era (*Kamakura shogunate*, *Kamakura period*) become
+  one. Rulers (`dataset: leaders`, reigns) get a track under it, and keep
+  their cards. Labels of bars and chapter bands slide along as you scroll.
+- **Detail by zoom.** Essentials are packed first, on a scale of their own;
+  then the free space is filled with other entries (events, people, works;
+  not places or off-topic ones) as quieter chips (`.fill`), most important
+  first, in rows up to max(the essentials' rows, 8). Zooming in leaves more
+  room, so more appear, the way a map adds street names. Everything shows
+  all of it.
+- **Deep time reads as "years ago"** (`fmtYear`, `fmtWhen`): "4.57–4.03
+  billion years ago", ticks "66 Mya", from 100,000 BC back.
 - **Long empty stretches are cut out and marked.** A hatched break says how many
   years were skipped; within a segment x is linear. Unlike the atlas — this view
   is for reading a story, and 80,000 empty years of Palaeolithic scroll serve no

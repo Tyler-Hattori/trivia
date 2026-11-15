@@ -17,7 +17,8 @@ export const DUPES_AUTO = path.join(path.dirname(fileURLToPath(import.meta.url))
 
 const STOP = new Set('the and of in at on for with from into his her its their by to a an as is was are were first second after'.split(' '));
 const fold = (t) => String(t).normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
-export const contentWords = (t) => new Set(fold(t).toLowerCase().replace(/[^\w\s]/g, ' ').split(/\s+/).filter((w) => w.length > 2 && !STOP.has(w)));
+// Plurals folded: "Mongol invasions of Japan" and "First Mongol invasion repelled".
+export const contentWords = (t) => new Set(fold(t).toLowerCase().replace(/[^\w\s]/g, ' ').split(/\s+/).filter((w) => w.length > 2 && !STOP.has(w)).map((w) => (w.length > 4 ? w.replace(/(?<!s)s$/, '') : w)));
 const names = (t) => new Set((fold(t).match(/\b[A-Z][a-z]{2,}\b/g) || []).filter((w) => !STOP.has(w.toLowerCase()) && !/^(Battle|Death|Birth|Siege|Treaty|War|King|Queen|Emperor|Empire|Execution|Capital)$/.test(w)));
 export function jaccard(a, b){
   const A = contentWords(a), B = contentWords(b);

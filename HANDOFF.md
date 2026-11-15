@@ -9,90 +9,87 @@ and geography.
 Older session notes, 2026-07 to 2026-11-14 morning: `docs/archive/HANDOFF-2026-07-to-11-14.md`.
 Read them only for the history of a specific decision.
 
-## State (2026-11-14, end of session 6)
+The user's words (session 9): "the goal is to learn as much accurate
+information as easily and efficiently as possible, with clean graphics/ui and
+ease of exploring related information."
 
-- 30 topics built (batches 3–4 in progress); about 14,000 dated store entries, plus
-  undated ideas in `atlas/ideas.jsonl`.
-- Checks: verify 31/31, qa-topic 320/320, qa-atlas 91/91, qa-quiz 45/45.
-- `topic-report.mjs`: about 25 minor findings.
-- Committed and pushed.
+## State (2026-11-15, end of session 9)
 
-### NEXT SESSION: the plan the user approved (START HERE)
+- 49 topics built (batch 4, 34 regions and countries, still ingesting); about
+  14,000 dated store entries, plus undated ideas in `atlas/ideas.jsonl`.
+- Checks: verify 31/31, qa-topic 1094/1094, qa-atlas 91/91, qa-quiz 49/49.
+- `topic-report.mjs`: 131 findings (mostly `thin-chapter` and `no-points` in
+  batch 3, which has no key points yet).
+- Committed and pushed, except `datasets/atlas/*` (batch 4 is writing it).
 
-Work through these in order and commit after each. Before rebuilding, check
-the queue status (below): don't run `--ingest` while a batch is ingesting.
-Builds without `--ingest` are safe.
+### Session 9: done (plan A–D from session 8, all of it)
 
-**A. Content audit with Haiku.** New script `datasets/audit-entries.mjs`,
-modelled on `title-events.mjs` (30 per call, concurrency 4, retries).
-- Input: every timeline entry that comes from Wikidata (`via !== 'events'`):
-  about 7,900 across 49 topics, 5,307 unique, 4,443 essentials.
-- Ask, per entry, with the topic name, title, subtitle, years, type and the
-  first sentence:
-  1. Is the date plausible for this entry? (`ok` or `wrong`)
-  2. What type is it? (`person`, `event`, `period`, `work`, `place`, `group`
-     or `concept`)
-  3. How relevant is it to this topic? (`core`, `context` or `off`)
-- Write `datasets/audit-auto.json`. Store date and type by entry id (they
-  hold for every topic); store relevance under `topic slug -> id`.
-- Apply in `topic.mjs`:
-  - `wrong` date: `dateSuspect` and off the timeline.
-  - A type fix overrides the type from `etype`.
-  - `off`: never key (exclude from `eligible`, like unkey).
-  - `context`: importance × 0.8.
-- Known bad cases to verify:
-  - Meroë dated 2450 BC; the Mesoproterozoic ending in 1 BC; YBC 7289 dated
-    1945 (its publication year); Columbia (period) 2002.
-  - Apollo program, Agriculture, Smallpox, Science and Nature typed as
-    people; Illinois as a period (Ideas of Physics); Goseck Circle as a person.
-  - Off-topic essentials in Physics: First Punic War, Roman Empire,
-    Parallel Lives, Iliad.
-- Spot-check the output. Haiku once gave Prigogine the Physics Nobel instead
-  of Chemistry.
+See `docs/TOPICS.md`: "Content audit", "Duplicate events", and the timeline
+bullets under "Design decisions".
+- **A. Content audit** (`datasets/audit-entries.mjs`, `lib/audit.mjs`,
+  `audit-auto.json`): Haiku judged 9,740 (topic, entry) pairs for date, type
+  and relevance, plus `--spans` for 353 periods without an end. Applied in
+  `topic.mjs`: 852 dates corrected, 607 spans completed, 771 suspect (off the
+  timeline), 1,726 off-topic (never essential), 2,864 context (×0.8). All the
+  known bad cases are fixed (Meroë, Mesoproterozoic, YBC 7289, Columbia, Apollo
+  program, Illinois, Physics' Punic War/Iliad…). Physics essentials: 78 events,
+  13 people. Haiku drops BC minus signs and "corrects" reigns to lives: both
+  handled in `topic.mjs` (see the doc).
+- **B. Duplicate events** (`datasets/dedupe-events.mjs`, `lib/dupes.mjs`,
+  `dupes-auto.json`): Haiku confirms candidate pairs; 254 mined duplicates
+  merged, and mined events into the article's linked twin (337 in all).
+- **C. Detail by zoom** (`layout.js` `layoutTimeline`, `pack(…, { optional,
+  maxRows })`): Essentials fill free rows with quieter `.fill` chips; more as
+  you zoom in. qa-topic now checks the real `layoutTimeline`.
+- **D. Eras track:** periods as bars (4 rows, 2 on a phone), rulers
+  (`leaders`) in a track under them, clicking opens the panel, ←/→ steps
+  through what is drawn (`V.drawn`). Checked on Inca, Egypt, Japan, China,
+  desktop and 390 px.
+- **Also:** deep time as "years ago" (`fmtWhen`, `fmtYear`; ticks "66 Mya");
+  tick steps up to billions of years (was 1e6 max: thousands of ticks on
+  History of Earth); bar and chapter-band labels slide into view as you
+  scroll; overview strip labels no longer overlap on a phone; bare-name
+  descriptions dropped ("Spain · Pedro Sánchez"); a topic whose chapters go
+  back in time is thematic (Aztec); a leading year in a card title that the
+  date line shows is hidden; one scroll listener per redraw (was a leak);
+  `topic.mjs --all --only a,b` rebuilds some topics.
 
-**B. Merge duplicate mined events.** Related-article mining finds the same
-event on several pages (Pizarro reaching Peru in 1532, about 3 times). In
-`topic.mjs`, next to the existing twin merge (mined vs linked, around "Mined
-events, made readable at a glance"), also merge mined vs mined:
-- Same topic, years within 1, and similar titles (content-word Jaccard ≥ 0.5
-  on the short titles, or the same named entities).
-- Keep the timeline-line event over the prose one, then the higher
-  importance; keep the other's sentence if it has none.
-- Log how many were merged.
+### NEXT SESSION (START HERE)
 
-**C. Timeline UI: detail by zoom.** In `project/features/topic`:
-- In Essentials mode, pack the essentials first. Then fill the free space with
-  non-essential timeline entries, in importance order, as chips (class
-  `minor`), only in rows below `max(rows used by essentials, 8)`. Drop any
-  that don't fit.
-- Zooming in leaves more room, so more entries appear, the way a map adds
-  street names. Everything mode stays as it is.
-- Implementation: give `pack()` an option of optional items plus a row cap,
-  and return which were placed. `visibleItems()` returns essentials plus
-  candidates.
-- Update qa-topic's layout check if `pack`'s signature changes.
+1. **After batch 4 and run-c finish** (see Queue): run, in order,
+   `node datasets/title-events.mjs`, `node datasets/audit-entries.mjs`,
+   `node datasets/audit-entries.mjs --spans`, `node datasets/audit-entries.mjs --bare`,
+   `node datasets/dedupe-events.mjs`, then `node datasets/topic.mjs --all`
+   and QA. All are incremental (only new entries are asked) and cost cents to
+   a few dollars. Then commit `datasets/atlas/*` too.
+2. **Spot-check the audit** on a few new topics: corrected dates
+   (`dateFixed`, `storedYears` in the topic file) and `offTopic` essentials.
+   Fix mistakes in `datasets/audit.json` (same shape as audit-auto.json; it wins).
+3. **Key points for batches 3 and 4** (`topic-notes/`; `no-points` in the
+   report). Biggest remaining content gap in Learn.
+4. Then the "Later" list below. Ideas noticed this session:
+   - Rulers: only topics with `leaders` rows have reigns (China 16, Rome 39,
+     Inca 0). An audit-style pass could add reign years for the people the
+     audit types as rulers; then the rulers track works everywhere.
+   - Zoom fill is generous (Japan: 240 fill chips at 12 px/yr). If it feels
+     busy, lower `fillRows` or cap fill per screen width.
+   - Ancient Egypt and Inca are judged thematic (no chapter bands) although
+     their history chapters are chronological; mixed articles (history first,
+     then society) could get bands for the chronological part only.
 
-**D. Timeline UI: an eras/rulers track.** A thin strip under the chapter
-bands, with periods (type `period`: dynasties, kingdoms, eras) drawn as
-labelled bars across their years, stacked in 1–3 rows. Those periods then
-stop being cards.
-- Rulers, if the data allows: entries with `dataset === 'leaders'` store
-  reigns (`anchorYear` uses `start` for them). Otherwise show only periods.
-- Clicking a bar opens the panel.
-- Check on Inca Empire, Ancient Egypt, Japan and England, on desktop and at
-  390 px (phone).
-
-Later (agreed, not started): a "why it matters" line for event panels; key
-points for batches 3 and 4 (`topic-notes/`, none yet); wars and reigns as bars;
-deep-time spacing (Kush is mostly hatched breaks); phone pinch-zoom and maybe a
-vertical layout; comparing two topics' timelines.
+Later (agreed, not started): a "why it matters" line for event panels; wars
+and reigns as bars (wars with spans could join the eras track as a second
+kind); deep-time spacing (Kush is mostly hatched breaks); phone pinch-zoom and
+maybe a vertical layout; comparing two topics' timelines (Meanwhile has the
+data: England with France, Rome with Han China).
 
 Screenshots: `/tmp/shots/shot.mjs "<#hash>" out.png [w h mobile js]` (it
 may be gone after a reboot; it's a small CDP script, see Setup).
 
-### Queue (end of session 8)
+### Queue (started session 8; at the end of session 9, batch 4 was ingesting 9 of 34)
 
-These scripts run one after another under caffeinate:
+Check: `grep -E "── (ingest|build)" /tmp/batch4.log | tail -1`, and
+`ls /tmp/*.done`. These scripts run one after another under caffeinate:
 1. `/tmp/run-b.sh`: re-runs batch 3 with `--ingest --force` to mine related
    articles (`/tmp/batch3b.log`, then `/tmp/batch3b.done`). Then batch 4
    (`/tmp/batch4.log`, then `/tmp/batch34.done`), about 18 to 20 hours.
@@ -103,8 +100,8 @@ These scripts run one after another under caffeinate:
    main-article pages beyond the old top 10 (`/tmp/batch12b.log`, then
    `/tmp/batch12b.done`).
 
-After each batch: `node datasets/title-events.mjs` (Haiku, about $0.30 per
-1,000 events), then rebuild the topics that gained titles.
+After each batch: the model passes in "NEXT SESSION" step 1 (titles, audit,
+spans, dedupe), then `topic.mjs --all`.
 Mined events stay OFF the timeline until they have a short title in
 `titles.json` (`it.prose && !it.origTitle`). Inca Empire is done (32 titles).
 Every other prose topic needs its titles written:

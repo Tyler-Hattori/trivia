@@ -33,8 +33,12 @@ const pairs = [];
 for(const t of index){
   if(slugs.length && !slugs.includes(t.slug)) continue;
   let T; try { T = JSON.parse(fs.readFileSync(path.join(HERE, 'topics', `${t.slug}.json`), 'utf8')); } catch { continue; }
-  const ev = T.items.filter((it) => it.via === 'events' && it.onTimeline);
+  // Mined events among themselves, and against the article's own linked
+  // events ("Mongol invasions of Japan" and the mined "First Mongol invasion
+  // repelled"); two linked entries are different pages, never merged.
+  const ev = T.items.filter((it) => it.onTimeline && (it.via === 'events' || (it.via === 'link' && (it.type === 'event' || it.type === 'work'))));
   for(const [a, b] of dupCandidates(ev)){
+    if(a.via !== 'events' && b.via !== 'events') continue;
     const k = pairKey(a, b);
     if(k in dupes || pairs.some((p) => p.k === k)) continue;
     pairs.push({ k, topic: T.title, a: `${yr(a.start)}: ${a.title} — ${firstLine(a)}`, b: `${yr(b.start)}: ${b.title} — ${firstLine(b)}` });

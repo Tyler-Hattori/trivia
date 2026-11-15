@@ -884,7 +884,7 @@ function drawTimeline(){
         <div class="strip"></div>
         <img src="${esc(thumbUrl(it.image, 330))}" loading="lazy" alt="" onerror="imgRetry(this,'card')"><div class="noimg" style="display:none"></div>
         <div class="cap">
-          <div class="t">${known}${esc(it.title)}</div>
+          <div class="t">${known}${esc(cardTitle(it.title, when))}</div>
           <div class="y">${when}${it.type ? ` · <span class="ty">${esc(TYPE_LABEL[it.type] || it.type)}</span>` : ''}</div>
         </div>
       </div>`;
@@ -895,7 +895,7 @@ function drawTimeline(){
         ${face}
         <div class="tx">
           <div class="y">${when}${person ? '' : it.type && it.type !== 'event' ? ` · <span class="ty">${esc(TYPE_LABEL[it.type] || it.type)}</span>` : ''}</div>
-          <div class="t">${known}${esc(it.title)}</div>
+          <div class="t">${known}${esc(cardTitle(it.title, when))}</div>
         </div>
       </div>`;
   }).join('');
@@ -1038,6 +1038,12 @@ function hover(ev){
   tip.style.left = `${left < r.right ? Math.max(8, r.left - 338) : left}px`;
   tip.style.top = `${Math.max(8, Math.min(window.innerHeight - 160, r.top))}px`;
   tip.classList.add('on');
+}
+
+/** A card's title without a leading year its date line already shows ("1293 Kamakura earthquake" under "1293"). */
+function cardTitle(title, when){
+  const m = String(title).match(/^(\d{3,4})\s+(?=\p{Lu})/u);
+  return m && String(when).includes(m[1]) ? title.slice(m[0].length) : title;
 }
 
 function gapLabel(years){

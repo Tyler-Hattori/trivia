@@ -1415,12 +1415,14 @@ const PRESENT_STATE = /(^|\|)(sovereign state|country|constituent country of the
   const words = (t) => new Set(String(t).toLowerCase().normalize('NFKD').replace(/[^\w\s]/g, ' ').split(/\s+/).filter((w) => w.length > 2 && !/^(the|and|of|in|at|on|for|with|first|second)$/.test(w)));
   const sim = (a, b) => { const A = words(a), B = words(b); if(!A.size || !B.size) return 0; let n = 0; for(const w of A) if(B.has(w)) n++; return n / Math.min(A.size, B.size); };
   const linkedEvents = out.filter((it) => it.via === 'link' && it.onTimeline && (it.type === 'event' || it.type === 'work'));
+  // Pairs judged the same happening by dedupe-events.mjs (lib/dupes.mjs).
+  const DUP_PAIRS = readDupes();
   const firstLine = (it) => String(it.excerpt || '').split(/(?<=[.!?])\s+(?=[A-Z0-9])/)[0] || '';
   let merged = 0;
   for(let i = out.length - 1; i >= 0; i--){
     const ev = out[i];
     if(ev.via !== 'events') continue;
-    const twin = linkedEvents.find((L) => Math.abs(L.start - ev.start) <= 1 && sim(L.title, ev.title) >= 0.75);
+    const twin = linkedEvents.find((L) => Math.abs(L.start - ev.start) <= 1 && (sim(L.title, ev.title) >= 0.75 || DUP_PAIRS[pairKey(L, ev)] === true));
     if(twin){
       if(!twin.context) twin.context = firstLine(ev);
       out.splice(i, 1); merged++;
