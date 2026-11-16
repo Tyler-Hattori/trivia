@@ -425,6 +425,22 @@ How this is enforced:
   out; two bars for one era (*Kamakura shogunate*, *Kamakura period*) become
   one. Rulers (`dataset: leaders`, reigns) get a track under it, and keep
   their cards. Labels of bars and chapter bands slide along as you scroll.
+- **Lanes (the preferred layout; Cards | Lanes in the toolbar, global).** Under
+  the header, thin lanes: Events (dots; a line under the title when it
+  lasted), People (life lines with the name and a small portrait on them, as
+  in Priestley's *Chart of Biography*), Works, and Places, groups & other.
+  Names slide along their lines as you scroll. Essentials bold, fill grey.
+  Rows are 21 px, so a screen holds several times what cards hold.
+- **Span tracks, one per kind, each labelled:** States & dynasties, Rulers,
+  Eras & movements (`layout.js` `TRACKS`, `planTimeline`). The kind comes from
+  `audit-entries.mjs --kinds` (`periodKind`: state, era, event, other; a
+  regex on title and description when unaudited). A period that is really an
+  event (Reign of Terror, Reconquista) is typed an event and drawn in Events.
+  In Lanes each track can be pinned (frozen in the header) or not (a lane at
+  the top of the body); default pinned: States and Rulers on desktop, nothing
+  on a phone (`topic:pinned`, `topic:pinned:phone`). Lanes pack a track in
+  time order (fewest rows) and show all of it; Cards cap the header tracks
+  and a period with no room becomes a card.
 - **Detail by zoom.** Essentials are packed first, on a scale of their own;
   then the free space is filled with other entries (events, people, works;
   not places or off-topic ones) as quieter chips (`.fill`), most important

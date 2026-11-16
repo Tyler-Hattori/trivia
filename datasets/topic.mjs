@@ -1211,6 +1211,18 @@ if(nWorks) console.log(`  + ${nWorks} works by ${worksOf.size} of the topic's pe
  */
 const AUDIT = readAudit();
 const RELEVANCE = AUDIT.topics[slug] || {};
+/*
+ * What kind of span a period is (audit-entries.mjs --kinds): a state (the
+ * States & dynasties track), an era or movement (Eras & movements), or really
+ * an event that lasted (Reign of Terror, Reconquista: the Events lane, as a
+ * duration). The timeline keeps the three apart.
+ */
+for(const it of out){
+  if(it.type !== 'period') continue;
+  const pk = AUDIT.entries[it.id]?.pk;
+  if(pk === 'event') it.type = 'event';
+  else if(pk) it.periodKind = pk === 'state' ? 'states' : pk === 'era' ? 'eras' : 'other';
+}
 {
   let fixed = 0, suspect = 0;
   const tolAt = (y) => Math.max(3, 0.05 * (new Date().getFullYear() - y));

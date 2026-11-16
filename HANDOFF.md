@@ -54,11 +54,30 @@ bullets under "Design decisions".
   date line shows is hidden; one scroll listener per redraw (was a leak);
   `topic.mjs --all --only a,b` rebuilds some topics.
 
+### Session 9, later: timeline design
+
+The user prefers the **Lanes** layout (prototype, toggle Cards | Lanes; Cards
+is still the default: make Lanes the default once polished). Then they asked
+for clear organisation of spans: done as labelled tracks (States & dynasties,
+Rulers, Eras & movements; pin/unpin), with `audit-entries.mjs --kinds`
+classifying 886 periods. See `docs/TOPICS.md`, "Design decisions".
+
+**The user will point at Wikipedia's "List of rulers of <country>" /
+"List of monarchs of <country>" series.** Plan: a miner for those list pages
+(tables of name, reign start, reign end, house), ingesting rulers as entries
+with `dataset: leaders`-style reigns (`kind: span`, start/end = reign), so the
+Rulers track fills for every country. Today only China (16), Rome (39) and a
+few others have reigns; France has 3.
+
+Lanes rough edges: a lane is as tall as its busiest stretch, so quiet
+stretches show empty rows; dots just off the left edge show cut titles;
+near-duplicate fill ("Wöhler synthesis" / "Wöhler synthesizes urea").
+
 ### NEXT SESSION (START HERE)
 
 1. **After batch 4 and run-c finish** (see Queue): run, in order,
    `node datasets/title-events.mjs`, `node datasets/audit-entries.mjs`,
-   `node datasets/audit-entries.mjs --spans`, `node datasets/audit-entries.mjs --bare`,
+   `node datasets/audit-entries.mjs --spans`, `--bare`, `--kinds`,
    `node datasets/dedupe-events.mjs`, then `node datasets/topic.mjs --all`
    and QA. All are incremental (only new entries are asked) and cost cents to
    a few dollars. Then commit `datasets/atlas/*` too.

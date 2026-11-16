@@ -266,12 +266,15 @@ export const BAR = { H: 15, ROW: 18 };
  * { bars: [{ it, x0, x1, row, clipL, clipR }], left: items that did not fit,
  *   umbrellas: items spanning far more than the whole view }.
  */
-export function packBars(list, scale, rows, range){
+export function packBars(list, scale, rows, range, { byTime = false } = {}){
   const lo = GEO.LEFT / 2, hi = scale.width - GEO.RIGHT / 2;
   const span = Math.max(1, range[1] - range[0]);
-  const rowsIv = Array.from({ length: rows }, () => []);
+  const rowsIv = [];
   const bars = [], left = [], umbrellas = [];
   const order = [...list].sort((a, b) => (!!b.key - !!a.key) || (b.importance - a.importance) || (a.start - b.start));
+  // Which to draw, most important first: not an umbrella, not a second bar for one era.
+  const word = (t) => new Set(String(t).toLowerCase().match(/[a-zà-ÿ]{4,}/g) || []);
+  const keep = [];
   for(const it of order){
     // The context of the whole view, not a part of it: Pre-Columbian era on
     // the Inca timeline. A bar across everything says nothing.
@@ -279,17 +282,27 @@ export function packBars(list, scale, rows, range){
     // One bar per era: *Kamakura shogunate* and *Kamakura period* are the same
     // 1185–1333 told twice. A span mostly the same sharing a name word is skipped.
     const len = it.end - it.start;
-    const word = (t) => new Set(String(t).toLowerCase().match(/[a-zà-ÿ]{4,}/g) || []);
-    const w = word(it.title);
     const same = (o) => Math.min(o.end, it.end) - Math.max(o.start, it.start) >= 0.8 * Math.min(len, o.end - o.start) &&
       Math.abs((o.end - o.start) - len) <= 0.35 * Math.max(len, o.end - o.start);
-    if(bars.some((b) => same(b.it) &&
-      [...word(b.it.title)].some((x) => w.has(x) && !/^(period|empire|kingdom|dynasty|state|republic|era|history)$/.test(x)))){ umbrellas.push(it); continue; }
+    const w = word(it.title);
+    if(keep.some((o) => same(o) && [...word(o.title)].some((x) => w.has(x) && !/^(period|empire|kingdom|dynasty|state|republic|era|history)$/.test(x)))){ umbrellas.push(it); continue; }
+    keep.push(it);
+  }
+  // Placed by importance (the first row is the headline), or in time order,
+  // which needs the fewest rows (lanes: a track as short as it can be).
+  if(byTime) keep.sort((a, b) => a.start - b.start || b.end - a.end);
+  for(const it of keep){
     const a = scale.x(it.start), b = scale.x(it.end);
-    const x0 = Math.max(lo, Math.min(hi, a)), x1 = Math.max(lo, Math.min(hi, b));
-    if(x1 - x0 < 6){ left.push(it); continue; }
-    const row = rowsIv.findIndex((iv) => !iv.some(([l, r]) => x0 < r + 3 && x1 > l - 3));
-    if(row < 0){ left.push(it); continue; }
+    const x0 = Math.max(lo, Math.min(hi, a));
+    let x1 = Math.max(lo, Math.min(hi, b));
+    // Lanes: a span squeezed by a cut gap still gets a stub of a bar (there is
+    // nowhere else for it); cards make it a card instead.
+    if(x1 - x0 < 6){ if(!byTime){ left.push(it); continue; } x1 = x0 + 6; }
+    let row = rowsIv.findIndex((iv) => !iv.some(([l, r]) => x0 < r + 3 && x1 > l - 3));
+    if(row < 0){
+      if(rowsIv.length >= rows){ left.push(it); continue; }
+      row = rowsIv.push([]) - 1;
+    }
     rowsIv[row].push([x0, x1]);
     bars.push({ it, x0, x1, row, clipL: a < lo, clipR: b > hi });
   }
@@ -309,31 +322,79 @@ export function packBars(list, scale, rows, range){
  *
  * Returns { scale, cards, pos, laneCount, tiers, eras, rulers, minor: Set }.
  */
-/**
- * What both layouts share: the eras and rulers tracks, the scale, and which
- * entries are drawn (`base`) or may fill free space in Essentials (`optional`).
+/*
+ * ## Span tracks
+ *
+ * Spans are kept apart by kind, each in a track of its own, so it is always
+ * clear what a bar is:
+ *   - States & dynasties: kingdoms, empires, dynasties, ruling houses, republics
+ *   - Rulers: reigns (`dataset: leaders`)
+ *   - Eras & movements: ages, eras, cultures, movements (the Enlightenment)
+ * The kind comes from the audit (`periodKind`, audit-entries.mjs --kinds);
+ * without it, from the title and description. A period the audit calls an
+ * event (Reign of Terror) is typed an event by the builder and drawn as one.
+ *
+ * Tracks can be pinned (frozen in the header, as the chapter bands are) or
+ * not (a lane at the top of the body, scrolling with the rest). Cards keep
+ * every track in the header.
  */
-export function planTimeline(pool, { show = 'key', ppy, eraRows = 3, rulerRows = 2 } = {}){
+export const TRACKS = [['states', 'States & dynasties'], ['rulers', 'Rulers'], ['eras', 'Eras & movements']];
+export const DEFAULT_PINNED = ['states', 'rulers'];
+const STATE_T = /\b(kingdom|empire|dynasty|house|caliphate|sultanate|emirate|khanate|shogunate|republic|duchy|principality|county|margraviate|electorate|confederation|confederacy|federation|union|commonwealth|regime|government|colony|protectorate|viceroyalty|tsardom|realm|monarchy|polity|reich|raj)\b/i;
+const ERA_T = /\b(period|age|ages|era|revolution|renaissance|enlightenment|reformation|movement|culture|civili[sz]ation|epoch|eon|glaciation|times|époque|school)\b/i;
+const STATE_S = /\b(kingdom|empire|dynasty|royal house|noble family|caliphate|sultanate|emirate|khanate|shogunate|republic|duchy|principality|state|country|polity|monarchy|confederation|federation|regime|government|colony|protectorate|realm|city-state)\b/i;
+export const periodKind = (it) => it.periodKind ||
+  (STATE_T.test(it.title) ? 'states' : ERA_T.test(it.title) ? 'eras' : STATE_S.test(it.subtitle || '') ? 'states' : 'eras');
+const trackOf = (it) => isReignBar(it) ? 'rulers' : isEraBar(it) && !it.offTopic && periodKind(it) !== 'other' ? periodKind(it) : null;
+
+/**
+ * What both layouts share: the span tracks, the scale, and which entries are
+ * drawn (`base`) or may fill free space in Essentials (`optional`).
+ * `caps`: rows per header track. `lanes`: unpinned tracks (and what does not
+ * fit a pinned one) go to body tracks instead of back to cards.
+ * Returns { scale, base, optional, header: [track], body: [track], umbrellas },
+ * a track being { key, label, bars, rows }.
+ */
+export function planTimeline(pool, { show = 'key', ppy, caps = { states: 3, rulers: 2, eras: 2 }, lanes = false, pinned = DEFAULT_PINNED } = {}){
   const ys = pool.map(anchorYear);
   const range = ys.length ? [Math.min(...ys), Math.max(...ys)] : [0, 0];
-  // Off-topic periods (the audit's 'off') are not this topic's eras.
-  const eraCands = pool.filter((it) => isEraBar(it) && !it.offTopic);
-  const eraIds = new Set(eraCands.map((it) => it.id));
-  const rest = pool.filter((it) => !eraIds.has(it.id));
+  const cands = new Map(TRACKS.map(([k]) => [k, []]));
+  for(const it of pool){ const k = trackOf(it); if(k) cands.get(k).push(it); }
+  // Rulers keep their cards (a person's card explains the person); periods are bars only.
+  const barIds = new Set([...cands.get('states'), ...cands.get('eras')].map((it) => it.id));
+  const rest = pool.filter((it) => !barIds.has(it.id));
+  const inHeader = (k) => !lanes || pinned.includes(k);
   let base = show === 'key' ? rest.filter((it) => it.key) : rest;
   let scale = makeScale(base.length ? base : pool, ppy);
-  let E = packBars(eraCands, scale, eraRows, range);
-  // A period with no room in the track stays a card (if it would be one).
-  const back = E.left.filter((it) => show === 'all' || it.key);
+  const packAll = () => {
+    const header = [], body = [], left = [], umbrellas = [];
+    for(const [k, label] of TRACKS){
+      const list = cands.get(k);
+      if(!list.length) continue;
+      // Lanes: a track shows all its rows, pinned or not (a cap split a track
+      // in two, its overflow in a lane of its own). Cards cap the header.
+      const P = packBars(list, scale, lanes ? Infinity : caps[k] ?? 2, range, { byTime: lanes });
+      umbrellas.push(...P.umbrellas);
+      if(P.bars.length) (inHeader(k) ? header : body).push({ key: k, label, bars: P.bars, rows: P.rows, pinned: inHeader(k) });
+      // A pinned track's overflow: in lanes, its own body track; in cards, cards.
+      if(P.left.length && k !== 'rulers'){
+        if(lanes){
+          const O = packBars(P.left, scale, Infinity, range);
+          if(O.bars.length) body.push({ key: k, label, bars: O.bars, rows: O.rows, pinned: false, overflow: true });
+        } else left.push(...P.left);
+      }
+    }
+    return { header, body, left, umbrellas };
+  };
+  let T = packAll();
+  // Cards: a period with no room in its track stays a card (if it would be one).
+  const back = T.left.filter((it) => show === 'all' || it.key);
   if(back.length){
-    // Rescaled with them, all eras are packed again: on the new scale some of
-    // them fit after all, and only what still does not becomes a card.
     const base0 = base;
     scale = makeScale(base0.concat(back), ppy);
-    E = packBars(eraCands, scale, eraRows, range);
-    base = base0.concat(E.left.filter((it) => show === 'all' || it.key));
+    T = packAll();
+    base = base0.concat(T.left.filter((it) => show === 'all' || it.key));
   }
-  const R = packBars(pool.filter(isReignBar), scale, rulerRows, range);
   let optional = [];
   if(show === 'key'){
     // Only inside the essentials' own segments: one outside would sit on a break.
@@ -343,13 +404,16 @@ export function planTimeline(pool, { show = 'key', ppy, eraRows = 3, rulerRows =
     // What happened, who and what was made: a place or a group dated by its
     // founding repeats the event next to it ("Potosí" by "Potosí founded").
     optional = rest.filter((it) => !it.key && !it.offTopic && !taken.has(it.id) && inSeg(anchorYear(it)) &&
-      (!['place', 'group', 'concept'].includes(it.type) || it.hat));
+      (!['place', 'group', 'concept', 'period'].includes(it.type) || it.hat));
   }
-  return { scale, base, optional, eras: E.bars, eraRows: E.rows, rulers: R.bars, rulerRows: R.rows, umbrellas: E.umbrellas };
+  // Back-compat for callers and QA: all header bars, and the rulers' bars.
+  const eras = T.header.filter((t) => t.key !== 'rulers').flatMap((t) => t.bars);
+  const rulers = T.header.filter((t) => t.key === 'rulers').flatMap((t) => t.bars);
+  return { scale, base, optional, header: T.header, body: T.body, umbrellas: T.umbrellas, eras, rulers };
 }
 
-export function layoutTimeline(pool, { show = 'key', ppy, lookup, eraRows = 3, rulerRows = 2, fillRows = 8 } = {}){
-  const P = planTimeline(pool, { show, ppy, eraRows, rulerRows });
+export function layoutTimeline(pool, { show = 'key', ppy, lookup, caps, fillRows = 8 } = {}){
+  const P = planTimeline(pool, { show, ppy, caps });
   const { scale, base, optional } = P;
   const tiers = cardTiers(base, lookup);
   for(const it of optional) tiers.set(it.id, 'chip');
@@ -379,9 +443,9 @@ export function layoutTimeline(pool, { show = 'key', ppy, lookup, eraRows = 3, r
  * Packing is by importance, so each lane's first row is its headline sequence.
  */
 export const LANE = { ROW: 21, GAP: 16, LABEL_MAX: 300, PAD: 10 };
-export const LANES = [['events', 'Events'], ['people', 'People'], ['works', 'Works'], ['other', 'Places & groups']];
+export const LANES = [['events', 'Events'], ['people', 'People'], ['works', 'Works'], ['other', 'Places, groups & other']];
 export const laneOf = (it) => it.type === 'person' ? 'people' : it.type === 'work' ? 'works'
-  : ['place', 'group', 'concept'].includes(it.type) ? 'other' : 'events';
+  : ['place', 'group', 'concept', 'period'].includes(it.type) ? 'other' : 'events';
 
 /** Character-count width estimate for Node (the browser passes a canvas measure). */
 const roughWidth = (t, bold) => String(t).length * (bold ? 6.6 : 6.1);
@@ -390,8 +454,8 @@ const roughWidth = (t, bold) => String(t).length * (bold ? 6.6 : 6.1);
 // are thin, so there is room for more than in the cards.
 export const FILL_ROWS = { events: 10, people: 6, works: 3, other: 2 };
 
-export function layoutLanes(pool, { show = 'key', ppy, measure = roughWidth, eraRows = 3, rulerRows = 2, fillRows = FILL_ROWS } = {}){
-  const P = planTimeline(pool, { show, ppy, eraRows, rulerRows });
+export function layoutLanes(pool, { show = 'key', ppy, measure = roughWidth, caps, pinned, fillRows = FILL_ROWS } = {}){
+  const P = planTimeline(pool, { show, ppy, caps, pinned, lanes: true });
   const { scale } = P;
   const geo = (it, minor) => {
     const lasted = it.end != null && it.end > it.start && it.kind === 'span' && !(it.openEnded && it.type !== 'person');
@@ -426,10 +490,17 @@ export function layoutLanes(pool, { show = 'key', ppy, measure = roughWidth, era
     const cap = new Map([...lanes].map(([k, L]) => [k, Math.max(L.rows.filter((r) => r.length).length, fillRows[k] ?? 3)]));
     for(const it of [...P.optional].sort(byImp)) if(tryPlace(it, true, cap.get(laneOf(it)))) minor.add(it.id);
   }
-  // Stack the lanes that have something, each as tall as its rows.
+  // Stack the lanes that have something, each as tall as its rows: first the
+  // unpinned span tracks (bars), then events, people, works, places.
   let y = 0;
   const out = [];
   const marks = [];
+  const bars = [];
+  for(const t of P.body){
+    out.push({ key: t.key, label: t.label, y0: y, h: t.rows * BAR.ROW, track: true, overflow: !!t.overflow });
+    for(const b of t.bars) bars.push({ ...b, y: y + b.row * BAR.ROW, track: t.key });
+    y += t.rows * BAR.ROW + LANE.GAP;
+  }
   for(const L of lanes.values()){
     const n = L.rows.filter((r) => r.length).length;
     if(!n) continue;
@@ -439,7 +510,8 @@ export function layoutLanes(pool, { show = 'key', ppy, measure = roughWidth, era
     y += L.h + LANE.GAP;
   }
   const pos = new Map(marks.map((m) => [m.it.id, { x: m.x0, x1: m.r, y: m.y }]));
-  return { ...P, lanes: out, marks, pos, height: Math.max(0, y - LANE.GAP), minor, items: marks.map((m) => m.it) };
+  for(const b of bars) if(!pos.has(b.it.id)) pos.set(b.it.id, { x: b.x0, x1: b.x1, y: b.y, bar: true });
+  return { ...P, lanes: out, marks, bars, pos, height: Math.max(0, y - LANE.GAP), minor, items: marks.map((m) => m.it) };
 }
 
 /*

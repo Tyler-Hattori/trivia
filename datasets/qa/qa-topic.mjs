@@ -94,21 +94,21 @@ for(const row of idx.topics){
       const sorted = [...L.cards].sort((a, b) => anchorYear(a) - anchorYear(b));
       let back = 0;
       for(let i = 1; i < sorted.length; i++) if(L.pos.get(sorted[i].id).x < L.pos.get(sorted[i - 1].id).x - 0.5) back++;
-      let barOver = 0;
-      for(const list of [L.eras, L.rulers]){
-        const rows = new Map();
-        for(const b of list) (rows.get(b.row) || rows.set(b.row, []).get(b.row)).push(b);
-        for(const r of rows.values()){ r.sort((a, b) => a.x0 - b.x0); for(let i = 1; i < r.length; i++) if(r[i].x0 < r[i - 1].x1) barOver++; }
-      }
       const drawn = new Set([...L.cards.map((it) => it.id), ...L.eras.map((b) => b.it.id), ...(L.umbrellas || []).map((it) => it.id)]);
       const lost = show === 'key' ? pool.filter((it) => it.key && !drawn.has(it.id)) : [];
       // The lanes layout: within a row of a lane, no two marks (with labels) overlap.
       const LL = layoutLanes(pool, { show, ppy });
+      let barOver = 0;
+      for(const list of [...L.header, ...LL.header, ...LL.body].map((t) => t.bars)){
+        const rows = new Map();
+        for(const b of list) (rows.get(b.row) || rows.set(b.row, []).get(b.row)).push(b);
+        for(const r of rows.values()){ r.sort((a, b) => a.x0 - b.x0); for(let i = 1; i < r.length; i++) if(r[i].x0 < r[i - 1].x1) barOver++; }
+      }
       const rows = new Map();
       for(const m of LL.marks) (rows.get(`${m.lane}|${m.row}`) || rows.set(`${m.lane}|${m.row}`, []).get(`${m.lane}|${m.row}`)).push(m);
       let laneOver = 0;
       for(const r of rows.values()){ r.sort((a, b) => a.l - b.l); for(let i = 1; i < r.length; i++) if(r[i].l < r[i - 1].r) laneOver++; }
-      const drawnL = new Set([...LL.items.map((it) => it.id), ...LL.eras.map((b) => b.it.id), ...(LL.umbrellas || []).map((it) => it.id)]);
+      const drawnL = new Set([...LL.items.map((it) => it.id), ...LL.header.flatMap((t) => t.bars.map((b) => b.it.id)), ...LL.bars.map((b) => b.it.id), ...(LL.umbrellas || []).map((it) => it.id)]);
       const lostL = show === 'key' ? pool.filter((it) => it.key && !drawnL.has(it.id)) : [];
       check(`lanes ${show} @${ppy}px/yr: no overlaps in a row, essentials all drawn`, !laneOver && !lostL.length,
         `${LL.marks.length} marks (${LL.minor.size} fill), ${LL.lanes.length} lanes, ${LL.height}px${laneOver ? `, ${laneOver} overlaps` : ''}${lostL.length ? `, lost: ${lostL.slice(0, 3).map((it) => it.title).join(', ')}` : ''}`);

@@ -27,7 +27,7 @@
  */
 
 import { injectStyles } from './styles.js';
-import { GEO, BAR, LANE, makeScale, ticks, anchorYear, fmtYear, fmtRange, fmtWhen, summary, borrowedPortrait, setNarrow, layoutTimeline, layoutLanes } from './layout.js';
+import { GEO, BAR, LANE, makeScale, ticks, anchorYear, fmtYear, fmtRange, fmtWhen, summary, borrowedPortrait, setNarrow, layoutTimeline, layoutLanes, DEFAULT_PINNED } from './layout.js';
 import { bm25Index, docText } from '../../../datasets/lib/textsearch.mjs';
 import { renderQuiz, loadMastery, isKnown, isDue, dueSummary } from './quiz.js';
 import { renderSearch, parseWhen } from './search.js';
@@ -84,6 +84,8 @@ export function openTopics(){ location.hash = '#/topics'; }
 
 // On a phone the contents rail is a drawer, not a column.
 const narrow = () => window.matchMedia('(max-width: 760px)').matches;
+// Pinned span tracks, remembered separately for phone and desktop.
+const pinKey = () => narrow() ? 'topic:pinned:phone' : 'topic:pinned';
 
 const go = (mode) => { location.hash = `#/topic/${T.slug}${mode === 'learn' ? '' : '/' + mode}`; };
 
@@ -503,6 +505,9 @@ async function showTopic(slug, mode){
       semantic: false,
       selected: null,
       layout: localStorage.getItem('topic:layout') || 'cards',   // 'cards' | 'lanes' (global)
+      // Span tracks frozen in the header (lanes; global): see layout.js TRACKS.
+      // On a phone nothing is pinned by default: the header would take a third of the screen.
+      pinned: (() => { try { return JSON.parse(localStorage.getItem(pinKey())) || (narrow() ? [] : DEFAULT_PINNED); } catch { return DEFAULT_PINNED; } })(),
     };
     kwIndex = bm25Index(T.items.map((it) => ({ id: it.id, text: docText(it) })));
     localStorage.setItem(`topic:opened:${slug}`, String(Date.now()));
@@ -826,14 +831,18 @@ function drawTimeline(){
   // Essentials the free space fills with more entries as you zoom in.
   // Two layouts: cards (packed by importance) or lanes (events, people, works).
   const lanes = V.layout === 'lanes';
-  const opts = { show: V.show, ppy: V.ppy, lookup: (id) => T.byId.get(id), eraRows: narrow() ? 2 : 4, rulerRows: narrow() ? 1 : 2 };
+  const caps = narrow() ? { states: 2, rulers: 1, eras: 1 } : { states: 3, rulers: 2, eras: 2 };
+  const opts = { show: V.show, ppy: V.ppy, lookup: (id) => T.byId.get(id), caps, pinned: V.pinned };
   const L = lanes ? layoutLanes(timelinePool(), { ...opts, measure: measureLabel }) : layoutTimeline(timelinePool(), opts);
   const { scale, pos } = L;
   const items = lanes ? L.items : L.cards;
-  const trackRows = L.eraRows + L.rulerRows;
   // Chapter bands only for a chronological article; without them the ticks move up.
   const head = T.chronological ? GEO.BANDS_H : 26;
-  const bandsH = head + (trackRows ? trackRows * BAR.ROW + 6 : 0);
+  // Header tracks, each under a small label line: States & dynasties, Rulers, Eras & movements.
+  const TRK_LABEL = 13;
+  let hy = head + 2;
+  const headerTracks = L.header.map((t) => { const y0 = hy; hy += TRK_LABEL + t.rows * BAR.ROW + 2; return { ...t, y0 }; });
+  const bandsH = headerTracks.length ? hy + 4 : head;
   const top = bandsH + (lanes ? 22 : 16);
   const height = top + (lanes ? L.height + 40 : L.laneCount * GEO.UNIT + 60);
 
@@ -870,9 +879,12 @@ function drawTimeline(){
     return `<div class="tp-era${ruler ? ' ruler' : ''}${b.clipL ? ' clipl' : ''}${b.clipR ? ' clipr' : ''}${dim ? ' dim' : ''}${V.selected === b.it.id ? ' sel' : ''}" data-id="${esc(b.it.id)}"
       style="left:${b.x0}px;width:${b.x1 - b.x0}px;top:${y}px;--c:${c}" title="${esc(b.it.title)} · ${esc(fmtWhen(b.it))}">${b.x1 - b.x0 > 34 ? `<span>${esc(b.it.title)}</span>` : ''}</div>`;
   };
-  const eraHtml = L.eras.map((b) => bar(b, head + 2 + b.row * BAR.ROW, false)).join('')
-    + L.rulers.map((b) => bar(b, head + 2 + (L.eraRows + b.row) * BAR.ROW, true)).join('');
-  const cards = lanes ? lanesHtml(L, top, chColor) : items.map((it) => {
+  // A track's label line; in lanes it can be unpinned (it then scrolls with the body).
+  const pinBtn = (k, on) => lanes ? `<button class="tp-pin" data-pin="${k}" title="${on ? 'Let it scroll with the timeline' : 'Keep it in view at the top'}">${on ? 'unpin' : 'pin'}</button>` : '';
+  const eraHtml = headerTracks.map((t) =>
+    `<div class="tp-trk" style="top:${t.y0}px;width:${scale.width}px"><span class="tp-lanelab">${esc(t.label)}${pinBtn(t.key, true)}</span></div>`
+    + t.bars.map((b) => bar(b, t.y0 + TRK_LABEL + b.row * BAR.ROW, t.key === 'rulers')).join('')).join('');
+  const cards = lanes ? lanesHtml(L, top, chColor, bar, pinBtn) : items.map((it) => {
     const p = pos.get(it.id);
     const y = top + p.lane * GEO.UNIT;
     const c = chColor.get(it.chapter) || '#64748b';
@@ -931,8 +943,9 @@ function drawTimeline(){
   } else if(keepW > 1) host.scrollLeft = (keepX / keepW) * host.scrollWidth;
   V.scale = scale; V.pos = pos; V.extent = extent;
   // What ←/→ steps through on the timeline: what is drawn, cards and bars.
-  V.drawn = [...new Map([...items, ...L.eras.map((b) => b.it), ...L.rulers.map((b) => b.it)].map((it) => [it.id, it])).values()];
-  for(const b of [...L.eras, ...L.rulers]) if(!pos.has(b.it.id)) pos.set(b.it.id, { x: (b.x0 + b.x1) / 2, bar: true });
+  const allBars = [...L.header.flatMap((t) => t.bars), ...(L.bars || [])];
+  V.drawn = [...new Map([...items, ...allBars.map((b) => b.it)].map((it) => [it.id, it])).values()];
+  for(const b of allBars) if(!pos.has(b.it.id)) pos.set(b.it.id, { x: (b.x0 + b.x1) / 2, bar: true });
   if(V.selected) markLinked(T.byId.get(V.selected));
   bindTimelineGestures(host);
   drawOverview();
@@ -947,12 +960,14 @@ function measureLabel(text, bold){
 }
 
 /** The lanes layout's marks: events, people and works, each in its own lane. */
-function lanesHtml(L, top, chColor){
+function lanesHtml(L, top, chColor, bar, pinBtn){
   const out = [];
   for(const ln of L.lanes){
     // A hairline over each lane with its name; the name slides into view with the scroll.
-    out.push(`<div class="tp-lane" style="top:${top + ln.y0 - 13}px;width:${L.scale.width}px"><span class="tp-lanelab">${esc(ln.label)}</span></div>`);
+    // An unpinned span track can be pinned to the header (not its overflow).
+    out.push(`<div class="tp-lane" style="top:${top + ln.y0 - 13}px;width:${L.scale.width}px"><span class="tp-lanelab">${esc(ln.label)}${ln.overflow ? ' <i>(more)</i>' : ''}${ln.track && !ln.overflow ? pinBtn(ln.key, false) : ''}</span></div>`);
   }
+  for(const b of L.bars) out.push(bar(b, top + b.y, b.track === 'rulers'));
   for(const m of L.marks){
     const it = m.it;
     const c = chColor.get(it.chapter) || '#64748b';
@@ -1337,7 +1352,7 @@ function onClick(ev){
   if(also){ ev.preventDefault(); pendingSelect = V.selected; location.hash = `#/topic/${also.dataset.also}`; return; }
   const mw = t.closest('[data-mw]');
   if(mw){ ev.preventDefault(); pendingSelect = mw.dataset.mwid; location.hash = `#/topic/${mw.dataset.mw}`; return; }
-  const b = t.closest('[data-act],[data-mode],[data-show],[data-toc],[data-zoom],[data-layout],[data-nav],[data-band],[data-fit],[data-check],[data-goch],[data-id]');
+  const b = t.closest('[data-act],[data-mode],[data-show],[data-toc],[data-zoom],[data-layout],[data-pin],[data-nav],[data-band],[data-fit],[data-check],[data-goch],[data-id]');
   if(!b) return;
   if(b.tagName === 'A' && b.getAttribute('href') === '#') ev.preventDefault();
   const host = root.querySelector('#tpScroll');
@@ -1375,6 +1390,13 @@ function onClick(ev){
     return;
   }
   if(b.dataset.zoom){ zoom(b.dataset.zoom === 'in' ? 1.5 : 1 / 1.5); return; }
+  if(b.dataset.pin){
+    const k = b.dataset.pin;
+    V.pinned = V.pinned.includes(k) ? V.pinned.filter((x) => x !== k) : [...V.pinned, k];
+    localStorage.setItem(pinKey(), JSON.stringify(V.pinned));
+    drawTimeline();
+    return;
+  }
   if(b.dataset.layout){ V.layout = b.dataset.layout; localStorage.setItem('topic:layout', V.layout); drawShell(); drawMode(); return; }
   if(b.dataset.nav){ step(Number(b.dataset.nav)); return; }
   if(b.dataset.id && V.mode !== 'quiz'){

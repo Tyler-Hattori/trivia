@@ -143,6 +143,13 @@ export const CSS = String.raw`
 .tp-lane{position:absolute;left:0;height:0;border-top:1px solid #eef2f7;pointer-events:none}
 .tp-lanelab{position:absolute;left:8px;top:-8px;font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8;
   background:#fff;padding:0 6px 0 2px}
+.tp-trk{position:absolute;left:0;height:0;pointer-events:none}
+.tp-trk .tp-lanelab{top:-1px;background:transparent}
+.tp-lanelab{pointer-events:auto}
+.tp-lanelab i{font-style:normal;font-weight:500;text-transform:none;letter-spacing:0}
+.tp-pin{margin-left:6px;font:inherit;font-size:9px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#64748b;background:#f1f5f9;
+  border:1px solid #e2e8f0;border-radius:4px;padding:0 5px;line-height:12px;cursor:pointer}
+.tp-pin:hover{background:#e2e8f0;color:#0f172a}
 .tp-ln{position:absolute;height:21px;cursor:pointer;font-size:11.5px;line-height:15px;color:#334155;white-space:nowrap}
 .tp-ln .lb{position:absolute;top:0;overflow:hidden;text-overflow:ellipsis;font-weight:500;display:block}
 .tp-ln.key .lb{font-weight:700;color:#0f172a}

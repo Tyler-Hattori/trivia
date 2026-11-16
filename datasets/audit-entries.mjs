@@ -76,6 +76,65 @@ for(const t of index){
  * the span and stores it as `span: [start, end]` (topic.mjs applies it when
  * the start agrees with the stored one).
  */
+/*
+ * --kinds: what kind of span a period is, for the timeline's tracks:
+ *   state  a state, kingdom, empire, dynasty, ruling house, regime or colony
+ *          (a political power: the States & dynasties track)
+ *   era    an age, era, culture, movement or other span of time (Eras & movements)
+ *   event  something that happened over years: a war, a policy, a migration,
+ *          a persecution (Reign of Terror, Reconquista, Haijin): the Events lane
+ *   other  not a span at all (Wehrmacht, Homo erectus): stays where its type puts it
+ * Stored as `pk` on the entry.
+ */
+if(argv.includes('--kinds')){
+  const want = new Map();
+  for(const t of index){
+    if(slugs.length && !slugs.includes(t.slug)) continue;
+    let T; try { T = JSON.parse(fs.readFileSync(path.join(HERE, 'topics', `${t.slug}.json`), 'utf8')); } catch { continue; }
+    for(const it of T.items){
+      if(it.via === 'events' || it.type !== 'period' || it.start == null || want.has(it.id)) continue;
+      if(!REDO && audit.entries[it.id]?.pk) continue;
+      want.set(it.id, `${it.title}${it.subtitle ? ` — ${it.subtitle}` : ''} | ${span(it)} | ${firstSentence(it.excerpt)}`);
+    }
+  }
+  const list = [...want];
+  console.log(`\n  ${list.length} periods to classify with ${MODEL}${DRY ? ' (dry run)' : ''}`);
+  const SYS = `Each numbered entry is something a history timeline treats as a span of years. Classify it:
+"state": a political power: a state, country, kingdom, empire, dynasty, ruling house or royal family (House of Capet, House of Habsburg), republic, regime, colony, city-state, khanate.
+"era": a named age, era, period, culture, archaeological culture, civilisation, cultural or intellectual movement, or geological time span.
+"event": something that happened over years: a war, conquest, campaign, policy, persecution, trade, migration, crisis.
+"other": not a span of time at all: an army, a species, an institution, an organisation.
+Reply with one JSON object mapping each number to "state", "era", "event" or "other", nothing else.`;
+  let next = 0, n = 0, tokIn = 0, tokOut = 0;
+  const batches = [];
+  for(let i = 0; i < list.length; i += 50) batches.push(list.slice(i, i + 50));
+  await Promise.all(Array.from({ length: 4 }, async () => {
+    while(next < batches.length){
+      const b = batches[next++];
+      try {
+        const r = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'x-api-key': KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+          body: JSON.stringify({ model: MODEL, max_tokens: 2048, system: SYS, messages: [{ role: 'user', content: b.map(([, line], i) => `${i + 1}. ${line}`).join('\n') }] }),
+        });
+        const d = await r.json();
+        tokIn += d.usage?.input_tokens || 0; tokOut += d.usage?.output_tokens || 0;
+        const txt = d.content?.map((c) => c.text || '').join('') || '';
+        const out = JSON.parse(txt.slice(txt.indexOf('{'), txt.lastIndexOf('}') + 1));
+        b.forEach(([id, line], i) => {
+          const k = out[i + 1] ?? out[String(i + 1)];
+          if(!['state', 'era', 'event', 'other'].includes(k)) return;
+          (audit.entries[id] ||= {}).pk = k; n++;
+          if(DRY) console.log(`  ${k.padEnd(6)} ${line.slice(0, 100)}`);
+        });
+      } catch(e){ console.log(`  !! batch failed: ${e.message}`); }
+    }
+  }));
+  save();
+  console.log(`  ${n} classified · ≈ $${(tokIn / 1e6 + tokOut * 5 / 1e6).toFixed(2)}`);
+  process.exit(0);
+}
+
 if(argv.includes('--spans')){
   const want = new Map();
   for(const t of index){
