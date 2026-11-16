@@ -147,9 +147,10 @@ export const CSS = String.raw`
 .tp-trk .tp-lanelab{top:-1px;background:transparent}
 .tp-lanelab{pointer-events:auto}
 .tp-lanelab i{font-style:normal;font-weight:500;text-transform:none;letter-spacing:0}
-.tp-pin{margin-left:6px;font:inherit;font-size:9px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#64748b;background:#f1f5f9;
-  border:1px solid #e2e8f0;border-radius:4px;padding:0 5px;line-height:12px;cursor:pointer}
-.tp-pin:hover{background:#e2e8f0;color:#0f172a}
+.tp-lane .tp-lanelab{cursor:pointer;border-radius:3px}
+.tp-lane .tp-lanelab:hover{color:#334155;background:#f1f5f9}
+.tp-lanelab.pinned{color:#334155}
+.tp-lanelab.pinned::after{content:"·  pinned";margin-left:5px;font-weight:500;letter-spacing:.02em;text-transform:none;color:#94a3b8}
 .tp-ln{position:absolute;height:21px;cursor:pointer;font-size:11.5px;line-height:15px;color:#334155;white-space:nowrap}
 .tp-ln .lb{position:absolute;top:0;overflow:hidden;text-overflow:ellipsis;font-weight:500;display:block}
 .tp-ln.key .lb{font-weight:700;color:#0f172a}

@@ -334,12 +334,12 @@ export function packBars(list, scale, rows, range, { byTime = false } = {}){
  * without it, from the title and description. A period the audit calls an
  * event (Reign of Terror) is typed an event by the builder and drawn as one.
  *
- * Tracks can be pinned (frozen in the header, as the chapter bands are) or
- * not (a lane at the top of the body, scrolling with the rest). Cards keep
- * every track in the header.
+ * Cards keep every track in the header. Lanes stack them as lanes at the top
+ * of the body; any lane (tracks, Events, People…) can be pinned by clicking
+ * its name, and pinned lanes stack in the frozen header (layoutLanes).
  */
 export const TRACKS = [['states', 'States & dynasties'], ['rulers', 'Rulers'], ['eras', 'Eras & movements']];
-export const DEFAULT_PINNED = ['states', 'rulers'];
+export const DEFAULT_PINNED = [];
 const STATE_T = /\b(kingdom|empire|dynasty|house|caliphate|sultanate|emirate|khanate|shogunate|republic|duchy|principality|county|margraviate|electorate|confederation|confederacy|federation|union|commonwealth|regime|government|colony|protectorate|viceroyalty|tsardom|realm|monarchy|polity|reich|raj)\b/i;
 const ERA_T = /\b(period|age|ages|era|revolution|renaissance|enlightenment|reformation|movement|culture|civili[sz]ation|epoch|eon|glaciation|times|époque|school)\b/i;
 const STATE_S = /\b(kingdom|empire|dynasty|royal house|noble family|caliphate|sultanate|emirate|khanate|shogunate|republic|duchy|principality|state|country|polity|monarchy|confederation|federation|regime|government|colony|protectorate|realm|city-state)\b/i;
@@ -350,8 +350,8 @@ const trackOf = (it) => isReignBar(it) ? 'rulers' : isEraBar(it) && !it.offTopic
 /**
  * What both layouts share: the span tracks, the scale, and which entries are
  * drawn (`base`) or may fill free space in Essentials (`optional`).
- * `caps`: rows per header track. `lanes`: unpinned tracks (and what does not
- * fit a pinned one) go to body tracks instead of back to cards.
+ * `caps`: rows per header track (cards). `lanes`: every track goes to `body`,
+ * uncapped, for layoutLanes to stack.
  * Returns { scale, base, optional, header: [track], body: [track], umbrellas },
  * a track being { key, label, bars, rows }.
  */
@@ -363,7 +363,9 @@ export function planTimeline(pool, { show = 'key', ppy, caps = { states: 3, rule
   // Rulers keep their cards (a person's card explains the person); periods are bars only.
   const barIds = new Set([...cands.get('states'), ...cands.get('eras')].map((it) => it.id));
   const rest = pool.filter((it) => !barIds.has(it.id));
-  const inHeader = (k) => !lanes || pinned.includes(k);
+  // Cards: every track in the header. Lanes: layoutLanes stacks them with the
+  // other lanes, pinned ones in the header.
+  const inHeader = () => !lanes;
   let base = show === 'key' ? rest.filter((it) => it.key) : rest;
   let scale = makeScale(base.length ? base : pool, ppy);
   const packAll = () => {
@@ -454,8 +456,8 @@ const roughWidth = (t, bold) => String(t).length * (bold ? 6.6 : 6.1);
 // are thin, so there is room for more than in the cards.
 export const FILL_ROWS = { events: 10, people: 6, works: 3, other: 2 };
 
-export function layoutLanes(pool, { show = 'key', ppy, measure = roughWidth, caps, pinned, fillRows = FILL_ROWS } = {}){
-  const P = planTimeline(pool, { show, ppy, caps, pinned, lanes: true });
+export function layoutLanes(pool, { show = 'key', ppy, measure = roughWidth, caps, pinned = DEFAULT_PINNED, fillRows = FILL_ROWS } = {}){
+  const P = planTimeline(pool, { show, ppy, caps, lanes: true });
   const { scale } = P;
   const geo = (it, minor) => {
     const lasted = it.end != null && it.end > it.start && it.kind === 'span' && !(it.openEnded && it.type !== 'person');
@@ -490,28 +492,32 @@ export function layoutLanes(pool, { show = 'key', ppy, measure = roughWidth, cap
     const cap = new Map([...lanes].map(([k, L]) => [k, Math.max(L.rows.filter((r) => r.length).length, fillRows[k] ?? 3)]));
     for(const it of [...P.optional].sort(byImp)) if(tryPlace(it, true, cap.get(laneOf(it)))) minor.add(it.id);
   }
-  // Stack the lanes that have something, each as tall as its rows: first the
-  // unpinned span tracks (bars), then events, people, works, places.
-  let y = 0;
-  const out = [];
-  const marks = [];
-  const bars = [];
-  for(const t of P.body){
-    out.push({ key: t.key, label: t.label, y0: y, h: t.rows * BAR.ROW, track: true, overflow: !!t.overflow });
-    for(const b of t.bars) bars.push({ ...b, y: y + b.row * BAR.ROW, track: t.key });
-    y += t.rows * BAR.ROW + LANE.GAP;
-  }
+  /*
+   * Stack the lanes that have something, each as tall as its rows: the span
+   * tracks (bars), then events, people, works, places. Any lane can be pinned
+   * (its name clicked): pinned lanes stack in the frozen header, the rest in
+   * the body. y is from the top of the lane's own group; `pinned` says which.
+   */
+  const all = [];
+  for(const t of P.body) all.push({ key: t.key, label: t.label, h: t.rows * BAR.ROW, track: true, bars: t.bars });
   for(const L of lanes.values()){
     const n = L.rows.filter((r) => r.length).length;
-    if(!n) continue;
-    L.y0 = y; L.h = n * LANE.ROW;
-    for(const m of L.marks){ m.y = y + m.row * LANE.ROW; m.lane = L.key; marks.push(m); }
-    out.push({ key: L.key, label: L.label, y0: L.y0, h: L.h });
-    y += L.h + LANE.GAP;
+    if(n) all.push({ key: L.key, label: L.label, h: n * LANE.ROW, marks: L.marks });
+  }
+  const yAt = { true: 0, false: 0 };
+  const out = [], marks = [], bars = [];
+  for(const ln of all){
+    const pin = pinned.includes(ln.key);
+    const y = yAt[pin];
+    out.push({ key: ln.key, label: ln.label, y0: y, h: ln.h, track: !!ln.track, pinned: pin });
+    for(const b of ln.bars || []) bars.push({ ...b, y: y + b.row * BAR.ROW, track: ln.key, pinned: pin });
+    for(const m of ln.marks || []){ m.y = y + m.row * LANE.ROW; m.lane = ln.key; m.pinned = pin; marks.push(m); }
+    yAt[pin] = y + ln.h + LANE.GAP;
   }
   const pos = new Map(marks.map((m) => [m.it.id, { x: m.x0, x1: m.r, y: m.y }]));
   for(const b of bars) if(!pos.has(b.it.id)) pos.set(b.it.id, { x: b.x0, x1: b.x1, y: b.y, bar: true });
-  return { ...P, lanes: out, marks, bars, pos, height: Math.max(0, y - LANE.GAP), minor, items: marks.map((m) => m.it) };
+  return { ...P, lanes: out, marks, bars, pos, height: Math.max(0, yAt.false - LANE.GAP), pinnedHeight: Math.max(0, yAt.true - LANE.GAP),
+    minor, items: marks.map((m) => m.it) };
 }
 
 /*

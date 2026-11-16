@@ -504,10 +504,10 @@ async function showTopic(slug, mode){
       matches: null,                         // Set of ids, or null when no search
       semantic: false,
       selected: null,
-      layout: localStorage.getItem('topic:layout') || 'cards',   // 'cards' | 'lanes' (global)
+      layout: localStorage.getItem('topic:layout') || 'lanes',   // 'lanes' | 'cards' (global)
       // Span tracks frozen in the header (lanes; global): see layout.js TRACKS.
-      // On a phone nothing is pinned by default: the header would take a third of the screen.
-      pinned: (() => { try { return JSON.parse(localStorage.getItem(pinKey())) || (narrow() ? [] : DEFAULT_PINNED); } catch { return DEFAULT_PINNED; } })(),
+      // Lanes frozen in the header (clicked by name); none by default.
+      pinned: (() => { try { return JSON.parse(localStorage.getItem(pinKey())) || DEFAULT_PINNED; } catch { return DEFAULT_PINNED; } })(),
     };
     kwIndex = bm25Index(T.items.map((it) => ({ id: it.id, text: docText(it) })));
     localStorage.setItem(`topic:opened:${slug}`, String(Date.now()));
@@ -597,7 +597,7 @@ function drawShell(){
       <span class="tp-spacer"></span>
       ${V.mode === 'timeline' ? `
         <span class="tp-seg" title="Cards: entries as cards, most important on top. Lanes: events, people and works in thin lanes.">
-          <button data-layout="cards" class="${V.layout !== 'lanes' ? 'on' : ''}" title="Cards"><span class="tp-hide-m">Cards</span><span class="tp-mob">▦</span></button><button data-layout="lanes" class="${V.layout === 'lanes' ? 'on' : ''}" title="Lanes"><span class="tp-hide-m">Lanes</span><span class="tp-mob">☰</span></button>
+          <button data-layout="cards" class="${V.layout === 'cards' ? 'on' : ''}" title="Cards"><span class="tp-hide-m">Cards</span><span class="tp-mob">▦</span></button><button data-layout="lanes" class="${V.layout !== 'cards' ? 'on' : ''}" title="Lanes"><span class="tp-hide-m">Lanes</span><span class="tp-mob">☰</span></button>
         </span>
         <button class="tp-btn" data-zoom="out" title="Zoom out (−)">−</button>
         <button class="tp-btn" data-zoom="in" title="Zoom in (+)">+</button>` : ''}
@@ -830,7 +830,7 @@ function drawTimeline(){
   // Essentials or everything; periods become bars in the eras track, and in
   // Essentials the free space fills with more entries as you zoom in.
   // Two layouts: cards (packed by importance) or lanes (events, people, works).
-  const lanes = V.layout === 'lanes';
+  const lanes = V.layout !== 'cards';
   const caps = narrow() ? { states: 2, rulers: 1, eras: 1 } : { states: 3, rulers: 2, eras: 2 };
   const opts = { show: V.show, ppy: V.ppy, lookup: (id) => T.byId.get(id), caps, pinned: V.pinned };
   const L = lanes ? layoutLanes(timelinePool(), { ...opts, measure: measureLabel }) : layoutTimeline(timelinePool(), opts);
@@ -842,7 +842,9 @@ function drawTimeline(){
   const TRK_LABEL = 13;
   let hy = head + 2;
   const headerTracks = L.header.map((t) => { const y0 = hy; hy += TRK_LABEL + t.rows * BAR.ROW + 2; return { ...t, y0 }; });
-  const bandsH = headerTracks.length ? hy + 4 : head;
+  // Lanes: pinned lanes (any of them) stack in the frozen header under the ticks.
+  const pinTop = head + 22;
+  const bandsH = lanes ? (L.pinnedHeight ? pinTop + L.pinnedHeight + 8 : head) : headerTracks.length ? hy + 4 : head;
   const top = bandsH + (lanes ? 22 : 16);
   const height = top + (lanes ? L.height + 40 : L.laneCount * GEO.UNIT + 60);
 
@@ -879,12 +881,12 @@ function drawTimeline(){
     return `<div class="tp-era${ruler ? ' ruler' : ''}${b.clipL ? ' clipl' : ''}${b.clipR ? ' clipr' : ''}${dim ? ' dim' : ''}${V.selected === b.it.id ? ' sel' : ''}" data-id="${esc(b.it.id)}"
       style="left:${b.x0}px;width:${b.x1 - b.x0}px;top:${y}px;--c:${c}" title="${esc(b.it.title)} · ${esc(fmtWhen(b.it))}">${b.x1 - b.x0 > 34 ? `<span>${esc(b.it.title)}</span>` : ''}</div>`;
   };
-  // A track's label line; in lanes it can be unpinned (it then scrolls with the body).
-  const pinBtn = (k, on) => lanes ? `<button class="tp-pin" data-pin="${k}" title="${on ? 'Let it scroll with the timeline' : 'Keep it in view at the top'}">${on ? 'unpin' : 'pin'}</button>` : '';
+  // Cards: each header track under a small label line.
   const eraHtml = headerTracks.map((t) =>
-    `<div class="tp-trk" style="top:${t.y0}px;width:${scale.width}px"><span class="tp-lanelab">${esc(t.label)}${pinBtn(t.key, true)}</span></div>`
+    `<div class="tp-trk" style="top:${t.y0}px;width:${scale.width}px"><span class="tp-lanelab">${esc(t.label)}</span></div>`
     + t.bars.map((b) => bar(b, t.y0 + TRK_LABEL + b.row * BAR.ROW, t.key === 'rulers')).join('')).join('');
-  const cards = lanes ? lanesHtml(L, top, chColor, bar, pinBtn) : items.map((it) => {
+  const laneParts = lanes ? lanesHtml(L, top, pinTop, chColor, bar) : null;
+  const cards = lanes ? laneParts.body : items.map((it) => {
     const p = pos.get(it.id);
     const y = top + p.lane * GEO.UNIT;
     const c = chColor.get(it.chapter) || '#64748b';
@@ -924,7 +926,7 @@ function drawTimeline(){
   host.innerHTML = items.length ? `
     <div class="tp-canvas" style="width:${scale.width}px;height:${height}px">
       <div class="tp-bands" style="width:${scale.width}px;height:${bandsH}px">
-        <div style="position:relative;height:100%">${bands}${tickHtml}${eraHtml}</div>
+        <div style="position:relative;height:100%">${bands}${tickHtml}${eraHtml}${lanes ? laneParts.head : ''}</div>
       </div>
       ${gridHtml}
       ${brk}
@@ -960,14 +962,18 @@ function measureLabel(text, bold){
 }
 
 /** The lanes layout's marks: events, people and works, each in its own lane. */
-function lanesHtml(L, top, chColor, bar, pinBtn){
-  const out = [];
+function lanesHtml(L, top, pinTop, chColor, bar){
+  // Two groups: pinned lanes go in the frozen header (from pinTop), the rest in the body (from top).
+  const head = [], body = [];
+  const at = (pinned) => (pinned ? pinTop : top);
   for(const ln of L.lanes){
-    // A hairline over each lane with its name; the name slides into view with the scroll.
-    // An unpinned span track can be pinned to the header (not its overflow).
-    out.push(`<div class="tp-lane" style="top:${top + ln.y0 - 13}px;width:${L.scale.width}px"><span class="tp-lanelab">${esc(ln.label)}${ln.overflow ? ' <i>(more)</i>' : ''}${ln.track && !ln.overflow ? pinBtn(ln.key, false) : ''}</span></div>`);
+    // A hairline over each lane with its name; the name slides into view with
+    // the scroll, and clicking it pins the lane to the header (or unpins it).
+    (ln.pinned ? head : body).push(`<div class="tp-lane" style="top:${at(ln.pinned) + ln.y0 - 13}px;width:${L.scale.width}px"><span class="tp-lanelab${ln.pinned ? ' pinned' : ''}" data-pin="${ln.key}"
+      title="${ln.pinned ? 'Pinned: stays in view as you scroll down. Click to unpin.' : 'Click to pin: keep this lane in view as you scroll down.'}">${esc(ln.label)}</span></div>`);
   }
-  for(const b of L.bars) out.push(bar(b, top + b.y, b.track === 'rulers'));
+  for(const b of L.bars) (b.pinned ? head : body).push(bar(b, at(b.pinned) + b.y, b.track === 'rulers'));
+  const out = { push: (pinned, html) => (pinned ? head : body).push(html) };
   for(const m of L.marks){
     const it = m.it;
     const c = chColor.get(it.chapter) || '#64748b';
@@ -980,9 +986,9 @@ function lanesHtml(L, top, chColor, bar, pinBtn){
     const lx = m.bar ? 1 : 7;
     // A bar's label slides along it as you scroll (drawOverview's sync), so a
     // life that began off screen still says whose it is.
-    out.push(`<div class="${cls}" data-id="${esc(it.id)}" ${m.bar ? `data-w="${m.x1 - m.x0}" data-lw="${m.lw}"` : ''} style="left:${m.x0}px;top:${top + m.y}px;width:${m.r - m.l}px;--c:${c}">${mark}<span class="lb" style="left:${lx}px;max-width:${m.lw + 2}px">${av}${known}${esc(it.title)}</span></div>`);
+    out.push(m.pinned, `<div class="${cls}" data-id="${esc(it.id)}" ${m.bar ? `data-w="${m.x1 - m.x0}" data-lw="${m.lw}"` : ''} style="left:${m.x0}px;top:${at(m.pinned) + m.y}px;width:${m.r - m.l}px;--c:${c}">${mark}<span class="lb" style="left:${lx}px;max-width:${m.lw + 2}px">${av}${known}${esc(it.title)}</span></div>`);
   }
-  return out.join('');
+  return { head: head.join(''), body: body.join('') };
 }
 
 /**
@@ -1062,7 +1068,7 @@ function bindTimelineGestures(host){
   host.dataset.gestures = '1';
   let drag = null;
   host.addEventListener('pointerdown', (ev) => {
-    if(ev.button !== 0 || ev.target.closest('.tp-card,.tp-band,.tp-era,.tp-ln')) return;
+    if(ev.button !== 0 || ev.target.closest('.tp-card,.tp-band,.tp-era,.tp-ln,.tp-lanelab')) return;
     drag = { x: ev.clientX, y: ev.clientY, l: host.scrollLeft, t: host.scrollTop, moved: false };
     host.setPointerCapture(ev.pointerId);
   });

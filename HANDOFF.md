@@ -56,11 +56,13 @@ bullets under "Design decisions".
 
 ### Session 9, later: timeline design
 
-The user prefers the **Lanes** layout (prototype, toggle Cards | Lanes; Cards
-is still the default: make Lanes the default once polished). Then they asked
-for clear organisation of spans: done as labelled tracks (States & dynasties,
-Rulers, Eras & movements; pin/unpin), with `audit-entries.mjs --kinds`
-classifying 886 periods. See `docs/TOPICS.md`, "Design decisions".
+**Lanes is the default timeline layout** (Cards stays behind the toggle).
+Spans are organised by kind in labelled lanes (States & dynasties, Rulers,
+Eras & movements; `audit-entries.mjs --kinds` classified 886 periods), above
+Events, People, Works, and Places, groups & other. Clicking any lane's name
+pins it to the frozen header; nothing is pinned by default. See
+`docs/TOPICS.md`, "Design decisions". The user's verdict on the style: they
+like it, and want the rest of the site to match.
 
 **The user will point at Wikipedia's "List of rulers of <country>" /
 "List of monarchs of <country>" series.** Plan: a miner for those list pages
@@ -74,6 +76,25 @@ stretches show empty rows; dots just off the left edge show cut titles;
 near-duplicate fill ("Wöhler synthesis" / "Wöhler synthesizes urea").
 
 ### NEXT SESSION (START HERE)
+
+0. **The user will ask to restyle the atlas to match the Lanes timeline.**
+   What "this visual style" means (see `project/features/topic/styles.js`,
+   `.tp-ln`, `.tp-lane`, `.tp-era`, and `layout.js` `layoutLanes`):
+   - white ground, hairlines, almost no boxes or card frames; text, dots and
+     thin lines carry the information;
+   - kinds in their own labelled lanes (small grey uppercase names on a
+     hairline, sliding into view as you scroll), not mixed and badged;
+   - events as a dot + title, or a 3 px line under the title when they
+     lasted; people as life lines with the name and a 15 px round portrait
+     on them; works as a small square; spans (states, eras) as pale tinted
+     bars with the name inside;
+   - importance by weight (bold dark essentials, grey fill), not size;
+   - chapter colour only as a tint/accent (dot, line, bar edge);
+   - 11.5 px labels, 21 px rows: dense, several times what cards held.
+   Read `docs/ATLAS.md` and the atlas code first; the atlas is the global
+   map of every entry (`#/atlas`), with its own canvas renderer, so the
+   restyle is its marks, lanes/grouping and chrome, not a port of the
+   topic DOM code. Take before/after screenshots on desktop and 390 px.
 
 1. **After batch 4 and run-c finish** (see Queue): run, in order,
    `node datasets/title-events.mjs`, `node datasets/audit-entries.mjs`,

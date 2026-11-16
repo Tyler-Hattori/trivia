@@ -425,7 +425,7 @@ How this is enforced:
   out; two bars for one era (*Kamakura shogunate*, *Kamakura period*) become
   one. Rulers (`dataset: leaders`, reigns) get a track under it, and keep
   their cards. Labels of bars and chapter bands slide along as you scroll.
-- **Lanes (the preferred layout; Cards | Lanes in the toolbar, global).** Under
+- **Lanes (the default layout; Cards | Lanes in the toolbar, `topic:layout`).** Under
   the header, thin lanes: Events (dots; a line under the title when it
   lasted), People (life lines with the name and a small portrait on them, as
   in Priestley's *Chart of Biography*), Works, and Places, groups & other.
@@ -436,11 +436,14 @@ How this is enforced:
   `audit-entries.mjs --kinds` (`periodKind`: state, era, event, other; a
   regex on title and description when unaudited). A period that is really an
   event (Reign of Terror, Reconquista) is typed an event and drawn in Events.
-  In Lanes each track can be pinned (frozen in the header) or not (a lane at
-  the top of the body); default pinned: States and Rulers on desktop, nothing
-  on a phone (`topic:pinned`, `topic:pinned:phone`). Lanes pack a track in
-  time order (fewest rows) and show all of it; Cards cap the header tracks
-  and a period with no room becomes a card.
+  In Lanes, clicking any lane's name (a track, Events, People…) pins it:
+  pinned lanes stack in the frozen header under the ticks, marked
+  "· pinned"; click again to unpin. Nothing is pinned by default; the choice
+  is remembered (`topic:pinned`, `topic:pinned:phone`). Lanes pack a track in
+  time order (fewest rows) and show all of it; Cards keep the tracks in the
+  header, capped, and a period with no room becomes a card. (Lane names are
+  excluded from drag-to-pan: a pointer capture on the canvas swallowed the
+  click, which is why the first pin buttons did nothing.)
 - **Detail by zoom.** Essentials are packed first, on a scale of their own;
   then the free space is filled with other entries (events, people, works;
   not places or off-topic ones) as quieter chips (`.fill`), most important
