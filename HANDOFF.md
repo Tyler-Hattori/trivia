@@ -95,6 +95,8 @@ near-duplicate fill ("Wöhler synthesis" / "Wöhler synthesizes urea").
    map of every entry (`#/atlas`), with its own canvas renderer, so the
    restyle is its marks, lanes/grouping and chrome, not a port of the
    topic DOM code. Take before/after screenshots on desktop and 390 px.
+   `docs/ATLAS.md` has "Design decisions — do not re-litigate these" (e.g.
+   linear x): keep those, and ask the user before changing any of them.
 
 1. **After batch 4 and run-c finish** (see Queue): run, in order,
    `node datasets/title-events.mjs`, `node datasets/audit-entries.mjs`,
