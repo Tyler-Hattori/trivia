@@ -10,7 +10,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { PATHS } from '../lib/store.mjs';
-import { GEO, anchorYear, layoutTimeline } from '../../project/features/topic/layout.js';
+import { GEO, anchorYear, layoutTimeline, layoutLanes } from '../../project/features/topic/layout.js';
 
 const want = process.argv[2];
 const idx = JSON.parse(fs.readFileSync(path.join(PATHS.topics, 'index.json'), 'utf8'));
@@ -102,6 +102,16 @@ for(const row of idx.topics){
       }
       const drawn = new Set([...L.cards.map((it) => it.id), ...L.eras.map((b) => b.it.id), ...(L.umbrellas || []).map((it) => it.id)]);
       const lost = show === 'key' ? pool.filter((it) => it.key && !drawn.has(it.id)) : [];
+      // The lanes layout: within a row of a lane, no two marks (with labels) overlap.
+      const LL = layoutLanes(pool, { show, ppy });
+      const rows = new Map();
+      for(const m of LL.marks) (rows.get(`${m.lane}|${m.row}`) || rows.set(`${m.lane}|${m.row}`, []).get(`${m.lane}|${m.row}`)).push(m);
+      let laneOver = 0;
+      for(const r of rows.values()){ r.sort((a, b) => a.l - b.l); for(let i = 1; i < r.length; i++) if(r[i].l < r[i - 1].r) laneOver++; }
+      const drawnL = new Set([...LL.items.map((it) => it.id), ...LL.eras.map((b) => b.it.id), ...(LL.umbrellas || []).map((it) => it.id)]);
+      const lostL = show === 'key' ? pool.filter((it) => it.key && !drawnL.has(it.id)) : [];
+      check(`lanes ${show} @${ppy}px/yr: no overlaps in a row, essentials all drawn`, !laneOver && !lostL.length,
+        `${LL.marks.length} marks (${LL.minor.size} fill), ${LL.lanes.length} lanes, ${LL.height}px${laneOver ? `, ${laneOver} overlaps` : ''}${lostL.length ? `, lost: ${lostL.slice(0, 3).map((it) => it.title).join(', ')}` : ''}`);
       check(`layout ${show} @${ppy}px/yr: no overlaps, time runs left to right, essentials all drawn`, !overlaps && !back && !barOver && !lost.length,
         `${L.cards.length} cards (${L.minor.size} fill), ${L.eras.length} era bars, ${lanes.size} lanes, ${L.scale.breaks.length} breaks${overlaps ? `, ${overlaps} overlaps` : ''}${back ? `, ${back} out of order` : ''}${barOver ? `, ${barOver} bar overlaps` : ''}${lost.length ? `, lost: ${lost.slice(0, 3).map((it) => it.title).join(', ')}` : ''}`);
     }

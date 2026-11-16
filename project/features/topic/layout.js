@@ -309,7 +309,11 @@ export function packBars(list, scale, rows, range){
  *
  * Returns { scale, cards, pos, laneCount, tiers, eras, rulers, minor: Set }.
  */
-export function layoutTimeline(pool, { show = 'key', ppy, lookup, eraRows = 3, rulerRows = 2, fillRows = 8 } = {}){
+/**
+ * What both layouts share: the eras and rulers tracks, the scale, and which
+ * entries are drawn (`base`) or may fill free space in Essentials (`optional`).
+ */
+export function planTimeline(pool, { show = 'key', ppy, eraRows = 3, rulerRows = 2 } = {}){
   const ys = pool.map(anchorYear);
   const range = ys.length ? [Math.min(...ys), Math.max(...ys)] : [0, 0];
   // Off-topic periods (the audit's 'off') are not this topic's eras.
@@ -341,6 +345,12 @@ export function layoutTimeline(pool, { show = 'key', ppy, lookup, eraRows = 3, r
     optional = rest.filter((it) => !it.key && !it.offTopic && !taken.has(it.id) && inSeg(anchorYear(it)) &&
       (!['place', 'group', 'concept'].includes(it.type) || it.hat));
   }
+  return { scale, base, optional, eras: E.bars, eraRows: E.rows, rulers: R.bars, rulerRows: R.rows, umbrellas: E.umbrellas };
+}
+
+export function layoutTimeline(pool, { show = 'key', ppy, lookup, eraRows = 3, rulerRows = 2, fillRows = 8 } = {}){
+  const P = planTimeline(pool, { show, ppy, eraRows, rulerRows });
+  const { scale, base, optional } = P;
   const tiers = cardTiers(base, lookup);
   for(const it of optional) tiers.set(it.id, 'chip');
   const line = (it) => lineSpan(it, scale);
@@ -349,7 +359,87 @@ export function layoutTimeline(pool, { show = 'key', ppy, lookup, eraRows = 3, r
     ? pack(base, scale, { rows: rowsOf(tiers), line, optional, maxRows: Math.max(first.laneCount, fillRows) })
     : first;
   const cards = base.concat(optional.filter((it) => placed.has(it.id)));
-  return { scale, cards, pos, laneCount, tiers, eras: E.bars, eraRows: E.rows, rulers: R.bars, rulerRows: R.rows, minor: placed, umbrellas: E.umbrellas };
+  return { ...P, cards, pos, laneCount, tiers, minor: placed };
+}
+
+/*
+ * ## Lanes
+ *
+ * The other layout: what happened, who, and what was made, each in a thin
+ * lane of its own under the eras, as in Priestley's *Chart of Biography*.
+ * The lane says what kind of thing an entry is, so no badges or card frames
+ * are needed:
+ *   - an event is a dot and its title; one that lasted is a tinted bar across
+ *     its years with the title in it (or after it, if it does not fit);
+ *   - a person is a bar from birth to death with the name in it, so who lived
+ *     alongside whom shows at a glance;
+ *   - a work is a small square and its title.
+ * A row is 19 px against a card's 64: several times as much in the same space.
+ * Importance is weight: essentials bold, fill (Essentials, zoomed in) grey.
+ * Packing is by importance, so each lane's first row is its headline sequence.
+ */
+export const LANE = { ROW: 21, GAP: 16, LABEL_MAX: 300, PAD: 10 };
+export const LANES = [['events', 'Events'], ['people', 'People'], ['works', 'Works'], ['other', 'Places & groups']];
+export const laneOf = (it) => it.type === 'person' ? 'people' : it.type === 'work' ? 'works'
+  : ['place', 'group', 'concept'].includes(it.type) ? 'other' : 'events';
+
+/** Character-count width estimate for Node (the browser passes a canvas measure). */
+const roughWidth = (t, bold) => String(t).length * (bold ? 6.6 : 6.1);
+
+// Rows the Essentials fill may use per lane (beyond the essentials' own): lanes
+// are thin, so there is room for more than in the cards.
+export const FILL_ROWS = { events: 10, people: 6, works: 3, other: 2 };
+
+export function layoutLanes(pool, { show = 'key', ppy, measure = roughWidth, eraRows = 3, rulerRows = 2, fillRows = FILL_ROWS } = {}){
+  const P = planTimeline(pool, { show, ppy, eraRows, rulerRows });
+  const { scale } = P;
+  const geo = (it, minor) => {
+    const lasted = it.end != null && it.end > it.start && it.kind === 'span' && !(it.openEnded && it.type !== 'person');
+    const x0 = scale.x(it.start);
+    let x1 = lasted ? scale.x(it.end) : x0;
+    if(x1 - x0 < 8) x1 = x0;                       // too short to read as a bar: a point
+    const av = it.type === 'person' && it.image ? 19 : 0;
+    const lw = Math.min(LANE.LABEL_MAX, measure(it.title, it.key && !minor)) + av;
+    const bar = x1 > x0;
+    const inside = bar && x1 - x0 >= lw + 12;
+    // Occupied: the mark and its label. A bar's label starts at its start,
+    // inside it, and runs on past a short bar's end, like a name written along
+    // a life in Priestley's chart; a point's label follows the dot.
+    const l = bar ? x0 : x0 - 5;
+    const r = bar ? Math.max(x1, x0 + 2 + lw) : x0 + 9 + lw;
+    return { x0, x1, bar, inside, lw, l, r };
+  };
+  const lanes = new Map(LANES.map(([k, label]) => [k, { key: k, label, rows: [], marks: [] }]));
+  const tryPlace = (it, minor, cap) => {
+    const g = geo(it, minor);
+    const L = lanes.get(laneOf(it));
+    for(let r = 0; r < cap; r++){
+      const row = L.rows[r] || (L.rows[r] = []);
+      if(!row.some(([a, b]) => g.l < b + LANE.PAD && g.r > a - LANE.PAD)){ row.push([g.l, g.r]); L.marks.push({ it, row: r, minor, ...g }); return true; }
+    }
+    return false;
+  };
+  const byImp = (a, b) => (b.importance - a.importance) || (a.start - b.start);
+  for(const it of [...P.base].sort(byImp)) tryPlace(it, false, Infinity);
+  const minor = new Set();
+  if(P.optional.length){
+    const cap = new Map([...lanes].map(([k, L]) => [k, Math.max(L.rows.filter((r) => r.length).length, fillRows[k] ?? 3)]));
+    for(const it of [...P.optional].sort(byImp)) if(tryPlace(it, true, cap.get(laneOf(it)))) minor.add(it.id);
+  }
+  // Stack the lanes that have something, each as tall as its rows.
+  let y = 0;
+  const out = [];
+  const marks = [];
+  for(const L of lanes.values()){
+    const n = L.rows.filter((r) => r.length).length;
+    if(!n) continue;
+    L.y0 = y; L.h = n * LANE.ROW;
+    for(const m of L.marks){ m.y = y + m.row * LANE.ROW; m.lane = L.key; marks.push(m); }
+    out.push({ key: L.key, label: L.label, y0: L.y0, h: L.h });
+    y += L.h + LANE.GAP;
+  }
+  const pos = new Map(marks.map((m) => [m.it.id, { x: m.x0, x1: m.r, y: m.y }]));
+  return { ...P, lanes: out, marks, pos, height: Math.max(0, y - LANE.GAP), minor, items: marks.map((m) => m.it) };
 }
 
 /*

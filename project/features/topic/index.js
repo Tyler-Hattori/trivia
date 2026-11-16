@@ -27,7 +27,7 @@
  */
 
 import { injectStyles } from './styles.js';
-import { GEO, BAR, makeScale, ticks, anchorYear, fmtYear, fmtRange, fmtWhen, summary, borrowedPortrait, setNarrow, layoutTimeline } from './layout.js';
+import { GEO, BAR, LANE, makeScale, ticks, anchorYear, fmtYear, fmtRange, fmtWhen, summary, borrowedPortrait, setNarrow, layoutTimeline, layoutLanes } from './layout.js';
 import { bm25Index, docText } from '../../../datasets/lib/textsearch.mjs';
 import { renderQuiz, loadMastery, isKnown, isDue, dueSummary } from './quiz.js';
 import { renderSearch, parseWhen } from './search.js';
@@ -502,6 +502,7 @@ async function showTopic(slug, mode){
       matches: null,                         // Set of ids, or null when no search
       semantic: false,
       selected: null,
+      layout: localStorage.getItem('topic:layout') || 'cards',   // 'cards' | 'lanes' (global)
     };
     kwIndex = bm25Index(T.items.map((it) => ({ id: it.id, text: docText(it) })));
     localStorage.setItem(`topic:opened:${slug}`, String(Date.now()));
@@ -590,6 +591,9 @@ function drawShell(){
       <span class="tp-meta" id="tpCount"></span>
       <span class="tp-spacer"></span>
       ${V.mode === 'timeline' ? `
+        <span class="tp-seg" title="Cards: entries as cards, most important on top. Lanes: events, people and works in thin lanes.">
+          <button data-layout="cards" class="${V.layout !== 'lanes' ? 'on' : ''}" title="Cards"><span class="tp-hide-m">Cards</span><span class="tp-mob">▦</span></button><button data-layout="lanes" class="${V.layout === 'lanes' ? 'on' : ''}" title="Lanes"><span class="tp-hide-m">Lanes</span><span class="tp-mob">☰</span></button>
+        </span>
         <button class="tp-btn" data-zoom="out" title="Zoom out (−)">−</button>
         <button class="tp-btn" data-zoom="in" title="Zoom in (+)">+</button>` : ''}
       <button class="tp-btn tp-hide-m" data-act="atlas" title="See this topic's entries among everything else on the atlas">Atlas ↗</button>
@@ -820,15 +824,18 @@ function drawTimeline(){
   const keepX = host.scrollLeft, keepW = host.scrollWidth || 1;
   // Essentials or everything; periods become bars in the eras track, and in
   // Essentials the free space fills with more entries as you zoom in.
-  const L = layoutTimeline(timelinePool(), { show: V.show, ppy: V.ppy, lookup: (id) => T.byId.get(id), eraRows: narrow() ? 2 : 4, rulerRows: narrow() ? 1 : 2 });
-  const { scale, pos, laneCount, tiers } = L;
-  const items = L.cards;
+  // Two layouts: cards (packed by importance) or lanes (events, people, works).
+  const lanes = V.layout === 'lanes';
+  const opts = { show: V.show, ppy: V.ppy, lookup: (id) => T.byId.get(id), eraRows: narrow() ? 2 : 4, rulerRows: narrow() ? 1 : 2 };
+  const L = lanes ? layoutLanes(timelinePool(), { ...opts, measure: measureLabel }) : layoutTimeline(timelinePool(), opts);
+  const { scale, pos } = L;
+  const items = lanes ? L.items : L.cards;
   const trackRows = L.eraRows + L.rulerRows;
   // Chapter bands only for a chronological article; without them the ticks move up.
   const head = T.chronological ? GEO.BANDS_H : 26;
   const bandsH = head + (trackRows ? trackRows * BAR.ROW + 6 : 0);
-  const top = bandsH + 16;
-  const height = top + laneCount * GEO.UNIT + 60;
+  const top = bandsH + (lanes ? 22 : 16);
+  const height = top + (lanes ? L.height + 40 : L.laneCount * GEO.UNIT + 60);
 
   // Chapter bands: one row, or two when a chapter overlaps its neighbours.
   // Bands are eras. In a thematic article ("Female Impressionists", "Beyond
@@ -838,8 +845,8 @@ function drawTimeline(){
   const bands = T.chapters.map((c) => {
     const its = items.filter((it) => it.chapter === c.id);
     if(!its.length) return '';
-    const x0 = Math.min(...its.map((it) => pos.get(it.id).x)) - GEO.CARD_W / 2;
-    const x1 = Math.max(...its.map((it) => pos.get(it.id).x)) + GEO.CARD_W / 2;
+    const x0 = lanes ? Math.min(...its.map((it) => pos.get(it.id).x)) - 8 : Math.min(...its.map((it) => pos.get(it.id).x)) - GEO.CARD_W / 2;
+    const x1 = lanes ? Math.max(...its.map((it) => pos.get(it.id).x1)) + 8 : Math.max(...its.map((it) => pos.get(it.id).x)) + GEO.CARD_W / 2;
     extent.set(c.id, [x0, x1]);
     if(!T.chronological) return '';
     const row = c.overlaps ? 1 : 0;
@@ -865,13 +872,12 @@ function drawTimeline(){
   };
   const eraHtml = L.eras.map((b) => bar(b, head + 2 + b.row * BAR.ROW, false)).join('')
     + L.rulers.map((b) => bar(b, head + 2 + (L.eraRows + b.row) * BAR.ROW, true)).join('');
-  const cards = items.map((it) => {
+  const cards = lanes ? lanesHtml(L, top, chColor) : items.map((it) => {
     const p = pos.get(it.id);
     const y = top + p.lane * GEO.UNIT;
     const c = chColor.get(it.chapter) || '#64748b';
     const dim = V.matches && !V.matches.has(it.id);
     const person = it.type === 'person';
-    const full = tiers.get(it.id) === 'full';
     // The line in the gap above the card: a life (people) or a duration.
     const line = p.line
       // Touching its card's top edge, in its colour: the card hangs from its
@@ -879,6 +885,7 @@ function drawTimeline(){
       ? `<div class="${person ? 'tp-life' : 'tp-span'}${p.line.openL ? ' openl' : ''}${p.line.openR ? ' openr' : ''}${V.selected === it.id ? ' hl' : ''}" data-for="${esc(it.id)}" style="left:${p.line[0]}px;width:${p.line[1] - p.line[0]}px;top:${y - (person ? 2 : 3)}px;--lc:${c}"></div>` : '';
     const known = isKnown(V.mastery[it.id]) ? '<span class="ok">✓</span> ' : '';
     const when = esc(fmtWhen(it));
+    const full = L.tiers.get(it.id) === 'full';
     const cls = `tp-card ${full ? 'full' : 'chip'} ${person ? 'person' : ''} ${dim ? 'dim' : ''} ${it.key ? '' : 'minor'} ${L.minor.has(it.id) ? 'fill' : ''} ${V.selected === it.id ? 'sel' : ''}`;
     const box = `data-id="${esc(it.id)}" style="--w:${GEO.CARD_W}px;--ih:${GEO.IMG_H}px;--h:${full ? GEO.CARD_H : GEO.CHIP_H}px;--c:${c};left:${p.x - GEO.CARD_W / 2}px;top:${y}px"`;
     if(full) return `${line}
@@ -920,6 +927,7 @@ function drawTimeline(){
     const ys = items.filter((it) => it.key).map((it) => it.anchor).sort((a, b) => a - b);
     const y0 = ys[Math.floor(ys.length * 0.08)];
     if(y0 != null) host.scrollLeft = Math.max(0, scale.x(y0) - GEO.CARD_W);
+    // (lanes start the same way: a little before the first essential)
   } else if(keepW > 1) host.scrollLeft = (keepX / keepW) * host.scrollWidth;
   V.scale = scale; V.pos = pos; V.extent = extent;
   // What ←/→ steps through on the timeline: what is drawn, cards and bars.
@@ -928,6 +936,38 @@ function drawTimeline(){
   if(V.selected) markLinked(T.byId.get(V.selected));
   bindTimelineGestures(host);
   drawOverview();
+}
+
+/** Label width in px, as drawn in the lanes (11.5px Inter-like, bold for essentials). */
+let measureCtx = null;
+function measureLabel(text, bold){
+  measureCtx ||= document.createElement('canvas').getContext('2d');
+  measureCtx.font = `${bold ? 700 : 500} ${narrow() ? 12 : 11.5}px ${getComputedStyle(document.body).fontFamily}`;
+  return Math.ceil(measureCtx.measureText(String(text)).width) + 2;
+}
+
+/** The lanes layout's marks: events, people and works, each in its own lane. */
+function lanesHtml(L, top, chColor){
+  const out = [];
+  for(const ln of L.lanes){
+    // A hairline over each lane with its name; the name slides into view with the scroll.
+    out.push(`<div class="tp-lane" style="top:${top + ln.y0 - 13}px;width:${L.scale.width}px"><span class="tp-lanelab">${esc(ln.label)}</span></div>`);
+  }
+  for(const m of L.marks){
+    const it = m.it;
+    const c = chColor.get(it.chapter) || '#64748b';
+    const dim = V.matches && !V.matches.has(it.id);
+    const known = isKnown(V.mastery[it.id]) ? '<span class="ok">✓</span>' : '';
+    const kind = m.lane === 'people' ? 'pe' : m.lane === 'works' ? 'wo' : m.lane === 'other' ? 'ot' : 'ev';
+    const cls = `tp-ln ${kind}${it.key && !m.minor ? ' key' : ''}${m.minor ? ' fill' : ''}${m.bar ? ' lasted' : ''}${m.inside ? ' in' : ''}${dim ? ' dim' : ''}${V.selected === it.id ? ' sel' : ''}`;
+    const av = kind === 'pe' && it.image ? `<img class="av" src="${esc(thumbUrl(it.image, 60))}" loading="lazy" alt="" onerror="imgRetry(this,'hide')">` : '';
+    const mark = m.bar ? `<i class="bar" style="width:${m.x1 - m.x0}px"></i>` : `<i class="pt"></i>`;
+    const lx = m.bar ? 1 : 7;
+    // A bar's label slides along it as you scroll (drawOverview's sync), so a
+    // life that began off screen still says whose it is.
+    out.push(`<div class="${cls}" data-id="${esc(it.id)}" ${m.bar ? `data-w="${m.x1 - m.x0}" data-lw="${m.lw}"` : ''} style="left:${m.x0}px;top:${top + m.y}px;width:${m.r - m.l}px;--c:${c}">${mark}<span class="lb" style="left:${lx}px;max-width:${m.lw + 2}px">${av}${known}${esc(it.title)}</span></div>`);
+  }
+  return out.join('');
 }
 
 /**
@@ -953,10 +993,18 @@ function drawOverview(){
   const win = el.querySelector('#tpWin');
   // An era bar or chapter band wider than the view keeps its name in view: the label slides
   // along the bar as you scroll, like a sticky heading.
+  const laneLabs = [...host.querySelectorAll('.tp-lanelab')];
+  const slides = [...host.querySelectorAll('.tp-ln[data-w]')].map((n) => ({ sp: n.querySelector('.lb'), x0: parseFloat(n.style.left), w: +n.dataset.w, lw: +n.dataset.lw }));
   const eras = [...host.querySelectorAll('.tp-era > span, .tp-band > span')].map((sp) => ({ sp, x0: parseFloat(sp.parentElement.style.left), w: parseFloat(sp.parentElement.style.width), lw: sp.offsetWidth }));
   const sync = () => {
     win.style.left = `${(100 * host.scrollLeft / W).toFixed(2)}%`;
     win.style.width = `${Math.min(100, 100 * host.clientWidth / W).toFixed(2)}%`;
+    for(const n of laneLabs) n.style.transform = `translateX(${host.scrollLeft}px)`;
+    // Past the lane names (about 110 px) so they never cover a label.
+    for(const e of slides){
+      const dx = Math.max(0, Math.min(host.scrollLeft + 110 - e.x0, e.w - e.lw - 4));
+      e.sp.style.transform = dx ? `translateX(${dx}px)` : '';
+    }
     for(const e of eras){
       const dx = Math.max(0, Math.min(host.scrollLeft - e.x0 + 4, e.w - e.lw - 14));
       e.sp.style.transform = dx ? `translateX(${dx}px)` : '';
@@ -999,7 +1047,7 @@ function bindTimelineGestures(host){
   host.dataset.gestures = '1';
   let drag = null;
   host.addEventListener('pointerdown', (ev) => {
-    if(ev.button !== 0 || ev.target.closest('.tp-card,.tp-band,.tp-era')) return;
+    if(ev.button !== 0 || ev.target.closest('.tp-card,.tp-band,.tp-era,.tp-ln')) return;
     drag = { x: ev.clientX, y: ev.clientY, l: host.scrollLeft, t: host.scrollTop, moved: false };
     host.setPointerCapture(ev.pointerId);
   });
@@ -1028,7 +1076,7 @@ let hoverLine = null;
 function hover(ev){
   const tip = root?.querySelector('#tpHover');
   if(!tip) return;
-  const card = ev?.target.closest?.('.tp-card,.tp-era');
+  const card = ev?.target.closest?.('.tp-card,.tp-era,.tp-ln');
   // The hovered card's span line stands out, so it is clear whose it is.
   const hid = card?.classList.contains('tp-card') ? card.dataset.id : null;
   if(hid !== hoverLine){
@@ -1087,8 +1135,8 @@ function showDetail(id, scroll = true){
   const el = root.querySelector('#tpDetail');
   if(!it || !el) return;
   V.selected = id;
-  root.querySelectorAll('.tp-card.sel,.tp-row.sel,.tp-era.sel').forEach((n) => n.classList.remove('sel'));
-  root.querySelectorAll(`.tp-card[data-id="${CSS.escape(id)}"],.tp-era[data-id="${CSS.escape(id)}"]`).forEach((n) => n.classList.add('sel'));
+  root.querySelectorAll('.tp-card.sel,.tp-row.sel,.tp-era.sel,.tp-ln.sel').forEach((n) => n.classList.remove('sel'));
+  root.querySelectorAll(`.tp-card[data-id="${CSS.escape(id)}"],.tp-era[data-id="${CSS.escape(id)}"],.tp-ln[data-id="${CSS.escape(id)}"]`).forEach((n) => n.classList.add('sel'));
   root.querySelectorAll('.tp-life.hl,.tp-span.hl').forEach((n) => n.classList.remove('hl'));
   root.querySelector(`[data-for="${CSS.escape(id)}"]`)?.classList.add('hl');
   markLinked(it);
@@ -1208,9 +1256,9 @@ function step(dir){
 
 /** Light up the cards linked to the selected one: a person's doings, an event's people. */
 function markLinked(it){
-  root.querySelectorAll('.tp-card.rel').forEach((n) => n.classList.remove('rel'));
+  root.querySelectorAll('.tp-card.rel,.tp-ln.rel').forEach((n) => n.classList.remove('rel'));
   for(const id of it ? [...(it.did || []), ...(it.who || [])] : []){
-    root.querySelector(`.tp-card[data-id="${CSS.escape(id)}"]`)?.classList.add('rel');
+    root.querySelector(`.tp-card[data-id="${CSS.escape(id)}"],.tp-ln[data-id="${CSS.escape(id)}"]`)?.classList.add('rel');
   }
 }
 
@@ -1218,7 +1266,7 @@ function closeDetail(){
   markLinked(null);
   V.selected = null;
   root.querySelector('#tpDetail')?.classList.remove('open');
-  root.querySelectorAll('.tp-card.sel,.tp-row.sel,.tp-era.sel').forEach((n) => n.classList.remove('sel'));
+  root.querySelectorAll('.tp-card.sel,.tp-row.sel,.tp-era.sel,.tp-ln.sel').forEach((n) => n.classList.remove('sel'));
   root.querySelectorAll('.tp-life.hl,.tp-span.hl').forEach((n) => n.classList.remove('hl'));
 }
 
@@ -1269,7 +1317,7 @@ function redraw(){
   // The outline drops non-matching rows AND empty chapters, so it is rebuilt.
   if(V.mode === 'learn'){ drawLearn(); refreshCount(); return; }
   // Dim in place rather than rebuilding, so the scroll position and images stay put.
-  root.querySelectorAll('.tp-card,.tp-era').forEach((n) => n.classList.toggle('dim', !!V.matches && !V.matches.has(n.dataset.id)));
+  root.querySelectorAll('.tp-card,.tp-era,.tp-ln').forEach((n) => n.classList.toggle('dim', !!V.matches && !V.matches.has(n.dataset.id)));
   refreshCount();
 }
 
@@ -1289,7 +1337,7 @@ function onClick(ev){
   if(also){ ev.preventDefault(); pendingSelect = V.selected; location.hash = `#/topic/${also.dataset.also}`; return; }
   const mw = t.closest('[data-mw]');
   if(mw){ ev.preventDefault(); pendingSelect = mw.dataset.mwid; location.hash = `#/topic/${mw.dataset.mw}`; return; }
-  const b = t.closest('[data-act],[data-mode],[data-show],[data-toc],[data-zoom],[data-nav],[data-band],[data-fit],[data-check],[data-goch],[data-id]');
+  const b = t.closest('[data-act],[data-mode],[data-show],[data-toc],[data-zoom],[data-layout],[data-nav],[data-band],[data-fit],[data-check],[data-goch],[data-id]');
   if(!b) return;
   if(b.tagName === 'A' && b.getAttribute('href') === '#') ev.preventDefault();
   const host = root.querySelector('#tpScroll');
@@ -1327,10 +1375,11 @@ function onClick(ev){
     return;
   }
   if(b.dataset.zoom){ zoom(b.dataset.zoom === 'in' ? 1.5 : 1 / 1.5); return; }
+  if(b.dataset.layout){ V.layout = b.dataset.layout; localStorage.setItem('topic:layout', V.layout); drawShell(); drawMode(); return; }
   if(b.dataset.nav){ step(Number(b.dataset.nav)); return; }
   if(b.dataset.id && V.mode !== 'quiz'){
     if(host?.classList.contains('dragging')) return;
-    if(V.selected === b.dataset.id && (b.classList.contains('tp-card') || b.classList.contains('tp-era'))){ closeDetail(); return; }
+    if(V.selected === b.dataset.id && (b.classList.contains('tp-card') || b.classList.contains('tp-era') || b.classList.contains('tp-ln'))){ closeDetail(); return; }
     showDetail(b.dataset.id);
   }
   else if(b.dataset.id && V.mode === 'quiz') showDetail(b.dataset.id);

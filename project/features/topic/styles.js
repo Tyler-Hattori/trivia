@@ -139,6 +139,36 @@ export const CSS = String.raw`
 .tp-life.openr,.tp-span.openr{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent)}
 .tp-life.openl.openr,.tp-span.openl.openr{-webkit-mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent)}
 
+/* lanes: events, people and works in thin rows (layout.js layoutLanes) */
+.tp-lane{position:absolute;left:0;height:0;border-top:1px solid #eef2f7;pointer-events:none}
+.tp-lanelab{position:absolute;left:8px;top:-8px;font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8;
+  background:#fff;padding:0 6px 0 2px}
+.tp-ln{position:absolute;height:21px;cursor:pointer;font-size:11.5px;line-height:15px;color:#334155;white-space:nowrap}
+.tp-ln .lb{position:absolute;top:0;overflow:hidden;text-overflow:ellipsis;font-weight:500;display:block}
+.tp-ln.key .lb{font-weight:700;color:#0f172a}
+.tp-ln.fill .lb{color:#64748b;font-size:11px}
+.tp-ln .pt{position:absolute;left:-4px;top:4px;width:8px;height:8px;border-radius:50%;background:var(--c)}
+.tp-ln.fill .pt{width:6px;height:6px;left:-3px;top:5px;opacity:.6}
+.tp-ln .bar{position:absolute;left:0;top:17px;height:3px;border-radius:2px;background:var(--c);opacity:.75}
+.tp-ln .bar::before,.tp-ln .bar::after{content:"";position:absolute;top:-3px;width:2px;height:6px;border-radius:1px;background:inherit}
+.tp-ln .bar::before{left:0}
+.tp-ln .bar::after{right:0}
+.tp-ln.fill .bar{opacity:.4}
+/* people: a grey life line, tinted for essentials */
+.tp-ln.pe .bar{background:#94a3b8;opacity:.7}
+.tp-ln.pe.key .bar{background:color-mix(in srgb,var(--c) 55%,#94a3b8);opacity:.9}
+.tp-ln.pe .pt{background:#94a3b8}
+.tp-ln .av{display:inline-block;vertical-align:-3px;margin-right:4px;width:15px;height:15px;border-radius:50%;object-fit:cover;object-position:50% 20%;flex:none;box-shadow:0 0 0 1px var(--c)}
+/* works: a small square */
+.tp-ln.wo .pt{border-radius:2px}
+.tp-ln.ot .pt{background:#fff;border:2px solid var(--c);box-sizing:border-box}
+.tp-ln:hover{z-index:5}
+.tp-ln:hover .lb{text-decoration:underline;text-decoration-color:#cbd5e1;text-underline-offset:2px}
+.tp-ln.sel .lb{background:#0f172a;color:#fff;border-radius:3px;padding:0 4px;margin-left:-4px}
+.tp-ln.rel .lb{background:#fef3c7;border-radius:3px;padding:0 4px;margin-left:-4px}
+.tp-ln.dim{opacity:.16}
+.tp-ln .ok{color:#16a34a}
+
 /* the detail panel: people an entry is about, a person's entries */
 .tp-who{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 12px}
 .tp-person{display:flex;align-items:center;gap:8px;border:1px solid #e2e8f0;background:#fff;border-radius:999px;padding:3px 12px 3px 3px;
