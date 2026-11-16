@@ -874,7 +874,9 @@ function drawTimeline(){
     const full = tiers.get(it.id) === 'full';
     // The line in the gap above the card: a life (people) or a duration.
     const line = p.line
-      ? `<div class="${person ? 'tp-life' : 'tp-span'}${p.line.openL ? ' openl' : ''}${p.line.openR ? ' openr' : ''}" style="left:${p.line[0]}px;width:${p.line[1] - p.line[0]}px;top:${y - 5}px;${person ? '' : `background:${c}`}"></div>` : '';
+      // Touching its card's top edge, in its colour: the card hangs from its
+      // span. Halfway up the gap it read as the line of the card above.
+      ? `<div class="${person ? 'tp-life' : 'tp-span'}${p.line.openL ? ' openl' : ''}${p.line.openR ? ' openr' : ''}${V.selected === it.id ? ' hl' : ''}" data-for="${esc(it.id)}" style="left:${p.line[0]}px;width:${p.line[1] - p.line[0]}px;top:${y - (person ? 2 : 3)}px;--lc:${c}"></div>` : '';
     const known = isKnown(V.mastery[it.id]) ? '<span class="ok">✓</span> ' : '';
     const when = esc(fmtWhen(it));
     const cls = `tp-card ${full ? 'full' : 'chip'} ${person ? 'person' : ''} ${dim ? 'dim' : ''} ${it.key ? '' : 'minor'} ${L.minor.has(it.id) ? 'fill' : ''} ${V.selected === it.id ? 'sel' : ''}`;
@@ -1021,11 +1023,19 @@ function bindTimelineGestures(host){
   }, { passive: false });
 }
 
+let hoverLine = null;
 /** Hovering a card shows how the article puts it, without opening anything. */
 function hover(ev){
   const tip = root?.querySelector('#tpHover');
   if(!tip) return;
   const card = ev?.target.closest?.('.tp-card,.tp-era');
+  // The hovered card's span line stands out, so it is clear whose it is.
+  const hid = card?.classList.contains('tp-card') ? card.dataset.id : null;
+  if(hid !== hoverLine){
+    root.querySelectorAll('.tp-life.hv,.tp-span.hv').forEach((n) => n.classList.remove('hv'));
+    if(hid) root.querySelector(`[data-for="${CSS.escape(hid)}"]`)?.classList.add('hv');
+    hoverLine = hid;
+  }
   if(!card || V.mode !== 'timeline'){ tip.classList.remove('on'); return; }
   const it = T.byId.get(card.dataset.id);
   if(!it) return;
@@ -1079,6 +1089,8 @@ function showDetail(id, scroll = true){
   V.selected = id;
   root.querySelectorAll('.tp-card.sel,.tp-row.sel,.tp-era.sel').forEach((n) => n.classList.remove('sel'));
   root.querySelectorAll(`.tp-card[data-id="${CSS.escape(id)}"],.tp-era[data-id="${CSS.escape(id)}"]`).forEach((n) => n.classList.add('sel'));
+  root.querySelectorAll('.tp-life.hl,.tp-span.hl').forEach((n) => n.classList.remove('hl'));
+  root.querySelector(`[data-for="${CSS.escape(id)}"]`)?.classList.add('hl');
   markLinked(it);
   root.querySelector(`.tp-row[data-id="${CSS.escape(id)}"]`)?.classList.add('sel');
   const ch = T.chapters[it.chapter];
@@ -1207,6 +1219,7 @@ function closeDetail(){
   V.selected = null;
   root.querySelector('#tpDetail')?.classList.remove('open');
   root.querySelectorAll('.tp-card.sel,.tp-row.sel,.tp-era.sel').forEach((n) => n.classList.remove('sel'));
+  root.querySelectorAll('.tp-life.hl,.tp-span.hl').forEach((n) => n.classList.remove('hl'));
 }
 
 // ---------------------------------------------------------------------------

@@ -124,18 +124,20 @@ export const CSS = String.raw`
 .tp-card.chip .av{width:40px;height:40px;flex:none;border-radius:50%;object-fit:cover;object-position:50% 20%;
   background:#e2e8f0;box-shadow:0 0 0 2px var(--c)}
 .tp-card.full.person .strip{background:#94a3b8}
-.tp-span{position:absolute;height:3px;border-radius:2px;opacity:.55;pointer-events:none}
-.tp-life{position:absolute;height:0;border-top:2px solid #94a3b8;pointer-events:none;opacity:.8}
-.tp-life::before,.tp-life::after{content:"";position:absolute;top:-5px;width:2px;height:8px;background:#94a3b8;border-radius:1px}
+.tp-span{position:absolute;height:3px;border-radius:2px;opacity:.6;pointer-events:none;background:var(--lc)}
+.tp-life{position:absolute;height:0;border-top:2px solid var(--lc);pointer-events:none;opacity:.6}
+.tp-life::before,.tp-life::after{content:"";position:absolute;top:-5px;width:2px;height:7px;background:var(--lc);border-radius:1px}
 .tp-life::before{left:0}
 .tp-life::after{right:0}
-/* clipped at a break: the life goes on beyond it, so the end fades instead of stopping */
+/* whose line: the hovered or selected card's stands out */
+.tp-life.hv,.tp-life.hl,.tp-span.hv,.tp-span.hl{opacity:1;z-index:4}
+.tp-life.hv,.tp-life.hl{border-top-width:3px}
+.tp-span.hv,.tp-span.hl{height:4px}
+/* clipped at a break: the line goes on beyond it, so the end fades instead of stopping */
 .tp-life.openl::before,.tp-life.openr::after,.tp-span.openl::before,.tp-span.openr::after{display:none}
-.tp-life.openl{border-image:linear-gradient(90deg,transparent,#94a3b8 24px) 1}
-.tp-life.openr{border-image:linear-gradient(90deg,#94a3b8 calc(100% - 24px),transparent) 1}
-.tp-life.openl.openr{border-image:linear-gradient(90deg,transparent,#94a3b8 24px,#94a3b8 calc(100% - 24px),transparent) 1}
-.tp-span.openl{-webkit-mask-image:linear-gradient(90deg,transparent,#000 24px);mask-image:linear-gradient(90deg,transparent,#000 24px)}
-.tp-span.openr{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent)}
+.tp-life.openl,.tp-span.openl{-webkit-mask-image:linear-gradient(90deg,transparent,#000 24px);mask-image:linear-gradient(90deg,transparent,#000 24px)}
+.tp-life.openr,.tp-span.openr{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent)}
+.tp-life.openl.openr,.tp-span.openl.openr{-webkit-mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent)}
 
 /* the detail panel: people an entry is about, a person's entries */
 .tp-who{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 12px}
