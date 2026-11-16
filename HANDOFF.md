@@ -1,343 +1,203 @@
 # Handoff
 
-The goal: take in as much information as possible, easily, efficiently and
-cleanly, on a phone as much as on a laptop. A topic page has to beat reading
-the Wikipedia article. The user wants every major field eventually: the history
-of life, of every civilisation and country, mathematics and science, geology
-and geography.
+Read this first; it is meant to be enough to start work without exploring.
+Older session notes (history of specific decisions only):
+`docs/archive/HANDOFF-2026-07-to-11-14.md`, `docs/archive/HANDOFF-2026-11-14-to-11-16.md`.
 
-Older session notes, 2026-07 to 2026-11-14 morning: `docs/archive/HANDOFF-2026-07-to-11-14.md`.
-Read them only for the history of a specific decision.
+## 1. The goal (the user's words)
 
-The user's words (session 9): "the goal is to learn as much accurate
-information as easily and efficiently as possible, with clean graphics/ui and
-ease of exploring related information."
+"Learn as much accurate information as easily and efficiently as possible,
+with clean graphics/UI and ease of exploring related information." On a phone
+as much as on a laptop. A topic page has to beat reading the Wikipedia
+article. Eventually every major field: the history of life, of every
+civilisation and country, mathematics and the sciences, geology, geography.
 
-## State (2026-11-15, end of session 9)
+## 2. The user's standing rules and tastes
 
-- 49 topics built (batch 4, 34 regions and countries, still ingesting); about
-  14,000 dated store entries, plus undated ideas in `atlas/ideas.jsonl`.
-- Checks: verify 31/31, qa-topic 1094/1094, qa-atlas 91/91, qa-quiz 49/49.
-- `topic-report.mjs`: 131 findings (mostly `thin-chapter` and `no-points` in
-  batch 3, which has no key points yet).
-- Committed and pushed, except `datasets/atlas/*` (batch 4 is writing it).
+- **Accuracy first.** Wrong dates/types/off-topic items are worse than gaps.
+  Model-written content (Haiku) is welcome but must be spot-checked; hand
+  corrections always win over model output.
+- **Events first.** The timeline shows what HAPPENED (discoveries, battles,
+  treaties) at a glance. A discovery is its own entry, not an excerpt inside
+  its discoverer's. People entries explain the person.
+- **Clean, compact, clear organisation.** Each kind of thing in its own clearly
+  labelled place; no mixing of types that must be decoded by badges. No wasted
+  space (they rejected a lane sidebar as too wide: labels sit inline).
+- **The visual style they like is the Lanes timeline** (section 5). They want
+  the rest of the site, starting with the atlas, to match it.
+- **Interaction they like:** chapter/era bands at the top, click a band to fit
+  it; freezing things in a header is good but must be opt-in (click a lane's
+  name to pin it; nothing pinned by default).
+- **Don't waste money re-exploring.** Use this file and the docs; read code
+  only where you are about to change it.
+- Commit and push after each finished piece. Keep docs and this file current.
 
-### Session 9: done (plan A–D from session 8, all of it)
+## 3. What the site is
 
-See `docs/TOPICS.md`: "Content audit", "Duplicate events", and the timeline
-bullets under "Design decisions".
-- **A. Content audit** (`datasets/audit-entries.mjs`, `lib/audit.mjs`,
-  `audit-auto.json`): Haiku judged 9,740 (topic, entry) pairs for date, type
-  and relevance, plus `--spans` for 353 periods without an end. Applied in
-  `topic.mjs`: 852 dates corrected, 607 spans completed, 771 suspect (off the
-  timeline), 1,726 off-topic (never essential), 2,864 context (×0.8). All the
-  known bad cases are fixed (Meroë, Mesoproterozoic, YBC 7289, Columbia, Apollo
-  program, Illinois, Physics' Punic War/Iliad…). Physics essentials: 78 events,
-  13 people. Haiku drops BC minus signs and "corrects" reigns to lives: both
-  handled in `topic.mjs` (see the doc).
-- **B. Duplicate events** (`datasets/dedupe-events.mjs`, `lib/dupes.mjs`,
-  `dupes-auto.json`): Haiku confirms candidate pairs; 254 mined duplicates
-  merged, and mined events into the article's linked twin (337 in all).
-- **C. Detail by zoom** (`layout.js` `layoutTimeline`, `pack(…, { optional,
-  maxRows })`): Essentials fill free rows with quieter `.fill` chips; more as
-  you zoom in. qa-topic now checks the real `layoutTimeline`.
-- **D. Eras track:** periods as bars (4 rows, 2 on a phone), rulers
-  (`leaders`) in a track under them, clicking opens the panel, ←/→ steps
-  through what is drawn (`V.drawn`). Checked on Inca, Egypt, Japan, China,
-  desktop and 390 px.
-- **Also:** deep time as "years ago" (`fmtWhen`, `fmtYear`; ticks "66 Mya");
-  tick steps up to billions of years (was 1e6 max: thousands of ticks on
-  History of Earth); bar and chapter-band labels slide into view as you
-  scroll; overview strip labels no longer overlap on a phone; bare-name
-  descriptions dropped ("Spain · Pedro Sánchez"); a topic whose chapters go
-  back in time is thematic (Aztec); a leading year in a card title that the
-  date line shows is hidden; one scroll listener per redraw (was a leak);
-  `topic.mjs --all --only a,b` rebuilds some topics.
+A static site (no build step, no npm; ES modules, Tailwind via CDN), served by
+`node datasets/serve.mjs` (http://localhost:8777, also `/api/search`). Over one
+store of ~14,000 dated Wikipedia/Wikidata entries plus undated "ideas".
 
-### Session 9, later: timeline design
+| Route | What | Code |
+|---|---|---|
+| `#/` | home: three doors (Topics, Atlas, Quiz) + search box + Review banner | `project/ui/home.js` |
+| `#/topics` | the topic list (shelves, search, Continue row) | `features/topic/index.js` `showList` |
+| `#/topic/<slug>` | **Learn** (article's own words by chapter, key points, key ideas) | `features/topic/index.js` `drawLearn` |
+| `#/topic/<slug>/timeline` | **Timeline** (Lanes by default, Cards behind a toggle) | `index.js` `drawTimeline`, `layout.js` |
+| `#/topic/<slug>/quiz` | quiz: Order / Recall / Ideas / Era | `features/topic/quiz.js` |
+| `#/quiz`, `#/review` | quiz over all topics; spaced-repetition review | `features/topic/quiz.js` |
+| `#/search/<q>` | year/span pages ("1294", "13th century", "66 million years ago") or word search | `features/topic/search.js`, `topics/store-lite.json` |
+| atlas | zoomable map of everything: x = time, y = subject; opens in a **popup window** (`window.openAtlas`) | `features/atlas/*`, `docs/ATLAS.md` |
+| `#/cluster-quiz` | old quiz by atlas cluster | `features/quiz/` |
 
-**Lanes is the default timeline layout** (Cards stays behind the toggle).
-Spans are organised by kind in labelled lanes (States & dynasties, Rulers,
-Eras & movements; `audit-entries.mjs --kinds` classified 886 periods), above
-Events, People, Works, and Places, groups & other. Clicking any lane's name
-pins it to the frozen header; nothing is pinned by default. See
-`docs/TOPICS.md`, "Design decisions". The user's verdict on the style: they
-like it, and want the rest of the site to match.
+Detail panel (topics): description first, people↔events links (amber
+highlight), "Also in" other topics, "Connected", **Meanwhile** (same years in
+other topics). ←/→ step through what is drawn.
 
-**The user will point at Wikipedia's "List of rulers of <country>" /
-"List of monarchs of <country>" series.** Plan: a miner for those list pages
-(tables of name, reign start, reign end, house), ingesting rulers as entries
-with `dataset: leaders`-style reigns (`kind: span`, start/end = reign), so the
-Rulers track fills for every country. Today only China (16), Rome (39) and a
-few others have reigns; France has 3.
-
-Lanes rough edges: a lane is as tall as its busiest stretch, so quiet
-stretches show empty rows; dots just off the left edge show cut titles;
-near-duplicate fill ("Wöhler synthesis" / "Wöhler synthesizes urea").
-
-### NEXT SESSION (START HERE)
-
-0. **The user will ask to restyle the atlas to match the Lanes timeline.**
-   What "this visual style" means (see `project/features/topic/styles.js`,
-   `.tp-ln`, `.tp-lane`, `.tp-era`, and `layout.js` `layoutLanes`):
-   - white ground, hairlines, almost no boxes or card frames; text, dots and
-     thin lines carry the information;
-   - kinds in their own labelled lanes (small grey uppercase names on a
-     hairline, sliding into view as you scroll), not mixed and badged;
-   - events as a dot + title, or a 3 px line under the title when they
-     lasted; people as life lines with the name and a 15 px round portrait
-     on them; works as a small square; spans (states, eras) as pale tinted
-     bars with the name inside;
-   - importance by weight (bold dark essentials, grey fill), not size;
-   - chapter colour only as a tint/accent (dot, line, bar edge);
-   - 11.5 px labels, 21 px rows: dense, several times what cards held.
-   Read `docs/ATLAS.md` and the atlas code first; the atlas is the global
-   map of every entry (`#/atlas`), with its own canvas renderer, so the
-   restyle is its marks, lanes/grouping and chrome, not a port of the
-   topic DOM code. Take before/after screenshots on desktop and 390 px.
-   `docs/ATLAS.md` has "Design decisions — do not re-litigate these" (e.g.
-   linear x): keep those, and ask the user before changing any of them.
-
-1. **After batch 4 and run-c finish** (see Queue): run, in order,
-   `node datasets/title-events.mjs`, `node datasets/audit-entries.mjs`,
-   `node datasets/audit-entries.mjs --spans`, `--bare`, `--kinds`,
-   `node datasets/dedupe-events.mjs`, then `node datasets/topic.mjs --all`
-   and QA. All are incremental (only new entries are asked) and cost cents to
-   a few dollars. Then commit `datasets/atlas/*` too.
-2. **Spot-check the audit** on a few new topics: corrected dates
-   (`dateFixed`, `storedYears` in the topic file) and `offTopic` essentials.
-   Fix mistakes in `datasets/audit.json` (same shape as audit-auto.json; it wins).
-3. **Key points for batches 3 and 4** (`topic-notes/`; `no-points` in the
-   report). Biggest remaining content gap in Learn.
-4. Then the "Later" list below. Ideas noticed this session:
-   - Rulers: only topics with `leaders` rows have reigns (China 16, Rome 39,
-     Inca 0). An audit-style pass could add reign years for the people the
-     audit types as rulers; then the rulers track works everywhere.
-   - Zoom fill is generous (Japan: 240 fill chips at 12 px/yr). If it feels
-     busy, lower `fillRows` or cap fill per screen width.
-   - Ancient Egypt and Inca are judged thematic (no chapter bands) although
-     their history chapters are chronological; mixed articles (history first,
-     then society) could get bands for the chronological part only.
-
-Later (agreed, not started): a "why it matters" line for event panels; wars
-and reigns as bars (wars with spans could join the eras track as a second
-kind); deep-time spacing (Kush is mostly hatched breaks); phone pinch-zoom and
-maybe a vertical layout; comparing two topics' timelines (Meanwhile has the
-data: England with France, Rome with Han China).
-
-Screenshots: `/tmp/shots/shot.mjs "<#hash>" out.png [w h mobile js]` (it
-may be gone after a reboot; it's a small CDP script, see Setup).
-
-### Queue (started session 8; at the end of session 9, batch 4 was ingesting 9 of 34)
-
-Check: `grep -E "── (ingest|build)" /tmp/batch4.log | tail -1`, and
-`ls /tmp/*.done`. These scripts run one after another under caffeinate:
-1. `/tmp/run-b.sh`: re-runs batch 3 with `--ingest --force` to mine related
-   articles (`/tmp/batch3b.log`, then `/tmp/batch3b.done`). Then batch 4
-   (`/tmp/batch4.log`, then `/tmp/batch34.done`), about 18 to 20 hours.
-2. `/tmp/run-c.sh`: waits for `batch34.done`, then rebuilds 14 older topics
-   that need related articles: Dinosaurs, Cambrian explosion, Ice ages, Plate
-   tectonics, Geologic time, Geology, Ancient Egypt, Ancient Rome, China, US,
-   Renaissance, Impressionism, Cold War and WWII, then batch 3 again to mine
-   main-article pages beyond the old top 10 (`/tmp/batch12b.log`, then
-   `/tmp/batch12b.done`).
-
-After each batch: the model passes in "NEXT SESSION" step 1 (titles, audit,
-spans, dedupe), then `topic.mjs --all`.
-Mined events stay OFF the timeline until they have a short title in
-`titles.json` (`it.prose && !it.origTitle`). Inca Empire is done (32 titles).
-Every other prose topic needs its titles written:
-`node -e` over `topics/<slug>.json` items with `prose: true`, sorted by start;
-title the real events and skip commentary and restatements.
-
-### Session 8
-
-**The user's rule (read it):** the timeline must show *events* (discoveries,
-inventions, battles) at a glance. A discovery gets its own card, not an
-excerpt in its discoverer's card. People cards explain the person. See
-`docs/TOPICS.md`, "Events first".
-
-Done and pushed:
-- The session 7 work and data are committed.
-- **Miner fix** (`lib/wiki.mjs`): a heading that is only a date now dates the
-  paragraphs under it. Timeline of chemistry went from 0 to 138 events,
-  astronomy from 1 to 88.
-- **`events=` pages added in `topics.txt`** for the people-heavy topics:
-  Science, Physics, History of Earth, Geologic time, Ice ages, Plate tectonics,
-  Computing, Geology, Geography. Before this, essentials were mostly people
-  (Chemistry 69/86, Physics 59/91, Geology 31/40).
-- **Key points written** for all 16 batch 1–2 topics (`topic-notes/`).
-- **Timeline redesign** (see `docs/TOPICS.md`, Events first): most entries are
-  chips, with picture cards only for top essentials with their own picture.
-  People are portrait chips with life lines. People and events link both ways,
-  and selecting one lights up the other in amber. The panel leads with the
-  description. The phone toolbar is three rows.
-- Ideas, not done: pinch-zoom on phones (there are only +/- buttons); a short
-  line under each event chip's title; clean Wikipedia leads in the builder
-  rather than the browser.
-
-Running: `/tmp/run-next.sh` under caffeinate.
-1. Batch 3 finishes (its node pid is 38566).
-2. Then `/tmp/science.txt` (those 11 topics) is rebuilt with
-   `--ingest --force` → `/tmp/science.log`, `/tmp/science.done`.
-3. Then batch 4 → `/tmp/batch4.log`, `/tmp/batch34.done`.
-
-Next:
-- After the queue: `topic.mjs --all` (applies key points to the 8 batch 1–2
-  topics not in science.txt), then QA.
-- Compare person/event counts of the essentials (one-liner: count
-  `items.filter(x=>x.key)` by `type`). Expect events to dominate in Chemistry,
-  Astronomy and Physics now.
-- Titles for the new mined events (they are sentence fragments).
-- Computing's 1980s and 2000s timeline pages are tables the miner skips (10
-  tables each, about 0 rows).
-- Data oddities seen in essentials: "Apollo program(person)", "Agriculture
-  (person)", "Science(person)", "Nature(person)", "Columbia (period) 2002",
-  Mesoproterozoic ending in 1 BC, "Smallpox(person)", "Goseck Circle(person)".
-- Plate tectonics qa-topic check (recheck after the rebuild).
-
-### Session 7
-
-Done and pushed:
-- **The home page is three doors again** (Topics, Atlas, Quiz), plus a search
-  box and a Review banner. The topic list is at `#/topics`.
-- **Search** (`#/search/<q>`, `project/features/topic/search.js`, and
-  `lib/lite.mjs` → `topics/store-lite.json`):
-  - years and spans ("1294", "1290s", "13th century", "66 million years ago")
-    build a page from the whole store;
-  - words give a timeline of matches;
-  - inside a topic, a year filters by date.
-- **Quiz settings:** length, question kinds (Order/Recall/Ideas/Era) mixed at
-  random, focus (everything / weak spots / new), and years. Sessions end with
-  a summary. Stored as `quiz:settings:v1`.
-- **`datasets/titles.json`:** short titles for 898 mined events in the first
-  14 topics. `topic.mjs` applies them and keeps `origTitle`.
-
-Done but NOT committed (commit early next session):
-- **Events first.**
-  - On site timeline pages, a person named only on timeline lines is no
-    longer a card (`tlOnly`); the event is the card.
-  - Mined events: twins of linked events are merged; each borrows the
-    picture of what it names (a case-sensitive title match, `about`); they are
-    scored by kind of happening (`minedBase`: battles and inventions up,
-    births down).
-  - Each chapter's essentials are now at least 50% events and at most 40%
-    people.
-  - Result: the Dateline of Thermodynamics is now events ("Pascal's mountain
-    barometer experiment"), and England has 37 mined events among its
-    essentials (was 4).
-- **Works by member creators** now covers artistic creators only (no
-  scientists or philosophers): Darwin's and Aristotle's books were turning up
-  in unrelated topics.
-- **`topic-overrides.json`:** unkey lists for the 16 batch 1–2 topics.
-- **`lib/store.mjs` `readEntries`** skips a half-written last line.
-- A `topic.mjs --all` was ABORTED midway, so topic files may be mixed old and
-  new. First thing: run `node datasets/topic.mjs --all` (about 5 minutes for
-  30+ topics), then `qa-topic` and `topic-report`.
-
-Batches (background via `/tmp/run34.sh` under caffeinate; `/tmp` may be gone
-after a reboot):
-- **1–2: built**, 16 topics:
-  - Life & Earth: History of Earth, Geologic time, History of life, Human
-    evolution, Ice ages, Dinosaurs, Plate tectonics, Cambrian explosion;
-  - Science: Mathematics, Chemistry, Biology, Medicine, Astronomy, Computing,
-    Geology, Geography.
-
-  Still to do for them:
-  - key points in `topic-notes/<slug>.json`;
-  - titles for their mined events (History of life, Human evolution,
-    Mathematics, Biology and Medicine have many sentence titles);
-  - fix Plate tectonics failing qa-topic's "most key links have an
-    in-article sentence" check (37/56).
-- **3 (19 civilisations, `/tmp/batch3.txt`):** was ingesting topic 11 of 19.
-  Check `/tmp/batch3.log`.
-- **4 (6 regions + 28 countries, `/tmp/batch4.txt`):** starts after 3. Check
-  `/tmp/batch4.log`; `/tmp/batch34.done` marks the end.
-
-  If `/tmp` is lost, re-run the pending ones:
-  `node datasets/topic.mjs --list --ingest` (topics.txt; built topics are
-  skipped).
-
-Per-batch review checklist:
-1. `topic.mjs --all` (applies titles and overrides).
-2. `topic-report.mjs`, plus a scan of each topic's essentials (in history-of-X
-   articles, look for eras, civilisations, journals and places mentioned in
-   passing), then add unkeys to `topic-overrides.json`.
-3. Key points: 3–5 per chapter in `topic-notes/<slug>.json` (titles match
-   with whitespace normalised).
-4. Titles: dump mined events with 4+ word titles (see `docs/TOPICS.md`,
-   "Titles for mined events"), write short titles, merge into `titles.json`.
-5. QA: `verify`, `qa-topic`, `qa-atlas`, `qa-quiz` (49 checks), then commit,
-   including `datasets/atlas/*`.
-
-### Session 6
-
-- **Key ideas.**
-  - Undated concepts live in `datasets/atlas/ideas.jsonl` (`lib/ideas.mjs`),
-    fetched with `topic.mjs --ideas` (`--all --ideas` for every topic).
-  - Learn shows "Key ideas" per chapter; the quiz has an "Ideas" mode (pick the
-    idea from its definition).
-  - See `docs/TOPICS.md`, "Key ideas".
-- **Key points.** Every chapter of all 14 topics has 3–5 summary points,
-  written in-session by Claude into `datasets/topic-notes/<slug>.json` and
-  labelled "summary" in the UI. Every new topic needs these; `topic-report`
-  flags missing ones.
-- **`etype` fixes.** Three kinds of entry were typed "concept" and so were off
-  the timeline:
-  - descriptions that date themselves ("intended to attack England in 1588",
-    "1986 Soviet-American summit");
-  - Wikidata start+end dates (P580+P582);
-  - summit, intervention, operation and similar words.
-
-  The Spanish Armada is back on England's timeline.
-- **Deleted:** `thumbnails/`, `build_thumbnails.js`, and the
-  `qwen3-embedding:0.6b` model. `qwen3:8b` (5.2 GB, only used by the unused
-  `--reshape`) is still installed.
-
-### Session 5
-
-- **The home page is the topic list.**
-- **Phone layout:** a drawer rail and a full-screen detail panel.
-- **Spaced-repetition Review** (`#/review`) and **Quiz all** (`#/quiz`).
-- **Meanwhile** in the detail panel, and **In topics** in the atlas.
-- **Topic quality:** `qa/topic-report.mjs` and `topic-overrides.json`.
-- **PDF lectures** for Ideas of Physics.
-
-## Next, in order
-
-1. **Scale topics, choosing for breadth.** The user wants everything. Proposed
-   shelves, about 20 topics per batch:
-   - **Life & Earth:** History of Earth, Geologic time scale, Evolutionary
-     history of life, Timeline of human evolution, Plate tectonics, Ice age,
-     Dinosaur, Cambrian explosion, Human evolution, History of geography.
-   - **Maths & sciences:** History of mathematics, History of chemistry,
-     History of biology, History of medicine, History of astronomy, History of
-     computing, History of geology.
-   - **Civilisations:** Mesopotamia, Ancient Greece, Byzantine Empire,
-     Islamic Golden Age, Mongol Empire, Ottoman Empire, Maya civilization,
-     Aztec Empire, Inca Empire, Mughal Empire, Ancient India, Persian Empire.
-   - **Countries:** `--discover "links:List of sovereign states" --template "History of {}"`,
-     biggest first.
-
-   For each batch:
-   - `node datasets/topic.mjs --list --ingest`, then `--ideas` for those
-     topics;
-   - `topic-report.mjs`, then overrides;
-   - write key points in `topic-notes/`;
-   - QA, then commit.
-2. **Smaller items:**
-   - Mined timeline-event titles are often whole sentences ("Blaise Pascal, a
-     French mathematician whose health is not…").
-   - United States' "Cold War" chapter lists "Cold War" four times; the
-     self-title rule only removes the topic's own title.
-   - Learn: mark chapters as read; j/k keys; a flashcard toggle.
-   - Phone timeline: smaller cards (`GEO` in `topic/layout.js`).
-   - Atlas: lazy-load `details.json` (11 MB); simplify the toolbar.
-
-## Setup (every session)
+## 4. Repo map (what to open for what)
 
 ```
-OLLAMA_MAX_LOADED_MODELS=1 OLLAMA_NUM_PARALLEL=1 OLLAMA_KEEP_ALIVE=2m ollama serve
+project/features/topic/
+  index.js    (1.4k lines) routing, list, Learn, Timeline drawing (drawTimeline, lanesHtml),
+              detail panel, search box, gestures, pins, prefs
+  layout.js   pure layout, tested in Node: scale with hatched breaks (makeScale),
+              cards (pack, layoutTimeline), span tracks (TRACKS, planTimeline, packBars),
+              lanes (layoutLanes), date formats (fmtYear, fmtRange, fmtWhen)
+  styles.js   all topic CSS (one template string: NO backticks inside it)
+  quiz.js, search.js
+project/features/atlas/   index.js (orchestrator, 1.6k), paint.js (canvas: bands, spans,
+              dots, chips, label packing), cards.js (DOM image cards), scales.js (x/y,
+              3 time modes), rail.js (subject tree, collapse/pin), detail.js, styles.js
+datasets/
+  topic.mjs           builds one topic from a Wikipedia article (+ timeline pages, store)
+  audit-entries.mjs   Haiku: date/type/relevance per entry; --spans --kinds --bare
+  title-events.mjs    Haiku: short titles for mined events
+  dedupe-events.mjs   Haiku: are two mined events the same happening?
+  lib/                audit.mjs dupes.mjs etype.mjs (types) lite.mjs (search index)
+                      wiki.mjs (event miner) wikilib.mjs (all Wikipedia requests) store.mjs years.mjs
+  topics/<slug>.json  built topics; index.json, all.json (Meanwhile), members*.json
+  topics.txt          what to build: "Article | name= | events=Timeline of… | group="
+  topic-overrides.json  per topic: drop / unkey / key / noKeyChapters / chapterYears / intros
+  topic-notes/<slug>.json  key points per chapter (hand/Claude-written)
+  titles.json (hand) / titles-auto.json (Haiku)   short titles for mined events
+  audit-auto.json (Haiku) / audit.json (hand, wins); dupes-auto.json
+  atlas/              the compiled store (entries.jsonl, atlas.json, details.json, vectors)
+  qa/                 verify, qa-topic (Node), qa-atlas + qa-quiz (headless Chrome), topic-report
+docs/  TOPICS.md (how topics are built + timeline design decisions), ATLAS.md (atlas
+       decisions NOT to re-litigate + gotchas), PIPELINE.md, QUIZ.md, SEARCH.md, QA.md
+```
+
+## 5. The Lanes timeline: the style to propagate
+
+Code: `layout.js` (`layoutLanes`, `planTimeline`, `packBars`, `TRACKS`),
+`index.js` (`lanesHtml`, `drawTimeline`, the sync loop in `drawOverview`),
+`styles.js` (`.tp-ln`, `.tp-lane`, `.tp-lanelab`, `.tp-era`, `.tp-band`).
+
+- White ground, hairlines, almost no boxes or card frames. Text, dots and thin
+  lines carry the information. Chapter colour only as an accent/tint.
+- Header (frozen vertically): overview strip; chapter bands (click to fit;
+  only for chronological articles); year ticks; then any pinned lanes.
+- Lanes, each under a hairline with a small grey uppercase name (sliding into
+  view as you scroll; click the name to pin/unpin; `topic:pinned`):
+  **States & dynasties**, **Rulers** (reigns), **Eras & movements** (spans as
+  pale tinted bars, name inside, label slides along), then **Events** (dot +
+  title; a 3px line under the title if it lasted), **People** (life line with
+  the name and a 15px round portrait on it, Priestley's *Chart of Biography*),
+  **Works** (small square + title), **Places, groups & other**.
+- Importance by weight, not size: essentials bold/dark; zoom fill grey. Rows
+  are 21px, labels 11.5px: several times denser than the old cards.
+- Detail by zoom: Essentials mode adds lower-importance entries into free rows
+  as you zoom in (`FILL_ROWS`). Everything mode shows all.
+- Kinds come from data: entry `type` (etype + audit), periods' `periodKind`
+  (audit `--kinds`: state/era/event/other).
+- Known rough edges: a lane is as tall as its busiest stretch (empty rows in
+  quiet stretches); a dot just off the left edge shows a cut title; some
+  near-duplicate fill entries; Cards layout still exists (keep or retire).
+
+## 6. How content is made (pipeline, per batch)
+
+1. `node datasets/topic.mjs --list <file> --ingest` (slow: ~10 min/topic of
+   Wikipedia fetches, rate-limited) builds new topics from `topics.txt` lines.
+2. Model passes (incremental; only new things are asked; cents to ~$3; need
+   `ANTHROPIC_API_KEY`): `title-events.mjs`; `audit-entries.mjs`;
+   `audit-entries.mjs --spans`, `--bare`, `--kinds`; `dedupe-events.mjs`.
+3. `node datasets/topic.mjs --all` (rebuild all, no ingest; ~25 min, longer
+   while an ingest runs; `--only a,b` for some).
+4. Review: `qa/topic-report.mjs --summary`, unkeys in `topic-overrides.json`,
+   key points in `topic-notes/<slug>.json` (3–5 per chapter, written by Claude
+   in-session from the article + essentials), spot-check audit corrections
+   (`dateFixed`/`storedYears`/`offTopic` in topic files; fix in `audit.json`).
+5. QA (section 9), commit, push (include `datasets/atlas/*` when no ingest is running).
+
+Builder facts worth knowing: essentials ≈ 90 per topic, ≥4 per chapter, ≥50%
+events and ≤40% people per chapter; places/groups/concepts essential only with
+a "Main article" hatnote; audit `off` entries never essential; mined prose
+events stay off the timeline until titled; date-suspect entries off the
+timeline; spans that cover far more than the view are dropped as umbrellas.
+
+## 7. State (2026-11-16)
+
+- 49 topics built: Science 11, Ancient world 9, Empires & eras 9, Life &
+  Earth 8, Countries 5, Americas 3, Wars 2, Art & culture 2.
+- **Background queue still running** (do not run `--ingest` until it ends;
+  plain rebuilds are safe but slower): batch 4 (6 regions + 28 countries,
+  `/tmp/batch4.txt`) was ingesting 27/34 (`grep -E "── (ingest|build)"
+  /tmp/batch4.log | tail -1`); then `/tmp/run-c.sh` rebuilds 14 older topics +
+  batch 3 with more related-article mining (`/tmp/batch12b.log`). Ends when
+  `/tmp/batch12b.done` exists. `/tmp` may be gone after a reboot: then rerun
+  `node datasets/topic.mjs --list --ingest` (built topics are skipped).
+- QA at last run: verify 31/31, qa-topic 1388/1388, qa-atlas 91/91, qa-quiz 49/49.
+- Everything committed and pushed except `datasets/atlas/*` (being written by
+  the ingest).
+
+## 8. Next, in order
+
+1. **Restyle the atlas to match the Lanes style** (the user will ask). The
+   atlas is a canvas renderer (`paint.js`), not DOM: restyle its marks,
+   grouping and chrome; don't port topic code. Today it draws filled cluster
+   bands per subject (y = subject tree from Wikimedia's taxonomy + embedding
+   clusters), dots, span bars, text chips and DOM image cards (`cards.js`,
+   pooled, `object-fit: contain`), light/dark palettes (`PALETTES` in
+   `paint.js` + CSS variables in `styles.js`). Lanes-style translation to
+   consider: dot/line/bar marks with labels instead of chips and image
+   cards; life lines for people; weight for importance; hairline lane
+   separators with small sliding names; fewer boxes. **`docs/ATLAS.md` lists
+   decisions not to re-litigate** (linear x, three time modes, derived zoom
+   floor, filled not stroked bands, sticky band labels, wheel pans / pinch
+   zooms, never-cropped images, fame as highlight): keep them; ask the user
+   before changing any. Its gotchas section (popup realm timers/DOM, a frame
+   of lag in `scale`, Wikimedia thumbnail widths) will bite. Before/after
+   screenshots, desktop and 390px; qa-atlas must pass.
+2. **When the queue ends:** pipeline steps 2–5 for batch 4 + the rebuilt
+   topics. Key points are missing for batch 3 (19 civilisations) and batch 4.
+3. **Rulers everywhere.** The user will point at Wikipedia's "List of rulers
+   of <country>" / "List of monarchs of <country>" pages. Plan: a miner for
+   those tables (name, reign start–end, house) that ingests reigns as
+   `dataset: 'leaders'`-style entries (`kind: 'span'`, start/end = reign), so
+   the Rulers lane fills (today: China 16, Rome 39, France 3, Inca 0).
+4. Lanes polish: compress empty rows in quiet stretches; slide point labels
+   too; make the zoom fill less near-duplicate.
+
+## 9. Improvement backlog (agreed or noticed, not started)
+
+- Content: a one-line "why it matters" for event panels; key points for every
+  topic; audit spot-check list (doubtful: Gandhara 745–11 BC, Maghan I,
+  "Mongol invasions of Tibet" 1206–1723); Computing's 1980s/2000s timeline
+  pages are tables the miner skips; mixed articles (Egypt, Inca: history
+  chapters then society) are judged thematic, so they get no chapter bands.
+- Timeline: deep-time spacing (Kush is mostly hatched breaks); phone
+  pinch-zoom (only +/- now) and maybe a vertical layout; compare two topics'
+  timelines (Meanwhile has the data: England with France, Rome with Han China).
+- Learn: mark chapters read; j/k keys; flashcard toggle.
+- Atlas: lazy-load `details.json` (20 MB); simplify toolbar; 78 of 227 rail
+  nodes share a label with a sibling.
+- README is stale in places (says the home page is the topic list; it is
+  three doors since session 7; says the timeline is image cards).
+
+## 10. Setup, QA, screenshots
+
+```
+OLLAMA_MAX_LOADED_MODELS=1 OLLAMA_NUM_PARALLEL=1 OLLAMA_KEEP_ALIVE=2m ollama serve   # search embeddings
 node datasets/serve.mjs &                        # http://localhost:8777
 "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --disable-gpu --no-sandbox \
   --disable-popup-blocking --remote-debugging-port=9334 --user-data-dir=/tmp/chrome-atlas \
@@ -346,27 +206,38 @@ node datasets/qa/verify.mjs && node datasets/qa/qa-topic.mjs && node datasets/qa
 node datasets/qa/topic-report.mjs --summary
 ```
 
-Screenshots: open a tab with `PUT /json/new`, then use `Page.navigate`,
-`Runtime.evaluate` and `Page.captureScreenshot`. Pass a 390×844 viewport for
-the phone view.
+Screenshots: `node /tmp/shots/shot.mjs "<#hash>" out.png [w h mobile js]`
+(opens a CDP tab on :9334, waits 15 s, runs `js` as an expression, captures).
+If `/tmp/shots` is gone, recreate it: ~20 lines using `Target.createTarget`,
+`Emulation.setDeviceMetricsOverride` (390×844, mobile, dpr 2 for the phone),
+`Page.navigate`, `Runtime.evaluate` (awaitPromise), `Page.captureScreenshot`.
+The first run after a page change sometimes writes no file: rerun. A script
+that reloads the page kills the evaluation: clear localStorage in one call,
+test in the next. The `read` tool sometimes needs the `/private/tmp/...` path.
 
-## Gotchas
+## 11. Gotchas (each cost time)
 
-- **QA closes Chrome tabs.** Open a new tab before driving a page by hand.
-- **`evaluate` in the QA scripts takes an expression, not statements.** Use
-  `(a(), b)`, not `a(); b`.
-- **No text inside inline `onerror`.** Use `imgRetry(this,'card'|'hide')`.
-- **No backticks inside any `styles.js` CSS template.**
-- **Build data URLs from `location.href` with `#…` and `?…` stripped first.**
-- **All Wikipedia requests go through `lib/wikilib.mjs` `getJSON`.**
-- **After a builder or `etype` rule change, run `topic.mjs --all`** (about
-  100 s; it re-fetches each article, without ingest).
-- **New store entries reach the atlas only after `atlas.mjs`.** `--ingest` runs
-  it.
-- **Topic memory is per topic in localStorage** (`topic:mastery:<slug>`).
-  Renaming a topic's slug orphans its memory.
-- **Key points are matched to chapters by title.** If a rebuild renames a
-  chapter, its points disappear until `topic-notes/` is updated. Watch for
-  `no-points` in the report.
-- **Python heredocs that edit JS:** use raw strings (`r"""…"""`), or `\b`
-  becomes a backspace.
+- **No backticks inside any `styles.js` CSS template** (the string closes and
+  CSS parses as JS). `verify.mjs` greps for it.
+- **Drag-to-pan captures the pointer**: anything clickable on the timeline
+  canvas must be excluded in `bindTimelineGestures` (the first pin buttons
+  never got clicks).
+- **Haiku output quirks**: drops BC minus signs; "corrects" reigns to
+  lifespans; answers vary run to run on borderline cases. Handled in
+  `topic.mjs`; keep hand overrides for the rest.
+- **Wikidata descriptions can be a bare name** (Spain → "Pedro Sánchez"):
+  dropped for places/groups/periods.
+- **Single-year entries store `end === start`**, not `null`.
+- **Prefs live in localStorage**: `topic:layout`, `topic:pinned`(`:phone`),
+  `topic:prefs:v2:<slug>`, `topic:mastery:<slug>` (renaming a slug orphans it),
+  `atlas:prefs:v1`. If something opens in an unexpected state, that is why.
+- **QA closes Chrome tabs**; `evaluate` in QA takes an expression, not statements.
+- **No text inside inline `onerror`**: use `imgRetry(this,'card'|'hide')`.
+- **All Wikipedia requests go through `lib/wikilib.mjs` `getJSON`** (shared
+  rate limit; a parallel rebuild during an ingest is slow, not broken).
+- **New store entries reach the atlas only after `atlas.mjs`** (`--ingest` runs it).
+- **Key points match chapters by title**; a renamed chapter loses its points
+  (`no-points` in the report).
+- **Python heredocs that edit JS: use raw strings** or `\b` becomes a backspace.
+- `pkill -f "topic.mjs.*--name"` also matches the background batch's
+  children: kill rebuilds by their own pattern (`topic.mjs --all`).
