@@ -966,9 +966,17 @@ chapters.forEach((c, ci) => c.sections.forEach((sec, k) => harvest(sec, ci, k ==
 
 // --- optional: fill gaps in the store first -------------------------------
 
+/*
+ * What to ingest: not what the store already refused (ingest-refused.json) or
+ * holds as an undated idea; series members ahead of light article links
+ * (editors filed them under this subject; a passing link to *Coin* did not).
+ */
+const REFUSED = (() => { try { return JSON.parse(fs.readFileSync(path.join(HERE, 'ingest-refused.json'), 'utf8')); } catch { return {}; } })();
+const KNOWN_IDEAS = readIdeas();
+const refusedLower = new Set(Object.keys(REFUSED).map((t) => t.toLowerCase()));
 const missing = [...mention.entries()]
-  .filter(([t]) => !findEntry(t) && !INDEX_TITLE.test(t))
-  .sort((a, b) => b[1].weight - a[1].weight);
+  .filter(([t]) => !findEntry(t) && !INDEX_TITLE.test(t) && !refusedLower.has(t.toLowerCase()) && !KNOWN_IDEAS.has(t.toLowerCase()))
+  .sort((a, b) => (b[1].weight + (b[1].series ? 1.5 : 0)) - (a[1].weight + (a[1].series ? 1.5 : 0)));
 
 /*
  * Where dated events come from.

@@ -875,6 +875,25 @@ if(rejected.length){
   if(noDate.length) console.log(`  no date: ${noDate.slice(0, 8).join(', ')}${noDate.length > 8 ? `, +${noDate.length - 8}` : ''}`);
 }
 
+/*
+ * Pages refused for good (no date, no such page, too thin): remembered in
+ * datasets/ingest-refused.json so topic.mjs stops asking for them. Rebuilding
+ * Ancient Rome with --force re-fetched *Alps*, *Coin* and *Edema* every time,
+ * and they used the 250-page cap that its series members needed.
+ */
+if(!OPT.dry && rejected.length){
+  const f = new URL('./ingest-refused.json', import.meta.url);
+  let known = {};
+  try { known = JSON.parse(fs.readFileSync(f, 'utf8')); } catch {}
+  const day = new Date().toISOString().slice(0, 10);
+  let n = 0;
+  for(const [t, r] of rejected){
+    if(!/^(no date found|no such page|excerpt under)/.test(r) || !t || known[t]) continue;
+    known[t] = [r.replace(/,.*$/, ''), day]; n++;
+  }
+  if(n) fs.writeFileSync(f, JSON.stringify(known, null, 0) + '\n');
+}
+
 if(OPT.dry){ console.log('\n  --dry: nothing written.'); process.exit(0); }
 if(!fresh.length){ console.log('\n  Nothing to add.'); process.exit(0); }
 

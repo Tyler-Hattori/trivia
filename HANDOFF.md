@@ -135,46 +135,60 @@ a "Main article" hatnote; audit `off` entries never essential; mined prose
 events stay off the timeline until titled; date-suspect entries off the
 timeline; spans that cover far more than the view are dropped as umbrellas.
 
-## 7. State (2026-11-16)
+## 7. State (2026-11-17)
 
-- 49 topics built: Science 11, Ancient world 9, Empires & eras 9, Life &
-  Earth 8, Countries 5, Americas 3, Wars 2, Art & culture 2.
-- 83 topics built (batch 4 finished 2026-11-16 23:04: 6 regions + 28 countries).
-- **Queue stopped on purpose** (2026-11-17): the follow-up re-mine of 33 older
-  topics (`/tmp/batch12b.txt`, hatnote-based related-article mining) was killed
-  at topic 1 because topic selection and mining are moving to Wikipedia's
-  series sidebars/navboxes (see the series probe: `/tmp/series/out2.txt`,
-  `/tmp/series/probe2.py`). Store intact (53,863 entries). Nothing is running.
-- QA at last run: verify 31/31, qa-topic 1388/1388, qa-atlas 91/91, qa-quiz 49/49.
-- Everything committed and pushed except `datasets/atlas/*` (written by the
-  batch 4 ingest; not yet QA'd).
+- 83 topics built (82 on the list: Ideas of Physics is folded into Physics).
+- **Topics now follow Wikipedia's own organisation** (docs/TOPICS.md, "Series
+  and the topic tree"): `datasets/topic-structure.json` gives each topic its
+  series (sidebar/navbox, chosen by hand from the probe), its parent
+  (country > continent; era/empire > country; science > Science; deep time >
+  History of Earth / History of life), collections (the 6 regions) and absorb
+  (Physics absorbs Ideas of Physics). `node datasets/series.mjs` explores
+  series; `topic.mjs --structure` applies the tree without rebuilding.
+- **Background run** (started 2026-11-17 ~09:00; do not start another
+  `--ingest` until it ends): `/tmp/run-series.sh` re-ingests the 58 topics
+  that have a series (`/tmp/series-run.txt`, biggest series first, cap 150
+  pages each), then `topic.mjs --all` rebuilds everything in tree order.
+  Progress: `grep -E "── " /tmp/series-run.log | tail -1`. Done when
+  `/tmp/series-run.done` exists. If `/tmp` is gone: regenerate the list from
+  index.json + topic-structure.json (topics with a non-empty series) and run
+  `node datasets/topic.mjs --list <file> --ingest --force --ingest-limit 150`,
+  then `--all`.
+- `datasets/ingest-refused.json` (new) remembers pages the store refused (no
+  date / no such page / too thin) so re-runs stop re-fetching them.
+- QA at last run: verify 31/31, qa-topic 2369/2374 (5 batch-4 chapters with
+  no intro: Pakistan "History by region", Netherlands "Historians", Spain
+  "Historical population", Europe "Chronology", Israel "Demographics"),
+  qa-atlas 91/91, qa-quiz 49/49.
+- `datasets/atlas/entries.jsonl` is 65 MB: GitHub warns over 50 MB and refuses
+  over 100 MB. Plan Git LFS or splitting it before it grows much more.
 
 ## 8. Next, in order
 
-1. **Restyle the atlas to match the Lanes style** (the user will ask). The
+1. **When the series run ends:** pipeline steps 2–5 (section 6) for all
+   topics: Haiku passes (titles, audit, spans/bare/kinds, dedupe), review
+   (`topic-report --summary`), key points for batch 3 + batch 4 + changed
+   chapters, fix the 5 intro-less chapters (likely apparatus sections:
+   STOP_SECTIONS or `topic-overrides.json`), QA, commit. Spot-check Physics
+   essentials: lost *Maxwell publishes electromagnetic field theory*, gained
+   *Darby smelts iron with coal* (off-topic) when the course was folded in.
+2. **Rulers from series templates.** `rulers` in topic-structure.json names the
+   template (Monarchs of France: houses with reign ranges as headings; Roman
+   emperors; Holy Roman emperors; Kushite Monarchs footer). Mine reigns
+   (name, start–end, house) as `kind: 'span'` leader entries so the Rulers lane
+   fills. England has no monarchs template on its article: use "List of
+   English monarchs" / "English monarchs" navbox. Monarchs exist today only as
+   people with lifespans (Alfred 849–899), and Edward I / Victoria are missing.
+3. **New topics from series categories**, biggest first:
+   `node datasets/series.mjs --category "History sidebar templates by country"`
+   (and Biology/Evolution/Science sidebar categories). Add to
+   topic-structure.json with a parent, then `--list --ingest`.
+4. **Restyle the atlas to match the Lanes style** (the user will ask). The
    atlas is a canvas renderer (`paint.js`), not DOM: restyle its marks,
-   grouping and chrome; don't port topic code. Today it draws filled cluster
-   bands per subject (y = subject tree from Wikimedia's taxonomy + embedding
-   clusters), dots, span bars, text chips and DOM image cards (`cards.js`,
-   pooled, `object-fit: contain`), light/dark palettes (`PALETTES` in
-   `paint.js` + CSS variables in `styles.js`). Lanes-style translation to
-   consider: dot/line/bar marks with labels instead of chips and image
-   cards; life lines for people; weight for importance; hairline lane
-   separators with small sliding names; fewer boxes. **`docs/ATLAS.md` lists
-   decisions not to re-litigate** (linear x, three time modes, derived zoom
-   floor, filled not stroked bands, sticky band labels, wheel pans / pinch
-   zooms, never-cropped images, fame as highlight): keep them; ask the user
-   before changing any. Its gotchas section (popup realm timers/DOM, a frame
-   of lag in `scale`, Wikimedia thumbnail widths) will bite. Before/after
-   screenshots, desktop and 390px; qa-atlas must pass.
-2. **When the queue ends:** pipeline steps 2–5 for batch 4 + the rebuilt
-   topics. Key points are missing for batch 3 (19 civilisations) and batch 4.
-3. **Rulers everywhere.** The user will point at Wikipedia's "List of rulers
-   of <country>" / "List of monarchs of <country>" pages. Plan: a miner for
-   those tables (name, reign start–end, house) that ingests reigns as
-   `dataset: 'leaders'`-style entries (`kind: 'span'`, start/end = reign), so
-   the Rulers lane fills (today: China 16, Rome 39, France 3, Inca 0).
-4. Lanes polish: compress empty rows in quiet stretches; slide point labels
+   grouping and chrome; don't port topic code. **`docs/ATLAS.md` lists
+   decisions not to re-litigate**: keep them; ask the user before changing
+   any. Before/after screenshots, desktop and 390px; qa-atlas must pass.
+5. Lanes polish: compress empty rows in quiet stretches; slide point labels
    too; make the zoom fill less near-duplicate.
 
 ## 9. Improvement backlog (agreed or noticed, not started)
