@@ -125,6 +125,15 @@ if(!want){
   check('every topic has a group and a blurb', idx.topics.every((t) => t.group && t.blurb),
     idx.topics.filter((t) => !t.group || !t.blurb).map((t) => t.slug).join(', '));
   check('topic slugs are unique', new Set(idx.topics.map((t) => t.slug)).size === idx.topics.length);
+  // The topic tree (topic-structure.json): parents exist, no cycles, absorbers exist.
+  {
+    const by = new Map(idx.topics.map((t) => [t.slug, t]));
+    const badParent = idx.topics.filter((t) => t.parent && !by.has(t.parent)).map((t) => t.slug);
+    check('every parent is a built topic', !badParent.length, badParent.join(', '));
+    const cyc = idx.topics.filter((t) => { const seen = new Set(); for(let p = t.parent; p; p = by.get(p)?.parent){ if(seen.has(p) || p === t.slug) return true; seen.add(p); } return false; }).map((t) => t.slug);
+    check('the topic tree has no cycles', !cyc.length, cyc.join(', '));
+    check('absorbed topics name a built topic', idx.topics.every((t) => !t.absorbedInto || by.has(t.absorbedInto)));
+  }
   const read = (f) => { try { return JSON.parse(fs.readFileSync(path.join(PATHS.topics, f), 'utf8')); } catch { return null; } };
   const all = read('members-all.json'), multi = read('members.json');
   check('members files exist', !!all && !!multi);
@@ -136,6 +145,8 @@ if(!want){
       Object.values(multi).every((v) => v.length > 1));
     for(const t of idx.topics){
       const n = Object.values(all).filter((v) => v.includes(t.slug)).length;
+      // An absorbed topic (Ideas of Physics) lives inside its absorber: no members of its own.
+      if(t.absorbedInto){ if(n) check(`absorbed ${t.slug} has no members of its own`, false, `${n}`); continue; }
       if(n !== t.count) check(`members-all matches ${t.slug}`, false, `${n} vs ${t.count} on its timeline`);
     }
   }

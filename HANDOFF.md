@@ -139,16 +139,15 @@ timeline; spans that cover far more than the view are dropped as umbrellas.
 
 - 49 topics built: Science 11, Ancient world 9, Empires & eras 9, Life &
   Earth 8, Countries 5, Americas 3, Wars 2, Art & culture 2.
-- **Background queue still running** (do not run `--ingest` until it ends;
-  plain rebuilds are safe but slower): batch 4 (6 regions + 28 countries,
-  `/tmp/batch4.txt`) was ingesting 27/34 (`grep -E "── (ingest|build)"
-  /tmp/batch4.log | tail -1`); then `/tmp/run-c.sh` rebuilds 14 older topics +
-  batch 3 with more related-article mining (`/tmp/batch12b.log`). Ends when
-  `/tmp/batch12b.done` exists. `/tmp` may be gone after a reboot: then rerun
-  `node datasets/topic.mjs --list --ingest` (built topics are skipped).
+- 83 topics built (batch 4 finished 2026-11-16 23:04: 6 regions + 28 countries).
+- **Queue stopped on purpose** (2026-11-17): the follow-up re-mine of 33 older
+  topics (`/tmp/batch12b.txt`, hatnote-based related-article mining) was killed
+  at topic 1 because topic selection and mining are moving to Wikipedia's
+  series sidebars/navboxes (see the series probe: `/tmp/series/out2.txt`,
+  `/tmp/series/probe2.py`). Store intact (53,863 entries). Nothing is running.
 - QA at last run: verify 31/31, qa-topic 1388/1388, qa-atlas 91/91, qa-quiz 49/49.
-- Everything committed and pushed except `datasets/atlas/*` (being written by
-  the ingest).
+- Everything committed and pushed except `datasets/atlas/*` (written by the
+  batch 4 ingest; not yet QA'd).
 
 ## 8. Next, in order
 

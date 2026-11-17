@@ -231,6 +231,20 @@ export const CSS = String.raw`
 .tp-chhd .num{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--c)}
 .tp-chhd h2{font-size:27px;font-weight:850;letter-spacing:-.015em;margin:2px 0 2px}
 .tp-chhd .yr{font-size:13px;color:#64748b}
+.tp-crumbs{font-size:12px;color:#94a3b8;margin-top:4px}
+.tp-crumbs a{color:#64748b;text-decoration:none;font-weight:600}
+.tp-crumbs a:hover{color:#0f172a;text-decoration:underline}
+.tp-subgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:2px 14px;margin:4px 0 6px}
+.tp-subcard{display:flex;gap:9px;align-items:center;padding:6px 0;border-bottom:1px solid #f1f5f9;text-decoration:none;color:#0f172a}
+.tp-subcard:hover b{text-decoration:underline}
+.tp-subcard .im{width:30px;height:30px;flex:none;border-radius:50%;overflow:hidden;background:#f1f5f9}
+.tp-subcard .im img{width:100%;height:100%;object-fit:cover;display:block}
+.tp-subcard .tx{display:flex;flex-direction:column;min-width:0;font-size:14px;line-height:1.25}
+.tp-subchip{display:inline-block;margin:6px 8px 0 0;font-size:12px;font-weight:600;color:var(--c);text-decoration:none}
+.tp-subchip:hover{text-decoration:underline}
+.tp-tree{margin-top:1px}
+.tp-tree b{font-weight:600;color:#475569}
+.tp-course{margin-top:40px}
 .tp-sub{font-size:13px;font-weight:700;letter-spacing:.03em;color:#64748b;margin:22px 0 2px;text-transform:uppercase}
 .tp-row{display:grid;grid-template-columns:118px 1fr 64px;gap:14px;padding:10px 10px;margin:0 -10px;border-radius:10px;cursor:pointer}
 .tp-row:hover{background:#f8fafc}
@@ -350,7 +364,7 @@ a.tp-btn{text-decoration:none;display:inline-flex;align-items:center;gap:5px}
   .tp-bar{gap:6px;padding:8px 10px}
   .tp-title{font-size:17px;margin-right:0}
   .tp-search{flex:1 1 40%;width:auto;min-width:0;order:10}
-  .tp-src,.tp-bar>.tp-meta,.tp-bar>.tp-spacer{display:none}
+  .tp-bar>.tp-src,.tp-bar>.tp-meta,.tp-bar>.tp-spacer{display:none}
   .tp-select{flex:1 1 40%;max-width:none;min-width:0;order:9}
   .tp-seg button{padding:5px 9px}
   .tp-rail{position:fixed;left:0;top:0;bottom:0;width:86vw;max-width:340px;z-index:75;transform:translateX(-102%);

@@ -306,6 +306,84 @@ Across topics: `topics/members.json` (entries in 2+ topics; the detail panel's
 filter). The topic list has search, shelves, sorting, a Continue row, and
 per-topic hiding.
 
+## Series and the topic tree
+
+Wikipedia has already organised most subjects. A **series** is a sidebar
+template ("Part of a series on the History of England") or a navbox (the
+box at the foot of *History of physics*). Editors curate its members under
+headings (Timeline, Topics, Polities…). It is bounded, and the number of
+pages showing it says how much editors invested in it. Membership comes from
+there, and only partly from following links.
+
+```
+node datasets/series.mjs "History of England"            the series an article carries (own / parent / other)
+node datasets/series.mjs --members "History of England"  a template's members by heading
+node datasets/series.mjs --topics                        every built topic: own series + who lists it
+node datasets/series.mjs --category "History sidebar templates by country"   biggest first: what to build next
+node datasets/topic.mjs --structure                      apply topic-structure.json without rebuilding
+```
+
+`lib/series.mjs` caches templates in `datasets/series-cache.json`. It drops
+boxes that appear on every page of a kind ("Region history sidebar title",
+"Library resources box", sister-project links, campaign boxes, anything on
+2,000+ pages). Groups headed "By county" or "By city or town" are local
+histories, not the subject (80 of the History of England sidebar's 126
+articles), so they are not members. A series is the topic's **own** when its
+name shares the subject's words (England ~ English, Rome ~ Roman, not Iran ~
+Iraq). It is a **parent** when it lists the article (History of Iraq on
+*Mesopotamia*). Otherwise it is **other** (Traditional African religions on
+*Mali Empire*, Islam on *Islamic Golden Age*).
+
+**`datasets/topic-structure.json`** says, per slug:
+
+- **series**: the templates whose members join the topic, chosen by hand for
+  the first 83 topics from the probe. Automatic choice is wrong too often:
+  "Japan topics" and "Years in Japan" are country-wide, not history, and
+  *Ancient Rome*'s best-matching sidebar is its military one. Absent means
+  automatic (the biggest own series that is not "X topics" or "Years in X");
+  `[]` means none.
+- **parent**: one broader topic. Countries sit under their continent, and eras
+  and empires under their country (Ancient Rome under Italy, Mesopotamia
+  under Iraq, Sasanian and Achaemenid under Iran). Sciences sit under
+  Science, and deep time under History of Earth and History of life. Shelves
+  (groups) are unchanged, so Ancient Rome is still on "Ancient world".
+- **role: collection**: a broad topic whose depth lives in its subtopics (the
+  six continents/regions). Its own article is mined as before. It gets no
+  series (*History of Africa*'s series is the country histories, already
+  topics), and its subtopics' essentials join it as members (weight 0.8). So
+  pan-European events shared by several countries rise in Europe.
+- **absorb**: built topics folded into this one. *Ideas of Physics* (a
+  Northwestern course) is content of Physics. Its linked entries join
+  Physics (weight 0.8 essential, 0.4 other) with the course's notes, and its
+  dateline events join too. Its lectures are shown on Physics's Learn as a
+  "Course" section, after the article's chapters. The absorbed topic is
+  built first, is hidden from the list, redirects to Physics, and is not in
+  Meanwhile or "Also in".
+- **rulers**: the template listing the rulers (Monarchs of France, Roman
+  emperors). Not mined yet (see HANDOFF).
+
+How series members count in the builder: a member the article never links
+gets weight 0.6, and one it does link gets +0.5. Either way it ranks below
+the article's own headline links, so series members fill in rather than take
+the essentials. The heading it is filed under is kept (`it.series`). Missing
+members are ingested with the article's links (`--ingest`). Series members
+that are eras or events in the store are the first pages mined for dated
+sentences (when the timeline pages are thin), ahead of hatnote targets.
+On England: 583 → 607 members; essentials barely moved (+NHS, −Edward V).
+
+On the site: Learn shows a breadcrumb (Europe › Italy), a "with Wikipedia's
+History of Italy series" credit, the subtopics under the intro (by name for a
+collection, in time order otherwise), and "Ancient Rome: full topic →" in the
+chapter whose years cover most of that subtopic. Topic-list cards say "part of
+Europe" / "7 subtopics".
+
+**How broad a topic is:** one series, about 40–200 curated articles. That is
+the size editors judged to be one subject, and it fits one timeline of about
+90 essentials. An era or empire inside it becomes a subtopic when it has its
+own series or article worth a topic. Otherwise it is a chapter. Same subject
+from another source means one topic with two sources (absorb), not two
+topics.
+
 ## Other websites: `--site`
 
 ```

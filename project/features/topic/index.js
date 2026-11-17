@@ -99,6 +99,27 @@ async function getJSON(path){
   return r.json();
 }
 
+/*
+ * The topic tree (datasets/topic-structure.json, written into index.json as
+ * `parent`, `role`, `absorbedInto`): a topic's ancestors for the breadcrumb and
+ * its subtopics for Learn. Absorbed topics (Ideas of Physics, inside Physics)
+ * are not topics of their own on the site.
+ */
+let indexP = null;
+const loadIndex = () => (indexP ||= getJSON('datasets/topics/index.json').catch(() => ({ topics: [] })));
+async function treeOf(slug){
+  const rows = (await loadIndex()).topics.filter((t) => !t.absorbedInto);
+  const by = new Map(rows.map((t) => [t.slug, t]));
+  const ancestors = [];
+  for(let p = by.get(slug)?.parent; p && by.has(p) && ancestors.length < 6; p = by.get(p).parent) ancestors.unshift(by.get(p));
+  // A collection's subtopics (Europe's countries) by name; a topic's own eras
+  // and empires (Italy's Ancient Rome) in time order.
+  const byName = by.get(slug)?.role === 'collection';
+  const children = rows.filter((t) => t.parent === slug)
+    .sort((a, b) => (byName ? 0 : (a.from ?? 0) - (b.from ?? 0)) || a.title.localeCompare(b.title));
+  return { ancestors, children };
+}
+
 async function loadTopic(slug){
   if(cache.has(slug)) return cache.get(slug);
   const t = await getJSON(`datasets/topics/${slug}.json`);
@@ -254,12 +275,15 @@ async function showList(){
   try { idx = await getJSON('datasets/topics/index.json'); }
   catch { idx = { topics: [] }; }
   const L = { q: '', group: '', sort: 'group', showHidden: false, hidden: [], ...listPrefs() };
-  const all = idx.topics.map((t) => {
+  const titleOf = new Map(idx.topics.map((t) => [t.slug, t.title]));
+  const nKids = new Map();
+  for(const t of idx.topics) if(t.parent && !t.absorbedInto) nKids.set(t.parent, (nKids.get(t.parent) || 0) + 1);
+  const all = idx.topics.filter((t) => !t.absorbedInto).map((t) => {
     const m = loadMastery(t.slug);
     const known = Object.values(m).filter(isKnown).length;
     const seen = Object.keys(m).length;
     const touched = Math.max(lastOpened(t.slug), ...Object.values(m).map((x) => x.at || 0));
-    return { ...t, group: t.group || 'Other', known, seen, touched };
+    return { ...t, group: t.group || 'Other', known, seen, touched, parentTitle: titleOf.get(t.parent) || '', kids: nKids.get(t.slug) || 0 };
   });
 
   const due = dueSummary();
@@ -284,7 +308,7 @@ async function showList(){
     saveListPrefs({ q: L.q, group: L.group, sort: L.sort, hidden: L.hidden });
     const hidden = new Set(L.hidden);
     const q = L.q.trim().toLowerCase();
-    const match = (t) => !q || `${t.title} ${t.group} ${t.blurb || ''} ${t.source.page}`.toLowerCase().includes(q);
+    const match = (t) => !q || `${t.title} ${t.group} ${t.blurb || ''} ${t.source.page} ${t.parentTitle}`.toLowerCase().includes(q);
     const pool = all.filter(match);
     const groups = [...new Set(pool.filter((t) => !hidden.has(t.slug)).map((t) => t.group))].sort();
     root.querySelector('#tlGroups').innerHTML = `
@@ -307,6 +331,7 @@ async function showList(){
         <div class="in">
           <div class="t">${esc(t.title)}</div>
           <div class="tp-meta">${esc(fmtRange(t.from, t.to))} · ${t.chapters} chapters${due.per[t.slug] ? ` · <b class="tp-due">${due.per[t.slug]} due</b>` : ''}</div>
+          ${t.parentTitle || t.kids ? `<div class="tp-meta tp-tree">${t.parentTitle ? `part of <b>${esc(t.parentTitle)}</b>` : ''}${t.parentTitle && t.kids ? ' · ' : ''}${t.kids ? `${t.kids} subtopic${t.kids === 1 ? '' : 's'}` : ''}</div>` : ''}
           ${t.blurb ? `<div class="bl">${esc(t.blurb)}</div>` : ''}
           ${t.seen ? `<div class="tp-prog" title="${t.known} of ${t.key} essentials known"><i style="width:${Math.min(100, 100 * t.known / Math.max(1, t.key)).toFixed(0)}%"></i></div>` : ''}
         </div>
@@ -490,6 +515,9 @@ async function showTopic(slug, mode){
     root.innerHTML = '<div class="tp-empty">Loading…</div>';
     try { T = await loadTopic(slug); }
     catch(e){ root.innerHTML = `<div class="tp-empty">Could not load this topic. ${esc(e.message)}</div>`; return; }
+    // Folded into another topic (Ideas of Physics -> Physics): go there.
+    if(T.absorbedInto){ const to = T.absorbedInto; T = null; location.replace(`#/topic/${to}`); return; }
+    T.tree = await treeOf(slug);
     const p = loadPrefs(slug);
     V = {
       mode,
@@ -692,6 +720,8 @@ function drawRail(){
     ${quiz ? `<button class="tp-toc ${V.chapters.size ? '' : 'on'}" data-toc="all" style="--c:#0f172a"><span class="dot"></span>
       <span class="tx"><span class="nm">Everything</span></span><span class="k">${all.known}/${all.n}</span></button>` : ''}
     ${T.chapters.map(row).join('')}
+    ${!quiz ? (T.courses || []).map((co, k) => `<button class="tp-toc" data-toc="course${k}" style="--c:#334155"><span class="dot"></span>
+      <span class="tx"><span class="nm">Course: ${esc(co.title)}</span><span class="yr">${co.chapters.length} lectures</span></span></button>`).join('') : ''}
     <div class="ft tp-meta">${all.known} of ${all.n} ${V.show === 'key' ? 'essentials' : 'entries'} known.
       ${quiz ? 'Missed ones come back more often.' : 'Answer quiz questions to fill these bars.'}</div>`;
   el.insertAdjacentHTML('afterbegin', '<button class="tp-btn tp-mob tp-railx" data-act="toc" title="Close">✕</button>');
@@ -748,6 +778,53 @@ function drawLearn(){
         <div class="im">${it.image ? `<img src="${esc(thumbUrl(it.image, 120))}" loading="lazy" alt="" onerror="imgRetry(this)">` : ''}</div>
       </div>`;
   };
+  /*
+   * Subtopics: each opens from the chapter its years mostly fall in (Ancient
+   * Rome from Italy's "Roman period"), and all of them as cards under the intro.
+   */
+  const kids = T.tree?.children || [];
+  const kidsAt = new Map();
+  for(const k of kids){
+    if(k.from == null || k.to == null) continue;
+    let best = null, bestF = 0.4;
+    for(const c of T.chapters){
+      if(c.from == null || c.to == null || c.overlaps) continue;
+      const f = (Math.min(k.to, c.to) - Math.max(k.from, c.from)) / Math.max(1, k.to - k.from);
+      if(f > bestF){ bestF = f; best = c.id; }
+    }
+    if(best != null) (kidsAt.get(best) || kidsAt.set(best, []).get(best)).push(k);
+  }
+  const subCard = (k) => `
+    <a class="tp-subcard" href="#/topic/${esc(k.slug)}">
+      <span class="im">${k.cover ? `<img src="${esc(thumbUrl(k.cover, 120))}" loading="lazy" alt="" onerror="imgRetry(this,'hide')">` : ''}</span>
+      <span class="tx"><b>${esc(k.title)}</b><span class="tp-meta">${esc(fmtRange(k.from, k.to))} · ${k.key} essentials</span></span>
+    </a>`;
+  const seriesLine = (T.series || []).length ? ` · with Wikipedia's ${T.series.map((s) =>
+    `<a class="tp-src" href="https://en.wikipedia.org/wiki/Template:${encodeURIComponent(s.name.replace(/ /g, '_'))}" target="_blank" rel="noopener" title="The articles editors filed under this subject also count as its members">${esc(s.title || s.name)}</a>`).join(', ')} series` : '';
+
+  /*
+   * A course folded into this topic (Ideas of Physics in Physics): its own
+   * lectures in its own order, each with the entries it covers. A second path
+   * through the same material, after the article's chapters.
+   */
+  const courseHtml = V.matches ? '' : (T.courses || []).map((co, k) => `
+    <section class="tp-ch tp-course" id="ch-course${k}">
+      <div class="tp-chhd" style="--c:#334155">
+        <div class="num">Course</div>
+        <h2>${esc(co.title)}</h2>
+        <div class="yr">${co.chapters.length} lectures${co.credit ? ` · by ${esc(co.credit)}` : ''}${co.url ? ` · <a class="tp-src" href="${esc(co.url)}" target="_blank" rel="noopener">original ↗</a>` : ''}</div>
+      </div>
+      ${co.intro && !repeatsText(co.intro, co.chapters[0]?.intro || '') ? `<div class="tp-intro" style="--c:#334155">${paras(co.intro)}</div>` : ''}
+      ${co.chapters.map((c) => {
+        const its = c.ids.map((id) => T.byId.get(id)).filter(Boolean).sort((a, b) => (a.start == null) - (b.start == null) || a.anchor - b.anchor);
+        if(!its.length && !c.intro) return '';
+        return `<h3 class="tp-sub">${esc(c.title)}</h3>
+          ${c.intro ? `<div class="tp-intro" style="--c:#334155">${paras(summary(c.intro, 600))}</div>` : ''}
+          ${c.points?.length ? pointsBox(c.points, '#334155') : ''}
+          ${its.map((it) => (it.start == null ? ideaRow(it) : row(it))).join('')}`;
+      }).join('')}
+    </section>`).join('');
+
   const chapterHtml = T.chapters.map((c, ci) => {
     const its = items.filter((it) => it.chapter === c.id).sort((a, b) => a.anchor - b.anchor);
     const ideas = T.items.filter((it) => it.chapter === c.id && (V.show === 'key' ? it.keyIdea : it.isIdea) && (!V.matches || V.matches.has(it.id)));
@@ -767,6 +844,7 @@ function drawLearn(){
           <div class="num">Chapter ${ci + 1}</div>
           <h2>${esc(c.title)}</h2>
           <div class="yr">${[fmtRange(c.from, c.to), its.length ? `${its.length} ${V.show === 'key' ? 'essentials' : 'entries'}` : '', ideas.length ? `${ideas.length} idea${ideas.length === 1 ? '' : 's'}` : ''].filter(Boolean).map(esc).join(' · ')}</div>
+          ${(kidsAt.get(c.id) || []).map((k) => `<a class="tp-subchip" href="#/topic/${esc(k.slug)}" title="${esc(k.title)} has a topic of its own">${esc(k.title)}: full topic →</a>`).join('')}
         </div>
         ${c.intro && !V.matches ? `<div class="tp-intro" style="--c:${c.color}">${paras(c.intro)}</div>` : ''}
         ${c.points?.length && !V.matches ? pointsBox(c.points, c.color) : ''}
@@ -784,16 +862,19 @@ function drawLearn(){
   const mins = Math.max(1, Math.round(total / 230));
   host.innerHTML = `<div class="tp-read">
     ${!V.matches ? `<header class="tp-head">
+      ${T.tree?.ancestors?.length ? `<div class="tp-crumbs">${T.tree.ancestors.map((a) => `<a href="#/topic/${esc(a.slug)}">${esc(a.title)}</a>`).join(' › ')} ›</div>` : ''}
       <h1>${esc(T.title)}</h1>
       ${T.source.credit ? `<div class="tp-credit">Text by <a href="${esc(T.source.url)}" target="_blank" rel="noopener">${esc(T.source.credit)}</a>.
         Dates, pictures and the "About" sections come from Wikipedia.</div>` : ''}
       <div class="tp-meta">${T.chapters.length} chapters · ${items.length} ${V.show === 'key' ? 'essentials' : 'entries'} · about ${mins} min to read
-        · from <a class="tp-src" href="${esc(T.source.url)}" target="_blank" rel="noopener">${esc(T.source.page)}</a>
+        · from <a class="tp-src" href="${esc(T.source.url)}" target="_blank" rel="noopener">${esc(T.source.page)}</a>${seriesLine}
         (${V.show === 'key' ? 'switch to <a href="#" data-show="all">Everything</a> for all ' + T.items.filter((it) => it.onTimeline).length : 'switch to <a href="#" data-show="key">Essentials</a> for the short version'})</div>
       ${T.intro ? `<div class="tp-intro lead">${paras(T.intro)}</div>` : ''}
       ${T.points?.length ? pointsBox(T.points, '#0f172a', 'In short') : ''}
+      ${kids.length ? `<h3 class="tp-sub">${T.role === 'collection' ? 'Explore by topic' : 'Subtopics'}</h3><div class="tp-subgrid">${kids.map(subCard).join('')}</div>` : ''}
     </header>` : ''}
     ${chapterHtml || '<div class="tp-empty">Nothing matches.</div>'}
+    ${courseHtml}
   </div>`;
 
   // Scroll spy: the rail follows the chapter you are reading.

@@ -103,6 +103,12 @@ import { getJSON } from './lib/wikilib.mjs';
 import { INDEX_TITLE, stripApparatus } from './lib/wiki.mjs';
 import { readIdeas, ensureIdeas } from './lib/ideas.mjs';
 import { writeLite, readTitles } from './lib/lite.mjs';
+import { seriesOf, seriesMembers, LOCAL_GROUP } from './lib/series.mjs';
+
+/** datasets/topic-structure.json: parent, series, rulers, role, absorb per slug. */
+const STRUCTURE = (() => { try { return JSON.parse(fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'topic-structure.json'), 'utf8')).topics || {}; } catch { return {}; } })();
+const absorberOf = (s) => Object.entries(STRUCTURE).find(([, v]) => (v.absorb || []).includes(s))?.[0] || null;
+const childrenOf = (s) => Object.entries(STRUCTURE).filter(([, v]) => v.parent === s).map(([k]) => k);
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WP = 'https://en.wikipedia.org';
@@ -139,7 +145,10 @@ if(OPT.all){
   const idx = readIndex();
   // --only a,b: just those slugs.
   const only = arg('--only') ? new Set(arg('--only').split(',').map((x) => x.trim())) : null;
-  for(const t of idx.topics){
+  // Absorbed topics before the topic that folds them in; subtopics before the
+  // collections that gather their essentials.
+  const order = (t) => (absorberOf(t.slug) ? 0 : STRUCTURE[t.slug]?.role === 'collection' ? 2 : 1);
+  for(const t of [...idx.topics].sort((a, b) => order(a) - order(b))){
     if(only && !only.has(t.slug)) continue;
     const a = t.source.kind === 'site'
       ? [path.join(HERE, 'topic.mjs'), '--site', t.source.url, '--name', t.title, '--key', String(t.keyTarget || 90),
@@ -150,6 +159,28 @@ if(OPT.all){
     if(OPT.ideas) a.push('--ideas');
     spawnSync(process.execPath, a, { stdio: 'inherit' });
   }
+  process.exit(0);
+}
+/*
+ * --structure: apply topic-structure.json (parent, role, absorbedInto) to
+ * index.json and every topic file without rebuilding. Series membership still
+ * needs a rebuild (and --ingest for pages the store lacks).
+ */
+if(argv.includes('--structure')){
+  const idx = readIndex();
+  const set = (o, k, v) => { if(v) o[k] = v; else delete o[k]; };
+  for(const row of idx.topics){
+    const s = STRUCTURE[row.slug] || {};
+    for(const o of [row, (() => { try { return JSON.parse(fs.readFileSync(path.join(PATHS.topics, `${row.slug}.json`), 'utf8')); } catch { return null; } })()]){
+      if(!o) continue;
+      set(o, 'parent', s.parent || null); set(o, 'role', s.role || null); set(o, 'absorbedInto', absorberOf(row.slug));
+      if(o !== row) fs.writeFileSync(path.join(PATHS.topics, `${row.slug}.json`), JSON.stringify(o) + '\n');
+    }
+  }
+  fs.writeFileSync(path.join(PATHS.topics, 'index.json'), JSON.stringify(idx, null, 1) + '\n');
+  const unknown = Object.keys(STRUCTURE).filter((s) => !idx.topics.some((t) => t.slug === s));
+  const orphans = idx.topics.filter((t) => t.parent && !idx.topics.some((x) => x.slug === t.parent)).map((t) => t.slug);
+  console.log(`  structure applied to ${idx.topics.length} topics${unknown.length ? ` · not built yet: ${unknown.join(', ')}` : ''}${orphans.length ? ` · parent missing for: ${orphans.join(', ')}` : ''}`);
   process.exit(0);
 }
 if(OPT.list){ runList(OPT.list); process.exit(0); }
@@ -813,6 +844,67 @@ chapters.forEach((c, ci) => {
 mention.delete(art.title);   // the article linking to itself
 
 /*
+ * Members beyond the article's own links (docs/TOPICS.md, "Series and the topic
+ * tree"):
+ *  - the topic's Wikipedia SERIES (sidebar/navbox, topic-structure.json or the
+ *    biggest own series): what editors filed under this subject. Weighted below
+ *    an article link (0.6, or +0.5 for a page the article links too), so they
+ *    fill in rather than take the essentials.
+ *  - a COLLECTION's subtopics: their essentials, weight 0.8.
+ *  - ABSORBED topics (Ideas of Physics into Physics): their members as links,
+ *    with the course's own note on each.
+ */
+const STRUCT = STRUCTURE[slug] || {};
+const SERIES = [];
+if(!OPT.site){
+  let names = STRUCT.series;
+  if(!names){
+    try {
+      names = (await seriesOf(art.title, { name: OPT.name || '' })).series
+        .filter((s) => s.role === 'own' && !/^years in |\btopics$/i.test(s.name)).slice(0, 1).map((s) => s.name);
+    } catch(e){ names = []; console.log(`  series lookup failed: ${e.message}`); }
+  }
+  for(const n of names){
+    try { SERIES.push(await seriesMembers(n)); } catch(e){ console.log(`  series "${n}" failed: ${e.message}`); }
+  }
+}
+const seriesHeading = new Map();   // canonical title -> the series heading it is filed under
+{
+  const raw = SERIES.flatMap((s) => s.groups.filter((g) => !LOCAL_GROUP.test(g.heading)).flatMap((g) => g.titles.map((t) => [t, g.heading || s.title])));
+  const rd = raw.length ? await resolveRedirects(raw.map(([t]) => t)) : new Map();
+  for(const [t, h] of raw){ const c = rd.get(t) || t; if(!seriesHeading.has(c) && !INDEX_TITLE.test(c)) seriesHeading.set(c, h); }
+}
+const addMember = (t, w, extra) => {
+  if(!t || t === art.title) return;
+  const m = mention.get(t);
+  if(m){ m.weight += w * 0.8; Object.assign(m, extra); return; }
+  mention.set(t, { weight: w, count: 1, lead: false, hat: false, chapters: new Map(), firstChapter: null, firstSub: null, prose: 1, ...extra });
+};
+for(const [t, h] of seriesHeading) addMember(t, 0.6, { series: h });
+if(SERIES.length) console.log(`  series: ${SERIES.map((s) => `${s.name} (${s.groups.filter((g) => !LOCAL_GROUP.test(g.heading)).flatMap((g) => g.titles).length})`).join(', ')}`);
+
+const readTopic = (s) => { try { return JSON.parse(fs.readFileSync(path.join(PATHS.topics, `${s}.json`), 'utf8')); } catch { return null; } };
+if(STRUCT.role === 'collection'){
+  let n = 0;
+  for(const c of childrenOf(slug)){
+    const t = readTopic(c);
+    for(const it of t?.items || []) if(it.key && it.canon && it.via === 'link'){ addMember(it.canon, 0.8, { fromChild: c }); n++; }
+  }
+  console.log(`  collection: ${n} essentials from ${childrenOf(slug).length} subtopics`);
+}
+const ABSORBED = (STRUCT.absorb || []).map(readTopic).filter(Boolean);
+if(ABSORBED.length){
+  if(!art.notes) art.notes = new Map();
+  for(const a of ABSORBED){
+    for(const it of a.items) if(it.canon && it.via === 'link'){
+      addMember(it.canon, it.key ? 0.8 : 0.4, { course: a.slug });
+      if(it.note && !art.notes.has(it.canon)) art.notes.set(it.canon, { text: it.note, url: it.noteUrl || '' });
+    }
+  }
+  console.log(`  absorbed: ${ABSORBED.map((a) => `${a.title} (${a.items.length})`).join(', ')}`);
+}
+
+/*
  * Where the article says it. For every link: the sentence it sits in, by
  * chapter, so an entry can be shown the way THIS article talks about it
  * ("Julius Caesar invaded in 55 and 54 BC…") rather than through its own
@@ -911,7 +1003,14 @@ const minedFrom = (p) => entries.some((e) => e.origin?.manual && pageKey(e.origi
  * from what the timeline pages actually yielded, so after they are mined.
  */
 const PROSE_BELOW = 40;
-const proseCandidates = [art.title, ...hatTargets.filter((t) => !/^(timeline|list|lists|outline|index|glossary|bibliography) of /i.test(t)).slice(0, 25)];
+/*
+ * Series members that are narrative (an era or a happening in the store:
+ * "Norman Conquest", "Tudor period") come first: editors filed them under this
+ * subject, which a passing hatnote does not say.
+ */
+const seriesNarrative = [...seriesHeading.keys()].filter((t) => { const e = findEntry(t); return e && ['period', 'event'].includes(auditType(e.id) || entryType(e)); });
+const proseCandidates = [...new Set([art.title, ...seriesNarrative.slice(0, 20),
+  ...hatTargets.filter((t) => !/^(timeline|list|lists|outline|index|glossary|bibliography) of /i.test(t))])].slice(0, 30);
 const eventYield = () => { const keys = new Set(eventPages.map(pageKey)); return entries.filter((e) => e.origin?.manual && keys.has(pageKey(e.origin?.wiki))).length; };
 const prosePagesNow = () => OPT.site ? [] : [...new Set([...OPT.prose, ...(eventYield() >= PROSE_BELOW ? [] : proseCandidates)])]
   .filter((p) => !eventPages.some((q) => pageKey(q) === pageKey(p)));
@@ -983,6 +1082,11 @@ for(const p of eventPages){
   for(const e of entries){
     if(e.origin?.manual && pageKey(e.origin?.wiki) === pageKey(p) && !items.has(e.id)) items.set(e.id, { e, m: null, via: 'events' });
   }
+}
+// An absorbed course's mined timeline lines (its "Dateline" pages).
+{
+  const ids = new Set(ABSORBED.flatMap((a) => a.items.filter((it) => it.via === 'events').map((it) => it.id)));
+  if(ids.size) for(const e of entries) if(ids.has(e.id) && !items.has(e.id)) items.set(e.id, { e, m: null, via: 'events', course: true });
 }
 /*
  * A number in the middle of a sentence is a year when the sentence says so:
@@ -1081,6 +1185,9 @@ const out = [...items.values()].map(({ e, m, via, t, prose }) => ({
   mentionedIn: m ? [...m.chapters.keys()] : [],
   chapterOfMention: m ? ([...m.chapters].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null) : null,
   sub: m?.firstSub || null,
+  ...(m?.series ? { series: m.series } : {}),
+  ...(m?.fromChild ? { fromChild: m.fromChild } : {}),
+  ...(m?.course ? { course: m.course } : {}),
   // A site topic: what the site's own page about this entry says.
   note: (t && art.notes?.get(t)?.text) || '',
   noteUrl: (t && art.notes?.get(t)?.url) || '',
@@ -1808,6 +1915,20 @@ const topic = {
   intro: topicIntro || chIntro.find(Boolean) || '',
   blurb: OVR.blurb || null,
   points: NOTES.topic || [],
+  // The topic tree (topic-structure.json) and where members came from.
+  parent: STRUCT.parent || null,
+  role: STRUCT.role || null,
+  absorbedInto: absorberOf(slug),
+  series: SERIES.map((s) => ({ name: s.name, title: s.title, kind: s.kind,
+    groups: s.groups.filter((g) => !LOCAL_GROUP.test(g.heading)).map((g) => ({ heading: g.heading, n: g.titles.length })) })),
+  // An absorbed course (Ideas of Physics): its own chapters and what each one
+  // covers, read as a second path through the topic on Learn.
+  courses: ABSORBED.map((a) => {
+    const have = new Set(out.map((it) => it.id));
+    return { slug: a.slug, title: a.title, credit: a.source?.credit || '', url: a.source?.url || '', intro: a.intro || '',
+      chapters: a.chapters.map((c) => ({ title: c.title, intro: c.intro || '', points: c.points || [],
+        ids: a.items.filter((it) => it.chapter === c.id && (it.key || it.keyIdea) && have.has(it.id)).map((it) => it.id) })) };
+  }),
   chapters: chOut,
   items: out,
 };
@@ -1850,6 +1971,10 @@ function updateIndex(t){
     built: t.built, count: t.items.filter((it) => it.onTimeline).length, key: t.items.filter((it) => it.key).length,
     chapters: t.chapters.length,
     ...spanOf(t), cover,
+    ...(t.parent ? { parent: t.parent } : {}),
+    ...(t.role ? { role: t.role } : {}),
+    ...(t.absorbedInto ? { absorbedInto: t.absorbedInto } : {}),
+    ...(t.series?.length ? { series: t.series.map((s) => s.title || s.name) } : {}),
   };
   idx.topics = [...idx.topics.filter((x) => x.slug !== t.slug), row].sort((a, b) => a.title.localeCompare(b.title));
   fs.writeFileSync(path.join(PATHS.topics, 'index.json'), JSON.stringify(idx, null, 1) + '\n');
@@ -1892,6 +2017,9 @@ function updateAll(t){
   let all = { topics: {}, items: [] };
   try { all = JSON.parse(fs.readFileSync(f, 'utf8')); } catch {}
   all.items = all.items.filter((r) => r.x !== t.slug);
+  delete all.topics[t.slug];
+  // An absorbed topic lives on inside its absorber: not a topic of its own here.
+  if(t.absorbedInto){ fs.writeFileSync(f, JSON.stringify(all) + '\n'); return; }
   all.topics[t.slug] = { title: t.title, group: t.group, chapters: t.chapters.map((c) => [c.title, c.color]) };
   const clip = (s, n) => { s = String(s || ''); return s.length > n ? s.slice(0, n).replace(/\s+\S*$/, '') + '…' : s; };
   for(const it of t.items){
@@ -1936,7 +2064,7 @@ function updateMembers(t){
     all[id] = all[id].filter((s) => s !== t.slug);
     if(!all[id].length) delete all[id];
   }
-  for(const it of t.items) if(it.onTimeline) (all[it.id] ||= []).push(t.slug);
+  if(!t.absorbedInto) for(const it of t.items) if(it.onTimeline) (all[it.id] ||= []).push(t.slug);
   const multi = Object.fromEntries(Object.entries(all).filter(([, v]) => v.length > 1));
   fs.writeFileSync(f, JSON.stringify(all) + '\n');
   fs.writeFileSync(path.join(PATHS.topics, 'members.json'), JSON.stringify(multi) + '\n');

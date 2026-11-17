@@ -1,6 +1,26 @@
 {
  "topics": [
   {
+   "slug": "africa",
+   "title": "Africa",
+   "group": "Continents & regions",
+   "source": {
+    "page": "History of Africa",
+    "url": "https://en.wikipedia.org/wiki/History_of_Africa"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Archaic humans emerged out of Africa between 0.5 and 1.8 million years ago.",
+   "built": "2026-11-17",
+   "count": 178,
+   "key": 91,
+   "chapters": 16,
+   "from": -3500,
+   "to": 1960,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e7/African-civilizations-map-pre-colonial.svg/1920px-African-civilizations-map-pre-colonial.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "role": "collection"
+  },
+  {
    "slug": "ancient-egypt",
    "title": "Ancient Egypt",
    "group": "Ancient world",
@@ -17,7 +37,8 @@
    "chapters": 18,
    "from": -4000,
    "to": 642,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Ptolemaic_Kingdom_III-II_century_BC_-_en.svg/3840px-Ptolemaic_Kingdom_III-II_century_BC_-_en.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Ptolemaic_Kingdom_III-II_century_BC_-_en.svg/3840px-Ptolemaic_Kingdom_III-II_century_BC_-_en.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "egypt"
   },
   {
    "slug": "ancient-greece",
@@ -38,7 +59,8 @@
    "chapters": 9,
    "from": -800,
    "to": 200,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/8/8e/Pelop_war_en.png"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/8/8e/Pelop_war_en.png",
+   "parent": "greece"
   },
   {
    "slug": "ancient-rome",
@@ -57,7 +79,48 @@
    "chapters": 11,
    "from": -753,
    "to": 1050,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/e/ea/Roman_Republic_Empire_map.gif"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/e/ea/Roman_Republic_Empire_map.gif",
+   "parent": "italy"
+  },
+  {
+   "slug": "argentina",
+   "title": "Argentina",
+   "group": "Countries",
+   "source": {
+    "page": "History of Argentina",
+    "url": "https://en.wikipedia.org/wiki/History_of_Argentina"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Argentina can be divided into four main parts: the pre-Columbian time or early history (up to the sixteenth century), the colonial period, the period of nation-building, and the history of modern Argentina",
+   "built": "2026-11-17",
+   "count": 208,
+   "key": 95,
+   "chapters": 18,
+   "from": 1438,
+   "to": 2026,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d1/Flag_of_Argentina_%281818%E2%80%931819%2C_1820%E2%80%931829%2C_1861%E2%80%932010%29.svg/960px-Flag_of_Argentina_%281818%E2%80%931819%2C_1820%E2%80%931829%2C_1861%E2%80%932010%29.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "latin-america"
+  },
+  {
+   "slug": "asia",
+   "title": "Asia",
+   "group": "Continents & regions",
+   "source": {
+    "page": "History of Asia",
+    "url": "https://en.wikipedia.org/wiki/History_of_Asia"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Asia can be seen as the collective history of East Asia, South Asia, Southeast Asia, Central Asia, North Asia and West Asia.",
+   "built": "2026-11-17",
+   "count": 423,
+   "key": 94,
+   "chapters": 9,
+   "from": -6200,
+   "to": 2017,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/8/89/Destroying_Chinese_war_junks%2C_by_E._Duncan_%281843%29.jpg",
+   "role": "collection"
   },
   {
    "slug": "astronomy",
@@ -78,7 +141,28 @@
    "chapters": 5,
    "from": -9000,
    "to": 2019,
-   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2d/Meteosat-12-fci-march-equinox-2025-noon.jpg/3840px-Meteosat-12-fci-march-equinox-2025-noon.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2d/Meteosat-12-fci-march-equinox-2025-noon.jpg/3840px-Meteosat-12-fci-march-equinox-2025-noon.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "science"
+  },
+  {
+   "slug": "australia",
+   "title": "Australia",
+   "group": "Countries",
+   "source": {
+    "page": "History of Australia",
+    "url": "https://en.wikipedia.org/wiki/History_of_Australia"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Commonwealth of Australia was proclaimed on 1 January 1901 as a federation of six self-governing former British colonies.",
+   "built": "2026-11-17",
+   "count": 213,
+   "key": 94,
+   "chapters": 13,
+   "from": -120000,
+   "to": 2022,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/76/Captainjamescookportrait.jpg/3840px-Captainjamescookportrait.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "oceania"
   },
   {
    "slug": "aztec-empire",
@@ -97,7 +181,8 @@
    "chapters": 18,
    "from": 1299,
    "to": 1624,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/2/20/Conquista-de-M%C3%A9xico-por-Cort%C3%A9s-Tenochtitlan-Painting.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/2/20/Conquista-de-M%C3%A9xico-por-Cort%C3%A9s-Tenochtitlan-Painting.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "mexico"
   },
   {
    "slug": "biology",
@@ -118,7 +203,28 @@
    "chapters": 10,
    "from": -2600000,
    "to": 2002,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/a/ae/Aristotle_Altemps_Inv8575.jpg"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/a/ae/Aristotle_Altemps_Inv8575.jpg",
+   "parent": "science"
+  },
+  {
+   "slug": "brazil",
+   "title": "Brazil",
+   "group": "Countries",
+   "source": {
+    "page": "History of Brazil",
+    "url": "https://en.wikipedia.org/wiki/History_of_Brazil"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Before the arrival of the Europeans, the lands that now constitute Brazil were inhabited and settled by diverse tribes for thousands of years.",
+   "built": "2026-11-17",
+   "count": 147,
+   "key": 91,
+   "chapters": 5,
+   "from": 1889,
+   "to": 2022,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f0/200_anos_do_Senado_Federal_%2853454039803%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "latin-america"
   },
   {
    "slug": "byzantine-empire",
@@ -156,7 +262,27 @@
    "chapters": 13,
    "from": -1300000000,
    "to": 2026,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/2/25/Mollweide_Paleographic_Map_of_Earth%2C_510_Ma.png"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/2/25/Mollweide_Paleographic_Map_of_Earth%2C_510_Ma.png",
+   "parent": "history-of-life"
+  },
+  {
+   "slug": "canada",
+   "title": "Canada",
+   "group": "Countries",
+   "source": {
+    "page": "History of Canada",
+    "url": "https://en.wikipedia.org/wiki/History_of_Canada"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Canada covers the period from the arrival of the Paleo-Indians to North America thousands of years ago to the present day.",
+   "built": "2026-11-17",
+   "count": 168,
+   "key": 97,
+   "chapters": 9,
+   "from": -8000,
+   "to": 2021,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8f/Coat_of_arms_of_the_United_Kingdom_%281901%E2%80%931952%29.svg/1920px-Coat_of_arms_of_the_United_Kingdom_%281901%E2%80%931952%29.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
   },
   {
    "slug": "carthage",
@@ -175,7 +301,8 @@
    "chapters": 15,
    "from": -750,
    "to": 395,
-   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6a/Map_of_Rome_and_Carthage_at_the_start_of_the_Second_Punic_War.svg/1280px-Map_of_Rome_and_Carthage_at_the_start_of_the_Second_Punic_War.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6a/Map_of_Rome_and_Carthage_at_the_start_of_the_Second_Punic_War.svg/1280px-Map_of_Rome_and_Carthage_at_the_start_of_the_Second_Punic_War.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "africa"
   },
   {
    "slug": "chemistry",
@@ -196,7 +323,8 @@
    "chapters": 7,
    "from": -5400,
    "to": 1968,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/c/c7/Josiah_Willard_Gibbs_-from_MMS-.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/c/c7/Josiah_Willard_Gibbs_-from_MMS-.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "science"
   },
   {
    "slug": "china",
@@ -215,7 +343,8 @@
    "chapters": 7,
    "from": -12000000,
    "to": 1997,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/2/20/Opstanden%2C_revolutie%2C_SFA022823302.jpg"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/2/20/Opstanden%2C_revolutie%2C_SFA022823302.jpg",
+   "parent": "asia"
   },
   {
    "slug": "cold-war",
@@ -258,7 +387,8 @@
    "chapters": 8,
    "from": 850,
    "to": 1995,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/d/da/Konrad_Zuse_%281992%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/d/da/Konrad_Zuse_%281992%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "science"
   },
   {
    "slug": "dinosaurs",
@@ -277,7 +407,28 @@
    "chapters": 9,
    "from": -260000000,
    "to": 2026,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/c/cb/Impact_event.jpg"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/c/cb/Impact_event.jpg",
+   "parent": "history-of-life"
+  },
+  {
+   "slug": "egypt",
+   "title": "Egypt",
+   "group": "Countries",
+   "source": {
+    "page": "History of Egypt",
+    "url": "https://en.wikipedia.org/wiki/History_of_Egypt"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Egypt, one of the world's oldest civilizations, was unified around 3150 BC by King Narmer.",
+   "built": "2026-11-17",
+   "count": 157,
+   "key": 91,
+   "chapters": 9,
+   "from": -40000,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/b/b5/Abdel_Fattah_el-Sisi.jpg",
+   "parent": "middle-east"
   },
   {
    "slug": "england",
@@ -292,13 +443,57 @@
    ],
    "keyTarget": 90,
    "blurb": "The territory today known as England became inhabited more than 800,000 years ago, as the discovery of stone tools and footprints at Happisburgh in Norfolk have indicated.",
-   "built": "2026-11-16",
-   "count": 482,
+   "built": "2026-11-17",
+   "count": 493,
    "key": 93,
    "chapters": 10,
    "from": -1000000,
-   "to": 1918,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/d/de/Edward_III_of_England_%28Order_of_the_Garter%29.jpg"
+   "to": 1939,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f8/Norman-conquest-1066.svg",
+   "parent": "europe",
+   "series": [
+    "History of England"
+   ]
+  },
+  {
+   "slug": "ethiopia",
+   "title": "Ethiopia",
+   "group": "Countries",
+   "source": {
+    "page": "History of Ethiopia",
+    "url": "https://en.wikipedia.org/wiki/History_of_Ethiopia"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Ethiopia is one of the oldest countries in Africa; the emergence of Ethiopian civilization dates back thousands of years.",
+   "built": "2026-11-17",
+   "count": 158,
+   "key": 90,
+   "chapters": 6,
+   "from": -4000,
+   "to": 2018,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/5/5e/Passo_Uarieu.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "africa"
+  },
+  {
+   "slug": "europe",
+   "title": "Europe",
+   "group": "Continents & regions",
+   "source": {
+    "page": "History of Europe",
+    "url": "https://en.wikipedia.org/wiki/History_of_Europe"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Europe can be traced back to the appearance of the first modern humans identified as ancestors of contemporary Europeans about 37,000 years ago during the Paleolithic.",
+   "built": "2026-11-17",
+   "count": 1124,
+   "key": 98,
+   "chapters": 10,
+   "from": -5400,
+   "to": 1992,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/1/10/Bundesarchiv_Bild_101I-646-5188-17%2C_Flugzeuge_Junkers_Ju_87.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "role": "collection"
   },
   {
    "slug": "france",
@@ -319,7 +514,8 @@
    "chapters": 11,
    "from": -3300,
    "to": 1981,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/5/57/Anonymous_-_Prise_de_la_Bastille.jpg"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/5/57/Anonymous_-_Prise_de_la_Bastille.jpg",
+   "parent": "europe"
   },
   {
    "slug": "geography",
@@ -340,7 +536,8 @@
    "chapters": 10,
    "from": -3500,
    "to": 1911,
-   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/98/Roman_Empire_-_Africa_Proconsularis_%28125_AD%29.svg/3840px-Roman_Empire_-_Africa_Proconsularis_%28125_AD%29.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/98/Roman_Empire_-_Africa_Proconsularis_%28125_AD%29.svg/3840px-Roman_Empire_-_Africa_Proconsularis_%28125_AD%29.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "science"
   },
   {
    "slug": "geologic-time",
@@ -361,7 +558,8 @@
    "chapters": 11,
    "from": -4100000000,
    "to": 2026,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f3/Georges_Cuvier.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f3/Georges_Cuvier.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "history-of-earth"
   },
   {
    "slug": "geology",
@@ -382,7 +580,48 @@
    "chapters": 7,
    "from": -1200,
    "to": 1993,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f3/Georges_Cuvier.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f3/Georges_Cuvier.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "science"
+  },
+  {
+   "slug": "germany",
+   "title": "Germany",
+   "group": "Countries",
+   "source": {
+    "page": "History of Germany",
+    "url": "https://en.wikipedia.org/wiki/History_of_Germany"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The concept of Germany as a distinct region can be traced to Julius Caesar, who referred to the area east of the Rhine as Germania, meaning the land where the Germani live.",
+   "built": "2026-11-17",
+   "count": 495,
+   "key": 92,
+   "chapters": 11,
+   "from": -43000,
+   "to": 2016,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Selection_on_the_ramp_at_Auschwitz-Birkenau%2C_1944_%28Auschwitz_Album%29_1b.jpg/3840px-Selection_on_the_ramp_at_Auschwitz-Birkenau%2C_1944_%28Auschwitz_Album%29_1b.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "europe"
+  },
+  {
+   "slug": "greece",
+   "title": "Greece",
+   "group": "Countries",
+   "source": {
+    "page": "History of Greece",
+    "url": "https://en.wikipedia.org/wiki/History_of_Greece"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Greece encompasses the history of the territory of the modern nation-state of Greece as well as that of the Greek people and the areas they inhabited and ruled historically.",
+   "built": "2026-11-17",
+   "count": 280,
+   "key": 93,
+   "chapters": 7,
+   "from": -4000000,
+   "to": 1999,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/8/8e/Pelop_war_en.png",
+   "parent": "europe"
   },
   {
    "slug": "history-of-earth",
@@ -424,7 +663,8 @@
    "chapters": 19,
    "from": -4600000000,
    "to": 1927,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/8/8f/Precambrian_Evolution_of_Life.png"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/8/8f/Precambrian_Evolution_of_Life.png",
+   "parent": "history-of-earth"
   },
   {
    "slug": "holy-roman-empire",
@@ -443,7 +683,8 @@
    "chapters": 11,
    "from": 720,
    "to": 1918,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Albrecht_D%C3%BCrer_-_Portrait_of_Maximilian_I_-_Google_Art_Project.jpg/3840px-Albrecht_D%C3%BCrer_-_Portrait_of_Maximilian_I_-_Google_Art_Project.jpg"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Albrecht_D%C3%BCrer_-_Portrait_of_Maximilian_I_-_Google_Art_Project.jpg/3840px-Albrecht_D%C3%BCrer_-_Portrait_of_Maximilian_I_-_Google_Art_Project.jpg",
+   "parent": "germany"
   },
   {
    "slug": "human-evolution",
@@ -464,7 +705,8 @@
    "chapters": 9,
    "from": -3600000000,
    "to": 2009,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/9/9c/Members_of_Genus_Homo_2.png"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/9/9c/Members_of_Genus_Homo_2.png",
+   "parent": "history-of-life"
   },
   {
    "slug": "ice-ages",
@@ -485,7 +727,8 @@
    "chapters": 9,
    "from": -2500000000,
    "to": 2026,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/3/3c/Proterozoic_collage_new.png"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/3/3c/Proterozoic_collage_new.png",
+   "parent": "history-of-earth"
   },
   {
    "slug": "ideas-of-physics",
@@ -501,13 +744,14 @@
    "events": [],
    "keyTarget": 90,
    "blurb": "Astronomy has very old, prehistoric origins.",
-   "built": "2026-11-16",
-   "count": 227,
-   "key": 98,
+   "built": "2026-11-17",
+   "count": 223,
+   "key": 99,
    "chapters": 22,
    "from": 142,
    "to": 1987,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f8/Sir_Ernest_Rutherford_LCCN2014716719_-_restoration1.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f8/Sir_Ernest_Rutherford_LCCN2014716719_-_restoration1.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "absorbedInto": "physics"
   },
   {
    "slug": "impressionism",
@@ -545,7 +789,48 @@
    "chapters": 16,
    "from": 600,
    "to": 1616,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/4/41/John_Harris_Valda_-_Huscar_and_Atahualpa_fighting_over_the_Inca_Empire.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/4/41/John_Harris_Valda_-_Huscar_and_Atahualpa_fighting_over_the_Inca_Empire.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "latin-america"
+  },
+  {
+   "slug": "india",
+   "title": "India",
+   "group": "Countries",
+   "source": {
+    "page": "History of India",
+    "url": "https://en.wikipedia.org/wiki/History_of_India"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Anatomically modern humans are estimated to have first arrived on the Indian subcontinent between 73,000 and 55,000 years ago.",
+   "built": "2026-11-17",
+   "count": 270,
+   "key": 95,
+   "chapters": 9,
+   "from": -1900000,
+   "to": 1947,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/4/47/Brit_IndianEmpireReligions3.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "asia"
+  },
+  {
+   "slug": "indonesia",
+   "title": "Indonesia",
+   "group": "Countries",
+   "source": {
+    "page": "History of Indonesia",
+    "url": "https://en.wikipedia.org/wiki/History_of_Indonesia"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Indonesia has been shaped by its geographic position, natural resources, a series of human migrations and contacts, wars and conquests, as well as by trade, economics and politics.",
+   "built": "2026-11-17",
+   "count": 135,
+   "key": 91,
+   "chapters": 9,
+   "from": -2100000,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f1/Indonesia_declaration_of_independence_17_August_1945.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "asia"
   },
   {
    "slug": "indus-valley",
@@ -564,7 +849,68 @@
    "chapters": 20,
    "from": -6000,
    "to": 2014,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Indus_seal_impression.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Indus_seal_impression.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "india"
+  },
+  {
+   "slug": "iran",
+   "title": "Iran",
+   "group": "Countries",
+   "source": {
+    "page": "History of Iran",
+    "url": "https://en.wikipedia.org/wiki/History_of_Iran"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Iran (also known as Persia) is intertwined with Greater Iran, a region encompassing all areas that have witnessed significant settlement or influence by the Iranian peoples and Iranian languages — chiefly ",
+   "built": "2026-11-17",
+   "count": 292,
+   "key": 90,
+   "chapters": 6,
+   "from": -300000,
+   "to": 2017,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/e/e1/Chemical_weapon1.jpg",
+   "parent": "middle-east"
+  },
+  {
+   "slug": "iraq",
+   "title": "Iraq",
+   "group": "Countries",
+   "source": {
+    "page": "History of Iraq",
+    "url": "https://en.wikipedia.org/wiki/History_of_Iraq"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Iraq, a country located in West Asia, largely coincides with the ancient region of Mesopotamia, often referred to as the cradle of civilization.",
+   "built": "2026-11-17",
+   "count": 314,
+   "key": 92,
+   "chapters": 8,
+   "from": -10000,
+   "to": 2013,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f4/Neo-Babylonian_Empire_under_Nabonidus_map.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "middle-east"
+  },
+  {
+   "slug": "ireland",
+   "title": "Ireland",
+   "group": "Countries",
+   "source": {
+    "page": "History of Ireland",
+    "url": "https://en.wikipedia.org/wiki/History_of_Ireland"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The first evidence of human presence in Ireland dates to around 34,000 years ago, with further findings dating the presence of Homo sapiens to 7,000 BC.",
+   "built": "2026-11-17",
+   "count": 211,
+   "key": 92,
+   "chapters": 13,
+   "from": -4000000,
+   "to": 1948,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/6/6e/MarriageAoifeStrongbow.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "europe"
   },
   {
    "slug": "islamic-golden-age",
@@ -583,7 +929,48 @@
    "chapters": 14,
    "from": 631,
    "to": 1492,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/8/8c/RegistanSquare_Samarkand.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/8/8c/RegistanSquare_Samarkand.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "middle-east"
+  },
+  {
+   "slug": "israel",
+   "title": "Israel",
+   "group": "Countries",
+   "source": {
+    "page": "History of Israel",
+    "url": "https://en.wikipedia.org/wiki/History_of_Israel"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Israel spans the Southern Levant, from prehistoric African migrations and the Natufian culture (c.",
+   "built": "2026-11-17",
+   "count": 231,
+   "key": 93,
+   "chapters": 12,
+   "from": -3000000,
+   "to": 1979,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/0/00/Roman_Empire_Trajan_117AD.png",
+   "parent": "middle-east"
+  },
+  {
+   "slug": "italy",
+   "title": "Italy",
+   "group": "Countries",
+   "source": {
+    "page": "History of Italy",
+    "url": "https://en.wikipedia.org/wiki/History_of_Italy"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Italy has been inhabited by humans since the Paleolithic.",
+   "built": "2026-11-17",
+   "count": 421,
+   "key": 91,
+   "chapters": 10,
+   "from": -2600000,
+   "to": 2023,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/c/ce/Luccaitaly1944.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "europe"
   },
   {
    "slug": "japan",
@@ -604,7 +991,28 @@
    "chapters": 6,
    "from": -43000,
    "to": 2022,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/d/de/Emperor_Meiji_by_Takahashi_Yuichi.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/d/de/Emperor_Meiji_by_Takahashi_Yuichi.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "asia"
+  },
+  {
+   "slug": "korea",
+   "title": "Korea",
+   "group": "Countries",
+   "source": {
+    "page": "History of Korea",
+    "url": "https://en.wikipedia.org/wiki/History_of_Korea"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Lower Paleolithic era on the Korean Peninsula and in Manchuria began roughly half a million years ago.",
+   "built": "2026-11-17",
+   "count": 176,
+   "key": 90,
+   "chapters": 7,
+   "from": -4000000,
+   "to": 1991,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/e/ec/Siege-of-Busanjin-1592.jpg",
+   "parent": "asia"
   },
   {
    "slug": "kush",
@@ -623,7 +1031,28 @@
    "chapters": 12,
    "from": -3500,
    "to": 1910,
-   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/be/Map_of_the_Assyrian_diaspora_Worldwide.svg/3840px-Map_of_the_Assyrian_diaspora_Worldwide.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/be/Map_of_the_Assyrian_diaspora_Worldwide.svg/3840px-Map_of_the_Assyrian_diaspora_Worldwide.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "africa"
+  },
+  {
+   "slug": "latin-america",
+   "title": "Latin America",
+   "group": "Continents & regions",
+   "source": {
+    "page": "History of Latin America",
+    "url": "https://en.wikipedia.org/wiki/History_of_Latin_America"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The term Latin America originated in the 1830s, primarily through Michel Chevalier, who proposed the region could ally with \"Latin Europe\" against other European cultures.",
+   "built": "2026-11-17",
+   "count": 160,
+   "key": 91,
+   "chapters": 9,
+   "from": 1853,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/d/dc/NATO_vs._Warsaw_Pact_%281949-1990%29.svg",
+   "role": "collection"
   },
   {
    "slug": "mali-empire",
@@ -642,7 +1071,8 @@
    "chapters": 11,
    "from": 751,
    "to": 1858,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/4/46/Catalan_Atlas_BNF_Sheet_6_Mansa_Musa_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/4/46/Catalan_Atlas_BNF_Sheet_6_Mansa_Musa_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "africa"
   },
   {
    "slug": "mathematics",
@@ -663,7 +1093,8 @@
    "chapters": 14,
    "from": -20000,
    "to": 1943,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/7/79/Hilbert.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/7/79/Hilbert.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "science"
   },
   {
    "slug": "maya",
@@ -682,7 +1113,8 @@
    "chapters": 24,
    "from": -1000,
    "to": 2012,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/b/bb/Distribution-myn2.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/b/bb/Distribution-myn2.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "mexico"
   },
   {
    "slug": "medicine",
@@ -703,7 +1135,8 @@
    "chapters": 12,
    "from": -2600,
    "to": 2003,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/7/79/San_Stefano_Grand_Plaza.JPG"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/7/79/San_Stefano_Grand_Plaza.JPG",
+   "parent": "science"
   },
   {
    "slug": "mesopotamia",
@@ -722,7 +1155,28 @@
    "chapters": 13,
    "from": -6200,
    "to": 2018,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/5/5f/Achaemenid_Empire_500_BCE.jpg"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/5/5f/Achaemenid_Empire_500_BCE.jpg",
+   "parent": "iraq"
+  },
+  {
+   "slug": "mexico",
+   "title": "Mexico",
+   "group": "Countries",
+   "source": {
+    "page": "History of Mexico",
+    "url": "https://en.wikipedia.org/wiki/History_of_Mexico"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Mexico encompasses over 13,000 years between the initial migration of indigenous peoples and the modern day.",
+   "built": "2026-11-17",
+   "count": 197,
+   "key": 91,
+   "chapters": 13,
+   "from": -48000,
+   "to": 2026,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7f/Nebel_Mexican_War_12_Scott_in_Mexico_City_%28cropped%29.jpg/3840px-Nebel_Mexican_War_12_Scott_in_Mexico_City_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "latin-america"
   },
   {
    "slug": "middle-ages",
@@ -741,7 +1195,28 @@
    "chapters": 17,
    "from": 387,
    "to": 1683,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f5/Combat_deuxi%C3%A8me_croisade.jpg"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f5/Combat_deuxi%C3%A8me_croisade.jpg",
+   "parent": "europe"
+  },
+  {
+   "slug": "middle-east",
+   "title": "Middle East",
+   "group": "Continents & regions",
+   "source": {
+    "page": "History of the Middle East",
+    "url": "https://en.wikipedia.org/wiki/History_of_the_Middle_East"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Middle East, or the Near East, was one of the cradles of civilization: after the Neolithic Revolution and the adoption of agriculture, many of the world's oldest cultures and civilizations were created there.",
+   "built": "2026-11-17",
+   "count": 516,
+   "key": 100,
+   "chapters": 13,
+   "from": -1900000,
+   "to": 2011,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Siege_of_Constantinople_fresco%2C_Moldovi%C8%9Ba_monastery%2C_Vatra_Moldovi%C8%9Bei%2C_2017.jpg/3840px-Siege_of_Constantinople_fresco%2C_Moldovi%C8%9Ba_monastery%2C_Vatra_Moldovi%C8%9Bei%2C_2017.jpg",
+   "role": "collection"
   },
   {
    "slug": "mongol-empire",
@@ -762,7 +1237,8 @@
    "chapters": 12,
    "from": 1162,
    "to": 1505,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/e/ea/Mongol_Empire_map.gif?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/e/ea/Mongol_Empire_map.gif?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "asia"
   },
   {
    "slug": "mughal-empire",
@@ -781,7 +1257,68 @@
    "chapters": 11,
    "from": 1299,
    "to": 1981,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/3/34/Govardhan._Akbar_With_Lion_and_Calf_ca._1630%2C_Metmuseum_%28cropped%29.jpg"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/3/34/Govardhan._Akbar_With_Lion_and_Calf_ca._1630%2C_Metmuseum_%28cropped%29.jpg",
+   "parent": "india"
+  },
+  {
+   "slug": "netherlands",
+   "title": "Netherlands",
+   "group": "Countries",
+   "source": {
+    "page": "History of the Netherlands",
+    "url": "https://en.wikipedia.org/wiki/History_of_the_Netherlands"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of the Netherlands extends back before the founding of the modern Kingdom of the Netherlands in 1815 after the defeat of Napoleon.",
+   "built": "2026-11-17",
+   "count": 177,
+   "key": 97,
+   "chapters": 15,
+   "from": -5600,
+   "to": 1951,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/b/b9/Battle_of_Gibraltar_1607.jpg",
+   "parent": "europe"
+  },
+  {
+   "slug": "nigeria",
+   "title": "Nigeria",
+   "group": "Countries",
+   "source": {
+    "page": "History of Nigeria",
+    "url": "https://en.wikipedia.org/wiki/History_of_Nigeria"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Nigeria can be traced to the earliest inhabitants from at least 9000 BC through to early civilizations such as the Nok culture which began around 1500 BC.",
+   "built": "2026-11-17",
+   "count": 133,
+   "key": 92,
+   "chapters": 14,
+   "from": -2000,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/c/c5/Godwin_Alabi-Isama1.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "africa"
+  },
+  {
+   "slug": "oceania",
+   "title": "Oceania",
+   "group": "Continents & regions",
+   "source": {
+    "page": "History of Oceania",
+    "url": "https://en.wikipedia.org/wiki/History_of_Oceania"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Oceania includes the history of Australia, Easter Island, Fiji, Hawaii, New Zealand, Papua New Guinea, Western New Guinea and, other Pacific island nations.",
+   "built": "2026-11-17",
+   "count": 95,
+   "key": 75,
+   "chapters": 10,
+   "from": -80000000,
+   "to": 2003,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/b/b0/Raising_the_Flag_on_Iwo_Jima%2C_larger_-_edit1.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "role": "collection"
   },
   {
    "slug": "ottoman-empire",
@@ -802,7 +1339,28 @@
    "chapters": 13,
    "from": 750,
    "to": 1923,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/e/eb/Column_of_deportees_walking_through_Harput_vilayet_during_the_Armenian_genocide_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/e/eb/Column_of_deportees_walking_through_Harput_vilayet_during_the_Armenian_genocide_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "turkey"
+  },
+  {
+   "slug": "pakistan",
+   "title": "Pakistan",
+   "group": "Countries",
+   "source": {
+    "page": "History of Pakistan",
+    "url": "https://en.wikipedia.org/wiki/History_of_Pakistan"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Pakistan preceding the country's independence in 1947 is shared with that of neighbouring Afghanistan, India, Iran and Tibet.",
+   "built": "2026-11-17",
+   "count": 608,
+   "key": 102,
+   "chapters": 9,
+   "from": -2500000,
+   "to": 1989,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/4/4f/Lahore_Fort_view_from_Baradari.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "asia"
   },
   {
    "slug": "persian-empire-achaemenid",
@@ -821,7 +1379,8 @@
    "chapters": 13,
    "from": -750,
    "to": 675,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/5/57/Cyrus_II_%28The_Great%29_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/5/57/Cyrus_II_%28The_Great%29_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "iran"
   },
   {
    "slug": "physics",
@@ -839,13 +1398,17 @@
    ],
    "keyTarget": 90,
    "blurb": "Physics is a branch of science in which the primary objects of study are matter and energy.",
-   "built": "2026-11-16",
-   "count": 610,
-   "key": 92,
+   "built": "2026-11-17",
+   "count": 759,
+   "key": 93,
    "chapters": 7,
    "from": -800,
    "to": 2008,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/e/ee/Max_Planck_by_Hugo_Erfurth_1938cr_-_restoration1.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/e/ee/Max_Planck_by_Hugo_Erfurth_1938cr_-_restoration1.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "science",
+   "series": [
+    "History of physics"
+   ]
   },
   {
    "slug": "plate-tectonics",
@@ -866,7 +1429,28 @@
    "chapters": 13,
    "from": -4100000000,
    "to": 2025,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/1/10/Flag_of_Scotland.svg"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/1/10/Flag_of_Scotland.svg",
+   "parent": "history-of-earth"
+  },
+  {
+   "slug": "poland",
+   "title": "Poland",
+   "group": "Countries",
+   "source": {
+    "page": "History of Poland",
+    "url": "https://en.wikipedia.org/wiki/History_of_Poland"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Poland spans over a thousand years, from medieval tribes, Christianization and monarchy; through Poland's Golden Age, expansionism and becoming one of the largest European powers; to its collapse and parti",
+   "built": "2026-11-17",
+   "count": 277,
+   "key": 89,
+   "chapters": 9,
+   "from": -2500000,
+   "to": 2022,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/1/10/Bundesarchiv_Bild_101I-646-5188-17%2C_Flugzeuge_Junkers_Ju_87.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "europe"
   },
   {
    "slug": "renaissance",
@@ -888,6 +1472,26 @@
    "cover": "https://upload.wikimedia.org/wikipedia/commons/c/cb/Francesco_Melzi_-_Portrait_of_Leonardo.png"
   },
   {
+   "slug": "russia",
+   "title": "Russia",
+   "group": "Countries",
+   "source": {
+    "page": "History of Russia",
+    "url": "https://en.wikipedia.org/wiki/History_of_Russia"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Russia begins with the histories of the East Slavs.",
+   "built": "2026-11-17",
+   "count": 271,
+   "key": 94,
+   "chapters": 9,
+   "from": -2600000,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/d/dc/NATO_vs._Warsaw_Pact_%281949-1990%29.svg",
+   "parent": "europe"
+  },
+  {
    "slug": "sasanian-empire",
    "title": "Sasanian Empire",
    "group": "Ancient world",
@@ -904,7 +1508,8 @@
    "chapters": 16,
    "from": -323,
    "to": 1020,
-   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/93/Piero_della_Francesca_021.jpg/3840px-Piero_della_Francesca_021.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/93/Piero_della_Francesca_021.jpg/3840px-Piero_della_Francesca_021.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "iran"
   },
   {
    "slug": "science",
@@ -928,6 +1533,106 @@
    "cover": "https://upload.wikimedia.org/wikipedia/commons/3/35/Portrait_of_Sir_Isaac_Newton%2C_1689_%28head_shot_crop%29.jpg"
   },
   {
+   "slug": "scotland",
+   "title": "Scotland",
+   "group": "Countries",
+   "source": {
+    "page": "History of Scotland",
+    "url": "https://en.wikipedia.org/wiki/History_of_Scotland"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The recorded history of Scotland begins with the arrival of the Roman Empire in the 1st century, when the province of Britannia reached the Antonine Wall.",
+   "built": "2026-11-17",
+   "count": 261,
+   "key": 91,
+   "chapters": 12,
+   "from": -120000,
+   "to": 1998,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a9/Atlas_Van_der_Hagen-KW1049B11_038-SCOTIA_REGNUM_cum_insulis_adjacentibus.jpeg/3840px-Atlas_Van_der_Hagen-KW1049B11_038-SCOTIA_REGNUM_cum_insulis_adjacentibus.jpeg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "europe"
+  },
+  {
+   "slug": "south-africa",
+   "title": "South Africa",
+   "group": "Countries",
+   "source": {
+    "page": "History of South Africa",
+    "url": "https://en.wikipedia.org/wiki/History_of_South_Africa"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The first modern humans are believed to have lived in South Africa more than 100,000 years ago.",
+   "built": "2026-11-17",
+   "count": 149,
+   "key": 87,
+   "chapters": 6,
+   "from": -2500000,
+   "to": 2021,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/8/85/Second_Boer_War_Collage.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "africa"
+  },
+  {
+   "slug": "spain",
+   "title": "Spain",
+   "group": "Countries",
+   "source": {
+    "page": "History of Spain",
+    "url": "https://en.wikipedia.org/wiki/History_of_Spain"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Spain dates to contact between the pre-Roman peoples of the Mediterranean coast of the Iberian Peninsula with the Greeks and Phoenicians.",
+   "built": "2026-11-17",
+   "count": 233,
+   "key": 102,
+   "chapters": 17,
+   "from": -26000,
+   "to": 1999,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/3/3a/Cantigas_battle.jpg",
+   "parent": "europe"
+  },
+  {
+   "slug": "turkey",
+   "title": "Turkey",
+   "group": "Countries",
+   "source": {
+    "page": "History of Turkey",
+    "url": "https://en.wikipedia.org/wiki/History_of_Turkey"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Turkey, understood as the history of the area now forming the territory of the Republic of Turkey, includes the history of both Anatolia (the Asian part of Turkey) and Eastern Thrace (the European part of ",
+   "built": "2026-11-17",
+   "count": 205,
+   "key": 91,
+   "chapters": 7,
+   "from": -40000,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/5/5f/Achaemenid_Empire_500_BCE.jpg",
+   "parent": "middle-east"
+  },
+  {
+   "slug": "ukraine",
+   "title": "Ukraine",
+   "group": "Countries",
+   "source": {
+    "page": "History of Ukraine",
+    "url": "https://en.wikipedia.org/wiki/History_of_Ukraine"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Prehistoric Ukraine, as a part of the Pontic steppe in Eastern Europe, played an important role in Eurasian cultural events, including the spread of the Chalcolithic and Bronze Ages, Indo-European migrations, and the dom",
+   "built": "2026-11-17",
+   "count": 202,
+   "key": 91,
+   "chapters": 8,
+   "from": -1900000,
+   "to": 2026,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4f/2022_Russian_invasion_of_Ukraine.svg/3840px-2022_Russian_invasion_of_Ukraine.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "europe"
+  },
+  {
    "slug": "united-states",
    "title": "United States",
    "group": "Countries",
@@ -947,6 +1652,26 @@
    "cover": "https://upload.wikimedia.org/wikipedia/commons/6/69/Battle_of_Gettysburg%2C_by_Currier_and_Ives.png"
   },
   {
+   "slug": "vietnam",
+   "title": "Vietnam",
+   "group": "Countries",
+   "source": {
+    "page": "History of Vietnam",
+    "url": "https://en.wikipedia.org/wiki/History_of_Vietnam"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Vietnam, with its coastal strip, rugged mountainous interior, and two major deltas, became home to numerous cultures throughout history.",
+   "built": "2026-11-17",
+   "count": 234,
+   "key": 97,
+   "chapters": 12,
+   "from": -130000,
+   "to": 1991,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/6/67/U.S._Army_UH-1H_Hueys_insert_ARVN_troops_at_Kh%C3%A2m_%C4%90%E1%BB%A9c%2C_Vietnam%2C_12_July_1970_%2879431435%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "asia"
+  },
+  {
    "slug": "viking-age",
    "title": "Viking Age",
    "group": "Empires & eras",
@@ -963,7 +1688,8 @@
    "chapters": 23,
    "from": 498,
    "to": 1500,
-   "cover": "https://upload.wikimedia.org/wikipedia/commons/1/1b/Flateyjarbok_Haraldr_Halfdan_2.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/1/1b/Flateyjarbok_Haraldr_Halfdan_2.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "europe"
   },
   {
    "slug": "world-war-ii",
