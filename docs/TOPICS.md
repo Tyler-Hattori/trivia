@@ -229,11 +229,13 @@ search page fetched 18 MB, Meanwhile 14 MB and the atlas 60 MB of excerpts).
     the first two letters of each word (`lib/webindex.mjs`, shared with the
     builder), best 400 entries per word, then the matching rows from 100-row
     blocks numbered most important first.
-  - `details/l-NNN.json`: the **atlas**'s excerpts by cluster, fetched for the
-    cards on screen and the opened entry.
+  - `details/l-NNN.json`: excerpts (+ `nn` neighbours) by cluster, fetched for
+    the entry opened in the atlas.
+  - `atlas/`: the **atlas** (lanes): `meta.json`, `top.json` + `long.json` on
+    open (~400 KB gz), `b-NNN.json` time buckets as you zoom in. See docs/ATLAS.md.
   - `aliases.json`: id aliases, for moving answer records.
-- `atlas/atlas.json` (26 MB, 7 MB gzipped): the atlas map, loaded whole when the
-  atlas opens. The next thing to cut (by zoom level and time) when the store grows.
+- `atlas/atlas.json` (26 MB): no longer fetched by the atlas; only the old cluster
+  quiz (`#/cluster-quiz`) still loads it.
 
 **Meanwhile** (detail panel): entries from other topics within a window that
 grows with distance from today (±4 years in 1940, ±80 at year 0, ±200 at 3000

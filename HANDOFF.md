@@ -4,8 +4,8 @@ Read this first; it is meant to be enough to start work without exploring.
 Older session notes (history of specific decisions only):
 `docs/archive/HANDOFF-2026-07-to-11-14.md`, `docs/archive/HANDOFF-2026-11-14-to-11-16.md`.
 
-**First thing next session: section 8 item 0** (a half-finished switch-over:
-work is on branch `restructure`, not yet on `main`).
+**First thing next session: section 8** (the user asked to move on to "the site
+ready for more data, and logins" after the lanes atlas).
 
 ## 1. The goal (the user's words)
 
@@ -56,7 +56,7 @@ browser, syncing the per-entry answer map (`mastery:v2`); no server to run.
 | `#/topic/<slug>/quiz` | quiz: Order / Recall / Ideas / Era | `features/topic/quiz.js` |
 | `#/quiz`, `#/review` | quiz over all topics; spaced-repetition review | `features/topic/quiz.js` |
 | `#/search/<q>` | year/span pages ("1294", "13th century", "66 million years ago") or word search | `features/topic/search.js` via `webdata.js` (web/ time buckets + word index) |
-| atlas | zoomable map of everything: x = time, y = subject; opens in a **popup window** (`window.openAtlas`) | `features/atlas/*`, `docs/ATLAS.md` |
+| atlas | the whole store as Lanes: sections > topic lanes > kinds, x = time; opens in a **popup window** (`window.openAtlas`) | `features/atlas/*`, `docs/ATLAS.md` |
 | `#/cluster-quiz` | old quiz by atlas cluster | `features/quiz/` |
 
 Detail panel (topics): description first, people↔events links (amber
@@ -75,16 +75,18 @@ project/features/topic/
   styles.js   all topic CSS (one template string: NO backticks inside it)
   quiz.js     topic quiz + answer memory (mastery:v2, per entry; migrateMastery)
   search.js   the search page; webdata.js loads datasets/web/ pieces (cached per session)
-project/features/atlas/   index.js (orchestrator, 1.6k), paint.js (canvas: bands, spans,
-              dots, chips, label packing), cards.js (DOM image cards), scales.js (x/y,
-              3 time modes), rail.js (subject tree, collapse/pin), detail.js, styles.js
+project/features/atlas/   the lanes atlas: index.js (orchestrator), lanes.js (pure layout),
+              lanedata.js (web/atlas/ loader), scales.js (x axis, 3 time ranges),
+              styles.js; data.js = the old loader, only for the cluster quiz
+project/ui/lanes-css.js   the Lanes CSS shared by the topic timeline and the atlas
 datasets/
   topic.mjs           builds one topic from a Wikipedia article (+ timeline pages, store)
   audit-entries.mjs   Haiku: date/type/relevance per entry; --spans --kinds --bare
   title-events.mjs    Haiku: short titles for mined events
   dedupe-events.mjs   Haiku: are two mined events the same happening?
   series.mjs          Wikipedia series (sidebars/navboxes) for an article, topic or category
-  build-web.mjs       datasets/web/: the browser's whole-store files, cut small (~3 s; run by builds)
+  build-web.mjs       datasets/web/: the browser's whole-store files, cut small (~4 s; run by builds),
+                      incl. web/atlas/ (lanes via lib/atlas-lanes.mjs)
   deploy.mjs          publish to gh-pages (one commit, force-pushed); --dry to /tmp/trivia-site
   lib/                audit.mjs dupes.mjs etype.mjs (types) lite.mjs (store-lite rows)
                       wiki.mjs (event miner) wikilib.mjs (all Wikipedia requests) store.mjs years.mjs
@@ -160,81 +162,60 @@ a "Main article" hatnote; audit `off` entries never essential; mined prose
 events stay off the timeline until titled; date-suspect entries off the
 timeline; spans that cover far more than the view are dropped as umbrellas.
 
-## 7. State (2026-11-17, end of session)
+## 7. State (2026-11-18, end of session)
 
-- **83 topics** (82 on the list; Ideas of Physics is folded into Physics as a
-  "Course" on Learn). Store: **70,356 entries**. Topics follow Wikipedia's own
-  organisation: `topic-structure.json` gives each topic its series (chosen by
-  hand), its parent (country > continent; era/empire > country; science >
-  Science; deep time > History of Earth / History of life), the 6 regions as
-  collections (their subtopics' essentials join them, with the subtopic's
-  sentence), and absorb. The series re-mine of 58 topics finished (store
-  54k -> 70k). Docs: TOPICS.md "Series and the topic tree".
-- **Scaling restructure, done and QA'd, on branch `restructure`** (commit
-  a0c21fa, pushed; NOT merged into main):
-  - store chunked into `datasets/store/` (entries ~20 MB chunks, vectors 25k
-    rows), byte-identical to the old files (`scripts/split-store.mjs`, one-time;
-    old `datasets/atlas/entries.jsonl` etc. deleted locally);
-  - generated `atlas/`, `topics/`, `web/`, `series-cache.json` untracked;
-  - browser fetches small static files (`web/`) instead of all.json 14 MB,
-    store-lite 18 MB, details.json 60 MB, vectors.bin 17 MB (that one was unused);
-    word search requires every word when ≥10 rows have them all;
-  - answers per entry (`mastery:v2`, records carry `x` = topics answered in),
-    old per-topic keys merged once and kept; `store/id-aliases.json` +
-    `recordAliases` (dedupe.mjs uses it) move records when entries merge;
-  - atlas k-NN cached by id (`atlas/knn-cache.json`): 25 min -> 0.7 s; whole
-    compile 25 s; incremental path verified identical to a full recompute.
-  - `gh-pages` branch pushed by `deploy.mjs` (2,337 files, 295 MB; Pages limit 1 GB).
-- **Live site still serves main** (old code + old tracked data) until the
-  Pages source is switched (section 8 item 0).
-- QA (on restructure): verify 34/34, qa-topic 2370/2375 (5 batch-4 chapters
-  with no intro: Pakistan "History by region", Netherlands "Historians", Spain
-  "Historical population", Europe "Chronology", Israel "Demographics"),
-  qa-atlas 91/91, qa-quiz 49/49.
-- Fixed this session: "300,000 to 1.5 million years ago" parsed as 300 billion
-  years (lib/years.mjs unit inheritance); one entry corrected in the store
-  (its id still says 300000000000bc; ids never change).
+- **83 topics**, store **70,356 entries**, topic tree in `topic-structure.json`
+  (TOPICS.md "Series and the topic tree").
+- **Live site = `gh-pages`** (Pages source switched by the user, checked:
+  `#/search/1294` fetches `datasets/web/...`). `restructure` merged into `main`
+  (fast-forward) and deleted. Main no longer tracks generated data.
+- **The atlas is the Lanes** (this session; docs/ATLAS.md is rewritten, read it
+  before touching the atlas): sections from the topic tree, one lane per topic
+  (category/region lanes for entries in no topic), kinds inside each lane as on
+  the timeline, bold = famous, round portraits, overview strip + era bands,
+  one-row folding toolbar, pins, section folds, "N more", search as lanes, detail
+  panel (bottom sheet on phones). Data: `web/atlas/` (build-web.mjs, lib/atlas-lanes.mjs):
+  ~400 KB gz to open instead of the 27 MB atlas.json; time buckets as you zoom.
+  The Lanes CSS is shared (`project/ui/lanes-css.js`) by the topic timeline and the atlas.
+- **The atlas shows 24,109 entries**: what the topics show (their dated, titled,
+  on-timeline entries, with the audit's corrections) plus titled entries in no
+  topic. Left out: 25k untitled prose sentences that topics keep off their
+  timelines, and 21k untitled sentences in no topic. **Titling them**
+  (`title-events.mjs`, Haiku) is the biggest content gain available.
+- Store fix: 5 spans whose end was stored as 1 BC (Stenian, Middle Stone Age,
+  Magdalenian, Bølling–Allerød, hominin expansions) now have real ends.
+- QA: verify 34/34, qa-atlas 38/38 (rewritten for the lanes), qa-quiz 49/49,
+  qa-topic 2370/2375 (the 5 known intro-less chapters).
 - Nothing running in the background.
 
 ## 8. Next, in order
 
-0. **Finish the switch-over (needs the user once).** Ask the user to set
-   GitHub > Settings > Pages > Source: Deploy from a branch > `gh-pages` /
-   (root). Check https://tyler-hattori.github.io/trivia/ shows the new site
-   (search "1294" works; DevTools shows `datasets/web/...` requests). Then:
-   `git checkout main && git merge --ff-only restructure && git push` (main
-   then stops tracking generated data). Do NOT merge before the switch: Pages
-   would build main without topics/ and the site would break. Delete the
-   `restructure` branch after. The user may also want the repo moved out of
-   iCloud `Documents` (gotcha below); ask, don't do it.
-1. **The user will say what data to glean next.** Pipeline: section 6; new
-   topics go in topics.txt AND topic-structure.json (parent, series); find
-   series with `node datasets/series.mjs "<article>"` or `--category`.
-2. **Pipeline steps 2–5 for the series-run topics**: Haiku passes (titles,
-   audit, spans/bare/kinds, dedupe), `topic-report --summary`, key points for
-   batch 3 + batch 4 + changed chapters, the 5 intro-less chapters (apparatus
-   sections: STOP_SECTIONS or `topic-overrides.json`). Spot-check Physics:
-   lost *Maxwell publishes electromagnetic field theory*, gained *Darby smelts
-   iron with coal* (off-topic) when the course was folded in.
-3. **Rulers from series templates.** `rulers` in topic-structure.json names the
-   template (Monarchs of France: houses with reign ranges as headings; Roman
-   emperors; Holy Roman emperors; Kushite Monarchs footer). Mine reigns
-   (name, start–end, house) as `kind: 'span'` leader entries so the Rulers lane
-   fills. England: "List of English monarchs". Monarchs exist today only as
-   people with lifespans; Edward I / Victoria are missing.
-4. **Logins** (when asked): Supabase auth + a `progress(user, entry_id,
-   record)` table with row-level security; on first login upload `mastery:v2`;
-   apply `web/aliases.json` server-side too. No server of our own.
-5. **Atlas in the Lanes style: look pass DONE (aefa973, on `restructure`)**; see
-   docs/ATLAS.md "Look: the Lanes style". The structural half waits on the
-   user's answers (each changes an ATLAS.md decision): packed rows vs
-   embedding y; retire the rail; labels + round portraits instead of image
-   cards; fame by weight only; era bands + overview strip in the header; a
-   smaller toolbar (on a phone it takes a quarter of the screen). Screenshot
-   helper for the popup: `/tmp/shots/atlas-shot.mjs out.png w h mobile js`
-   (`REOPEN=1` reopens it at the emulated width, needed to test phone boot).
-6. Lanes polish: compress empty rows in quiet stretches; slide point labels;
-   less near-duplicate zoom fill.
+1. **"Ready for more data"** (user, 2026-11-18). What grows with the store and
+   what to do about it:
+   - `store/taxonomy.json` 44 MB, one file: chunk it like entries before 50 MB
+     (verify warns); GitHub rejects files over 100 MB.
+   - `web/details/facets.json` 1.4 MB (cluster quiz) and `web/lite/time/long.json`
+     870 KB grow linearly: shard by time or by need.
+   - `atlas/atlas.json` 27 MB now only feeds the old cluster quiz: move that quiz
+     to `web/` data (or retire it), then stop deploying atlas.json.
+   - `topic.mjs --all` is ~25 min, mostly Wikipedia fetches: cache article HTML
+     by revision id so rebuilds are local (the gotcha below cost 35 min).
+   - Pages: site 223 MB of 1 GB; past ~700 MB deploy the same folder to
+     Cloudflare Pages/R2 (deploy.mjs writes a plain folder).
+   - The titling pass (above) multiplies what the atlas and timelines show.
+2. **Logins** (user asked): Supabase auth (email magic link + Google) and a
+   `progress(user_id, entry_id, record jsonb, updated_at)` table with row-level
+   security; on first login merge local `mastery:v2` up, then sync both ways
+   (newest record wins per entry); apply `web/aliases.json` when merging. The
+   anon key is public by design. **Needs the user**: create the Supabase project
+   and give its URL + anon key; add the site URL to its auth redirect list.
+3. **The user will say what data to glean next.** Pipeline: section 6.
+4. **Pipeline steps 2–5 for the series-run topics** (titles, audit, spans/bare/
+   kinds, dedupe, key points, the 5 intro-less chapters, Physics spot-check).
+5. **Rulers from series templates** (`rulers` in topic-structure.json).
+6. Lanes polish (timeline and atlas): empty rows in quiet stretches; slide point
+   labels; near-duplicate fill; atlas duplicates across lanes (Napoleon /
+   Napoleon Bonaparte).
 
 ## 9. Improvement backlog (agreed or noticed, not started)
 
@@ -247,12 +228,8 @@ timeline; spans that cover far more than the view are dropped as umbrellas.
   pinch-zoom (only +/- now) and maybe a vertical layout; compare two topics'
   timelines (Meanwhile has the data: England with France, Rome with Han China).
 - Learn: mark chapters read; j/k keys; flashcard toggle.
-- Atlas: simplify toolbar; 78 of 227 rail nodes share a label with a sibling.
-- Growth limits to watch: `atlas/atlas.json` (27 MB, 7 MB gz) still loads whole
-  when the atlas opens: cut by zoom level/time next. `web/lite/time/long.json`
-  (870 KB) loads with every date page. `store/taxonomy.json` 44 MB: chunk it at
-  ~50 MB (verify warns). Site 295 MB of Pages' 1 GB: past that, deploy the same
-  folder to Cloudflare Pages/R2.
+- Atlas: "Europe: other" style catch-all lanes could become topics (Southern
+  Europe: other has 2.5k entries); a lane-level "Meanwhile" (compare two lanes).
 - README is stale in places (says the home page is the topic list; it is
   three doors since session 7; says the timeline is image cards). Its data
   section is current.
@@ -270,6 +247,10 @@ node datasets/qa/topic-report.mjs --summary
 node datasets/deploy.mjs                          # publish (after QA); --dry to check
 ```
 
+Atlas screenshots: `node /tmp/shots/atlas-shot.mjs out.png [w h mobile js]` opens
+the popup (clears `atlas:prefs:v2`), waits for boot, runs `js` in the popup;
+`REOPEN=1` reopens it at the emulated width (needed for phone boot). Don't run
+two at once (the popup is found as "the new target").
 Screenshots: `node /tmp/shots/shot.mjs "<#hash>" out.png [w h mobile js]`
 (argument order matters: `mobile` is `1` or `0` and comes BEFORE `js`)
 (opens a CDP tab on :9334, waits 15 s, runs `js` as an expression, captures).
@@ -302,6 +283,12 @@ and it caches images by path: write each screenshot to a NEW file name.
   ("dataless", git: "unable to map index file: Operation timed out"). Check
   with `find . -flags +dataless`; `.git/index` can be rebuilt with
   `mv .git/index <aside> && git reset` (nothing else was ever affected).
+- **Switching to an old commit that TRACKED generated data deletes it** (this
+  session: `git checkout main` (old, tracked topics/ atlas/) then the merge that
+  untracked them removed `datasets/topics/` and `atlas.json`). Rebuild: `node
+  datasets/atlas.mjs` (25 s) then `node datasets/topic.mjs --list --force`
+  (~35 min, Wikipedia fetches; it runs build-web at the end). iCloud also left
+  "lite 2"/"trows 2" duplicate folders in web/ (deleted; build-web replaces web/).
 - **Generated data is not on main.** A fresh clone has no topics/atlas/web:
   `node datasets/atlas.mjs && node datasets/topic.mjs --list --force && node
   datasets/topic.mjs --all` (minutes, plus Wikipedia fetches for the articles).

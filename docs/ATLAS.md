@@ -1,80 +1,86 @@
 # The atlas
 
-`project/features/atlas/`. Reachable from the home page ("Open the atlas") and wired
-in `project/app/init.js` as `window.openAtlas`.
+The whole store as the topic timeline's **Lanes** (2026-11-18). Opened from the
+home page's Atlas door or a topic's "Atlas ↗" (`window.openAtlas`, wired in
+`project/app/init.js`), in a popup window.
 
 | file | role |
 |---|---|
-| `data.js` | loads `atlas.json`, typed arrays, spatial grid, topic index, priority |
-| `scales.js` | x/y transforms, the zoom model, the three time ranges, tier + depth selection, ticks |
-| `paint.js` | canvas: bands, spans, dots, chips, label packing, hit testing |
-| `cards.js` | pooled DOM image cards + the hover preview |
-| `detail.js` | the detail panel + enlarged image |
-| `rail.js` | cluster rail with collapse/pin, and the pinned-strip painter |
-| `styles.js` | the whole stylesheet |
-| `index.js` | orchestrator: window, camera, frame loop, all interaction |
+| `project/features/atlas/index.js` | orchestrator: window, toolbar, header, gestures, detail panel, prefs |
+| `project/features/atlas/lanes.js` | pure layout (`layoutAtlas`, `capsFor`, `kindOf`, `weightOf`); no DOM, runs in Node |
+| `project/features/atlas/lanedata.js` | loads `datasets/web/atlas/`, buckets as you zoom, details, search |
+| `project/features/atlas/scales.js` | the x axis: three time ranges (`MODES`), fit, clamp, ticks, year formats |
+| `project/features/atlas/styles.js` | the shell's CSS; entries/lanes/eras use `project/ui/lanes-css.js` |
+| `project/ui/lanes-css.js` | the Lanes CSS, **shared with the topic timeline** so both draw an entry the same way |
+| `datasets/lib/atlas-lanes.mjs` | which lane each entry lives in; sections; eras per time range |
+| `datasets/build-web.mjs` | writes `web/atlas/` (section "The atlas") |
+| `project/features/atlas/data.js` | the OLD scatter atlas's loader: only the cluster quiz (`#/cluster-quiz`) still uses it, with `atlas.json` |
 
-The data it reads is built by `datasets/atlas.mjs`; see `docs/PIPELINE.md`.
+## What the browser loads (`datasets/web/atlas/`, built by build-web.mjs)
 
-## Look: the Lanes style (2026-11-17)
+- `meta.json`: sections, lanes (with each lane's time extent), eras per range, the bucket list.
+- `top.json`: the 5,000 most important entries, at least 40 per lane: all there is
+  room for zoomed out. `long.json`: spans too long for a bucket.
+- `b-NNN.json`: everything else by start year (a span joins every bucket it reaches),
+  loaded only when the window on screen needs at most 10 buckets.
 
-The atlas is being brought to the look of the topic timeline's Lanes view
-(`project/features/topic/styles.js` `.tp-ln`/`.tp-lanelab`). Done, without
-touching any decision below:
+Opening costs ~400 KB gzipped (was `atlas.json`, 27 MB / 7 MB gz). A view's bytes do
+not grow with the store; only the bucket count does. Entries are the topic files'
+versions: the audit's date corrections and types, the short titles of mined events
+(`titles*.json`), and nothing a topic keeps off its timeline (untitled prose
+sentences, suspect dates, undated ideas). An entry in no topic that is an untitled
+mined sentence is left out too (21k of them today: the titling pass brings them in).
+Excerpts and neighbours (`nn`) load per entry from `web/details/` (its `g` group).
+Search hits come back as lite rows, which carry the lane (`ln`, `p`, `g`), so a hit
+not loaded yet is still placed.
 
-- white ground and panels, `#e5e7eb` hairlines, near-black (not blue) for the
-  active state; band wash kept but pale (light `bandFill` 0.035); a band's top
-  edge is a neutral hairline (`COLORS.hair`), a folded band keeps its hued edges;
-- band names drawn like lane names (`laneLabel` in `paint.js`): small grey
-  uppercase, letter-spaced, a 6px swatch of the band colour in front; also used
-  by focus bands and the pinned strip; entry labels are packed around them;
-- entry labels are bare text (no chip box or colour stripe) on a ground-coloured
-  backing; famous = 700 near-black, others 500 slate, 11.5px (`labelFont`);
-  a labelled point gets a round 3-4px dot; a labelled span that is visibly long
-  (and under `LONG_SPAN_FRAC`) has its title ABOVE its line and the line drawn
-  3px with end ticks, the Lanes' duration underline;
-- phones (< 700px) start with the rail folded to its spine unless the saved
-  prefs say otherwise.
+## Organisation (datasets/lib/atlas-lanes.mjs)
 
-Not done, because each changes a decision below (ask the user first): packed
-rows instead of embedding y, retiring the rail for inline band names, image
-cards replaced by labels with small round portraits (crops), fame shown by
-weight only (no bigger dot/ring), era bands + overview strip in the header.
+- **Sections** are the topic tree's roots (`topic-structure.json` parent links):
+  World, Europe, Middle East, Africa, Asia, Americas, Oceania, Science, Arts & ideas,
+  Earth & life (first in the Humans and Earth ranges, last in Civilization).
+- **Lanes** are topics, depth-first in the tree (Italy, then Ancient Rome), each
+  entry in exactly ONE lane: the topic where it matters most (essential there 4,
+  importance x3, on the timeline 1, off-topic −3, depth 0.6 per level, collection
+  −2, +1.5 for the topic whose article brought it in: Battle of Hastings in
+  England, not Viking Age).
+- **No topic: its category and region.** Science subjects go to the science topic
+  that covers them (Physics, Chemistry…); culture subjects get lanes of their own
+  (Visual arts, Films…); history by region, split by subregion ("Southern Europe:
+  other"). A fallback lane under 25 entries joins its section's catch-all.
+- **Inside a lane, kinds in the timeline's order**: eras/states (tinted bars, name
+  inside, the label slides along), events (dot + title; 3px line under the title if
+  it lasted), people (life line, name, 15px round portrait), works (square) and
+  places/groups (hollow dot). Only events and lives get a duration line.
+- **Weight, not size**: bold = famous (fame ≥ 0.6, Wikidata sitelinks) or an
+  essential of its topic; grey = little known (priority < 8); else medium.
 
-## Design decisions — do not re-litigate these
+## Layout (lanes.js)
 
-- **The top two layers are KNOWN; only the layers below are learned.**
-  - **Layers:**
-    - depth 1 is a subject group (History & Society, Culture, Science &
-      Technology, Geography)
-    - depth 2 is a subject (History, Politics and government, Military and
-      warfare, Visual arts, Films, Physics, Mathematics…)
-    - embedding clusters exist only inside one subject
-  - **Where the names come from:** Wikimedia's articletopic taxonomy, fetched
-    free by `datasets/classify.mjs`.
-  - **Why:** this fixed the worst of the old rail ("Politician · President" ×5,
-    "Byzantine" ×5, a "Rococo" band over 1400). Embeddings are good at "which
-    paintings are closest" and bad at naming broad subjects.
-  - **Why not Wikipedia's own category graph:** walking up from *Battle of
-    Hastings* touches 1,260 categories in six levels and reaches Politics before
-    History.
-  - **Labels are used structurally, never embedded.** Embedding `domains` made
-    the map re-derive its source CSVs (`docs/PIPELINE.md`).
-  - **People are filed by their field, not under "Biography":** Henry VIII is
-    Biography 0.87 / History 0.29 → History, beside Bosworth.
-  - Subjects under 25 entries fold into one "Other …" row per group.
-  - Sibling clusters that still share a name get a distinguishing second term.
-  - Search with `subject:physics` and `region:northern_europe`. The detail
-    panel's breadcrumb shows the path.
-- **A span much wider than the screen is context, not a mark.** Past 75% of the
-  viewport (`LONG_SPAN_FRAC` in `paint.js`):
-  - it draws as a 1px line at low alpha
-  - it can't be grabbed along its bar, only at its start point
+- Packed most important first (`p`: fame, essential, importance, picture) into the
+  first row with room, per lane per kind, up to `capsFor(zoom)` rows (more as you
+  zoom in; "N more ▾" on a lane gives it three times as many; search too).
+  Occupancy is a 4px-cell bitmap per row, ~30 ms for a full re-layout.
+- Laid out for a window **three screens wide**; panning inside it only moves a
+  transform. Leaving it, zooming, a filter, a fold or a pin lays out again, keeping
+  the lane at the top of the screen where it was.
+- The DOM holds only the lanes within a screen of the scroll position.
+- Labels against the present (the right end of time) flip to the left of their dot.
+- A span covering the whole view and more than twice it is context, not drawn
+  (the timeline's umbrellas).
 
-  Also, a nearby point **always** beats a span's bar. Before this, *Plants*
-  (hundreds of millions of years) crossed the screen at most zooms, and because
-  bar distance was compared against points' full distance, hovering near its
-  row anywhere selected it.
+## Interaction
+
+Toolbar: one row (search, range, − +, Fit, ⋯ for zoom stops / go to a lane / fold
+all / help, ▲ hides the bar). Header: overview strip (eras of the range, the box is
+the view; click or drag), era bands (click to fit), ticks, pinned lanes. Body:
+scroll = up/down (native, so phones scroll naturally); drag, shift+scroll or
+sideways scroll = time; pinch / ctrl+scroll = zoom at the cursor. Click a lane name
+to pin it (max 6, ≤ 40% of the height), a section to fold it, an entry to open it
+(‹ › or ←/→ step through its lane; Esc closes). Prefs: `atlas:prefs:v2` (range,
+camera, pins, folds, toolbar).
+
+## Decisions: do not re-litigate
 
 - **x is linear, always.** Compressing or eliding empty stretches was offered and
   rejected. Gaps should read as real.
@@ -114,157 +120,43 @@ weight only (no bigger dot/ring), era bands + overview strip in the header.
   picks its unit from the **step**, not the value — every label on one axis shares a
   unit and the spacing reads as even. `ka`/`Ma`/`Ga` mean *ago*, so a positive year
   never gets one; the padded right edge is `present`.
-- **y is unitless `[0,1]`** and its zoom is *coupled* to x's by
-  `coupledYZoom(ppy) = 1 + ppy^0.62 * 1.35`. Alt+wheel zooms y alone. Linear
-  coupling ran vertical zoom away long before the cards appeared.
-- **Detail arrives gradually, not by tier switching.** `tierFor(ppy)` sets only what
-  is *offered*; `packLabels()` then places labels in a fixed **global** priority
-  order until space runs out. That priority is viewport-independent on purpose —
-  anything position-dependent makes cards shimmer as you pan. Dots always draw.
-- **Cluster bands are filled, never stroked.** An outlined band beside an outlined
-  card is what read as doubled borders. One hairline at each band's top edge only,
-  so adjacent bands share a line.
-- **Band labels stick to the viewport's left edge**, not to the band's first entry,
-  or the label scrolls away exactly when you still need it.
-- **Collapse folds the map band *and* hides the rail's children.** One control,
-  because it is one intent.
-- **Collapsing warps the y axis; it does not just stop drawing.** A folded cluster
-  used to keep its full height and go dark, so folding a big branch bought a tall
-  empty stripe and no room. `makeYWarp` in `scales.js` squeezes each folded range to
-  a **15px strip** and stretches the rest of the axis back out over the gap. Two y
-  spaces exist because of it: `A.y[i]` is **atlas** y and never changes, while
-  `yTop`/`iy`/the saved prefs are **layout** y. `sy()` takes atlas y and returns
-  pixels, so painting is unaffected; the handful of places that mix the two say so
-  with `warpY`/`unwarpY`. The strip is *pixel*-sized rather than axis-sized, so a
-  fold cannot grow as you zoom in — which makes the warp mildly zoom-dependent, and
-  cursor-anchored zoom drifts a pixel or two beside a strip. That is the cheaper
-  error, and `focusNode` runs its fit twice to settle it.
-- **A scroll pans, a pinch zooms.** Both arrive as `wheel` and the *only* thing
-  separating them is `ctrlKey`, which the browser sets synthetically on a trackpad
-  pinch. Plain wheel pans both axes at 1px of delta to 1px of movement, shift pans
-  time (a mouse wheel has no `deltaX`), ctrl/cmd zooms at the cursor, alt zooms the
-  topic axis. Wheel-as-zoom made a two-finger scroll — the way you move around every
-  other map — fly you in and out instead. `ZOOM_RATE` in `index.js` is the one number
-  to tune if pinch feels wrong: pinch deltas are much smaller per event than a wheel
-  notch and arrive in long streams.
-- **Light is the default theme, and both halves have to move.** `styles.js` holds no
-  literal colour below `:root` — two variable blocks swapped by `data-theme` on
-  `<html>` — because a one-off hex for a hover state is exactly where a second theme
-  leaks. The canvas cannot read CSS variables, so `PALETTES` in `paint.js` is the
-  matching pair and `setCanvasTheme` mutates `COLORS` in place. Band alphas are
-  per-theme, not shared: a cluster colour is OKLCH lightness ~0.6, so a 7.5% wash
-  reads on near-black and vanishes on white. `hueInk()` darkens a cluster colour
-  before it is used as *text*, since the same hue is only ~3:1 on white.
-- **The sidebar folds to a 22px spine, it does not vanish.** Hidden outright, the
-  only way back is a toolbar button you have to already know about; the spine keeps
-  the chevron on the edge you clicked.
-- **Pin lifts a cluster into a top strip sharing the map's x transform**, so you can
-  hold "Cubism" pinned and pan four centuries past it. Max 6 pins, ≤42% of viewport.
-- **Fame is a highlight, not a filter.** `A.fame` (Wikidata sitelinks, log-scaled —
-  see `docs/PIPELINE.md`) feeds `A.prio` and drives a restrained highlight above
-  `FAME_HI` in `paint.js`: a larger dot, a hairline ring, a bold chip label. Kept to
-  bigger-mark-plus-ring rather than a glow or a colour change, to match the
-  filled-not-stroked, one-hairline aesthetic everywhere else on the canvas. An entry
-  with no QID (a mined event, a hand-entered row) just gets fame 0, same treatment as
-  an entry with no image.
-- **Free-text search adds hybrid matches from `/api/search`.** That route
-  combines BM25 with 768-d EmbeddingGemma scores, using the model's
-  `task: search result | query:` prefix, a calibrated similarity floor, and
-  rank fusion. So a phrase with no literal overlap ("guy who invented the
-  telephone") still finds Bell, and **a nonsense query finds nothing**.
-  - **Corrected 2026-11-13:** the README used to say no threshold could separate
-    real matches from noise, because `zzzznotathing` scored 0.58. That was the
-    query being embedded without its prefix. With the prefix it scores 0.28, and
-    real queries start near 0.47.
-  - Hybrid matches are still an OR on top of literal substring matching, and fail
-    soft to substring-only without Ollama.
-  - Full measurements: `docs/SEARCH.md`.
+- **Lanes, not a scatter** (user, 2026-11-18): the atlas looks and reads like the
+  topic timeline: no sidebar, no image cards, no canvas, no embedding y. The
+  embedding tree (`atlas.mjs`) still exists for neighbours ("Related") and the
+  details grouping, not for position.
+- **Organised by topic and category, not only by kind** (user): topic lanes first,
+  category/region lanes for the rest, kinds inside each lane.
+- **Fame is bold text** (user), not a bigger dot or a ring.
+- **Portraits are small and round** (user, accepting the crop): `object-fit:cover`
+  as on the timeline. The detail panel's picture is still uncropped (`contain`).
+- **Light only.** The dark theme went with the canvas (the timeline has none).
+- **What a topic keeps off its timeline, the atlas does not show.** Accuracy first.
 
-## Atlas gotchas
+## Gotchas
 
-These all cost time at least once.
+- **NO BACKTICKS INSIDE A CSS TEMPLATE** (`styles.js`, `topic/styles.js`,
+  `ui/lanes-css.js`): one closes the string and the CSS parses as JavaScript.
+  `verify.mjs` checks all three.
+- **This module's code runs in the opener's realm.** Create nodes with the popup's
+  document (`D`), take timers from the popup (`w.setTimeout`), and give the popup
+  any global an inline handler calls (`w.imgRetry = imgRetry`).
+- **The popup is reused by name** (`window.open('', 'atlas')`): QA that reopens it
+  must emulate the atlas target, not just the opener.
+- **A mode change scrolls to the top** (sections reorder); every other re-layout
+  keeps the top lane anchored.
+- **Generated data is not on main**: `web/atlas/` comes from `build-web.mjs`, which
+  needs `topics/` and `atlas/` (see HANDOFF).
+- Wikimedia serves fixed thumbnail widths (`WM_STD_WIDTHS`, `thumbUrl` snaps); the
+  web build strips the API's `?utm_source=` suffix from image URLs.
 
-- **NO BACKTICKS IN A COMMENT INSIDE `styles.js`'s CSS TEMPLATE.** One closes the
-  string and the rest of the stylesheet is parsed as JavaScript, surfacing as
-  `Unexpected identifier` or `Invalid left-hand side expression in postfix operation`
-  (`--bg` read as a decrement) pointing at a line of CSS, with the whole atlas failing
-  to load. **Three separate sessions have lost time to this.** `verify.mjs` now greps
-  for it, so `node datasets/qa/verify.mjs` catches it in a second instead.
-- **A flex item's automatic minimum size beats `flex-basis`.** `.rail` is written
-  `flex:0 0 216px` and was rendering at **466px**, eating a third of the map, because
-  `min-width` defaults to `auto` = min-content and the longest cluster label
-  ("Great Britain · Kingdom · House Of Windsor") is `nowrap`. `.rlabel`'s ellipsis
-  never engaged because the row was never actually constrained. `min-width:0` is the
-  fix and is asserted by QA.
-- **`window.__atlas.view` changes synchronously; `window.__atlas.scale` does not.**
-  `scale` is rebuilt in `paint()` one frame later, so a check that toggles a fold and
-  then measures with `sy()` reads the *old* geometry. Poll on `scale.warp.n`, not on
-  `view.folded.length`. This made a working fold report "folding freed no space".
+## Rough edges
 
-- **Wikimedia only serves a fixed set of thumbnail widths** — 20, 40, 60, 120, 250,
-  330, 500, 960, 1280, 1920, 3840 (`WM_STD_WIDTHS` in `utils/helpers.js`). Since 2025
-  a direct hotlink at *any* other width is rejected with **HTTP 400**, not rounded.
-  Asking for 320px broke every card image at once, and because a failed image
-  degrades silently to a text card it looked like a data gap rather than a bug.
-  `thumbUrl()` snaps to the nearest standard width — if you change `IMG_W` in
-  `cards.js`, every value must stay on that list. Run `datasets/scripts/imgcheck.mjs` after
-  touching any of this.
-- **Dead image URLs** degrade to text cards, so a broken Wikimedia link looks
-  intentional rather than broken. Worth a periodic link check.
-- **Images are never cropped.** `object-fit: contain` on the card, hover preview,
-  detail panel and enlarged view. `qa-atlas.mjs` asserts loaded images keep their
-  aspect ratio to within 4%, and that no card carries a border *and* an outline —
-  selection and hover are `box-shadow` rings outside the border.
-- **This module's code runs in the *opener's* realm.** Two consequences:
-  - **Timers must come from the atlas window.** Browsers throttle a backgrounded
-    tab's timers to ~1s, and the opener is backgrounded the whole time you use the
-    atlas. The search debounce and resize handler were both ~1s late. Use
-    `w.setTimeout` / `w.clearTimeout`.
-  - **DOM nodes must be created by the popup's document.** `document.createElement`
-    builds nodes in the opener's document; browsers auto-adopt on append but
-    `ownerDocument` stays wrong. Use `root.ownerDocument.createElement`, and
-    `D.defaultView.innerWidth` rather than `window.innerWidth`.
-- **Never put a backtick in a comment inside a template literal.** A comment reading
-  `` `--hue` `` inside `styles.js`'s CSS template closed the string, and the CSS was
-  then parsed as JavaScript — surfacing as `SyntaxError: Invalid left-hand side
-  expression in postfix operation`, because `--bg` read as a decrement. This bit
-  twice: once in `styles.js`, once in a page-side probe in `qa-atlas.mjs`.
-- **View prefs persist** in `localStorage` under `atlas:prefs:v1`, including
-  `collapsed`, `pinned` and `mode`. If the atlas opens in a state you did not expect,
-  that is why. `node datasets/qa/reload.mjs --atlas` clears them. Prefs are read **once
-  at open time**, so a test that clears them must do it on the *opener*, before
-  `openAtlas()` — clearing afterwards silently inverted the pin and collapse tests.
-- **`scale` is a frame behind the camera.** It is rebuilt in `paint()`, i.e. on the
-  next animation frame, so two camera actions in one tick had the second reading the
-  first's stale geometry: `setMode('civ')` then `gotoStop()` computed a centre from
-  the mode it had just left, 2.2 billion years out, and clamped to the edge. Read the
-  camera (`V`, or `midYear()`) rather than `scale` when acting.
-- **The spatial grid resolves where the data is, not the full extent.** `denseExtent()`
-  in `data.js` trims to the 1st/99th percentile before dividing into 128 columns.
-  On the raw extent the resolution is set by the single oldest entry — one row at
-  −113,000 made a column 899 years wide and put 99% of the corpus in six of them, so
-  the x half of the grid stopped discriminating. Trimming is safe, not approximate:
-  `query` clamps to the column range and then confirms real bounds per point.
-- **`setPointerCapture` throws** `NotFoundError` when the pointer is already gone
-  (synthetic events, fast clicks). Keep it in a try/catch.
-- **The rail must rebuild when zoom changes its depth.** `depthFor()` picks which
-  tree level the rail lists; only the collapse/pin/filter flags set `dirty.rail`, so
-  `paint()` also compares against the previous depth.
-- **`membersOf()` in `rail.js`** memoises per node in a `WeakMap` keyed by the atlas
-  and scans all points on first call per node. Fine at 2.7k, revisit at 100k.
-- **`atlas.json` (792KB) and `details.json` (794KB) load whole.** Points are columnar
-  so parsing is fast, and details load after first paint. Past ~50k entries these
-  want sharding or a binary blob; there is a note in `atlas.mjs`.
-
-## Known rough edges (judgement calls, not bugs)
-
-- The status readout can show a year range wider than the data (e.g. `1571 BC–3349`)
-  when the whole extent fits in the viewport. Correct, looks odd.
-- **78 of 227 cluster nodes share a label with a sibling**, so the rail shows
-  `Byzantine` ×5 and `United States` ×4 — rows you cannot tell apart. Labelling picks
-  each node's top topics independently; it needs to prefer a token that
-  *distinguishes a node from its siblings*.
-- **Band labels are occluded by cards** at detail zoom, since they pin to the
-  viewport's left edge and a card can sit there.
-- 88% of leaf clusters are single-source, expected while `art` + `leaders` are 68% of
-  the corpus. Watch with `node datasets/scripts/inspect.mjs --cross`.
+- Spans with no data in their bucket's stretch can briefly appear/disappear at a
+  window edge while buckets load.
+- Linear time crowds the recent end at the full Civilization fit (most entries are
+  after 1500); zoom or the era bands are the way in.
+- Store duplicates show as two entries in different lanes (Napoleon / Napoleon
+  Bonaparte): `dedupe-events.mjs` territory.
+- `scales.js` still holds the scatter's y-axis helpers (`makeYWarp`, `coupledYZoom`,
+  `tierFor`, `depthFor`): unused by the lanes atlas, kept for nothing; remove when
+  touching that file.

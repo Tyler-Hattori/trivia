@@ -68,7 +68,9 @@ const idx = read(path.join(PATHS.topics, 'index.json'));
 const live = new Set(idx.topics.filter((t) => !t.absorbedInto).map((t) => t.slug));
 const trows = A.items.filter((r) => live.has(r.x));
 // Image URLs share a long prefix: "~" stands for it (the browser expands it, as for lite rows).
-const shortImg = (u) => String(u).replace(/^https:\/\/upload\.wikimedia\.org\/wikipedia\//, '~');
+// The API's "?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=…" suffix is
+// tracking, not part of the image: 80 bytes on every row.
+const shortImg = (u) => String(u).replace(/\?utm_source=[^#]*$/, '').replace(/^https:\/\/upload\.wikimedia\.org\/wikipedia\//, '~');
 for(const r of trows){
   if(!r.i) r.a = anchorYear({ type: r.ty, kind: r.k ? 'span' : 'point', start: r.s, end: r.e, dataset: r.d });
   if(r.im) r.im = shortImg(r.im);
@@ -156,6 +158,8 @@ P.id.forEach((id, i) => (byLeaf.get(P.leaf[i]) || byLeaf.set(P.leaf[i], []).get(
 const leafGroup = {};
 let g = 0, cur = 0;
 const files = new Map();
+const groupOf = new Map();   // id -> details file, for the lanes atlas
+const idAt = P.id;
 for(const leaf of [...byLeaf.keys()].sort((a, b) => a - b)){
   const ids = byLeaf.get(leaf);
   for(let part = 0; part * LEAF_PART < ids.length; part++){
@@ -163,13 +167,153 @@ for(const leaf of [...byLeaf.keys()].sort((a, b) => a - b)){
     if(cur && cur + chunk.length > LEAF_GROUP_ROWS){ g++; cur = 0; }
     leafGroup[`${leaf}:${part}`] = g; cur += chunk.length;
     const f = files.get(g) || files.set(g, {}).get(g);
-    for(const id of chunk){ const d = details[id]; if(d) f[id] = { excerpt: d.excerpt, facets: d.facets, origin: d.origin }; }
+    for(const id of chunk){
+      groupOf.set(id, g);
+      const d = details[id];
+      if(d) f[id] = { excerpt: d.excerpt, facets: d.facets, origin: d.origin };
+    }
   }
 }
 for(const [k, f] of files) put(`details/l-${pad(k)}.json`, f);
 put('details/leaves.json', { part: LEAF_PART, groups: leafGroup });
 // Facets alone (1.5 MB at 70k entries): the cluster quiz decides what to ask from them up front.
 put('details/facets.json', Object.fromEntries(Object.entries(details).filter(([, d]) => d.facets && Object.keys(d.facets).length).map(([id, d]) => [id, d.facets])));
+
+// ---------------------------------------------------------------------------
+// The atlas: lanes (lib/atlas-lanes.mjs), entries cut by importance and time
+// ---------------------------------------------------------------------------
+/*
+ *   atlas/meta.json      sections, lanes, eras, the bucket list
+ *   atlas/top.json       the most important entries (every lane's headliners):
+ *                        all the atlas needs zoomed out
+ *   atlas/long.json      spans over more than SPAN_BUCKETS buckets (eras, dynasties)
+ *   atlas/b-NNN.json     the rest by start year (a span joins every bucket it
+ *                        reaches); loaded only for the stretch on screen
+ * An entry row: id t s [e] [o] [c] ty [pk] ln p [k] [im] [sub] [y] [g] [x].
+ * The bytes per view do not grow with the store; only the bucket count does.
+ */
+const ATLAS_BUCKET = 1500, ATLAS_TOP = 5000, ATLAS_LANE_TOP = 40;
+{
+  const { buildLanes, ERAS } = await import('./lib/atlas-lanes.mjs');
+  const struct = read(path.join(DATASETS_DIR, 'topic-structure.json')).topics;
+  const absorbedInto = new Map(idx.topics.filter((t) => t.absorbedInto).map((t) => [t.slug, t.absorbedInto]));
+  const topicsLive = idx.topics.filter((t) => live.has(t.slug)).map((t) => ({ slug: t.slug, title: t.title, parent: struct[t.slug]?.parent || t.parent || null, role: struct[t.slug]?.role || t.role || null }));
+  const members = new Map();
+  for(const t of idx.topics){
+    const home = absorbedInto.get(t.slug) || t.slug;
+    if(!live.has(home)) continue;
+    let T;
+    try { T = read(path.join(PATHS.topics, `${t.slug}.json`)); } catch { continue; }
+    for(const it of T.items || []){
+      if(it.idea) continue;
+      (members.get(it.id) || members.set(it.id, []).get(it.id)).push({ slug: home, key: !!it.key, importance: it.importance || 0,
+        onTimeline: it.onTimeline, offTopic: !!it.offTopic, periodKind: it.periodKind || null, type: it.type, sub: it.sub,
+        start: it.start, end: it.end, openEnded: it.openEnded, yearText: it.yearText, title: it.title });
+    }
+  }
+  const liteById = new Map(L.map((r) => [r.id, r]));
+  const pts = P.id.map((id, i) => ({ id, i, subject: P.subject?.[i] || '', region: P.region?.[i] || '' }));
+  const { sections, lanes, laneOf, best } = buildLanes(topicsLive, members, pts);
+  const rows = [];
+  let offTl = 0, untitled = 0;
+  const shortTitle = { ...(() => { try { return read(path.join(DATASETS_DIR, 'titles-auto.json')); } catch { return {}; } })(),
+    ...(() => { try { return read(path.join(DATASETS_DIR, 'titles.json')); } catch { return {}; } })() };
+  for(const p of pts){
+    const i = p.i, id = p.id, lr = liteById.get(id) || {};
+    const b = best.get(id);
+    // What its home topic's timeline draws, the atlas draws: the audit's date
+    // corrections and types (topic.mjs), and nothing the topic keeps off its
+    // timeline (untitled prose events, suspect dates, undated ideas).
+    if(b && b.onTimeline === false){ laneOf.delete(id); offTl++; continue; }
+    const s0 = b && Number.isFinite(b.start) ? b.start : P.x0[i];
+    const e0 = b ? (b.end ?? b.start) : P.x1[i];
+    // The topic's title: a mined event's short title ("Birth of Edward the
+    // Elder", titles.json / titles-auto.json), not the sentence it came from.
+    // In no topic: a sentence mined from a timeline page (no Wikidata item) is
+    // shown only once it has a short title, as on the topic timelines.
+    const o = details[id]?.origin;
+    if(!b && o?.manual && !o.qid && !shortTitle[id] && P.title[i].length > 48){ laneOf.delete(id); untitled++; continue; }
+    const r = { id, t: b?.title || shortTitle[id] || P.title[i], s: s0 };
+    if(e0 != null && e0 !== s0) r.e = e0;
+    if(b ? b.openEnded : P.openEnded?.[i]) r.o = 1;
+    if(P.circa?.[i]) r.c = 1;
+    r.ty = b?.type || lr.ty || 'other';
+    if(r.e != null && r.ty === 'period') r.pk = b?.periodKind || undefined;
+    r.sp = r.e != null ? 1 : undefined;
+    r.ln = laneOf.get(id);
+    const fame = P.fame?.[i] || 0;
+    r.f = Math.round(fame * 100);
+    r.p = Math.round(fame * 100 + (b?.key ? 50 : 0) + (b?.importance || 0) * 30 + (P.image[i] ? 8 : 0));
+    if(b?.key) r.k = 1;
+    if(P.image[i]) r.im = shortImg(P.image[i]);
+    const sub = b?.sub || P.subtitle[i];
+    if(sub) r.sub = clip(sub, 90);
+    const yt = b ? b.yearText : P.yearText[i];
+    // Only text that says more than the numbers ("c. 2,707 Ma", "473–381,000
+    // years ago"); "1066" or "1337 BC-1453" the browser formats itself.
+    if(yt && !/^\d+( BC)?(-\d+( BC)?)?$/.test(yt)) r.y = yt;
+    if(groupOf.has(id)) r.g = groupOf.get(id);
+    const xs = (members.get(id) || []).map((m) => m.slug);
+    if(xs.length) r.x = [...new Set(xs)];
+    for(const k of Object.keys(r)) if(r[k] === undefined) delete r[k];
+    rows.push(r);
+  }
+  for(const l of lanes) l.n = 0;
+  for(const r of rows) lanes[r.ln].n++;
+  // Each lane's time extent: a lane with nothing in the range on screen (Dinosaurs
+  // in Civilization) is left out rather than drawn empty.
+  const ext = lanes.map(() => [Infinity, -Infinity]);
+  for(const r of rows){ const x = ext[r.ln]; x[0] = Math.min(x[0], r.s); x[1] = Math.max(x[1], r.o ? NOW : r.e ?? r.s); }
+  // Top: every lane's headliners, then the most important overall.
+  const byP = [...rows].sort((a, b) => b.p - a.p);
+  const top = new Set();
+  const perLane = new Map();
+  for(const r of byP){ const n = perLane.get(r.ln) || 0; if(n < ATLAS_LANE_TOP){ top.add(r); perLane.set(r.ln, n + 1); } }
+  for(const r of byP){ if(top.size >= ATLAS_TOP) break; top.add(r); }
+  const rest = rows.filter((r) => !top.has(r)).sort((a, b) => a.s - b.s);
+  const ab = buckets(rest, (r) => r.s, ATLAS_BUCKET).map((rs) => ({ lo: rs[0].s, rows: [...rs] }));
+  ab.forEach((b, i) => { b.hi = i + 1 < ab.length ? ab[i + 1].lo : Infinity; });
+  const along = [];
+  for(const [bi, b] of ab.entries()){
+    for(const r of [...b.rows]){
+      const e = r.o ? NOW : r.e ?? r.s;
+      if(e < b.hi) continue;
+      let last = bi;
+      while(last + 1 < ab.length && ab[last + 1].lo <= e) last++;
+      if(last - bi + 1 > SPAN_BUCKETS){ along.push(r); b.rows.splice(b.rows.indexOf(r), 1); continue; }
+      for(let k = bi + 1; k <= last; k++) ab[k].rows.push(r);
+    }
+  }
+  ab.forEach((b, i) => put(`atlas/b-${pad(i)}.json`, b.rows));
+  put('atlas/top.json', [...top]);
+  put('atlas/long.json', along);
+  put('atlas/meta.json', {
+    built: new Date().toISOString(), n: rows.length, sections,
+    lanes: lanes.map((l, li) => ({ key: l.key, label: l.label, section: l.section, depth: l.depth, n: l.n, ...(Number.isFinite(ext[li][0]) ? { lo: ext[li][0], hi: ext[li][1] } : {}), ...(l.topic ? { topic: l.topic } : {}), ...(l.collection ? { collection: 1 } : {}), ...(l.fallback ? { fallback: 1 } : {}) })),
+    eras: ERAS, extent: [Math.min(...P.x0), Math.max(...P.x1)],
+    buckets: ab.map((b, i) => ({ lo: b.lo, hi: Number.isFinite(b.hi) ? b.hi : null, f: `b-${pad(i)}.json`, n: b.rows.length })),
+    top: top.size, long: along.length,
+  });
+  // Nearest neighbours (the detail panel's "Near") ride with the excerpts.
+  if(P.knn){
+    for(const [i, nn] of P.knn.entries()){
+      const f = files.get(groupOf.get(idAt[i]));
+      if(f && f[idAt[i]] && nn?.length) f[idAt[i]].nn = nn.slice(0, 8).filter((j) => idAt[j]).map((j) => [idAt[j], P.title[j], P.x0[j]]);
+    }
+    for(const [k, f] of files) put(`details/l-${pad(k)}.json`, f);
+  }
+  // Search hits come back as lite rows (web/lite/rows): give them what the atlas
+  // needs to place one that is not loaded yet.
+  const atlasRow = new Map(rows.map((r) => [r.id, r]));
+  for(const lr of order){
+    const r = atlasRow.get(lr.id);
+    if(!r) continue;
+    for(const k of ['ln', 'p', 'g', 'k', 'sp', 'y', 'c', 'o', 'pk']) if(r[k] != null) lr[k] = r[k];
+    lr.af = r.f;
+  }
+  for(let i = 0; i * ROWS_PER_BLOCK < order.length; i++) put(`lite/rows/r-${pad(i)}.json`, order.slice(i * ROWS_PER_BLOCK, (i + 1) * ROWS_PER_BLOCK));
+  console.log(`  atlas: ${rows.length} entries (${offTl} off their topic's timeline, ${untitled} untitled sentences in no topic), ${sections.length} sections, ${lanes.length} lanes, ${top.size} top, ${along.length} long, ${ab.length} buckets`);
+}
 
 // Id aliases (store/id-aliases.json): the browser moves answer records with them.
 {

@@ -1,1617 +1,698 @@
 /*
- * openAtlas() — the orchestrator.
+ * openAtlas(): the whole store as the topic timeline's Lanes.
  *
- * Owns the window, the camera, and the frame loop. Everything else in this
- * directory is a pure-ish function of state that this file holds.
+ * Opens in a popup window; this code runs in the opener's realm (docs/ATLAS.md:
+ * create nodes with the popup's document, take timers from the popup window).
  *
- * ## The frame loop
+ * Layout (top to bottom), as on a topic timeline:
+ *   toolbar        one compact row (more behind ⋯; the whole bar folds away)
+ *   overview       the whole time range with its eras; the box is the view
+ *   era bands      the eras at the current zoom; click one to fit it
+ *   ticks          years
+ *   pinned lanes   any lane whose name you clicked
+ *   body           sections > lanes > kinds (lanes.js), scrolled natively up and
+ *                  down; time pans sideways by transform
  *
- * State changes set dirty flags and request one animation frame; nothing paints
- * synchronously. The flags matter because the three layers have very different
- * costs: the canvas is cheap and repaints on any camera change, the DOM card layer
- * only re-syncs when placements move, and the rail only rebuilds when the tree,
- * filter or collapse state changes. Panning therefore touches the canvas and the
- * card transforms and nothing else.
- *
- * ## The two invariants inherited from the old engine
- *
- *   1. Geometry never reads scroll position. A point's y comes from the atlas and
- *      its x from its year, so panning sideways can never move anything
- *      vertically. Related topics stay at the same height as you travel through
- *      time — which was the original request and is now structural rather than
- *      maintained by hand.
- *   2. Representation is a function of zoom, not of the data. One number picks
- *      what is offered; `packLabels` fills the space that is actually free.
+ * Horizontal: x is linear in years, in one of three ranges (scales.js MODES).
+ * The layout is computed for a window three screens wide around the view
+ * (lanes.js), so panning inside it moves nothing; leaving it, zooming, a filter
+ * or a fold lays out again. The DOM holds only the lanes near the scroll position.
  */
-
-import { loadAtlas, runFilter, parseQuery, queryIsEmpty, focusYArray } from './data.js';
+import { loadLaneAtlas } from './lanedata.js';
+import { layoutAtlas, capsFor, weightOf, GEO } from './lanes.js';
 import {
-  makeScale, zoomAt, clampView, fitView, tierFor, depthFor, ticks, collapsedRanges,
   MODES, DEFAULT_MODE, modeOf, widerMode, domainFor, ppyRange, atEdge, stopsFor,
-  coupledYZoom, clamp, fmtYear, fmtTick, fmtTickRange,
+  clamp, clampView, fitView, ticks, fmtTick, fmtYear, fmtRange,
 } from './scales.js';
-import {
-  sizeCanvas, paintFrame, packLabels, visibleBands, hitTest, bandAt, isHidden, labelFont,
-  COLORS, setCanvasTheme, paintFocusBandFill, paintFocusBandLabels,
-} from './paint.js';
-import { createCardLayer, createTip, esc } from './cards.js';
-import { createDetail } from './detail.js';
-import { createRail, pinLayout, paintPinStrip, pinHitTest, pinRowAt, membersOf, rowGeometry } from './rail.js';
+import { thumbUrl, imgRetry } from '../../utils/helpers.js';
 import { CSS } from './styles.js';
 
-const PREFS_KEY = 'atlas:prefs:v1';
+const PREFS_KEY = 'atlas:prefs:v2';
+const ERA_COLORS = ['#b45309', '#7c3aed', '#2563eb', '#059669', '#dc2626', '#0891b2', '#475569'];
+const FONT = 'ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif';
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-const SHELL = (base, css, theme) => `<!DOCTYPE html>
-<html lang="en" data-theme="${theme}"><head><meta charset="UTF-8">
+const SHELL = (base, css) => `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <base href="${base}">
-<title>Atlas — history in embedding space</title>
+<title>Atlas</title>
 <style>${css}</style>
 </head><body>
-<div id="boot"><span class="spin"></span><span>Loading the atlas…</span></div>
+<div id="boot">Loading the atlas…</div>
 <div id="app" style="visibility:hidden">
-  <header id="cmd">
-    <div class="cmdrow">
-      <div id="title">Atlas</div>
-      <div id="count"></div>
-      <div class="searchbox">
-        <span class="mag">&#9906;</span>
-        <input id="q" type="text" autocomplete="off" spellcheck="false"
-               placeholder="Search — or 1750-1800, subject:physics, region:europe, topic:cubism, has:image">
-        <button class="pinfocus" title="Pin this search's focused view, then search something else">&#9670;</button>
-        <button class="clear" title="Clear (Esc)">&times;</button>
-        <span class="kbd">/</span>
-      </div>
-      <div class="seg" id="modeSeg"></div>
-      <div class="seg" id="scaleSeg"></div>
-      <div class="grp spacer">
-        <div class="seg" id="axisSeg" title="Which axis the zoom controls move"></div>
-        <button class="btn icon" id="zoomOut" title="Zoom out (&minus;)">&minus;</button>
-        <span id="ppyLab"></span>
-        <button class="btn icon" id="zoomIn" title="Zoom in (+)">+</button>
-        <select class="btn" id="courseSel" title="Show only one topic's entries"><option value="">All topics</option></select>
-        <button class="btn" id="fitBtn" title="Fit everything (0)">Fit</button>
-        <button class="btn" id="dimBtn" title="Dim non-matches instead of hiding them">Dim</button>
-        <button class="btn" id="railBtn" title="Collapse the cluster sidebar (r)">Rail</button>
-        <button class="btn" id="facetBtn" title="Toggle tag filters (f)">Tags</button>
-        <button class="btn icon" id="themeBtn" title="Light / dark theme (t)">&#9683;</button>
-        <button class="btn icon" id="helpBtn" title="Keyboard help (?)">?</button>
-      </div>
-    </div>
-    <div class="cmdrow" id="facets"></div>
+  <header class="al-bar" id="bar">
+    <span class="al-title">Atlas</span>
+    <input class="al-search" id="q" type="search" autocomplete="off" spellcheck="false" placeholder="Search, or a year range (1750-1800)">
+    <div class="al-seg" id="modeSeg"></div>
+    <button class="al-btn ic" id="zoomOut" title="Zoom out (−)">−</button>
+    <button class="al-btn ic" id="zoomIn" title="Zoom in (+)">+</button>
+    <button class="al-btn" id="fitBtn" title="Fit the whole range (0)">Fit</button>
+    <span class="al-sp"></span>
+    <span class="al-count" id="count"></span>
+    <button class="al-btn ic" id="moreBtn" title="More controls">⋯</button>
+    <button class="al-btn ic" id="foldBar" title="Hide the toolbar">▲</button>
   </header>
-  <div id="ruler"><div id="rtrack"></div></div>
-  <div id="mid">
-    <div id="railHost"></div>
-    <div id="stage">
-      <div id="pinWrap"><canvas id="pinCanvas"></canvas><div id="pinBar"></div></div>
-      <div id="surface"><canvas id="canvas"></canvas></div>
-      <div id="empty"><div>Nothing matches the current filters.</div></div>
-      <div id="status"></div>
-    </div>
+  <div class="al-more" id="more">
+    <label>Zoom</label><div class="al-seg" id="stopSeg"></div>
+    <label>Go to</label><select id="jump"></select>
+    <button class="al-btn" id="foldAll">Fold all</button>
+    <button class="al-btn" id="unfoldAll">Unfold all</button>
+    <button class="al-btn ic" id="helpBtn" title="Help (?)">?</button>
   </div>
-  <div id="mini"><canvas id="miniCanvas"></canvas><div id="miniWin"></div></div>
+  <div class="al-hdr" id="hdr">
+    <button class="al-btn ic al-unfold" id="unfoldBar" title="Show the toolbar">▼</button>
+    <div class="tp-over"><div class="strip" id="strip"></div></div>
+    <div class="al-bands" id="bands"></div>
+    <div class="al-ticks" id="ticks"></div>
+    <div class="al-pins" id="pins"><div class="al-world" id="pworld"></div><div class="al-labs" id="plabs"></div></div>
+  </div>
+  <div class="al-main" id="main">
+    <div class="al-grid" id="grid"></div>
+    <div class="al-body" id="body"><div class="al-sizer" id="sizer"><div class="al-world" id="world"></div><div class="al-labs" id="labs"></div></div></div>
+    <div id="empty">Nothing here. Clear the search, or zoom out.</div>
+    <div id="status"></div>
+    <aside class="al-detail" id="detail"></aside>
+  </div>
 </div>
-<div id="help"><div id="helpBox">
-  <h3>Atlas — controls</h3>
+<div class="tp-hover" id="tip"></div>
+<div id="help"><div class="box">
+  <h3>The atlas</h3>
   <dl>
-    <dt>scroll / two fingers</dt><dd>pan</dd>
-    <dt>pinch</dt><dd>zoom at the cursor</dd>
-    <dt>&#8963; + wheel</dt><dd>zoom at the cursor, with a mouse</dd>
-    <dt>&#8997; + wheel</dt><dd>zoom the topic axis only</dd>
-    <dt>&#8679; + pinch</dt><dd>zoom the time axis only</dd>
-    <dt>&#8660;&#8661; &#8660; &#8661;</dt><dd>which axis the &plus;&thinsp;&minus; controls zoom</dd>
-    <dt>&#8679; + wheel</dt><dd>pan through time</dd>
-    <dt>drag</dt><dd>pan</dd>
-    <dt>&larr; &rarr; &uarr; &darr;</dt><dd>pan &middot; hold &#8679; for a bigger step</dd>
-    <dt>click</dt><dd>open an entry &middot; click a band label to fold the cluster away</dd>
-    <dt>hover</dt><dd>preview, at any zoom</dd>
-    <dt>/</dt><dd>search</dd>
-    <dt>0</dt><dd>fit the whole time range</dd>
-    <dt>+ &minus;</dt><dd>zoom</dd>
-    <dt>m</dt><dd>cycle time range &mdash; civilization, humans, Earth</dd>
-    <dt>r &middot; f &middot; t</dt><dd>sidebar &middot; topic filters &middot; theme</dd>
-    <dt>c &middot; p</dt><dd>collapse &middot; pin the selected entry's cluster</dd>
-    <dt>j &middot; k</dt><dd>next / previous nearest neighbour</dd>
-    <dt>Esc</dt><dd>close, or clear the search</dd>
+    <dt>scroll</dt><dd>up and down through the lanes</dd>
+    <dt>drag · ⇧ scroll · two fingers sideways</dt><dd>through time</dd>
+    <dt>pinch · ⌃ scroll · + −</dt><dd>zoom time; more rows appear as you zoom in</dd>
+    <dt>click an entry</dt><dd>read it; ← → step through the entries in its lane</dd>
+    <dt>click a lane's name</dt><dd>pin it under the header (again to unpin)</dd>
+    <dt>more ▾ after a name</dt><dd>three times the rows for that lane</dd>
+    <dt>click a section</dt><dd>fold it away</dd>
+    <dt>click an era</dt><dd>fit it to the screen</dd>
+    <dt>/ · 0 · m · Esc</dt><dd>search · fit · next time range · close</dd>
   </dl>
-  <div class="note">
-    Horizontal is time, linear. Vertical is position in embedding space: entries near
-    each other are about similar things, and colour follows the same ordering, so a
-    band of one hue is one family of subjects. Zooming vertically walks down the
-    cluster hierarchy. Folding a cluster squeezes it to a thin strip and gives its
-    height back to everything else, at every zoom.
-  </div>
-  <div class="note">
-    The three time ranges pick how far back the axis reaches &mdash; 3000&nbsp;BC,
-    300,000 years, or the whole 4.54 billion. Each one stays strictly linear, so
-    empty stretches read as the real gaps they are; only the far edge moves. A range
-    that leaves entries behind its left edge says how many in the status line.
-  </div>
+  <p>Every entry sits in one lane: its topic (where it matters most), or its
+  subject and region when it is in no topic. Inside a lane, as on a topic
+  timeline: eras and states as tinted bars, events as dots (a line under the
+  title if it lasted), people on their life lines, then works and places. Bold:
+  famous, or an essential of its topic. Time is linear in each of the three ranges.</p>
 </div></div>
 </body></html>`;
 
-export async function openAtlas({ title = 'Atlas' } = {}){
-  // Strip the hash first: opened from a topic page (#/topic/france) the base
-  // would otherwise end in "#/topic/".
+export async function openAtlas(){
   const base = location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '');
   const w = window.open('', 'atlas');
   if(!w){ alert('Allow pop-ups to open the atlas.'); return; }
-
-  /*
-   * The theme has to be known before the document is written, or the window
-   * flashes the default theme's background while the atlas loads. Prefs are read
-   * twice for that reason: once here from raw localStorage, and again in
-   * `loadPrefs()` once the atlas is parsed and node ids can be validated.
-   */
-  const theme = readTheme(w);
-  setCanvasTheme(theme);
-
   w.document.open();
-  w.document.write(SHELL(base, CSS, theme));
+  w.document.write(SHELL(base, CSS));
   w.document.close();
   w.focus();
+  w.imgRetry = imgRetry;
 
   const D = w.document;
   const $ = (id) => D.getElementById(id);
-  const boot = $('boot');
-
-  // ---- load ---------------------------------------------------------------
   let A;
-  try {
-    A = await loadAtlas({ base, onProgress: (m) => { boot.lastChild.textContent = m; } });
-  } catch(e){
-    boot.innerHTML = `<pre>${esc(e.message)}</pre>`;
-    return;
-  }
+  try { A = await loadLaneAtlas(base); }
+  catch(e){ $('boot').innerHTML = `<pre>${esc(e.message)}</pre>`; return; }
+  const M = A.meta;
 
   // ---- state --------------------------------------------------------------
   const V = {
-    x0: 0, ppy: 1, yTop: 0, yz: 1,
-    W: 100, H: 100,
-    // Which slice of time the x axis covers. `domain` is derived from `mode` plus
-    // the data extent; always go through `setMode()` rather than setting either.
-    mode: DEFAULT_MODE,
-    domain: domainFor(DEFAULT_MODE, A.xExtent),
-    theme,
-    // Which axis the zoom controls drive: 'both', 'x' (time) or 'y' (topics).
-    zoomAxis: 'both',
-    collapsed: new Set(),
-    // The collapsed set, reduced to the non-nested y ranges `makeScale` warps by.
-    // Derived state: always go through `syncFolds()`, never assign it directly.
-    folded: [],
-    pinned: [],
-    query: '',
-    topics: new Set(),
-    datasets: new Set(),
-    course: '',          // a topic slug (datasets/topics), or '' for everything
-    dimMode: true,
-    railOpen: true,
-    facetsOpen: false,
-    selected: -1,
-    hover: -1,
-    selectedNode: null,
-    // Distance from the ruler's left edge to the map's. Set by measure().
-    RX: -1,
+    mode: DEFAULT_MODE, domain: domainFor(DEFAULT_MODE, M.extent),
+    x0: 0, ppy: 1, W: 800, H: 600,
+    pinned: new Set(), folded: new Set(), more: new Set(),
+    query: '', matches: null, selected: null,
+    barOpen: true, moreOpen: false,
+  };
+  let fresh = true;
+  loadPrefs();
+
+  const body = $('body'), sizer = $('sizer'), world = $('world'), labs = $('labs');
+  const pins = $('pins'), pworld = $('pworld'), plabs = $('plabs');
+  const tip = $('tip'), detail = $('detail');
+
+  // ---- measuring labels (same fonts as .tp-ln .lb) --------------------------
+  const mctx = D.createElement('canvas').getContext('2d');
+  const widths = new Map();
+  const measure = (t, bold) => {
+    const k = (bold ? 'b' : 'n') + t;
+    let v = widths.get(k);
+    if(v == null){ mctx.font = `${bold ? 700 : 500} 11.5px ${FONT}`; v = Math.ceil(mctx.measureText(t).width) + 1; widths.set(k, v); }
+    return v;
   };
 
-  // Whether the camera is still at its defaults, so boot knows to fit. Was a float
-  // comparison against the extent's left edge, which is not a state any more now
-  // that the left edge depends on the mode.
-  let freshCamera = true;
-  // Whether the saved prefs say anything about the rail (see the phone default at "Go").
-  let hadRailPref = false;
-
-  loadPrefs();
-  syncFolds();
-
-  let filter = null;
-  let scale = null;
-  let visible = [];
-  let bands = [];
-  let placements = [];
-  let tier = 'dot';
-  let depth = 1;
-  let pins = { rows: [], height: 0 };
-  let nodeCounts = null;
-
-  // ---- focus mode ----------------------------------------------------------
-  // See maybeTriggerFocus()/triggerFocusRecluster() below for what these hold
-  // and why. Not part of `V`: none of it is camera state, and none of it is
-  // meant to persist across a reload (see savePrefs()'s note on query-pins).
-  const FOCUS_MAX_IDS = 1500;      // client priority cap, below the server's hard 2000
-  const FOCUS_MIN_COUNT = 3;       // below this there's nothing worth clustering
-  let focusTree = null, focusIds = [], focusY = null;
-  let focusForKey = '', focusToken = 0, focusPending = false, focusTruncated = 0;
-  // Focus mode's OWN camera on the y axis — separate from V.yTop/V.yz so those
-  // stay untouched for the snap-back-on-clear trick (see paint()'s comment).
-  // Reset to fitted (0/1) whenever a query gains or loses its focus tree, so
-  // every fresh search starts fitted rather than inheriting the last one's zoom.
-  let focusYTop = 0, focusYz = 1;
-
-  // Reusable buffers for the spatial query, so a pan allocates nothing.
-  const seen = new Int32Array(A.n);
-  let stamp = 0;
-
-  // ---- DOM ----------------------------------------------------------------
-  const stage = $('stage');
-  const surface = $('surface');
-  const canvas = $('canvas');
-  const pinWrap = $('pinWrap');
-  const pinCanvas = $('pinCanvas');
-  const rulerEl = $('ruler');
-  const rtrackEl = $('rtrack');
-  const miniCanvas = $('miniCanvas');
-  const miniWin = $('miniWin');
-  const statusEl = $('status');
-  const emptyEl = $('empty');
-  const qInput = $('q');
-
-  const cardLayer = createCardLayer(surface, { onOpen: (i) => select(i, { open: true }) });
-  const tip = createTip(D.body);
-
-  const detail = createDetail(stage, {
-    onGoto: (j) => select(j, { open: true, center: true }),
-    onTopic: (t) => { toggleTopic(t); },
-    onNode: (id) => focusNode(id),
-    onClose: () => { V.selected = -1; mark({ paint: true }); },
-    topicsOf: (id) => (membersAll?.[id] || []).map((x) => ({ slug: x, title: topicTitle.get(x) || x })),
-    // The topic opens in the main window (this code runs in its realm), at the
-    // entry: topic/index.js picks the id up from localStorage.
-    onOpenTopic: (slug, id) => {
-      w.localStorage.setItem('topic:pendingSelect', id);
-      if(window.closed === false){ window.location.hash = `#/topic/${slug}`; window.focus(); }
-      else w.open(`index.html#/topic/${slug}`, '_blank');
-    },
-  });
-
-  const rail = createRail($('railHost'), {
-    onToggleCollapse: (id) => toggleCollapse(id),
-    onTogglePin: (id) => togglePin(id),
-    onSelectNode: (id) => focusNode(id),
-    onExpandAll: () => {
-      V.collapsed.clear();
-      syncFolds();
-      mark({ paint: true, rail: true, mini: true, prefs: true });
-    },
-    onCollapseTop: () => {
-      V.collapsed = new Set((A.byDepth[1] || []));
-      syncFolds();
-      mark({ paint: true, rail: true, mini: true, prefs: true });
-    },
-    onFold: () => { $('railBtn').onclick(); },
-  });
-
-  // ---- mode + scale segments ----------------------------------------------
-  /*
-   * The mode segment is fixed; the scale ladder is rebuilt on every mode change,
-   * because "Centuries" is a useful stop in a 5,000-year domain and a meaningless
-   * one in a 4.54-billion-year domain.
-   */
-  $('modeSeg').innerHTML = MODES
-    .map((m) => `<button data-mode="${m.key}" title="${esc(m.title)}">${esc(m.label)}</button>`)
-    .join('');
-
-  function renderStops(){
-    $('scaleSeg').innerHTML = stopsFor(V.mode)
-      .map((s) => `<button data-stop="${s.key}">${s.label}</button>`).join('');
+  // ---- sizes, camera --------------------------------------------------------
+  function size(){
+    V.W = Math.max(200, body.clientWidth);
+    V.H = Math.max(120, body.clientHeight);
   }
-  renderStops();
-
-  /*
-   * The zoom axis.
-   *
-   * Both axes were always zoomable apart — `zoomAt` has taken `xOnly`/`yOnly`
-   * since it was written — but the only way in was alt+wheel, listed in the help
-   * panel and therefore invisible. This scopes the ordinary controls to one axis
-   * instead. Switching back to Both re-couples y to x, which is the way out.
-   *
-   * Not persisted: a sticky zoom mode is exactly the kind of leaked pref that made
-   * the QA suite fail against a view nobody had set (see ATLAS.md).
-   */
-  const AXES = [
-    { key: 'both', label: '&#8660;&#8661;', title: 'Zoom both axes together' },
-    { key: 'x',    label: '&#8660;',        title: 'Zoom time only — a wider or narrower span of years, topics unchanged' },
-    { key: 'y',    label: '&#8661;',        title: 'Zoom topics only — more or less of the cluster tree, years unchanged' },
-  ];
-  $('axisSeg').innerHTML = AXES
-    .map((a) => `<button data-axis="${a.key}" title="${esc(a.title)}">${a.label}</button>`)
-    .join('');
-
-  /** The `xOnly`/`yOnly` pair the current axis setting implies. */
-  const axisOpts = () => ({ xOnly: V.zoomAxis === 'x', yOnly: V.zoomAxis === 'y' });
-
-  function setZoomAxis(key){
-    V.zoomAxis = AXES.some((a) => a.key === key) ? key : 'both';
-    mark({ paint: true });
+  const fitX = () => Object.assign(V, pick(fitView({ mode: V.mode, domain: V.domain, W: V.W, H: V.H }), ['x0', 'ppy']));
+  const clampX = () => Object.assign(V, pick(clampView({ ...V, yTop: 0, yz: 1 }, V.domain), ['x0', 'ppy']));
+  const yearsOnScreen = () => V.W / V.ppy;
+  const zoomBy = (factor, px = V.W / 2) => {
+    const at = V.x0 + px / V.ppy;
+    const [lo, hi] = ppyRange(V);
+    V.ppy = clamp(V.ppy * factor, lo, hi);
+    V.x0 = at - px / V.ppy;
+    clampX();
+    update({ layout: true, prefs: true });
+  };
+  const panBy = (dx) => { V.x0 += dx / V.ppy; clampX(); update({ prefs: true }); };
+  const zoomLevel = () => Math.max(0, Math.log2(V.ppy / ppyRange(V)[0]));
+  function fitYears(a, b){
+    const span = Math.max(1e-6, b - a);
+    V.ppy = clamp(V.W / (span * 1.06), ...ppyRange(V));
+    V.x0 = a - span * 0.03;
+    clampX();
+    update({ layout: true, prefs: true });
   }
 
-  // ---- sizing -------------------------------------------------------------
-  function measure(){
-    const r = surface.getBoundingClientRect();
-    V.W = Math.max(50, Math.round(r.width));
-    V.H = Math.max(50, Math.round(r.height));
-
-    /*
-     * The ruler spans the full width but tick x's are measured from the map's
-     * left edge, so the tick track has to start where #surface does. Folding the
-     * rail changes that distance, and nothing else recomputes it — this is the
-     * one place both boxes are read in the same frame.
-     */
-    const rx = Math.round(r.left - rulerEl.getBoundingClientRect().left);
-    if(rx !== V.RX){ V.RX = rx; rtrackEl.style.left = `${rx}px`; }
-  }
-
-  // ---------------------------------------------------------------------------
-  // The frame loop
-  // ---------------------------------------------------------------------------
-
-  const dirty = { data: true, paint: true, rail: true, facets: true, mini: true, prefs: false };
+  // ---- the frame loop -------------------------------------------------------
+  const dirty = { layout: true, body: true, header: true, prefs: false };
   let raf = 0;
-
-  function mark(flags = {}){
-    Object.assign(dirty, flags);
+  function update(flags = {}){
+    Object.assign(dirty, flags, { header: true });
     if(!raf) raf = w.requestAnimationFrame(frame);
   }
-
+  let L = null;          // the current layout: { x0, ppy, width, res }
+  let rendered = null;   // the body's rendered vertical band { lo, hi }
   function frame(){
     raf = 0;
-
-    if(dirty.data){
-      filter = runFilter(A, {
-        query: V.query, topics: V.topics, datasets: V.datasets, mode: V.dimMode ? 'dim' : 'hide', course: courseSet,
-        // Only apply a semantic result set if it was computed for the query
-        // still live in the box — the async embed step can resolve after the
-        // user has kept typing, and a stale set would reintroduce matches for
-        // a query nobody is looking at any more.
-        semanticMatches: semanticForQuery === V.query ? semanticMatches : null,
-      });
-      nodeCounts = filter ? countByNode() : null;
-      maybeTriggerFocus();
-      dirty.data = false;
-      dirty.rail = true;
-      dirty.mini = true;
-      dirty.facets = true;
-    }
-
-    if(dirty.paint) paint();
-    if(dirty.rail){
-      rail.sync(A, {
-        collapsed: V.collapsed, pinned: V.pinned, filter, depth,
-        counts: nodeCounts, selectedNode: V.selectedNode,
-      });
-      dirty.rail = false;
-    }
-    if(dirty.facets){ renderFacets(); dirty.facets = false; }
-    if(dirty.mini){ paintMini(); dirty.mini = false; }
+    if(dirty.layout || needLayout()){ relayout(); dirty.layout = false; dirty.body = true; }
+    if(dirty.body){ renderBody(true); renderPins(); dirty.body = false; }
+    applyPan();
+    if(dirty.header){ renderHeader(); dirty.header = false; }
     if(dirty.prefs){ savePrefs(); dirty.prefs = false; }
+    // Zoomed in on a stretch: load its buckets, then lay out again.
+    const wy = yearsOnScreen();
+    A.ensure(V.x0 - wy, V.x0 + 2 * wy).then((got) => { if(got) update({ layout: true }); });
   }
 
-  function paint(){
-    dirty.paint = false;
-    measure();
+  function needLayout(){
+    if(!L) return true;
+    if(L.ppy !== V.ppy || L.W !== V.W) return true;
+    const wy = yearsOnScreen();
+    return V.x0 < L.x0 + wy * 0.25 || V.x0 + wy > L.x0 + 3 * wy - wy * 0.25;
+  }
 
-    // Pin strip first: it takes height from the map, so the map's scale depends
-    // on it.
-    pins = pinLayout(V.pinned, V.H);
-    pinWrap.classList.toggle('on', pins.rows.length > 0);
-
-    const focused = focusActive();
-
-    /*
-     * Focus mode's whole "transform": `assignY` (server-side) always normalises
-     * a fresh tree to span the full [0,1], so showing it fitted is just "the
-     * camera at yTop 0, yz 1" (already YZ_MIN — fully zoomed out) with the
-     * cluster-collapse warp switched off, since a global fold range is
-     * meaningless against a focus-y. `V.yTop`/`V.yz` themselves are never
-     * written here, so clearing the query snaps back to the exact camera the
-     * user had.
-     */
-    scale = makeScale(focused ? { ...V, yTop: focusYTop, yz: focusYz, folded: [] } : V);
-    const t = ticks(scale);
-    scale._ticks = t;
-
-    stamp++;
-    if(focused){
-      // The subset is already bounded (≤ FOCUS_MAX_IDS) and flat, so a linear
-      // scan beats building/rebuilding a spatial grid for it — the grid also
-      // keys on GLOBAL atlas-y, which cannot usefully cull by focus-y anyway.
-      const padYears = 40 / scale.ppy;
-      visible.length = 0;
-      for(const i of focusIds){
-        if(Number.isNaN(focusY[i])) continue;
-        if(A.x1[i] < scale.x0 - padYears || A.x0[i] > scale.x1 + padYears) continue;
-        visible.push(i);
-      }
-    } else {
-      // Visible set from the spatial grid. Widened slightly so a card anchored
-      // just off screen still gets placed and does not pop in at the edge.
-      //
-      // The grid is keyed on ATLAS y, while the camera lives in layout y, so the
-      // bounds have to be unwarped. A folded range unwarps to its full original
-      // span, which over-selects — those points are then dropped by `isHidden`,
-      // so the only cost is a slightly longer visible list while a fold is on
-      // screen.
-      const padYears = 40 / scale.ppy;
-      const padY = 30 / scale.pxPerY;
-      A.grid.query(scale.x0 - padYears, scale.x1 + padYears,
-                   scale.unwarpY(Math.max(0, scale.yTop - padY)),
-                   scale.unwarpY(Math.min(1, scale.yBot + padY)),
-                   visible, seen, stamp);
+  function relayout(){
+    // Keep the lane at the top of the screen where it is.
+    let anchor = null;
+    if(L){
+      const top = body.scrollTop;
+      const ln = L.res.lanes.find((l) => !l.pinned && l.y + l.h > top);
+      if(ln) anchor = { key: ln.key, off: top - ln.y };
     }
-
-    const prevDepth = depth;
-    depth = depthFor(A, scale);
-    // The rail renders the tree down to `depth`, so a zoom that changes the depth
-    // must rebuild it. Without this the rail silently showed a stale level and only
-    // caught up when some other action happened to set the flag. The rail lists
-    // the GLOBAL tree regardless of focus, so this still runs while focused.
-    if(depth !== prevDepth) dirty.rail = true;
-    bands = visibleBands(A, depth, V.collapsed);
-    tier = tierFor(scale.ppy);
-
-    const ctx = sizeCanvas(canvas, V.W, V.H);
-    const measureText = (s, bold) => { ctx.font = labelFont(bold); return ctx.measureText(s).width; };
-
-    placements = packLabels(A, scale, visible, tier, {
-      collapsed: V.collapsed,
-      budget: tier === 'detail' ? 90 : tier === 'card' ? 200 : 320,
-      measure: measureText,
-      yArr: focused ? focusY : undefined,
-      bands: focused ? [] : bands,
+    const wy = yearsOnScreen();
+    const x0 = V.x0 - wy;
+    const entries = V.matches ? A.sorted.filter((e) => V.matches.has(e.id)) : A.sorted;
+    const res = layoutAtlas(entries, M, {
+      x0, ppy: V.ppy, width: 3 * V.W, view: [V.x0, V.x0 + wy], domain: V.domain,
+      caps: capsFor(zoomLevel(), !!V.matches), folded: V.matches ? new Set() : V.folded,
+      pinned: V.pinned, more: V.more, hideEmpty: !!V.matches, measure,
+      order: (S) => (V.mode === 'civ' ? [...S.filter((x) => x.key !== 'earth'), ...S.filter((x) => x.key === 'earth')] : S),
     });
-
-    // Focus bands' fill is drawn before paintFrame (skipClear:true so it isn't
-    // erased), same layering as the map's own bands under its own dots; their
-    // labels are drawn after, same layering as the map's own band labels on top
-    // of everything else. The GLOBAL bands (`bands`) are suppressed entirely
-    // while focused — they're computed against atlas-y and would be nonsense
-    // against focus-y.
-    if(focused){
-      ctx.fillStyle = COLORS.bg;
-      ctx.fillRect(0, 0, V.W, V.H);
-      paintFocusBandFill(ctx, scale, focusTree.nodes, V.W, V.H);
+    L = { x0, ppy: V.ppy, W: V.W, res };
+    sizer.style.height = `${res.height + 40}px`;
+    if(anchor){
+      const ln = res.lanes.find((l) => l.key === anchor.key && !l.pinned);
+      if(ln) body.scrollTop = ln.y + Math.min(anchor.off, ln.h);
     }
+    rendered = null;
+    const shown = res.marks.length + res.bars.length;
+    $('empty').classList.toggle('on', !shown);
+    $('count').textContent = `${M.n.toLocaleString('en-US')} entries`;
+    $('status').textContent = V.matches
+      ? `${V.matches.size.toLocaleString('en-US')} matches · ${shown} shown`
+      : `${shown} shown · ${A.byId.size.toLocaleString('en-US')} loaded${zoomLevel() < 0.5 ? ' · zoom in for more' : ''}`;
+  }
 
-    paintFrame(ctx, A, scale, {
-      bands: focused ? [] : bands, visible, filter, collapsed: V.collapsed, tier, placements,
-      hover: V.hover, selected: V.selected, dimMode: V.dimMode, ticks: t,
-      yArr: focused ? focusY : undefined, skipClear: focused,
-    });
-
-    if(focused) paintFocusBandLabels(ctx, scale, focusTree.nodes, V.W, V.H);
-
-    cardLayer.sync(A, placements, {
-      filter, dimMode: V.dimMode, selected: V.selected, hover: V.hover, details: A.details,
-    });
-    // Cards on screen without their excerpt yet: fetch their cluster's file, repaint when it lands.
-    A.loadDetails(placements.filter((p) => p.tier === 'card' || p.tier === 'detail').map((p) => p.i))
-      .then((got) => { if(got) mark({ paint: true }); });
-
-    if(pins.rows.length){
-      pinWrap.style.height = `${pins.height}px`;
-      const pctx = sizeCanvas(pinCanvas, V.W, pins.height);
-      paintPinStrip(pctx, A, scale, {
-        rows: pins.rows, filter, collapsed: V.collapsed,
-        dimMode: V.dimMode, hover: V.hover, selected: V.selected,
-      });
+  // ---- drawing --------------------------------------------------------------
+  const kindCls = (m) => (m.kind === 'people' ? 'pe' : m.kind === 'events' ? 'ev' : m.e.ty === 'work' ? 'wo' : 'ot');
+  function markHtml(m, y){
+    const e = m.e;
+    const wgt = weightOf(e);
+    const cls = `tp-ln ${kindCls(m)}${wgt ? ` ${wgt}` : ''}${m.bar ? ' lasted' : ''}${V.selected === e.id ? ' sel' : ''}`;
+    const av = m.kind === 'people' && e.im ? `<img class="av" src="${esc(thumbUrl(e.im, 60))}" loading="lazy" alt="" onerror="imgRetry(this,'hide')">` : '';
+    if(m.flip){
+      // Label left of the dot (against the present): the box starts at the label.
+      return `<div class="${cls}" data-id="${esc(e.id)}" style="left:${m.l}px;top:${y}px;width:${m.r - m.l}px;--c:${m.color}"><i class="pt" style="left:${m.x0 - m.l - 4}px"></i><span class="lb" style="left:0;max-width:${m.lw + 2}px">${av}${esc(e.t)}</span></div>`;
     }
-    // Outside the guard: when the last pin goes, the bar must empty too.
-    $('pinBar').innerHTML = pins.rows.map((r, k) => {
-      const geo = rowGeometry(A, r.spec);
-      const label = geo ? geo.label : '?';
-      return `<span class="pinchip">` +
-        `<button class="btn tiny" data-pincollapse="${k}" title="${r.spec.collapsed ? 'Expand' : 'Collapse'} ${esc(label)}">${r.spec.collapsed ? '▸' : '▾'}</button>` +
-        `<button class="btn tiny" data-unpin="${k}" title="Unpin ${esc(label)}">✕</button>` +
-      `</span>`;
+    const mk = m.bar ? `<i class="bar" style="width:${m.x1 - m.x0}px"></i>` : '<i class="pt"></i>';
+    const lx = m.bar ? 1 : 7;
+    return `<div class="${cls}" data-id="${esc(e.id)}"${m.bar ? ` data-w="${m.x1 - m.x0}" data-lw="${m.lw}"` : ''} style="left:${m.x0}px;top:${y}px;width:${m.r - m.l}px;--c:${m.color}">${mk}<span class="lb" style="left:${lx}px;max-width:${m.lw + 2}px">${av}${esc(e.t)}</span></div>`;
+  }
+  function barHtml(b, y){
+    const e = b.e;
+    const wd = b.x1 - b.x0;
+    return `<div class="tp-era${b.clipL ? ' clipl' : ''}${b.clipR ? ' clipr' : ''}${V.selected === e.id ? ' sel' : ''}" data-id="${esc(e.id)}" data-w="${wd}" style="left:${b.x0}px;width:${wd}px;top:${y}px;--c:${b.color}">${wd > 34 ? `<span>${esc(e.t)}</span>` : ''}</div>`;
+  }
+  function laneHtml(l, y){
+    const more = V.more.has(l.key);
+    const moreBtn = l.left || more ? `<button class="al-mo" data-more="${esc(l.key)}" title="${more ? 'Back to the usual rows' : `${l.left} more here: three times the rows for this lane`}">${more ? 'less ▴' : `${l.left.toLocaleString('en-US')} more ▾`}</button>` : '';
+    return `<div class="al-lane d${Math.min(2, l.depth)}${hit === l.key ? ' hit' : ''}" style="top:${y}px" data-lane="${esc(l.key)}"><span class="tp-lanelab${l.pinned ? ' pinned' : ''}" data-pin="${esc(l.key)}" title="${l.pinned ? 'Pinned: click to unpin' : 'Click to pin under the header'}">${esc(l.label)}<i>${l.n.toLocaleString('en-US')}</i></span>${moreBtn}</div>`;
+  }
+  function secHtml(s){
+    return `<div class="al-sec" data-sec="${esc(s.key)}" style="top:${s.y}px;--c:${s.color}" title="${s.folded ? 'Unfold' : 'Fold'} ${esc(s.label)}"><span class="tw">${s.folded ? '▸' : '▾'}</span><span class="sw"></span><b>${esc(s.label)}</b><span class="n">${s.n.toLocaleString('en-US')}</span></div>`;
+  }
+
+  function renderBody(force){
+    if(!L) return;
+    const top = body.scrollTop, H = V.H;
+    if(!force && rendered && top >= rendered.lo + H * 0.3 && top + H <= rendered.hi - H * 0.3) return;
+    const lo = top - H, hi = top + 2 * H;
+    const R = L.res;
+    const parts = [];
+    for(const b of R.bars) if(!b.pinned && b.y > lo && b.y < hi) parts.push(barHtml(b, b.y));
+    for(const m of R.marks) if(!m.pinned && m.y > lo && m.y < hi) parts.push(markHtml(m, m.y));
+    world.innerHTML = parts.join('');
+    const lp = [];
+    for(const s of R.sections) if(s.y > lo - 40 && s.y < hi) lp.push(secHtml(s));
+    for(const l of R.lanes) if(!l.pinned && l.y + l.h > lo && l.y < hi) lp.push(laneHtml(l, l.y + GEO.SEC * 0 + 8));
+    labs.innerHTML = lp.join('');
+    rendered = { lo, hi };
+    collectSlides();
+    placeMoreButtons(labs);
+  }
+
+  function renderPins(){
+    if(!L) return;
+    const R = L.res;
+    const on = R.pinHeight > 0;
+    pins.classList.toggle('on', on);
+    if(!on){ pworld.innerHTML = ''; plabs.innerHTML = ''; return; }
+    pins.style.height = `${Math.min(R.pinHeight + 6, Math.round(w.innerHeight * 0.4))}px`;
+    pworld.innerHTML = R.bars.filter((b) => b.pinned).map((b) => barHtml(b, b.y + 6)).join('')
+      + R.marks.filter((m) => m.pinned).map((m) => markHtml(m, m.y + 6)).join('');
+    plabs.innerHTML = R.lanes.filter((l) => l.pinned).map((l) => laneHtml(l, l.y + 14)).join('');
+    collectSlides();
+    placeMoreButtons(plabs);
+    size();
+  }
+  // "N more ▾" sits after the lane's name.
+  function placeMoreButtons(root){
+    for(const b of root.querySelectorAll('.al-mo')){
+      const lab = b.parentElement.querySelector('.tp-lanelab');
+      b.style.left = `${lab.offsetLeft + lab.offsetWidth + 6}px`;
+    }
+  }
+
+  // Labels slide along bars and life lines as you pan, so a life that began off
+  // screen still says whose it is (the timeline's sync()).
+  let slides = [];
+  function collectSlides(){
+    slides = [];
+    for(const root of [world, pworld]){
+      for(const n of root.querySelectorAll('.tp-ln[data-w]')) slides.push({ sp: n.querySelector('.lb'), x0: parseFloat(n.style.left), w: +n.dataset.w, lw: +n.dataset.lw, era: false });
+      for(const n of root.querySelectorAll('.tp-era > span')) slides.push({ sp: n, x0: parseFloat(n.parentElement.style.left), w: +n.parentElement.dataset.w, lw: n.offsetWidth, era: true });
+    }
+  }
+  function applyPan(){
+    if(!L) return;
+    const off = (L.x0 - V.x0) * V.ppy;
+    world.style.transform = pworld.style.transform = `translateX(${off}px)`;
+    const left = -off;   // the view's left edge, in layout px
+    for(const s of slides){
+      const dx = s.era ? Math.max(0, Math.min(left - s.x0 + 4, s.w - s.lw - 14)) : Math.max(0, Math.min(left + 4 - s.x0, s.w - s.lw - 4));
+      const t = dx ? `translateX(${dx}px)` : '';
+      if(s.sp.style.transform !== t) s.sp.style.transform = t;
+    }
+  }
+
+  // ---- header: overview strip, era bands, ticks, grid -----------------------
+  const eras = () => (M.eras[V.mode] || []).map(([a, b, label], i) => ({ a, b: b ?? V.domain[1], label, c: ERA_COLORS[i % ERA_COLORS.length] }));
+  let stripMode = null;
+  function renderHeader(){
+    const dom = V.domain, span = dom[1] - dom[0];
+    const strip = $('strip');
+    if(stripMode !== V.mode){
+      stripMode = V.mode;
+      strip.innerHTML = eras().map((e) => {
+        const l = Math.max(0, (e.a - dom[0]) / span), r = Math.min(1, (e.b - dom[0]) / span);
+        return r > l ? `<div class="seg" data-fit="${e.a}:${e.b}" style="left:${(100 * l).toFixed(2)}%;width:${(100 * (r - l)).toFixed(2)}%;background:${e.c}" title="${esc(e.label)}: click to fit">${esc(e.label)}</div>` : '';
+      }).join('') + '<div class="win" id="win"></div>';
+    }
+    const win = $('win');
+    const wl = (V.x0 - dom[0]) / span, ww = yearsOnScreen() / span;
+    win.style.left = `${(100 * clamp(wl, 0, 1)).toFixed(2)}%`;
+    win.style.width = `${Math.max(0.6, 100 * Math.min(1 - clamp(wl, 0, 1), ww + Math.min(0, wl))).toFixed(2)}%`;
+
+    const X = (y) => (y - V.x0) * V.ppy;
+    $('bands').innerHTML = eras().map((e) => {
+      const a = X(e.a), b = X(e.b);
+      if(b < 0 || a > V.W) return '';
+      const l = Math.max(-4, a), r = Math.min(V.W + 4, b);
+      return `<div class="tp-band" data-fit="${e.a}:${e.b}" style="left:${l}px;width:${Math.max(2, r - l - 2)}px;background:${e.c}" title="${esc(e.label)} ${esc(fmtRange(e.a, e.b))}: click to fit">${r - l > 40 ? esc(e.label) : ''}</div>`;
     }).join('');
-
-    $('q').parentElement.classList.toggle('focused', focused);
-    $('dimBtn').disabled = focused;
-    $('dimBtn').title = focused
-      ? 'Dim has no effect while a search is focusing the map — non-matches are already hidden'
-      : 'Dim non-matches instead of hiding them';
-
-    paintRuler(t);
-    paintStatus(focused);
-    updateMiniWindow();
-
-    const nMatch = filter ? filter.count : A.n;
-    emptyEl.classList.toggle('on', nMatch === 0);
-    $('count').textContent = filter
-      ? `${nMatch.toLocaleString()} of ${A.n.toLocaleString()}`
-      : `${A.n.toLocaleString()} entries`;
-
-    const stops = stopsFor(V.mode);
-    const edge = atEdge(V);
-    for(const b of $('scaleSeg').children){
-      const s = stops.find((x) => x.key === b.dataset.stop);
-      b.classList.toggle('on', s
-        ? (s.ppy == null ? edge : Math.abs(Math.log(scale.ppy / s.ppy)) < 0.28)
-        : false);
-    }
-    /*
-     * The wider mode's button lights up once you are pulled back to this mode's
-     * edge. The switch stays manual on purpose — an automatic flip changes the
-     * meaning of the whole axis under you, and you cannot tell whether you zoomed
-     * or the map did.
-     */
-    const wider = widerMode(V.mode);
-    for(const b of $('modeSeg').children){
-      b.classList.toggle('on', b.dataset.mode === V.mode);
-      b.classList.toggle('edge', edge && !!wider && b.dataset.mode === wider.key);
-    }
-    for(const b of $('axisSeg').children){
-      b.classList.toggle('on', b.dataset.axis === V.zoomAxis);
-    }
-    $('ppyLab').textContent = ppyLabel(scale.ppy);
-    $('dimBtn').classList.toggle('on', V.dimMode);
-    $('railBtn').classList.toggle('on', V.railOpen);
-    $('facetBtn').classList.toggle('on', V.facetsOpen);
+    const sc = { x0: V.x0, x1: V.x0 + yearsOnScreen(), ppy: V.ppy, sx: X };
+    const tk = ticks(sc, V.W < 500 ? 70 : 90);
+    $('ticks').innerHTML = tk.list.map((t) => `<span class="tp-tick" style="left:${t.px}px">${esc(fmtTick(t.year, tk.step))}</span>`).join('');
+    $('grid').innerHTML = tk.list.map((t) => `<i style="left:${Math.round(t.px)}px"></i>`).join('');
+    // Mode buttons: the next-wider range is offered at the edge, never taken by itself.
+    const wider = atEdge(V) ? widerMode(V.mode) : null;
+    for(const b of $('modeSeg').children){ b.classList.toggle('on', b.dataset.mode === V.mode); b.classList.toggle('edge', b.dataset.mode === wider); }
   }
 
-  /**
-   * Recompute the fold ranges the y warp is built from.
-   *
-   * Called by everything that touches `V.collapsed`, and not from `paint()`: the
-   * camera reads `V.folded` in `zoomAt`/`centerOn`, which can run before the next
-   * frame, so it has to be correct the moment the collapse happens.
-   */
-  function syncFolds(){
-    V.folded = collapsedRanges(A, V.collapsed);
+  // ---- hover and the detail panel -----------------------------------------
+  const entryOf = (el) => { const n = el?.closest?.('[data-id]'); return n ? A.byId.get(n.dataset.id) : null; };
+  const laneOfEntry = (e) => M.lanes[e.ln];
+  const when = (e) => e.y || (e.e != null && e.e !== e.s ? fmtRange(e.s, e.e) : fmtYear(e.s));
+  function showTip(e, ev){
+    if(!e){ tip.classList.remove('on'); return; }
+    const ln = laneOfEntry(e);
+    tip.innerHTML = `<b>${esc(e.t)}</b> <span class="tp-meta">· ${esc(when(e))}</span>${e.sub ? `<div>${esc(e.sub)}</div>` : ''}<div class="tp-meta">${esc(ln ? ln.label : '')}</div>`;
+    const x = Math.min(ev.clientX + 14, w.innerWidth - 345), y = Math.min(ev.clientY + 16, w.innerHeight - 120);
+    tip.style.left = `${x}px`; tip.style.top = `${y}px`;
+    tip.classList.add('on');
   }
 
-  /*
-   * The year at the centre of the viewport, from the camera rather than from the
-   * painted `scale`.
-   *
-   * `scale` is rebuilt in `paint()`, i.e. on the next animation frame, so two
-   * camera actions in the same tick — set the mode, then jump to a stop — had the
-   * second one reading the first one's stale geometry and computing a centre from
-   * the mode it had just left. That put a Civilization-mode jump 2.2 billion years
-   * out and it clamped to the left edge. `V` is always current.
-   */
-  const midYear = () => V.x0 + (V.W / V.ppy) / 2;
-
-  // ---- ruler --------------------------------------------------------------
-  function paintRuler(t){
-    rtrackEl.innerHTML = t.list
-      .filter((tk) => tk.px > -60 && tk.px < V.W + 40)
-      .map((tk) => `<div class="tk${tk.major ? ' maj' : ''}" style="left:${Math.round(tk.px)}px">${fmtTick(tk.year, t.step)}</div>`)
-      .join('');
-  }
-
-  /*
-   * "0.00 px/yr" is what the old label said for every zoom in Earth mode. Below a
-   * hundredth of a pixel per year the reciprocal is the number that means
-   * something.
-   */
-  function ppyLabel(ppy){
-    if(ppy >= 0.01) return `${ppy.toFixed(ppy < 1 ? 2 : 1)} px/yr`;
-    const ypp = 1 / ppy;
-    if(ypp >= 1e6) return `${(ypp / 1e6).toFixed(ypp >= 1e7 ? 0 : 1)} Myr/px`;
-    if(ypp >= 1e3) return `${(ypp / 1e3).toFixed(ypp >= 1e4 ? 0 : 1)} kyr/px`;
-    return `${Math.round(ypp)} yr/px`;
-  }
-
-  // ---- status -------------------------------------------------------------
-  /*
-   * How many entries the current mode puts out of reach. Silent truncation would
-   * read as "that is all there is", which for a mode whose whole job is to leave
-   * deep time out would be a lie. Cached per mode; the answer only changes when
-   * the corpus does.
-   */
-  const outsideCache = new Map();
-
-  function outsideCount(){
-    const key = V.mode;
-    if(outsideCache.has(key)) return outsideCache.get(key);
-    const lo = V.domain[0];
-    let n = 0;
-    // A span counts as reachable if any part of it is: an entry running from
-    // 4000 BC to 2000 BC is visible in Civilization mode.
-    for(let i = 0; i < A.n; i++) if(A.x1[i] < lo) n++;
-    outsideCache.set(key, n);
-    return n;
-  }
-
-  function paintStatus(focused){
-    const step = scale._ticks ? scale._ticks.step : 1;
-    const parts = [
-      fmtTickRange(Math.round(scale.x0), Math.round(scale.x1), step),
-      `${visible.length} in view`,
-      `L${depth}`,
-      tier,
-    ];
-    if(placements.length) parts.push(`${placements.length} labelled`);
-    if(V.collapsed.size) parts.push(`${V.collapsed.size} collapsed`);
-    // Corpus-wide "how many the mode leaves behind" reads oddly once focused —
-    // what matters then is how many of THIS topic's matches it leaves behind,
-    // which can differ a lot from the corpus-wide figure (and did: an "england"
-    // focus with 13 of 517 matches predating 3000 BC, against a corpus-wide 453).
-    if(focused){
-      let outFocus = 0;
-      for(const i of focusIds) if(A.x1[i] < V.domain[0]) outFocus++;
-      if(outFocus) parts.push(`${outFocus} of the matches before ${fmtYear(V.domain[0])}`);
-    } else {
-      const out = outsideCount();
-      if(out) parts.push(`${out} before ${fmtYear(V.domain[0])}`);
-    }
-    // "No silent caps": the same convention as `outsideCount()` above — a
-    // truncated focus set says so rather than quietly showing a partial answer.
-    if(focusPending) parts.push('reclustering…');
-    else if(focused && focusTruncated) parts.push(`showing top ${focusIds.length.toLocaleString()} of ${(focusIds.length + focusTruncated).toLocaleString()} matches`);
-    statusEl.textContent = parts.join('  ·  ');
-  }
-
-  // ---- minimap ------------------------------------------------------------
-  /*
-   * The overview is the whole atlas at once — every point, no filtering by
-   * viewport. Cached to an offscreen canvas because it only changes when the
-   * filter or collapse state does, not when the camera moves.
-   */
-  let miniCache = null;
-  let miniKey = '';
-
-  function paintMini(){
-    const r = miniCanvas.getBoundingClientRect();
-    const MW = Math.max(50, Math.round(r.width));
-    const MH = Math.max(20, Math.round(r.height));
-    // The mode is part of the key: the overview spans the active domain, so a mode
-    // change invalidates the bitmap even though nothing about the data moved.
-    const key = `${MW}x${MH}|${V.mode}|${filter ? filter.count : -1}|${[...V.collapsed].sort().join(',')}`;
-
-    if(key !== miniKey || !miniCache){
-      miniKey = key;
-      const off = D.createElement('canvas');
-      const dpr = Math.min(w.devicePixelRatio || 1, 2);
-      off.width = MW * dpr; off.height = MH * dpr;
-      const c = off.getContext('2d');
-      c.setTransform(dpr, 0, 0, dpr, 0, 0);
-      c.fillStyle = COLORS.bgAlt;
-      c.fillRect(0, 0, MW, MH);
-
-      const [xa, xb] = V.domain;
-      const sx = (y) => ((y - xa) / Math.max(1, xb - xa)) * MW;
-
-      for(let i = 0; i < A.n; i++){
-        if(A.x1[i] < xa) continue;                 // out of this mode's reach
-        if(V.collapsed.size && isHidden(A, i, V.collapsed)) continue;
-        const matched = !filter || filter.flags[i];
-        if(!matched && !V.dimMode) continue;
-        c.fillStyle = matched ? A.color[i] : 'rgba(100,116,139,0.16)';
-        c.globalAlpha = matched ? 0.75 : 1;
-        c.fillRect(sx(A.x0[i]), A.y[i] * (MH - 2) + 1, 1, 1);
-      }
-      c.globalAlpha = 1;
-      miniCache = off;
-    }
-
-    const ctx = sizeCanvas(miniCanvas, MW, MH);
-    ctx.drawImage(miniCache, 0, 0, MW, MH);
-  }
-
-  function updateMiniWindow(){
-    const r = miniCanvas.getBoundingClientRect();
-    const MW = Math.max(1, r.width);
-    const [xa, xb] = V.domain;
-    const span = Math.max(1, xb - xa);
-    const l = ((scale.x0 - xa) / span) * MW;
-    const wd = ((scale.x1 - scale.x0) / span) * MW;
-    miniWin.style.left = `${Math.max(0, l)}px`;
-    miniWin.style.width = `${Math.max(2, Math.min(MW - Math.max(0, l), wd))}px`;
-  }
-
-  // ---- facets -------------------------------------------------------------
-  function renderFacets(){
-    if(!V.facetsOpen){ $('facets').classList.remove('on'); return; }
-    $('facets').classList.add('on');
-
-    const top = A.topicsByCount.slice(0, 34);
-    $('facets').innerHTML =
-      `<div class="facet"><label>Source</label>${A.datasets.map((d) =>
-        `<button class="tag${V.datasets.has(d) ? ' on' : ''}" data-ds="${esc(d)}">${esc(d)}</button>`).join('')}</div>` +
-      `<div class="facet"><label>Topic</label>${top.map(([t, n]) =>
-        `<button class="tag${V.topics.has(t) ? ' on' : ''}" data-topic="${esc(t)}">${esc(t)} <span style="opacity:.55">${n}</span></button>`).join('')}` +
-      `${V.topics.size || V.datasets.size ? '<button class="tag" data-clearfacets="1">clear</button>' : ''}</div>`;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Actions
-  // ---------------------------------------------------------------------------
-
-  function countByNode(){
-    const counts = new Map();
-    for(let i = 0; i < A.n; i++){
-      if(!filter.flags[i]) continue;
-      for(const id of A.chainOf.get(A.leaf[i]) || []) counts.set(id, (counts.get(id) || 0) + 1);
-    }
-    return counts;
-  }
-
-  function select(i, { open = false, center = false } = {}){
-    V.selected = i;
-    V.selectedNode = i >= 0 ? A.leaf[i] : null;
-    if(center && i >= 0) centerOn(i);
-    if(open && i >= 0){
-      detail.open(A, i);
-      A.loadDetails([i]).then(() => detail.refresh());
-    }
-    mark({ paint: true, rail: true });
-  }
-
-  function centerOn(i){
-    const yearsVisible = V.W / V.ppy;
-    V.x0 = A.x0[i] - yearsVisible / 2;
-    // yTop is layout y, the point's own y is atlas y.
-    V.yTop = makeScale(V).warpY(A.y[i]) - (1 / V.yz) / 2;
-    Object.assign(V, clampView(V));
-  }
-
-  /** Zoom and pan so a cluster fills the view. */
-  function focusNode(id){
-    const nd = A.nodes[id];
-    if(!nd) return;
-    V.selectedNode = id;
-
-    const span = Math.max(1, nd.x1 - nd.x0);
-    V.ppy = clamp((V.W * 0.86) / span, ...ppyRange(V));
-    V.x0 = nd.x0 - (V.W / V.ppy - span) / 2;
-
-    if(V.collapsed.has(id)){
-      // A folded cluster is a fixed-height strip whose layout span shrinks as you
-      // zoom in, so "fit it to the viewport" has no solution. Centre it instead
-      // and leave the zoom alone; the label is right there to unfold it.
-      const s = makeScale(V);
-      V.yTop = (s.warpY(nd.y0) + s.warpY(nd.y1)) / 2 - (1 / V.yz) / 2;
-    } else {
-      // Fit the band vertically with a little air, rather than adopting the coupled
-      // zoom — the point of clicking a cluster is to see that cluster.
-      //
-      // Twice, because the warp's strip widths depend on the y zoom: measure the
-      // band, pick a zoom, then re-measure under the warp that zoom implies. The
-      // second pass moves things by a pixel or two and the third by nothing.
-      for(let pass = 0; pass < 2; pass++){
-        const s = makeScale(V);
-        const top = s.warpY(nd.y0);
-        const bandSpan = Math.max(1e-4, s.warpY(nd.y1) - top);
-        V.yz = clamp(1 / (bandSpan * 1.35), 1, 900);
-        V.yTop = top - (1 / V.yz - bandSpan) / 2;
-      }
-    }
-
-    Object.assign(V, clampView(V));
-    mark({ paint: true, rail: true, prefs: true });
-  }
-
-  function toggleCollapse(id){
-    if(V.collapsed.has(id)) V.collapsed.delete(id);
-    else {
-      V.collapsed.add(id);
-      // Collapsing an ancestor makes any collapsed descendant redundant.
-      for(const other of [...V.collapsed]){
-        if(other !== id && A.ancestorsOf(other).includes(id)) V.collapsed.delete(other);
-      }
-    }
-    syncFolds();
-    mark({ paint: true, rail: true, mini: true, prefs: true });
-  }
-
-  function togglePin(id){
-    const k = V.pinned.findIndex((p) => p.kind === 'node' && p.id === id);
-    if(k >= 0) V.pinned.splice(k, 1);
-    else if(V.pinned.length < 6) V.pinned.push({ kind: 'node', id, collapsed: false });
-    mark({ paint: true, rail: true, prefs: true });
-  }
-
-  /** Unpin whichever spec — node or focus — currently sits at this array index. */
-  function unpinAt(k){
-    if(k < 0 || k >= V.pinned.length) return;
-    V.pinned.splice(k, 1);
-    mark({ paint: true, rail: true, prefs: true });
-  }
-
-  /** Fold/unfold one pinned row without removing it — see rail.js's pinLayout. */
-  function togglePinCollapseAt(k){
-    const spec = V.pinned[k];
-    if(!spec) return;
-    spec.collapsed = !spec.collapsed;
-    mark({ paint: true, prefs: true });
-  }
-
-  function toggleTopic(t){
-    if(V.topics.has(t)) V.topics.delete(t);
-    else V.topics.add(t);
-    mark({ data: true, paint: true });
-  }
-
-  function setQuery(s){
-    V.query = s;
-    qInput.value = s;
-    qInput.parentElement.classList.toggle('filled', !!s);
-    mark({ data: true, paint: true });
-    triggerSemanticSearch(s);
-  }
-
-  /*
-   * Semantic search fallback for generic phrases with no literal token overlap
-   * against any entry ("guy who invented the telephone" vs. "Alexander Graham
-   * Bell"). Entirely additive and fail-soft: substring search above has
-   * already run synchronously by the time this resolves, so if Ollama is
-   * down, the fetch fails, or vectors never loaded, nothing regresses — the
-   * user just gets what substring matching already found.
-   *
-   * `semanticForQuery` records which query string `semanticMatches` answers,
-   * so a response that arrives after the user kept typing is simply ignored
-   * rather than reintroducing matches for an abandoned query (checked again
-   * in `frame()`, since this can resolve well after the keystroke that fired it).
-   */
-  let semanticMatches = null;
-  let semanticForQuery = '';
-  const SEMANTIC_TOP_K = 80;
-
-  /*
-   * Now served by `/api/search` (hybrid BM25 + 768-dim embeddings with the
-   * model's query prefix and a calibrated floor) instead of a browser-side cosine
-   * over the 256-dim map vectors with a bare query. The old path had no usable
-   * threshold — gibberish outscored real words — so it always returned its top 40.
-   * This one returns nothing for nonsense and a ranked, cut list otherwise.
-   */
-  async function triggerSemanticSearch(raw){
-    const text = parseQuery(raw).text.join(' ');
-    if(!text){ semanticMatches = null; semanticForQuery = raw; return; }
-
-    let hits;
-    try {
-      const res = await w.fetch(`/api/search?q=${encodeURIComponent(text)}&k=${SEMANTIC_TOP_K}`);
-      if(!res.ok) return;
-      hits = (await res.json()).hits || [];
-    } catch { return; }
-
-    if(V.query !== raw) return;   // superseded by a later keystroke
-
-    const set = new Set();
-    for(const h of hits){ const i = A.idIndex.get(h.id); if(i != null) set.add(i); }
-    semanticMatches = set;
-    semanticForQuery = raw;
-    mark({ data: true, paint: true });
-  }
-
-  /*
-   * "Focus mode": while a free-text query matches a modest, non-trivial set of
-   * entries, the main canvas repositions them by their OWN mutual similarity
-   * (a fresh tree from `POST /api/recluster`) instead of their place in the
-   * corpus-wide hierarchy — see docs/PIPELINE.md for why a topic spanning
-   * several domains (e.g. "England": monarchs, wars, art) reads as scattered
-   * points there. Fails soft to today's global-y dim/hide on any error, the
-   * same way semantic search degrades to substring-only when Ollama is down.
-   *
-   * A structured-only query (`ds:art`, a bare year range, a facet click with no
-   * typed text) never reaches this — `hasText` below gates on `parseQuery`'s
-   * own free-text tokens, so browsing by facet alone never fires a request or
-   * reorganises anything.
-   */
-  const focusKey = () => `${V.query}|${[...V.topics].sort()}|${[...V.datasets].sort()}`;
-  const focusActive = () => !!focusTree && focusForKey === focusKey();
-
-  /** A pseudo-view over the focus camera, for reusing zoomAt/clampView unchanged. */
-  const focusCamView = () => (
-    { x0: V.x0, ppy: V.ppy, yTop: focusYTop, yz: focusYz, W: V.W, H: V.H, mode: V.mode, domain: V.domain, folded: [] }
-  );
-  function clampFocusY(){
-    const v = clampView(focusCamView());
-    focusYTop = v.yTop; focusYz = v.yz;
-  }
-
-  function maybeTriggerFocus(){
-    const hasText = parseQuery(V.query).text.length > 0;
-    if(!hasText || !filter || filter.count < FOCUS_MIN_COUNT){
-      if(focusTree || focusPending){
-        // Bump the token even though nothing is being sent: an in-flight fetch
-        // for the query being abandoned must not repopulate focusTree once it
-        // resolves. Without this, clearing the box mid-fetch left the token
-        // unchanged and a late response for an already-abandoned query won a
-        // race against the clear.
-        focusToken++;
-        focusTree = null; focusY = null; focusForKey = ''; focusPending = false;
-        focusYTop = 0; focusYz = 1;
-        mark({ paint: true, rail: true, mini: true });
-      }
-      return;
-    }
-    const key = focusKey();
-    if(key === focusForKey) return;                  // already have (or are fetching) the answer
-    triggerFocusRecluster(key);
-  }
-
-  /*
-   * `focusToken` guards this the way `semanticForQuery` guards semantic search,
-   * but as an incrementing counter rather than a string re-check: two in-flight
-   * fetches for two different queries can both transiently be "the request that
-   * was last sent," so only an exact identity check — not "does this answer the
-   * current V.query" — safely tells a superseded response apart from the live one.
-   */
-  async function triggerFocusRecluster(key){
-    const ids = [];
-    for(let i = 0; i < A.n; i++) if(filter.flags[i]) ids.push(i);
-
-    // Truncate by the same priority signal packLabels' own card budget uses,
-    // rather than silently sending only the first N in array order.
-    let sendIds = ids, truncated = 0;
-    if(ids.length > FOCUS_MAX_IDS){
-      sendIds = ids.slice().sort((a, b) => A.prio[b] - A.prio[a]).slice(0, FOCUS_MAX_IDS);
-      truncated = ids.length - FOCUS_MAX_IDS;
-    }
-
-    const myToken = ++focusToken;
-    focusPending = true;
-    mark({ paint: true });
-
-    try {
-      const res = await w.fetch('/api/recluster', {
-        method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ ids: sendIds.map((i) => A.id[i]) }),
-      });
-      if(myToken !== focusToken) return;              // superseded while the request was in flight
-      if(!res.ok){ focusTree = null; focusY = null; focusForKey = key; return; }
-      const data = await res.json();
-      if(myToken !== focusToken) return;               // superseded while parsing the response
-
-      focusTree = data;
-      focusIds = sendIds;
-      focusY = focusYArray(A, data);
-      focusForKey = key;
-      focusTruncated = truncated;
-      focusYTop = 0; focusYz = 1;
-    } catch {
-      if(myToken === focusToken){ focusTree = null; focusY = null; focusForKey = key; }
-    } finally {
-      if(myToken === focusToken){
-        focusPending = false;
-        mark({ paint: true, rail: true, mini: true });
-      }
+  async function select(id, { center = false } = {}){
+    const e = A.byId.get(id);
+    V.selected = e ? id : null;
+    for(const n of D.querySelectorAll('.tp-ln.sel,.tp-era.sel')) n.classList.remove('sel');
+    if(!e){ detail.classList.remove('open'); return; }
+    for(const n of D.querySelectorAll(`[data-id="${cssEsc(id)}"]`)) n.classList.add('sel');
+    if(center) centerOn(e);
+    const ln = laneOfEntry(e);
+    const sec = M.sections.find((s) => s.key === ln?.section);
+    const pic = e.im ? `<img class="pic" src="${esc(thumbUrl(e.im, 500))}" alt="" onerror="imgRetry(this,'hide')">` : '';
+    const topics = (e.x || []).map((s) => `<button data-topic="${esc(s)}">${esc(topicTitle(s))}</button>`).join('');
+    detail.innerHTML = `<div class="hd"><span class="path">${esc(sec ? sec.label : '')} › ${esc(ln ? ln.label : '')}</span>
+        <button class="al-btn ic" data-step="-1" title="Previous in this lane (←)">‹</button><button class="al-btn ic" data-step="1" title="Next in this lane (→)">›</button>
+        <button class="al-btn ic" data-close="1" title="Close (Esc)">✕</button></div>
+      ${pic}<div class="in"><h2>${esc(e.t)}</h2>${e.sub ? `<div class="sub">${esc(e.sub)}</div>` : ''}<div class="yr">${esc(when(e))}${e.c ? ' (approx.)' : ''}</div>
+      <div id="dex"><p style="color:#94a3b8">Loading…</p></div>
+      ${topics ? `<div class="lb">In topics</div><div class="chips">${topics}</div>` : ''}
+      <div id="dnear"></div></div>`;
+    detail.classList.add('open');
+    detail.scrollTop = 0;
+    const d = await A.loadDetails(e);
+    if(V.selected !== id) return;
+    const ex = d?.excerpt ? d.excerpt.split(/\n+/).slice(0, 4).map((p) => `<p>${esc(p)}</p>`).join('') : '<p style="color:#94a3b8">No summary yet.</p>';
+    $('dex').innerHTML = ex + (d?.origin?.wiki || e.id ? `<p><a href="https://en.wikipedia.org/wiki/${encodeURIComponent(e.t.replace(/ /g, '_'))}" target="_blank" rel="noopener">Wikipedia ↗</a></p>` : '');
+    if(d?.nn?.length){
+      $('dnear').innerHTML = `<div class="lb">Related</div><div class="near">${d.nn.map(([nid, t, s]) => `<button data-goto="${esc(nid)}" data-s="${s}"><span>${esc(t)}</span><span class="y">${esc(fmtYear(s))}</span></button>`).join('')}</div>`;
     }
   }
+  const cssEsc = (s) => (w.CSS && w.CSS.escape ? w.CSS.escape(s) : String(s).replace(/"/g, '\\"'));
+  let topicTitles = new Map(M.lanes.filter((l) => l.topic).map((l) => [l.topic, l.label]));
+  const topicTitle = (s) => topicTitles.get(s) || s;
 
-  /**
-   * Freeze the current focused view into a pinned strip, so the search box is
-   * free to look up something else without losing it. Snapshots everything the
-   * pin needs (tree, member ids, their focus-y) independently of the live
-   * `focusTree`/`V.query` — nothing breaks if the user keeps typing immediately.
-   */
-  function pinFocus(){
-    if(!focusActive() || V.pinned.length >= 6) return;
-    V.pinned.push({
-      kind: 'focus', query: V.query, tree: focusTree, ids: focusIds.slice(),
-      y: focusY.slice(), collapsed: false,
-    });
-    mark({ paint: true, rail: true, prefs: true });
+  function centerOn(e){
+    const wy = yearsOnScreen();
+    const mid = e.e != null && e.e > e.s && e.e - e.s < wy * 0.8 ? (e.s + e.e) / 2 : e.s;
+    V.x0 = mid - wy / 2;
+    clampX();
+    const ln = laneOfEntry(e);
+    if(ln && V.folded.has(ln.section)){ V.folded.delete(ln.section); dirty.layout = true; }
+    update({ prefs: true });
   }
 
-  /*
-   * Switch theme. The DOM half is one attribute — `styles.js` has no literal
-   * colours below `:root`, so the whole stylesheet follows. The canvas cannot read
-   * CSS variables, so `setCanvasTheme` swaps the matching palette in `paint.js`,
-   * and the minimap's offscreen cache has to be dropped or the old background
-   * survives as a stale bitmap.
-   */
-  function setTheme(name){
-    V.theme = name === 'dark' ? 'dark' : 'light';
-    D.documentElement.dataset.theme = V.theme;
-    setCanvasTheme(V.theme);
-    // The button shows the theme it will switch TO, which is the only reading of a
-    // single icon that is not ambiguous.
-    $('themeBtn').innerHTML = V.theme === 'light' ? '&#9790;' : '&#9788;';
-    $('themeBtn').title = V.theme === 'light' ? 'Dark theme (t)' : 'Light theme (t)';
-    miniCache = null;
-    mark({ paint: true, mini: true, prefs: true });
+  /** Go to an entry anywhere: load its bucket, zoom in enough to show it, scroll to it. */
+  async function goto(id, s){
+    if(!A.byId.has(id)) await A.ensureAt(s);
+    const e = A.byId.get(id);
+    if(!e) return;
+    const ln = laneOfEntry(e);
+    if(ln) V.folded.delete(ln.section);
+    if(zoomLevel() < 3) V.ppy = clamp(ppyRange(V)[0] * 16, ...ppyRange(V));
+    V.x0 = e.s - yearsOnScreen() / 2;
+    clampX();
+    await A.ensure(V.x0 - yearsOnScreen(), V.x0 + 2 * yearsOnScreen());
+    relayout();
+    let at = L.res.marks.find((m) => m.e.id === id) || L.res.bars.find((b) => b.e.id === id);
+    if(!at && ln){ V.more.add(ln.key); relayout(); at = L.res.marks.find((m) => m.e.id === id) || L.res.bars.find((b) => b.e.id === id); }
+    if(at && !at.pinned) body.scrollTop = Math.max(0, at.y - V.H / 3);
+    update({ body: true, prefs: true });
+    select(id);
   }
 
-  /** Fit the active mode's whole domain. */
-  // ---- topic filter (datasets/topics) -------------------------------------
-  // One topic's entries, from members-all.json (written by topic.mjs). Hides
-  // the rest (or dims, with Dim on) and fits the time axis to the topic.
-  let courseSet = null, membersAll = null;
-  const topicTitle = new Map();
-  async function setCourse(slug){
-    V.course = slug || '';
-    $('courseSel').value = V.course;
-    if(!V.course){ courseSet = null; mark({ data: true, paint: true }); return; }
-    try { membersAll = membersAll || await (await w.fetch('datasets/topics/members-all.json', { cache: 'no-store' })).json(); }
-    catch { membersAll = {}; }
-    const set = new Set();
-    for(const [id, slugs] of Object.entries(membersAll)){
-      if(!slugs.includes(V.course)) continue;
-      const i = A.idIndex.get(id);
-      if(i != null) set.add(i);
-    }
-    courseSet = set;
-    // Fit time to the topic: 5th–95th percentile of its start years, so one
-    // Palaeolithic link does not stretch England across 80,000 years.
-    const xs = [...set].map((i) => A.x0[i]).sort((a, b) => a - b);
-    if(xs.length > 3){
-      measure();
-      const lo = xs[Math.floor(xs.length * 0.05)], hi = xs[Math.floor(xs.length * 0.95)];
-      const span = Math.max(20, hi - lo);
-      Object.assign(V, clampView({ ...V, x0: lo - span * 0.06, ppy: V.W / (span * 1.12), yTop: 0, yz: 1 }));
-    }
-    mark({ data: true, paint: true, prefs: true });
-  }
-  async function loadCourses(){
-    try {
-      const idx = await (await w.fetch('datasets/topics/index.json', { cache: 'no-store' })).json();
-      for(const t of idx.topics) topicTitle.set(t.slug, t.title);
-      // For the detail panel's "In topics" (and the Topic filter).
-      w.fetch('datasets/topics/members-all.json', { cache: 'no-store' }).then((r) => r.json()).then((m) => { membersAll = membersAll || m; if(V.selected >= 0) detail.refresh(); }).catch(() => {});
-      $('courseSel').innerHTML = '<option value="">All topics</option>' + idx.topics
-        .slice().sort((a, b) => a.title.localeCompare(b.title))
-        .map((t) => `<option value="${t.slug}">${t.title.replace(/</g, '&lt;')}</option>`).join('');
-    } catch { $('courseSel').style.display = 'none'; }
-    // A topic page's "Atlas" button leaves its slug here for us.
-    const want = w.localStorage.getItem('atlas:course');
-    if(want){ w.localStorage.removeItem('atlas:course'); await setCourse(want); }
+  /** Step to the previous/next entry of the selected one's lane, in time. */
+  function step(dir){
+    const e = A.byId.get(V.selected);
+    if(!e || !L) return;
+    const same = [...L.res.marks.map((m) => m.e), ...L.res.bars.map((b) => b.e)].filter((x) => x.ln === e.ln).sort((a, b) => a.s - b.s || a.t.localeCompare(b.t));
+    const k = same.findIndex((x) => x.id === e.id);
+    const nx = same[k + dir];
+    if(nx){ select(nx.id); const X = (nx.s - V.x0) * V.ppy; if(X < 40 || X > V.W - 120) centerOn(nx); }
   }
 
-  function fit(){
-    measure();
-    Object.assign(V, fitView({ mode: V.mode, domain: V.domain, W: V.W, H: V.H }));
-    mark({ paint: true, prefs: true });
+  function scrollToLane(key, flash = true){
+    let l = M.lanes.find((x) => x.key === key);
+    if(!l) return;
+    if(V.folded.delete(l.section)) relayout();
+    const ln = L.res.lanes.find((x) => x.key === key);
+    if(ln && !ln.pinned) body.scrollTo({ top: Math.max(0, ln.y - 6), behavior: 'smooth' });
+    if(flash){ hit = key; update({ body: true }); w.setTimeout(() => { hit = null; update({ body: true }); }, 2600); }
   }
+  let hit = null;
 
-  function zoom(factor, px = V.W / 2, py = V.H / 2, opts){
-    if(focusActive()){
-      // x is shared with the global camera even while focused; y is not — see
-      // focusCamView()'s comment.
-      const next = clampView(zoomAt(focusCamView(), factor, px, py, opts));
-      V.x0 = next.x0; V.ppy = next.ppy;
-      focusYTop = next.yTop; focusYz = next.yz;
-      Object.assign(V, clampView(V));
-    } else {
-      Object.assign(V, clampView(zoomAt(V, factor, px, py, opts)));
-    }
-    mark({ paint: true, prefs: true });
-  }
+  // ---- toolbar ---------------------------------------------------------------
+  const SHORT = { civ: 'Civ.', human: 'Humans', earth: 'Earth' };
+  $('modeSeg').innerHTML = MODES.map((m) => `<button data-mode="${m.key}" title="${esc(m.title)}"><span class="lg">${esc(m.label)}</span><span class="sh">${esc(SHORT[m.key] || m.label)}</span></button>`).join('');
+  const renderStops = () => { $('stopSeg').innerHTML = stopsFor(V.mode).map((s) => `<button data-stop="${s.key}">${s.label}</button>`).join(''); };
+  renderStops();
+  $('jump').innerHTML = '<option value="">a lane…</option>' + M.sections.map((s) => `<optgroup label="${esc(s.label)}">${M.lanes.filter((l) => l.section === s.key).map((l) => `<option value="${esc(l.key)}">${'\u00a0\u00a0'.repeat(l.depth)}${esc(l.label)}</option>`).join('')}</optgroup>`).join('');
 
-  /*
-   * Change how deep the axis runs.
-   *
-   * The camera is kept where it was, except when you were already pulled all the
-   * way back — then the new mode is fitted. Those are the two reasons anyone
-   * touches this control: "I hit the edge, give me more time" wants the wider
-   * scale on screen, and "I am reading 1750 and want the other ladder" wants to
-   * stay in 1750. Fitting unconditionally would throw away the second, and never
-   * fitting would make the first look like nothing happened, because five thousand
-   * years is invisible inside four billion either way.
-   */
   function setMode(key){
-    const m = modeOf(key);
-    if(m.key === V.mode) return;
-    measure();
+    if(key === V.mode) return;
     const wasFit = atEdge(V);
-    const mid = midYear();
-
-    V.mode = m.key;
-    V.domain = domainFor(m.key, A.xExtent);
+    const mid = V.x0 + yearsOnScreen() / 2;
+    V.mode = modeOf(key).key;
+    V.domain = domainFor(V.mode, M.extent);
+    if(wasFit) fitX(); else { V.x0 = mid - yearsOnScreen() / 2; clampX(); }
     renderStops();
+    // Another range reorders the sections (deep time first outside Civilization): start at the top.
+    L = null; body.scrollTop = 0;
+    update({ layout: true, prefs: true });
+  }
+  function setBar(open){
+    V.barOpen = open;
+    $('bar').classList.toggle('off', !open);
+    $('more').classList.toggle('on', open && V.moreOpen);
+    $('unfoldBar').classList.toggle('on', !open);
+    size(); update({ layout: true, prefs: true });
+  }
 
-    if(wasFit){
-      Object.assign(V, fitView({ mode: V.mode, domain: V.domain, W: V.W, H: V.H }));
-    } else {
-      V.x0 = mid - (V.W / V.ppy) / 2;
-      Object.assign(V, clampView(V));
+  D.addEventListener('click', (ev) => {
+    const t = ev.target;
+    const b = t.closest('button, [data-fit], [data-pin], [data-sec], [data-id]');
+    if(!b) return;
+    if(b.dataset.mode) return setMode(b.dataset.mode);
+    if(b.dataset.stop){
+      const s = stopsFor(V.mode).find((x) => x.key === b.dataset.stop);
+      if(!s) return;
+      if(s.ppy == null){ fitX(); update({ layout: true, prefs: true }); return; }
+      const mid = V.x0 + yearsOnScreen() / 2;
+      V.ppy = clamp(s.ppy, ...ppyRange(V)); V.x0 = mid - yearsOnScreen() / 2; clampX();
+      return update({ layout: true, prefs: true });
     }
-    miniCache = null;
-    mark({ paint: true, mini: true, prefs: true });
-  }
-
-  function gotoStop(key){
-    const s = stopsFor(V.mode).find((x) => x.key === key);
-    if(!s) return;
-    if(s.ppy == null){ fit(); return; }
-    const mid = midYear();
-    V.ppy = s.ppy;
-    V.yz = coupledYZoom(s.ppy);
-    V.x0 = mid - (V.W / V.ppy) / 2;
-    Object.assign(V, clampView(V));
-    mark({ paint: true, prefs: true });
-  }
-
-  // ---------------------------------------------------------------------------
-  // Interaction
-  // ---------------------------------------------------------------------------
-
-  // ---- wheel --------------------------------------------------------------
-  /*
-   * A SCROLL PANS. A PINCH ZOOMS. Those are two different gestures and the atlas
-   * used to treat both as zoom, so a two-finger scroll — the way you move around
-   * every other map — flew you in and out instead.
-   *
-   * The browser hands both to `wheel`. The only thing separating them is that a
-   * trackpad pinch (and a ctrl-held mouse wheel, which is the same intent) arrives
-   * with `ctrlKey` set, synthetically and regardless of whether ctrl is down. That
-   * flag is the whole discrimination, so:
-   *
-   *   plain           pan, both axes, 1 px of delta to 1 px of movement
-   *   shift           pan through time — a mouse wheel has no deltaX
-   *   ctrl / cmd      zoom at the cursor (pinch, or a mouse wheel held with ctrl)
-   *   alt             zoom the topic axis only
-   *   shift + pinch   zoom time only
-   *
-   * The last two override the toolbar's axis setting rather than combining with
-   * it. A modifier held down is a statement about this gesture, and a gesture that
-   * did something different depending on a control elsewhere in the window would
-   * be the worst of both — so an unmodified zoom follows the toolbar, and a
-   * modified one means exactly what it says.
-   *
-   * Pinch deltas are much smaller per event than a wheel notch and arrive in long
-   * streams, hence the separate ZOOM_RATE — it is the one number to tune here if
-   * pinch feels slow or twitchy.
-   */
-  const ZOOM_RATE = 0.006;
-
-  surface.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    const r = surface.getBoundingClientRect();
-    const px = e.clientX - r.left;
-    const py = e.clientY - r.top;
-    const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1;
-
-    if(e.ctrlKey || e.metaKey || e.altKey){
-      const factor = Math.exp(-e.deltaY * unit * ZOOM_RATE);
-      const pinch = e.ctrlKey || e.metaKey;
-      const opts = e.altKey && !pinch ? { yOnly: true }
-        : e.shiftKey && pinch ? { xOnly: true }
-        : axisOpts();
-      zoom(factor, px, py, opts);
+    if(b.dataset.fit){ const [a, z] = b.dataset.fit.split(':').map(Number); return fitYears(a, z); }
+    if(b.dataset.pin){
+      const k = b.dataset.pin;
+      if(V.pinned.has(k)) V.pinned.delete(k); else V.pinned.add(k);
+      return update({ layout: true, prefs: true });
+    }
+    if(b.dataset.more){
+      const k = b.dataset.more;
+      if(V.more.has(k)) V.more.delete(k); else V.more.add(k);
+      return update({ layout: true });
+    }
+    if(b.dataset.sec){
+      const k = b.dataset.sec;
+      if(V.matches) return;
+      if(V.folded.has(k)) V.folded.delete(k); else V.folded.add(k);
+      return update({ layout: true, prefs: true });
+    }
+    if(b.dataset.close) return select(null);
+    if(b.dataset.step) return step(+b.dataset.step);
+    if(b.dataset.topic){
+      // The topic opens in the main window at this entry (topic/index.js reads it).
+      w.localStorage.setItem('topic:pendingSelect', V.selected || '');
+      if(!window.closed){ window.location.hash = `#/topic/${b.dataset.topic}`; window.focus(); }
+      else w.open(`index.html#/topic/${b.dataset.topic}`, '_blank');
       return;
     }
-
-    if(e.shiftKey){
-      V.x0 += ((e.deltaY + e.deltaX) * unit) / V.ppy;
-    } else {
-      V.x0 += (e.deltaX * unit) / V.ppy;
-      if(focusActive()){
-        focusYTop += (e.deltaY * unit) / scale.pxPerY;
-        clampFocusY();
-      } else {
-        V.yTop += (e.deltaY * unit) / scale.pxPerY;
-      }
+    if(b.dataset.goto) return goto(b.dataset.goto, +b.dataset.s);
+    if(b.dataset.id){ if(dragged) return; return select(b.dataset.id); }
+    switch(b.id){
+      case 'zoomIn': return zoomBy(1.6);
+      case 'zoomOut': return zoomBy(1 / 1.6);
+      case 'fitBtn': fitX(); return update({ layout: true, prefs: true });
+      case 'moreBtn': V.moreOpen = !V.moreOpen; $('more').classList.toggle('on', V.moreOpen); b.classList.toggle('on', V.moreOpen); size(); return update({ layout: true });
+      case 'foldBar': return setBar(false);
+      case 'unfoldBar': return setBar(true);
+      case 'helpBtn': return $('help').classList.add('on');
+      case 'foldAll': V.folded = new Set(M.sections.map((s) => s.key)); body.scrollTop = 0; return update({ layout: true, prefs: true });
+      case 'unfoldAll': V.folded.clear(); return update({ layout: true, prefs: true });
     }
-    Object.assign(V, clampView(V));
-    mark({ paint: true, prefs: true });
-  }, { passive: false });
+  });
+  $('help').onclick = (ev) => { if(ev.target.id === 'help') $('help').classList.remove('on'); };
+  $('jump').onchange = (ev) => { if(ev.target.value) scrollToLane(ev.target.value); ev.target.value = ''; };
 
-  // ---- drag ---------------------------------------------------------------
-  let drag = null;
-
-  surface.addEventListener('pointerdown', (e) => {
-    if(e.button !== 0) return;
-    const r = surface.getBoundingClientRect();
-    const focus = focusActive();
-    drag = {
-      id: e.pointerId,
-      sx: e.clientX, sy: e.clientY,
-      px: e.clientX - r.left, py: e.clientY - r.top,
-      x0: V.x0, yTop: focus ? focusYTop : V.yTop, focus,
-      moved: false,
+  // Overview strip: click to go there; drag the box.
+  {
+    const strip = $('strip');
+    let dragging = false;
+    const go = (ev) => {
+      const r = strip.getBoundingClientRect();
+      const y = V.domain[0] + ((ev.clientX - r.left) / r.width) * (V.domain[1] - V.domain[0]);
+      V.x0 = y - yearsOnScreen() / 2; clampX(); update({ prefs: true });
     };
-    // Throws NotFoundError if the pointer is already gone — which happens with
-    // synthetic events and with a fast click where up precedes this handler.
-    try { surface.setPointerCapture(e.pointerId); } catch { /* not capturable */ }
-  });
-
-  surface.addEventListener('pointermove', (e) => {
-    const r = surface.getBoundingClientRect();
-    const px = e.clientX - r.left;
-    const py = e.clientY - r.top;
-
-    if(drag && drag.id === e.pointerId){
-      const dx = e.clientX - drag.sx;
-      const dy = e.clientY - drag.sy;
-      if(!drag.moved && Math.abs(dx) + Math.abs(dy) > 3){
-        drag.moved = true;
-        surface.classList.add('dragging');
-        tip.hide();
-      }
-      if(drag.moved){
-        V.x0 = drag.x0 - dx / scale.ppy;
-        if(drag.focus){
-          focusYTop = drag.yTop - dy / scale.pxPerY;
-          clampFocusY();
-        } else {
-          V.yTop = drag.yTop - dy / scale.pxPerY;
-        }
-        Object.assign(V, clampView(V));
-        mark({ paint: true });
-      }
-      return;
-    }
-
-    // Hover. The spatial query already ran this frame, so this is a scan over
-    // what is on screen, not over the corpus. yArr must match what paint() drew
-    // dots at, or every hit test misses against the visible dots while focused.
-    const i = hitTest(A, scale, visible, placements, px, py,
-      { collapsed: V.collapsed, yArr: focusActive() ? focusY : undefined });
-    if(i !== V.hover){
-      V.hover = i;
-      mark({ paint: true });
-    }
-    if(i >= 0){
-      tip.show(A, i, e.clientX, e.clientY, {
-        details: A.details, cluster: A.nodes[A.leaf[i]]?.label,
-      });
-      const cx = e.clientX, cy = e.clientY;
-      A.loadDetails([i]).then((got) => { if(got && V.hover === i) tip.show(A, i, cx, cy, { details: A.details, cluster: A.nodes[A.leaf[i]]?.label }); });
-    } else {
-      tip.hide();
-    }
-  });
-
-  surface.addEventListener('pointerup', (e) => {
-    if(!drag || drag.id !== e.pointerId) return;
-    const wasDrag = drag.moved;
-    surface.classList.remove('dragging');
-    try { surface.releasePointerCapture?.(e.pointerId); } catch { /* already released */ }
-    drag = null;
-    if(wasDrag){ mark({ prefs: true }); return; }
-
-    const r = surface.getBoundingClientRect();
-    const px = e.clientX - r.left;
-    const py = e.clientY - r.top;
-
-    const focused = focusActive();
-    const i = hitTest(A, scale, visible, placements, px, py,
-      { collapsed: V.collapsed, yArr: focused ? focusY : undefined });
-    if(i >= 0){ select(i, { open: true }); return; }
-
-    // `bands` is the GLOBAL atlas-y tree — meaningless against focus-y (see
-    // paint()'s note on suppressing it while focused), and focus mode has no
-    // click-to-collapse of its own yet, so skip this rather than mis-hitting an
-    // unrelated global cluster under the cursor.
-    if(focused) return;
-
-    // Clicking a band's label collapses it; clicking empty band space selects it
-    // in the rail, which is the least surprising split of the two intents.
-    //
-    // A folded band is the exception: it is a 15px strip with nothing in it but
-    // its own label, so anywhere on it unfolds. Requiring the label's exact
-    // rectangle would make a fold much harder to undo than to make.
-    const nd = bandAt(bands, scale, py);
-    if(nd){
-      if(V.collapsed.has(nd.id)) toggleCollapse(nd.id);
-      else if(px < 190 && py - scale.sy(nd.y0) < 18) toggleCollapse(nd.id);
-      else { V.selectedNode = nd.id; mark({ rail: true, paint: true }); }
-    }
-  });
-
-  surface.addEventListener('pointerleave', () => { tip.hide(); if(V.hover !== -1){ V.hover = -1; mark({ paint: true }); } });
-
-  surface.addEventListener('dblclick', (e) => {
-    const r = surface.getBoundingClientRect();
-    zoom(2.4, e.clientX - r.left, e.clientY - r.top);
-  });
-
-  // ---- pin strip ----------------------------------------------------------
-  pinCanvas.addEventListener('pointermove', (e) => {
-    const r = pinCanvas.getBoundingClientRect();
-    const i = pinHitTest(A, scale, pins.rows, e.clientX - r.left, e.clientY - r.top, { collapsed: V.collapsed });
-    if(i !== V.hover){ V.hover = i; mark({ paint: true }); }
-    if(i >= 0) tip.show(A, i, e.clientX, e.clientY, { details: A.details, cluster: A.nodes[A.leaf[i]]?.label });
-    else tip.hide();
-  });
-  pinCanvas.addEventListener('pointerleave', () => { tip.hide(); });
-  pinCanvas.addEventListener('click', (e) => {
-    const r = pinCanvas.getBoundingClientRect();
-    const i = pinHitTest(A, scale, pins.rows, e.clientX - r.left, e.clientY - r.top, { collapsed: V.collapsed });
-    if(i >= 0){ select(i, { open: true }); return; }
-
-    const row = pinRowAt(pins.rows, e.clientY - r.top);
-    if(!row) return;
-    // Anywhere on a COLLAPSED row unfolds it — same precedent as a folded map
-    // band. An OPEN node-pin's empty space still jumps the main map there
-    // (today's behaviour, unchanged); an open focus-pin has no map position to
-    // jump to, so its empty space is a no-op.
-    if(row.spec.collapsed) togglePinCollapseAt(pins.rows.indexOf(row));
-    else if(row.spec.kind === 'node') focusNode(row.spec.id);
-  });
-
-  $('pinBar').addEventListener('click', (e) => {
-    const c = e.target.closest('[data-pincollapse]');
-    if(c){ e.stopPropagation(); togglePinCollapseAt(Number(c.dataset.pincollapse)); return; }
-    const b = e.target.closest('[data-unpin]');
-    if(b){ e.stopPropagation(); unpinAt(Number(b.dataset.unpin)); }
-  });
-
-
-  // ---- minimap ------------------------------------------------------------
-  let miniDrag = false;
-
-  function miniJump(clientX){
-    const r = miniCanvas.getBoundingClientRect();
-    const f = clamp((clientX - r.left) / r.width, 0, 1);
-    const [xa, xb] = V.domain;
-    const year = xa + f * (xb - xa);
-    V.x0 = year - (V.W / V.ppy) / 2;
-    Object.assign(V, clampView(V));
-    mark({ paint: true, prefs: true });
+    strip.addEventListener('pointerdown', (ev) => { if(ev.target.closest('.seg') && ev.detail > 1) return; dragging = true; try { strip.setPointerCapture(ev.pointerId); } catch {} go(ev); });
+    strip.addEventListener('pointermove', (ev) => { if(dragging) go(ev); });
+    strip.addEventListener('pointerup', () => { dragging = false; });
+    strip.addEventListener('dblclick', (ev) => { const s = ev.target.closest('.seg'); if(s){ const [a, z] = s.dataset.fit.split(':').map(Number); fitYears(a, z); } });
   }
 
-  miniCanvas.addEventListener('pointerdown', (e) => { miniDrag = true; miniJump(e.clientX); });
-  miniCanvas.addEventListener('pointermove', (e) => { if(miniDrag) miniJump(e.clientX); });
-  w.addEventListener('pointerup', () => { miniDrag = false; });
-  miniCanvas.addEventListener('dblclick', fit);
+  // Search: words go through the site's word index; "1750-1800" goes there.
+  {
+    let timer = 0;
+    $('q').addEventListener('input', () => {
+      w.clearTimeout(timer);
+      timer = w.setTimeout(runSearch, 260);
+    });
+  }
+  async function runSearch(){
+    const q = $('q').value.trim();
+    V.query = q;
+    const m = q.match(/^(-?\d{1,4})\s*(bc)?\s*(?:-|–|to)\s*(-?\d{1,4})\s*(bc)?$/i);
+    if(m){
+      let a = +m[1], b = +m[3];
+      if(m[2]) a = -a; if(m[4]) b = -b;
+      V.matches = null;
+      return fitYears(Math.min(a, b), Math.max(a, b));
+    }
+    if(!q){ V.matches = null; update({ layout: true }); return; }
+    const ids = await A.search(q);
+    if(V.query !== q) return;
+    V.matches = ids;
+    body.scrollTop = 0;
+    update({ layout: true });
+  }
 
-  // ---- toolbar ------------------------------------------------------------
-  $('scaleSeg').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-stop]');
-    if(b) gotoStop(b.dataset.stop);
-  });
-  $('modeSeg').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-mode]');
-    if(b) setMode(b.dataset.mode);
-  });
-  $('axisSeg').addEventListener('click', (e) => {
-    const b = e.target.closest('button');
-    if(b) setZoomAxis(b.dataset.axis);
-  });
-
-  $('zoomIn').onclick = () => zoom(1.7, V.W / 2, V.H / 2, axisOpts());
-  $('zoomOut').onclick = () => zoom(1 / 1.7, V.W / 2, V.H / 2, axisOpts());
-  $('fitBtn').onclick = fit;
-  $('dimBtn').onclick = () => { V.dimMode = !V.dimMode; mark({ paint: true, mini: true, prefs: true }); };
-  $('railBtn').onclick = () => {
-    V.railOpen = !V.railOpen;
-    rail.setFolded(!V.railOpen);
-    mark({ paint: true, prefs: true });
+  // ---- gestures --------------------------------------------------------------
+  // Scroll moves up and down (natively); sideways scroll, shift+scroll and drag
+  // move through time; pinch (ctrl+wheel on a trackpad) zooms at the cursor.
+  body.addEventListener('scroll', () => { renderBody(false); tip.classList.remove('on'); }, { passive: true });
+  const onWheel = (ev) => {
+    if(ev.ctrlKey || ev.metaKey){
+      ev.preventDefault();
+      const r = body.getBoundingClientRect();
+      zoomBy(Math.exp(-ev.deltaY * 0.01), ev.clientX - r.left);
+      return;
+    }
+    const dx = ev.shiftKey && !ev.deltaX ? ev.deltaY : ev.deltaX;
+    if(Math.abs(dx) > Math.abs(ev.shiftKey ? 0 : ev.deltaY)){ ev.preventDefault(); panBy(dx); }
   };
-  $('courseSel').onchange = (ev) => setCourse(ev.target.value);
-  loadCourses();
-  $('facetBtn').onclick = () => { V.facetsOpen = !V.facetsOpen; mark({ facets: true, paint: true, prefs: true }); };
-  $('themeBtn').onclick = () => setTheme(V.theme === 'dark' ? 'light' : 'dark');
-  $('helpBtn').onclick = () => $('help').classList.add('on');
-  $('help').onclick = () => $('help').classList.remove('on');
+  body.addEventListener('wheel', onWheel, { passive: false });
+  $('hdr').addEventListener('wheel', onWheel, { passive: false });
 
-  $('facets').addEventListener('click', (e) => {
-    const t = e.target.closest('[data-topic]');
-    if(t){ toggleTopic(t.dataset.topic); return; }
-    const d = e.target.closest('[data-ds]');
-    if(d){
-      const k = d.dataset.ds;
-      if(V.datasets.has(k)) V.datasets.delete(k); else V.datasets.add(k);
-      mark({ data: true, paint: true });
-      return;
-    }
-    if(e.target.closest('[data-clearfacets]')){
-      V.topics.clear(); V.datasets.clear();
-      mark({ data: true, paint: true });
-    }
-  });
-
-  let qTimer = 0;
-  qInput.addEventListener('input', () => {
-    // Debounced: the filter is a full pass over the corpus and there is no value
-    // in running it between keystrokes.
-    //
-    // `w.setTimeout`, not the bare global. This module executes in the OPENER's
-    // realm, and a backgrounded tab has its timers throttled to about a second —
-    // the opener is backgrounded the whole time you are looking at the atlas, so
-    // using its timers made every keystroke land a second late.
-    w.clearTimeout(qTimer);
-    qTimer = w.setTimeout(() => setQuery(qInput.value), 110);
-  });
-  D.querySelector('.searchbox .clear').onclick = () => setQuery('');
-  D.querySelector('.searchbox .pinfocus').onclick = () => pinFocus();
-
-  // ---- keyboard -----------------------------------------------------------
-  D.addEventListener('keydown', (e) => {
-    const typing = e.target === qInput;
-
-    if(e.key === 'Escape'){
-      if($('help').classList.contains('on')) $('help').classList.remove('on');
-      else if(detail.boxOpen()) detail.closeBox();
-      else if(typing && qInput.value){ setQuery(''); }
-      else if(detail.isOpen) detail.close();
-      else if(typing) qInput.blur();
-      return;
-    }
-
-    if(typing) return;
-
-    const step = e.shiftKey ? 0.42 : 0.12;
-
-    switch(e.key){
-      case '/': e.preventDefault(); qInput.focus(); qInput.select(); return;
-      case '?': $('help').classList.toggle('on'); return;
-      case '0': fit(); return;
-      case '+': case '=': zoom(1.7, V.W / 2, V.H / 2, axisOpts()); return;
-      case '-': case '_': zoom(1 / 1.7, V.W / 2, V.H / 2, axisOpts()); return;
-      case 'm': {
-        const i = MODES.findIndex((x) => x.key === V.mode);
-        setMode(MODES[(i + 1) % MODES.length].key);
-        return;
+  let dragged = false;
+  {
+    const ptrs = new Map();
+    let start = null, pinch = null;
+    body.addEventListener('pointerdown', (ev) => {
+      if(ev.target.closest('.tp-lanelab, .al-mo, .al-sec')) return;
+      ptrs.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      dragged = false;
+      if(ptrs.size === 1){ start = { x: ev.clientX, y: ev.clientY, x0: V.x0, top: body.scrollTop, touch: ev.pointerType === 'touch' }; }
+      if(ptrs.size === 2){
+        const [a, b] = [...ptrs.values()];
+        const r = body.getBoundingClientRect();
+        pinch = { d: Math.abs(a.x - b.x) || 1, ppy: V.ppy, at: V.x0 + ((a.x + b.x) / 2 - r.left) / V.ppy, mid: (a.x + b.x) / 2 - r.left };
       }
-      case 'r': $('railBtn').onclick(); return;
-      case 'f': $('facetBtn').onclick(); return;
-      case 'd': $('dimBtn').onclick(); return;
-      case 't': $('themeBtn').onclick(); return;
-      case 'ArrowLeft':  e.preventDefault(); V.x0 -= (V.W * step) / V.ppy; break;
-      case 'ArrowRight': e.preventDefault(); V.x0 += (V.W * step) / V.ppy; break;
-      case 'ArrowUp':
-        e.preventDefault();
-        if(focusActive()) focusYTop -= (V.H * step) / scale.pxPerY;
-        else V.yTop -= (V.H * step) / scale.pxPerY;
-        break;
-      case 'ArrowDown':
-        e.preventDefault();
-        if(focusActive()) focusYTop += (V.H * step) / scale.pxPerY;
-        else V.yTop += (V.H * step) / scale.pxPerY;
-        break;
-      case 'c':
-        if(V.selected >= 0) toggleCollapse(A.leaf[V.selected]);
-        else if(V.selectedNode != null) toggleCollapse(V.selectedNode);
-        return;
-      case 'p':
-        if(V.selectedNode != null) togglePin(V.selectedNode);
-        else if(V.selected >= 0) togglePin(A.leaf[V.selected]);
-        return;
-      case 'j': case 'k': {
-        if(V.selected < 0) return;
-        const nb = A.knn[V.selected] || [];
-        if(!nb.length) return;
-        const cur = nb.indexOf(V.hover);
-        const idx = e.key === 'j'
-          ? (cur + 1) % nb.length
-          : (cur - 1 + nb.length) % nb.length;
-        select(nb[idx], { open: true, center: true });
-        return;
+    });
+    body.addEventListener('pointermove', (ev) => {
+      if(!ptrs.has(ev.pointerId)){ if(ev.pointerType === 'mouse') showTip(entryOf(ev.target), ev); return; }
+      ptrs.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      if(pinch && ptrs.size === 2){
+        const [a, b] = [...ptrs.values()];
+        const [lo, hi] = ppyRange(V);
+        V.ppy = clamp(pinch.ppy * (Math.abs(a.x - b.x) || 1) / pinch.d, lo, hi);
+        V.x0 = pinch.at - pinch.mid / V.ppy;
+        clampX(); dragged = true;
+        return update({ prefs: true });
       }
-      default: return;
-    }
-
-    if(focusActive()) clampFocusY();
-    Object.assign(V, clampView(V));
-    mark({ paint: true, prefs: true });
-  });
-
-  // ---- resize -------------------------------------------------------------
-  let rTimer = 0;
-  w.addEventListener('resize', () => {
-    w.clearTimeout(rTimer);                      // the atlas window's timer, not the opener's
-    rTimer = w.setTimeout(() => { miniCache = null; mark({ paint: true, mini: true }); }, 60);
-  });
-
-  // ---------------------------------------------------------------------------
-  // Preferences
-  // ---------------------------------------------------------------------------
-
-  /*
-   * Persisted so reopening the atlas puts you back where you were. This is also
-   * the reason a test run can look wrong for no apparent reason — see the note in
-   * ATLAS.md. `Reset view` is the Fit button plus Expand all.
-   */
-  function savePrefs(){
-    try {
-      w.localStorage.setItem(PREFS_KEY, JSON.stringify({
-        x0: V.x0, ppy: V.ppy, yTop: V.yTop, yz: V.yz, mode: V.mode,
-        collapsed: [...V.collapsed],
-        // Query-pins don't persist — see loadPrefs()'s note — so this is the
-        // same wire format (a flat array of node ids) prefs have always used.
-        pinned: V.pinned.filter((p) => p.kind === 'node').map((p) => p.id),
-        dimMode: V.dimMode, railOpen: V.railOpen, facetsOpen: V.facetsOpen,
-        theme: V.theme,
-      }));
-    } catch { /* private mode, or a full quota — not worth failing over */ }
+      if(!start) return;
+      const dx = ev.clientX - start.x, dy = ev.clientY - start.y;
+      if(!dragged && Math.hypot(dx, dy) < 5) return;
+      if(!dragged){ dragged = true; body.classList.add('drag'); try { body.setPointerCapture(ev.pointerId); } catch {} tip.classList.remove('on'); }
+      V.x0 = start.x0 - dx / V.ppy; clampX();
+      if(!start.touch) body.scrollTop = start.top - dy;
+      update({ prefs: true });
+    });
+    const end = (ev) => {
+      ptrs.delete(ev.pointerId);
+      if(ptrs.size < 2) pinch = null;
+      if(!ptrs.size){ start = null; body.classList.remove('drag'); w.setTimeout(() => { dragged = false; }, 0); }
+    };
+    body.addEventListener('pointerup', end);
+    body.addEventListener('pointercancel', end);
+    body.addEventListener('pointerleave', (ev) => { if(ev.pointerType === 'mouse') tip.classList.remove('on'); });
   }
 
+  D.addEventListener('keydown', (ev) => {
+    const typing = ev.target === $('q');
+    if(ev.key === 'Escape'){
+      if($('help').classList.contains('on')) return $('help').classList.remove('on');
+      if(V.selected) return select(null);
+      if(typing || V.query){ $('q').value = ''; $('q').blur(); return runSearch(); }
+      return;
+    }
+    if(typing) return;
+    const k = ev.key;
+    if(k === '/'){ ev.preventDefault(); if(!V.barOpen) setBar(true); $('q').focus(); }
+    else if(k === '0'){ fitX(); update({ layout: true, prefs: true }); }
+    else if(k === '+' || k === '='){ zoomBy(1.6); }
+    else if(k === '-' || k === '_'){ zoomBy(1 / 1.6); }
+    else if(k === 'm'){ const i = MODES.findIndex((x) => x.key === V.mode); setMode(MODES[(i + 1) % MODES.length].key); }
+    else if(k === '?'){ $('help').classList.toggle('on'); }
+    else if(k === 'ArrowLeft' || k === 'ArrowRight'){
+      ev.preventDefault();
+      if(V.selected) step(k === 'ArrowLeft' ? -1 : 1);
+      else panBy((k === 'ArrowLeft' ? -1 : 1) * V.W * (ev.shiftKey ? 0.5 : 0.15));
+    }
+  });
+
+  w.addEventListener('resize', () => { size(); update({ layout: true }); });
+
+  // ---- prefs ----------------------------------------------------------------
   function loadPrefs(){
     try {
       const p = JSON.parse(w.localStorage.getItem(PREFS_KEY) || 'null');
       if(!p) return;
-      // Mode first: it sets the domain the camera below is measured against.
-      if(p.mode && MODES.some((m) => m.key === p.mode)){
-        V.mode = p.mode;
-        V.domain = domainFor(p.mode, A.xExtent);
-      }
-      if(Number.isFinite(p.x0)){ V.x0 = p.x0; freshCamera = false; }
-      // Not clamped here: the ppy floor depends on the viewport, and nothing has
-      // been measured yet. The `clampView` after `measure()` at boot does it.
-      if(Number.isFinite(p.ppy)){ V.ppy = p.ppy; freshCamera = false; }
-      if(Number.isFinite(p.yTop)) V.yTop = p.yTop;
-      if(Number.isFinite(p.yz)) V.yz = p.yz;
-      // Node ids are only meaningful for the tree that produced them. A rebuild
-      // renumbers, so drop anything out of range rather than pinning nonsense.
-      V.collapsed = new Set((p.collapsed || []).filter((id) => A.nodes[id]));
-      /*
-       * Node ids are only meaningful for the tree that produced them — dropped
-       * if a rebuild renumbered past them, same as `collapsed` above. A focus
-       * (query) pin is never in this saved list to begin with: its tree's node
-       * ids are meaningless outside the response that produced them, restoring
-       * one means firing a network request during boot (against the "loads
-       * incredibly quickly" requirement), and the corpus can drift between
-       * sessions anyway — so there's no saved "focus" pin to reconstruct here.
-       */
-      V.pinned = (p.pinned || []).filter((id) => A.nodes[id]).slice(0, 6)
-        .map((id) => ({ kind: 'node', id, collapsed: false }));
-      V.dimMode = p.dimMode !== false;
-      V.railOpen = p.railOpen !== false;
-      hadRailPref = 'railOpen' in p;
-      V.facetsOpen = !!p.facetsOpen;
+      if(p.mode && MODES.some((m) => m.key === p.mode)){ V.mode = p.mode; V.domain = domainFor(p.mode, M.extent); }
+      if(Number.isFinite(p.x0) && Number.isFinite(p.ppy) && p.ppy > 0){ V.x0 = p.x0; V.ppy = p.ppy; fresh = false; }
+      const keys = new Set(M.lanes.map((l) => l.key));
+      V.pinned = new Set((p.pinned || []).filter((k) => keys.has(k)).slice(0, 6));
+      V.folded = new Set((p.folded || []).filter((k) => M.sections.some((s) => s.key === k)));
+      if(p.barOpen === false) V.barOpen = false;
     } catch { /* ignore */ }
   }
-
-  /*
-   * Read just the theme, before the atlas is loaded and before the document is
-   * written. Light unless a previous session chose dark; there is deliberately no
-   * `prefers-color-scheme` fallback, because the atlas is a document you look at
-   * pictures in and white is the right default for that.
-   */
-  function readTheme(win){
+  function savePrefs(){
     try {
-      const p = JSON.parse(win.localStorage.getItem(PREFS_KEY) || 'null');
-      return p && p.theme === 'dark' ? 'dark' : 'light';
-    } catch { return 'light'; }
+      w.localStorage.setItem(PREFS_KEY, JSON.stringify({ mode: V.mode, x0: V.x0, ppy: V.ppy, pinned: [...V.pinned], folded: [...V.folded], barOpen: V.barOpen }));
+    } catch { /* full or private */ }
   }
 
-  // ---------------------------------------------------------------------------
-  // Go
-  // ---------------------------------------------------------------------------
-
-  // A phone has no width to give the rail: it starts folded to its spine there
-  // (the band names on the map do its job). Once you open it, that is remembered.
-  if(w.innerWidth < 700 && !hadRailPref) V.railOpen = false;
-  rail.setFolded(!V.railOpen);
-  setTheme(V.theme);
-  measure();
-
-  // A fresh visitor gets the whole of the default mode; a returning one gets their
-  // camera back, clamped into the mode they left it in — the ppy floor could not be
-  // applied in `loadPrefs()` because it depends on the viewport width.
-  if(freshCamera) Object.assign(V, fitView({ mode: V.mode, domain: V.domain, W: V.W, H: V.H }));
-  else Object.assign(V, clampView(V));
-
-  boot.classList.add('gone');
+  // ---- go --------------------------------------------------------------------
+  $('boot').classList.add('gone');
   $('app').style.visibility = 'visible';
+  setBar(V.barOpen);
+  size();
+  if(fresh) fitX(); else clampX();
+  relayout();
+  update({ layout: true, body: true });
 
-  mark({ data: true, paint: true, rail: true, facets: true, mini: true });
+  // Opened from a topic page: go to that topic's lane.
+  const want = w.localStorage.getItem('atlas:course');
+  if(want){ w.localStorage.removeItem('atlas:course'); w.setTimeout(() => scrollToLane(want), 50); }
 
-  /*
-   * A debug handle on the atlas window. `datasets/qa/qa-atlas.mjs` drives the view
-   * through this: a headless test cannot meaningfully "zoom into a dense region"
-   * by dispatching wheel events at guessed coordinates, because on a scatter plot
-   * most coordinates are empty space and the test then measures an empty screen.
-   */
+  // For QA and the console.
   w.__atlas = {
-    get atlas(){ return A; },
-    get view(){ return V; },
-    get scale(){ return scale; },
-    get visible(){ return visible; },
-    get placements(){ return placements; },
-    get filter(){ return filter; },
-    get tier(){ return tier; },
-    get depth(){ return depth; },
-    get mode(){ return V.mode; },
-    get modes(){ return MODES.map((m) => m.key); },
-    get domain(){ return V.domain.slice(); },
-    get ppyRange(){ return ppyRange(V); },
-    get atEdge(){ return atEdge(V); },
-    get outside(){ return outsideCount(); },
-    get focused(){ return focusActive(); },
-    get focusTree(){ return focusTree; },
-    get focusPending(){ return focusPending; },
-    get focusTruncated(){ return focusTruncated; },
-    select, focusNode, fit, zoom, setQuery, toggleCollapse, togglePin, setTheme,
-    setMode, gotoStop, pinFocus, unpinAt, togglePinCollapseAt,
-    toggleRail: () => $('railBtn').onclick(),
-    mark,
-    /** Park the camera on a point at a given zoom, for reproducible tests. */
-    goto(i, ppy = 40){
-      V.ppy = clamp(ppy, ...ppyRange(V));
-      V.yz = coupledYZoom(V.ppy);
-      centerOn(i);
-      mark({ paint: true });
-    },
+    A, V, get layout(){ return L && L.res; }, update, select, goto, setMode, fitYears, zoomBy, panBy, scrollToLane, runSearch,
+    setQuery: (q) => { $('q').value = q; return runSearch(); },
   };
-
-
-  return { window: w, atlas: A, view: V };
+  return { window: w };
 }
+
+const pick = (o, keys) => Object.fromEntries(keys.map((k) => [k, o[k]]));

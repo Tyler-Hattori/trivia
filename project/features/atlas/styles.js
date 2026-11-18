@@ -1,490 +1,146 @@
 /*
- * The whole stylesheet, injected once into the atlas window.
+ * The atlas stylesheet, injected once into the atlas window. The entries,
+ * lanes, era bands and overview strip are the topic timeline's own rules
+ * (ui/lanes-css.js); this file adds the atlas's shell around them, in the same
+ * vocabulary as the topic page (features/topic/styles.js): white, one hairline,
+ * near-black for the active state, colour only as an accent.
  *
- * Three rules here are load-bearing, and the first two were bugs in the old view:
- *
- *   1. ONE EDGE PER SURFACE. A card gets a `border` and nothing else. Selection
- *      and hover are `box-shadow` rings, which paint outside the border box and
- *      so read as a halo rather than a second frame. There is deliberately no
- *      `outline` anywhere except the accessibility focus ring, and every
- *      interactive element sets `outline:none` on `:focus` while providing a
- *      shadow-based `:focus-visible` instead. That is what stops the doubled
- *      outlines that appeared when zoomed in.
- *
- *   2. NEVER CROP. Every `img` that shows a dataset picture is
- *      `object-fit: contain` on a matte. `cover` fills the frame prettily and
- *      slices a band out of the middle of every portrait, which is unacceptable
- *      for a timeline whose subject is often the picture itself.
- *
- *   3. NO LITERAL COLOURS BELOW :root. Both themes are one variable block each,
- *      swapped by `data-theme` on <html>. Every rule after that reads variables
- *      only — including the ones that used to be one-off hex values for hover
- *      states and scrim backgrounds, which is exactly where a second theme
- *      springs leaks. The canvas cannot read CSS variables, so `paint.js` holds
- *      the matching pair; if you add a colour here, check whether the canvas
- *      needs it too.
- *
- * Light is the default theme.
+ * NO BACKTICKS INSIDE THIS TEMPLATE, including in comments: one closes the
+ * string and the rest parses as JavaScript (docs/ATLAS.md, gotchas).
  */
+import { LANES_CSS } from '../../ui/lanes-css.js';
 
-export const CSS = `
-:root, :root[data-theme="light"]{
-  /* Matches the topic timeline (Lanes): white ground, hairlines, near-black
-     for the active state, colour only as an accent. */
-  --bg:#ffffff; --bg2:#f8fafc; --panel:#ffffff; --panel2:#ffffff;
-  --line:#e5e7eb; --line2:#cbd5e1; --lineHi:#94a3b8;
-  --text:#0f172a; --muted:#475569; --faint:#94a3b8;
-  --accent:#0f172a; --accent2:#334155; --onAccent:#ffffff;
-  --matte:#f1f5f9;
-  --raise:#f1f5f9;          /* hover fill on list rows and icon buttons */
-  --raise2:#e2e8f0;         /* selected fill */
-  --scroll:#c2cbd9;
-  --title:#0b1220;
-  --body:#333e50;           /* long-form prose */
-  --scrim:rgba(255,255,255,.86);
-  --scrimStrong:rgba(244,246,250,.94);
-  --veil:rgba(226,232,240,.88);
-  --shadow:0 8px 26px rgba(15,23,42,.13);
-  --shadowPanel:-14px 0 34px rgba(15,23,42,.14);
-  --shadowStrip:0 6px 16px rgba(15,23,42,.10);
-  --shadowBig:0 24px 70px rgba(15,23,42,.28);
-  --ringHover:rgba(15,23,42,.13);
-  --ringSel:rgba(15,23,42,.14);
-  --id:#94a3b8;
-}
-:root[data-theme="dark"]{
-  --bg:#0b0e14; --bg2:#0e121a; --panel:#111726; --panel2:#151c2c;
-  --line:#1f2937; --line2:#2b3a52; --lineHi:#3b4c66;
-  --text:#e2e8f0; --muted:#94a3b8; --faint:#64748b;
-  --accent:#38bdf8; --accent2:#0ea5e9; --onAccent:#04212f;
-  --matte:#0d1119;
-  --raise:#1d2739;
-  --raise2:#1b2740;
-  --scroll:#243044;
-  --title:#e8eef7;
-  --body:#c4cfdd;
-  --scrim:rgba(11,14,20,.78);
-  --scrimStrong:rgba(11,14,20,.86);
-  --veil:rgba(6,9,14,.90);
-  --shadow:0 10px 34px rgba(0,0,0,.5);
-  --shadowPanel:-14px 0 34px rgba(0,0,0,.45);
-  --shadowStrip:0 6px 16px rgba(0,0,0,.35);
-  --shadowBig:0 24px 70px rgba(0,0,0,.6);
-  --ringHover:rgba(226,232,240,.16);
-  --ringSel:rgba(56,189,248,.34);
-  --id:#3d4a5c;
-}
+export const CSS = String.raw`
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;overflow:hidden}
-body{
-  background:var(--bg); color:var(--text);
-  font:13px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  -webkit-font-smoothing:antialiased;
-}
-button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
-button:focus{outline:none}
-button:focus-visible{box-shadow:0 0 0 2px var(--accent)}
-a{color:var(--accent)}
-
-/* ---------- boot ---------- */
-#boot{
-  position:fixed;inset:0;display:flex;gap:12px;align-items:center;justify-content:center;
-  background:var(--bg);z-index:99;color:var(--muted);
-}
+html,body{margin:0;height:100%;overflow:hidden;background:#fff;color:#0f172a;
+  font:14px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+#boot{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#64748b;z-index:99;background:#fff}
 #boot.gone{display:none}
-.spin{
-  width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--accent);
-  border-radius:50%;animation:sp .7s linear infinite;
-}
-@keyframes sp{to{transform:rotate(360deg)}}
-#boot pre{
-  margin:0;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;
-  color:var(--muted);text-align:left;white-space:pre-wrap;max-width:620px;
-}
-
-/* ---------- shell ---------- */
+#boot pre{font:12px/1.6 ui-monospace,Menlo,monospace;white-space:pre-wrap;max-width:640px}
 #app{display:flex;flex-direction:column;height:100%}
 
-#cmd{
-  flex:0 0 auto;background:var(--panel);border-bottom:1px solid var(--line);
-  padding:7px 10px;display:flex;flex-direction:column;gap:7px;
-}
-.cmdrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:28px}
-#title{font-weight:650;letter-spacing:.2px}
-#count{color:var(--faint);font-size:11.5px;white-space:nowrap}
-.spacer{margin-left:auto}
-.grp{display:flex;align-items:center;gap:5px}
+/* ---------- toolbar: one compact row, more behind a button, the whole bar can fold away ---------- */
+.al-bar{display:flex;align-items:center;gap:6px;padding:6px 10px;border-bottom:1px solid #e5e7eb;flex-wrap:nowrap;min-height:42px}
+.al-bar.off{display:none}
+.al-title{font-weight:800;font-size:16px;margin-right:4px;white-space:nowrap}
+.al-btn{border:1px solid #d1d5db;background:#fff;border-radius:9px;padding:4px 10px;color:#334155;font-size:13px;white-space:nowrap}
+.al-btn:hover{background:#f8fafc}
+.al-btn.on{background:#0f172a;color:#fff;border-color:#0f172a}
+.al-btn.ic{width:30px;padding:4px 0;text-align:center}
+.al-seg{display:inline-flex;border:1px solid #d1d5db;border-radius:9px;overflow:hidden;flex:none}
+.al-seg button{border:0;background:#fff;padding:4px 10px;color:#334155;font-size:13px;white-space:nowrap}
+.al-seg button+button{border-left:1px solid #e5e7eb}
+.al-seg button.on{background:#0f172a;color:#fff}
+.al-seg button.edge{background:#f1f5f9;font-weight:600}
+.al-seg button.edge::after{content:" ›"}
+.al-search{flex:1;min-width:120px;max-width:360px;border:1px solid #d1d5db;border-radius:9px;padding:5px 10px;outline:none;font-size:13px}
+.al-search:focus{border-color:#94a3b8}
+.al-sp{flex:1}
+.al-seg .sh{display:none}
+.al-count{font-size:12px;color:#94a3b8;white-space:nowrap}
+.al-more{display:none;align-items:center;gap:6px;padding:6px 10px;border-bottom:1px solid #e5e7eb;flex-wrap:wrap}
+.al-more.on{display:flex}
+.al-more label{font-size:12px;color:#64748b}
+.al-more select{border:1px solid #d1d5db;border-radius:9px;padding:4px 8px;background:#fff;font-size:13px;max-width:240px}
+.al-unfold{position:absolute;right:8px;top:6px;z-index:30;display:none}
+.al-unfold.on{display:block}
 
-.btn{
-  padding:4px 9px;border:1px solid var(--line);border-radius:7px;
-  background:var(--panel2);color:var(--muted);font-size:11.5px;white-space:nowrap;
-}
-.btn:hover{border-color:var(--lineHi);color:var(--text)}
-.btn.on{background:var(--accent);border-color:var(--accent);color:var(--onAccent);font-weight:600}
-.btn.icon{width:26px;text-align:center;padding:4px 0}
-.btn.tiny{padding:2px 6px;font-size:10.5px;border-radius:5px}
-.btn[disabled]{opacity:.4;cursor:default}
+/* ---------- header: overview strip, era bands, ticks, pinned lanes ---------- */
+.al-hdr{position:relative;flex:none;border-bottom:1px solid #e5e7eb;background:#fff}
+.al-hdr .tp-over{padding:6px 10px}
+.al-bands{position:relative;height:28px;overflow:hidden}
+.al-bands .tp-band{top:3px}
+.al-ticks{position:relative;height:20px;overflow:hidden}
+.al-ticks .tp-tick{top:2px}
+.al-pins{position:relative;overflow:hidden;border-top:1px solid #e5e7eb;display:none}
+.al-pins.on{display:block}
 
-.seg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
-.seg button{padding:4px 10px;font-size:11.5px;color:var(--muted);background:var(--panel2)}
-.seg button+button{border-left:1px solid var(--line)}
-.seg button.on{background:var(--accent);color:var(--onAccent);font-weight:600}
+/* ---------- body: native vertical scroll, horizontal pan by transform ---------- */
+.al-main{position:relative;flex:1;min-height:0}
+.al-grid{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.al-grid i{position:absolute;top:0;bottom:0;width:1px;background:#f1f5f9}
+.al-body{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;touch-action:pan-y;cursor:grab;overscroll-behavior:contain}
+.al-body.drag{cursor:grabbing;user-select:none}
+.al-sizer{position:relative;width:100%}
+.al-world{position:absolute;left:0;top:0;width:0;height:0;will-change:transform}
+.al-labs{position:absolute;left:0;top:0;width:100%;height:0;pointer-events:none}
+.al-pins .al-world,.al-pins .al-labs{top:0}
 
-/* The next-wider time range, offered once the camera is against the current
-   range's edge. An invitation, not a state: it never moves the camera by itself. */
-.seg button.edge{color:var(--accent2);background:var(--raise2);font-weight:600}
-/* Literal characters, not CSS escapes: this stylesheet is a JS template literal,
-   so a backslash escape is eaten by JS before CSS ever sees it. */
-.seg button.edge::after{content:'›';margin-left:4px}
+/* a section: its name, the count, a fold toggle */
+.al-sec{position:absolute;left:0;right:0;height:30px;display:flex;align-items:center;gap:8px;padding:0 10px;
+  border-top:1px solid #e5e7eb;background:linear-gradient(#fff,rgba(255,255,255,.92));pointer-events:auto;cursor:pointer;z-index:6}
+.al-sec b{font-size:13px;font-weight:800;color:#0f172a;letter-spacing:.01em}
+.al-sec .sw{width:9px;height:9px;border-radius:2px;background:var(--c)}
+.al-sec .n{font-size:11.5px;color:#94a3b8}
+.al-sec .tw{color:#94a3b8;font-size:11px;width:10px}
+.al-sec:hover b{text-decoration:underline;text-decoration-color:#cbd5e1;text-underline-offset:2px}
 
-#modeSeg{flex:none}
+/* a lane: the hairline and the name, as .tp-lane; the name pins it (as on the timeline) */
+.al-lane{position:absolute;left:0;right:0;height:0;border-top:1px solid #eef2f7}
+.al-lane .tp-lanelab{position:absolute;top:-8px;left:8px;pointer-events:auto;cursor:pointer;border-radius:3px;z-index:6}
+.al-lane .tp-lanelab:hover{color:#334155;background:#f1f5f9}
+.al-lane.d1 .tp-lanelab{left:20px}
+.al-lane.d2 .tp-lanelab{left:32px}
+.al-lane .tp-lanelab i{color:#cbd5e1;margin-left:5px}
+.al-lane .al-mo{position:absolute;top:-8px;pointer-events:auto;font-size:10px;color:#94a3b8;background:#fff;border:0;padding:0 4px;border-radius:3px;cursor:pointer;z-index:6}
+.al-lane .al-mo:hover{color:#0f172a;background:#f1f5f9}
+.al-lane.hit .tp-lanelab{color:#0f172a;background:#fef3c7}
 
-.searchbox{position:relative;display:flex;align-items:center;min-width:270px;flex:1;max-width:480px}
-.searchbox input{
-  width:100%;padding:5px 68px 5px 26px;border:1px solid var(--line);border-radius:7px;
-  background:var(--bg);color:var(--text);font-size:12px;
-}
-.searchbox input:focus{outline:none;border-color:var(--accent2)}
-.searchbox .mag{position:absolute;left:8px;color:var(--faint);font-size:12px;pointer-events:none}
-.searchbox .kbd{
-  position:absolute;right:7px;color:var(--faint);font-size:10px;
-  border:1px solid var(--line);border-radius:4px;padding:0 4px;pointer-events:none;
-}
-.searchbox .clear{position:absolute;right:26px;color:var(--faint);font-size:13px;display:none}
-.searchbox.filled .clear{display:block}
-.searchbox.filled .kbd{display:none}
-/* Only offered once free text is actually organizing the map into its own
-   focused view — pinning anything before then would freeze nothing. */
-.searchbox .pinfocus{position:absolute;right:44px;color:var(--faint);font-size:11px;display:none}
-.searchbox .pinfocus:hover{color:var(--accent2)}
-.searchbox.focused .pinfocus{display:block}
+/* the hover tip and the detail panel: the topic page's */
+.tp-hover{position:fixed;z-index:80;width:330px;background:#0f172a;color:#e2e8f0;border-radius:10px;padding:9px 11px;font-size:12.5px;line-height:1.5;
+  pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:0 10px 30px rgba(15,23,42,.3)}
+.tp-hover.on{opacity:1}
+.tp-hover b{color:#fff}
+.tp-hover .tp-meta{color:#94a3b8}
+.tp-hover div{margin-top:4px}
+.al-detail{position:absolute;right:0;top:0;bottom:0;width:420px;max-width:100%;z-index:40;background:#fff;border-left:1px solid #e5e7eb;
+  overflow:auto;box-shadow:-14px 0 34px rgba(15,23,42,.10);display:none}
+.al-detail.open{display:block}
+.al-detail .hd{display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:1px solid #f1f5f9;position:sticky;top:0;background:#fff;z-index:2;font-size:12px;color:#64748b}
+.al-detail .hd .path{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.al-detail img.pic{width:100%;max-height:340px;object-fit:contain;background:#f8fafc;display:block}
+.al-detail .in{padding:14px 18px 28px}
+.al-detail h2{font-size:21px;line-height:1.25;margin:0 0 4px;font-weight:800}
+.al-detail .sub{color:#64748b;font-size:13px;margin-bottom:4px}
+.al-detail .yr{color:#64748b;font-size:13px;margin-bottom:12px;font-variant-numeric:tabular-nums}
+.al-detail p{color:#334155;line-height:1.6;margin:0 0 10px;font-size:14px}
+.al-detail .lb{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#94a3b8;margin:16px 0 6px}
+.al-detail .chips{display:flex;flex-wrap:wrap;gap:6px}
+.al-detail .chips button{border:1px solid #d1d5db;background:#fff;border-radius:999px;padding:3px 10px;font-size:12.5px;color:#334155}
+.al-detail .chips button:hover{background:#f8fafc}
+.al-detail .near button{display:flex;gap:8px;width:100%;text-align:left;border:0;background:none;padding:4px 2px;font-size:13px;color:#334155;border-radius:6px}
+.al-detail .near button:hover{background:#f8fafc}
+.al-detail .near .y{color:#94a3b8;font-variant-numeric:tabular-nums;margin-left:auto;white-space:nowrap}
+.al-detail a{color:#334155}
 
-#ppyLab{font-size:11px;color:var(--faint);min-width:84px;text-align:center;font-variant-numeric:tabular-nums}
-
-/* ---------- filter row ---------- */
-#facets{display:none;gap:6px;align-items:flex-start;flex-wrap:wrap}
-#facets.on{display:flex}
-.facet{display:flex;gap:4px;align-items:center;flex-wrap:wrap;max-width:100%}
-.facet>label{color:var(--faint);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;margin-right:2px}
-.tag{
-  padding:2px 7px;border:1px solid var(--line);border-radius:999px;
-  background:var(--panel2);color:var(--muted);font-size:11px;
-}
-.tag:hover{border-color:var(--lineHi);color:var(--text)}
-.tag.on{background:var(--accent);border-color:var(--accent);color:var(--onAccent);font-weight:600}
-
-/* ---------- middle ---------- */
-#mid{flex:1;display:flex;min-height:0;position:relative}
-
-/*
- * The rail is created inside a host div, but it is written to BE the flex item of
- * #mid (flex:0 0 216px, a bounded column so .railbody can scroll). Left as a plain
- * wrapper, #railHost would be the flex item instead and the rail would size to its
- * content with an unbounded height. display:contents dissolves the wrapper.
- */
-#railHost{display:contents}
-
-/*
- * min-width:0 is load-bearing, and its absence was a real bug: a flex item's
- * automatic minimum size is its MIN-CONTENT width, which overrides flex-basis. The
- * longest cluster label ("Great Britain · Kingdom · House Of Windsor") is nowrap, so
- * the rail sat at 466px instead of 216 and ate a third of the map, while .rlabel's
- * ellipsis never engaged because the row was never actually constrained.
- */
-.rail{
-  flex:0 0 216px;min-width:0;background:var(--panel);border-right:1px solid var(--line);
-  display:flex;flex-direction:column;min-height:0;
-}
-/*
- * Collapsed, the rail keeps a 22px spine holding the reopen chevron. Hiding it
- * outright (which is what the toolbar's Rail button used to be the only way to do)
- * leaves nothing on that edge to click, so the way back is a toolbar button you
- * have to already know about. The .hidden class is still honoured, for anything
- * that wants the rail gone outright rather than folded.
- *
- * NO BACKTICKS IN A COMMENT INSIDE THIS TEMPLATE. One here closed the string and
- * the rest of the stylesheet was parsed as JavaScript. Third time; see the note
- * in docs/ATLAS.md, Atlas gotchas.
- */
-/* Tinted, or the spine is the same colour as the canvas and only the chevron
-   shows — which reads as a stray glyph rather than a collapsed panel. */
-.rail.folded{flex-basis:22px;overflow:hidden;background:var(--panel2)}
-.rail.folded .railhead{padding:6px 0;justify-content:center;border-bottom:0}
-.rail.folded .railhead>span,
-.rail.folded .railhead .btn,
-.rail.folded .railbody{display:none}
-.rail.folded .railfold{display:block}
-.rail.hidden{display:none}
-
-.railhead{
-  flex:0 0 auto;display:flex;align-items:center;gap:5px;padding:6px 8px;
-  border-bottom:1px solid var(--line);font-size:10.5px;text-transform:uppercase;
-  letter-spacing:.07em;color:var(--faint);
-}
-.railhead>span{margin-right:auto}
-.railfold{
-  flex:0 0 16px;width:16px;height:18px;border-radius:4px;color:var(--faint);
-  font-size:11px;line-height:1;text-align:center;
-}
-.railfold:hover{background:var(--raise);color:var(--text)}
-.railbody{flex:1;overflow-y:auto;overflow-x:hidden;padding:3px 0 10px}
-.railbody::-webkit-scrollbar{width:9px}
-.railbody::-webkit-scrollbar-thumb{background:var(--scroll);border-radius:5px}
-
-.rrow{
-  display:flex;align-items:center;gap:4px;padding:2px 6px 2px 0;
-  padding-left:calc(4px + var(--ind));font-size:11.5px;cursor:pointer;
-  border-left:2px solid transparent;
-}
-.rrow:hover{background:var(--raise)}
-.rrow.cur{background:var(--raise2);border-left-color:var(--accent)}
-.rrow.muted{opacity:.38}
-.rrow .twist{width:13px;flex:0 0 13px;color:var(--faint);font-size:9px;text-align:center}
-.rrow .sw{width:6px;height:6px;flex:0 0 6px;border-radius:1px;background:var(--hue)}
-.rrow .rlabel{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
-.rrow.col .rlabel{color:var(--text);font-weight:600}
-.rrow .rn{color:var(--faint);font-size:10px;font-variant-numeric:tabular-nums}
-.rrow .rpin{width:15px;flex:0 0 15px;color:var(--line2);font-size:9px;opacity:0;text-align:center}
-.rrow:hover .rpin{opacity:.6}
-.rrow .rpin.on{opacity:1;color:var(--accent)}
-
-/* ---------- canvas stack ---------- */
-#stage{flex:1;position:relative;min-width:0;overflow:hidden;background:var(--bg)}
-#pinWrap{
-  position:absolute;left:0;right:0;top:0;z-index:3;
-  border-bottom:1px solid var(--line);box-shadow:var(--shadowStrip);
-  display:none;
-}
-#pinWrap.on{display:block}
-#pinCanvas{display:block}
-#pinBar{
-  position:absolute;right:6px;top:3px;display:flex;gap:4px;z-index:4;
-}
-/* One chip per pinned row: a fold toggle beside its unpin ✕, grouped tighter
-   than the gap #pinBar leaves between separate pins' chips. */
-.pinchip{display:flex;gap:2px}
-
-#surface{position:absolute;inset:0;cursor:grab}
-#surface.dragging{cursor:grabbing}
-#canvas{display:block;position:absolute;inset:0}
-
-.cardlayer{position:absolute;inset:0;pointer-events:none}
-.cardlayer .c{pointer-events:auto}
-
-/* ---------- cards ---------- */
-/*
- * One border, no outline. The --hue variable is the cluster colour, used for the
- * accent bar and the selection ring, so a card visibly belongs to its band.
- */
-.c{
-  position:absolute;top:0;left:0;
-  display:flex;flex-direction:column;overflow:hidden;
-  background:var(--panel);border:1px solid var(--line);border-radius:7px;
-  will-change:transform;contain:layout paint style;
-  transition:box-shadow .1s linear,border-color .1s linear;
-}
-.c::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--hue);opacity:.85}
-.c:hover,.c.hov{border-color:var(--lineHi);box-shadow:0 0 0 2px var(--ringHover),var(--shadow);z-index:2}
-.c.sel{border-color:var(--accent);box-shadow:0 0 0 3px var(--ringSel),var(--shadow);z-index:3}
-.c.dimmed{opacity:.26}
-
-/*
- * The picture takes every pixel the caption does not, and is CONTAINED on a
- * matte. A portrait shows as a portrait with matte at the sides; a landscape
- * shows with matte above and below. Nothing is ever sliced.
- */
-.c .pic{flex:1;min-height:0;background:var(--matte);display:flex;align-items:center;justify-content:center}
-.c .pic img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;display:block}
-.c.noimg .pic{display:none}
-.c .cap{flex:0 0 auto;padding:4px 6px 5px 8px;border-top:1px solid var(--line)}
-.c.noimg .cap{border-top:0;padding-top:7px}
-.c .t{
-  font-size:11px;line-height:1.25;font-weight:600;color:var(--title);
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
-}
-.c .y{font-size:10px;color:var(--faint);margin-top:1px;font-variant-numeric:tabular-nums}
-.c .ex{display:none}
-.c.withex .ex{
-  display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;
-  margin:0;padding:0 8px 7px;font-size:10.5px;line-height:1.42;color:var(--muted);
-}
-.c.big .t{font-size:12px}
-
-/* ---------- hover preview ---------- */
-.tip{
-  position:fixed;left:0;top:0;z-index:40;width:300px;max-height:70vh;
-  background:var(--panel);border:1px solid var(--line);border-radius:9px;
-  box-shadow:var(--shadow);overflow:hidden;pointer-events:none;
-  opacity:0;transition:opacity .08s linear;will-change:transform;
-  display:flex;flex-direction:column;
-}
-.tip.on{opacity:1}
-.tip::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--hue)}
-.tip .tpic{flex:0 0 auto;max-height:190px;background:var(--matte);display:flex;align-items:center;justify-content:center}
-.tip .tpic img{max-width:100%;max-height:190px;width:auto;height:auto;object-fit:contain;display:block}
-.tip .tbody{padding:7px 10px 9px 11px;overflow:hidden}
-.tip .tt{font-weight:650;font-size:12.5px;line-height:1.3;color:var(--title)}
-.tip .ts{font-size:11px;color:var(--muted);margin-top:1px}
-.tip .ty{font-size:10.5px;color:var(--faint);margin-top:3px;font-variant-numeric:tabular-nums}
-.tip .tex{margin:6px 0 0;font-size:11px;line-height:1.45;color:var(--muted)}
-.tip .ttopics{display:flex;flex-wrap:wrap;gap:3px;margin-top:7px}
-.tip .ttopics span{font-size:9.5px;color:var(--faint);border:1px solid var(--line);border-radius:999px;padding:0 5px}
-
-/* ---------- detail panel ---------- */
-.detail{
-  position:absolute;right:0;top:0;bottom:0;width:376px;z-index:20;
-  background:var(--panel);border-left:1px solid var(--line);
-  box-shadow:var(--shadowPanel);
-  overflow-y:auto;transform:translateX(100%);
-  transition:transform .16s cubic-bezier(.32,.72,.32,1);
-}
-.detail.on{transform:none}
-.detail::-webkit-scrollbar{width:10px}
-.detail::-webkit-scrollbar-thumb{background:var(--scroll);border-radius:5px}
-
-.dhead{
-  position:sticky;top:0;z-index:2;display:flex;align-items:flex-start;gap:6px;
-  padding:7px 8px;background:var(--panel);border-bottom:1px solid var(--line);
-}
-.dpath{flex:1;display:flex;align-items:center;gap:3px;flex-wrap:wrap;font-size:10.5px}
-.dpath .crumb{color:var(--hue);border:1px solid var(--line);border-radius:5px;padding:1px 6px}
-.dpath .crumb:hover{border-color:var(--hue)}
-.dpath .sep{color:var(--faint)}
-.dclose{flex:0 0 22px;height:22px;border-radius:5px;color:var(--muted);font-size:12px}
-.dclose:hover{background:var(--raise);color:var(--text)}
-
-/* Uncropped here too, and clickable to go larger — still uncropped. */
-.dpic{margin:0;background:var(--matte);cursor:zoom-in;position:relative}
-.dpic img{display:block;width:100%;max-height:330px;object-fit:contain}
-.dpic figcaption{
-  position:absolute;right:6px;bottom:5px;font-size:9.5px;color:var(--muted);
-  background:var(--scrim);border-radius:4px;padding:1px 5px;
-}
-
-.dbody{padding:11px 13px 26px}
-.dbody h2{margin:0;font-size:16px;line-height:1.28;color:var(--title)}
-.dsub{color:var(--muted);font-size:12px;margin-top:2px}
-.dyear{color:var(--faint);font-size:11.5px;margin-top:5px;font-variant-numeric:tabular-nums}
-.dyear .approx{border:1px solid var(--line);border-radius:4px;padding:0 4px;font-size:9.5px}
-.dex{margin-top:11px;font-size:12.5px;line-height:1.62;color:var(--body)}
-.dex p{margin:0 0 9px}
-.dex.empty{color:var(--faint);font-size:11.5px}
-.dex code{background:var(--bg2);border:1px solid var(--line);border-radius:4px;padding:1px 4px;font-size:11px}
-
-.dsection{margin-top:16px;border-top:1px solid var(--line);padding-top:11px}
-.dsection h3{
-  margin:0 0 7px;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);
-}
-.chips{display:flex;flex-wrap:wrap;gap:4px}
-.chip{
-  border:1px solid var(--line);border-radius:999px;padding:2px 8px;
-  font-size:11px;color:var(--muted);background:var(--panel2);
-}
-.chip:hover{border-color:var(--accent2);color:var(--text)}
-
-.facets{margin:0;display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:11.5px}
-.facets dt{color:var(--faint)}
-.facets dd{margin:0;color:var(--body)}
-
-.near{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px}
-.near button{
-  display:flex;align-items:center;gap:7px;width:100%;text-align:left;
-  padding:3px 5px;border-radius:5px;font-size:11.5px;
-}
-.near button:hover{background:var(--raise)}
-.near .swatch{width:7px;height:7px;border-radius:2px;flex:0 0 7px}
-.near .nt{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.near .ny{color:var(--faint);font-size:10px;font-variant-numeric:tabular-nums}
-
-.dlinks{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:11px}
-.dlinks .did{color:var(--id);font-family:ui-monospace,Menlo,monospace;font-size:9.5px;word-break:break-all}
-
-/* ---------- enlarged image ---------- */
-.lightbox{
-  position:fixed;inset:0;z-index:60;background:var(--veil);
-  display:none;align-items:center;justify-content:center;cursor:zoom-out;
-}
-.lightbox.on{display:flex}
-.lightbox .lbinner{position:relative;max-width:94vw;max-height:94vh}
-.lightbox img{
-  display:block;max-width:94vw;max-height:94vh;
-  width:auto;height:auto;object-fit:contain;   /* never cropped, at any size */
-  border-radius:4px;box-shadow:var(--shadowBig);
-}
-.lbclose{
-  position:absolute;right:-6px;top:-30px;color:var(--muted);font-size:15px;
-  width:26px;height:26px;border-radius:6px;
-}
-.lbclose:hover{color:var(--text);background:var(--raise)}
-
-/* ---------- ruler ---------- */
-/*
- * #ruler is a sibling of #mid, so it spans the full width INCLUDING the rail,
- * while tick positions come from the scale, whose origin is #surface's left edge
- * — after the rail. Positioning ticks directly in #ruler therefore offset every
- * year label from its entries by the rail's width, and folding the rail
- * (216px to 22px) moved the labels 194px sideways.
- *
- * Ticks live in #rtrack instead, whose left edge is synced to #surface's every
- * frame. padding-left on #ruler cannot do this job: an absolutely positioned
- * child resolves its left offset against the containing block's PADDING EDGE, so
- * padding shifts nothing. #rtrack also re-clips, so a tick scrolled off the left
- * of the map cannot draw over the rail.
- *
- * (No backticks in this comment. It is inside a template literal; one here ends
- * the string and the rest of the stylesheet parses as JavaScript. Fourth time.)
- */
-#ruler{
-  flex:0 0 auto;height:22px;position:relative;overflow:hidden;
-  background:var(--panel);border-bottom:1px solid var(--line);
-}
-#rtrack{position:absolute;top:0;bottom:0;right:0;overflow:hidden}
-#ruler .tk{
-  position:absolute;top:0;bottom:0;padding-left:5px;font-size:10px;
-  color:var(--faint);border-left:1px solid var(--line);
-  line-height:21px;white-space:nowrap;font-variant-numeric:tabular-nums;
-}
-#ruler .tk.maj{color:var(--muted);border-left-color:var(--line2)}
-
-/* ---------- minimap ---------- */
-#mini{
-  flex:0 0 auto;height:44px;background:var(--panel);border-top:1px solid var(--line);
-  position:relative;display:flex;align-items:stretch;
-}
-#miniCanvas{display:block;flex:1;cursor:crosshair}
-#miniWin{
-  position:absolute;top:0;bottom:0;border:1px solid var(--accent);
-  background:var(--ringSel);pointer-events:none;
-}
-
-/* ---------- empty state ---------- */
-#empty{
-  position:absolute;inset:0;display:none;align-items:center;justify-content:center;
-  color:var(--faint);font-size:13px;pointer-events:none;z-index:5;
-}
-#empty.on{display:flex}
-#empty div{background:var(--scrimStrong);border:1px solid var(--line);border-radius:8px;padding:10px 16px}
-
-/* ---------- status ---------- */
-#status{
-  position:absolute;left:8px;bottom:8px;z-index:6;font-size:10.5px;color:var(--faint);
-  background:var(--scrim);border:1px solid var(--line);border-radius:6px;
-  padding:3px 8px;pointer-events:none;font-variant-numeric:tabular-nums;
-}
-
-/* ---------- help ---------- */
-#help{
-  position:fixed;inset:0;z-index:70;background:var(--veil);
-  display:none;align-items:center;justify-content:center;
-}
+#status{position:absolute;left:8px;bottom:8px;z-index:20;font-size:11px;color:#94a3b8;background:rgba(255,255,255,.9);border-radius:6px;padding:2px 7px;pointer-events:none}
+#empty{position:absolute;left:0;right:0;top:80px;text-align:center;color:#94a3b8;font-size:13px;display:none;pointer-events:none}
+#empty.on{display:block}
+#help{position:fixed;inset:0;z-index:90;background:rgba(15,23,42,.35);display:none;align-items:center;justify-content:center}
 #help.on{display:flex}
-#helpBox{
-  background:var(--panel);border:1px solid var(--line);border-radius:11px;
-  padding:18px 22px;max-width:560px;box-shadow:var(--shadow);
+#help .box{background:#fff;border-radius:12px;padding:18px 22px;max-width:520px;box-shadow:0 20px 60px rgba(15,23,42,.3);font-size:13px}
+#help h3{margin:0 0 10px;font-size:15px}
+#help dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0}
+#help dt{font-family:ui-monospace,Menlo,monospace;color:#0f172a;white-space:nowrap}
+#help dd{margin:0;color:#475569}
+#help p{color:#64748b;font-size:12px;line-height:1.55;margin:12px 0 0}
+
+@media (max-width:700px){
+  .al-title{display:none}
+  .al-count{display:none}
+  .al-seg .sh{display:inline}
+  .al-seg .lg{display:none}
+  #zoomIn,#zoomOut{display:none}
+  .al-bar{gap:5px;padding:6px 8px}
+  .al-search{min-width:80px}
+  .al-seg button{padding:4px 7px;font-size:12px}
+  .al-btn{padding:4px 8px;font-size:12px}
+  .al-detail{width:100%;top:auto;height:62%;border-left:0;border-top:1px solid #e5e7eb;box-shadow:0 -10px 30px rgba(15,23,42,.15)}
+  .tp-hover{display:none}
+  .al-hdr .tp-over{padding:4px 8px}
 }
-#helpBox h3{margin:0 0 12px;font-size:14px}
-#helpBox dl{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;margin:0;font-size:12px}
-#helpBox dt{color:var(--accent);font-family:ui-monospace,Menlo,monospace;white-space:nowrap}
-#helpBox dd{margin:0;color:var(--muted)}
-#helpBox .note{margin-top:13px;font-size:11px;color:var(--faint);line-height:1.55}
+
+${LANES_CSS}
 `;

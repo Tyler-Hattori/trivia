@@ -477,22 +477,29 @@ check('no JS-eaten characters inside the CSS template literal', () => {
    * "Octal escape sequences are not allowed in template strings". Write the literal
    * character instead; there is no legitimate backslash in this stylesheet.
    */
-  const file = path.join(REPO_DIR, 'project/features/atlas/styles.js');
-  if(!fs.existsSync(file)) return 'styles.js not found';
-  const lines = fs.readFileSync(file, 'utf8').split('\n');
-  const open = lines.findIndex((l) => /export const CSS = `/.test(l));
-  assert(open >= 0, 'could not find the CSS template literal');
-  const close = lines.findIndex((l, i) => i > open && /^\s*`;\s*$/.test(l));
-  assert(close > open, 'could not find the end of the CSS template literal');
-  const ticks = [], slashes = [];
-  for(let i = open + 1; i < close; i++){
-    if(lines[i].includes('`')) ticks.push(i + 1);
-    if(lines[i].includes('\\')) slashes.push(i + 1);
+  // Every stylesheet template: the atlas's, the topic page's, and the Lanes CSS both share.
+  const files = ['project/features/atlas/styles.js', 'project/features/topic/styles.js', 'project/ui/lanes-css.js'];
+  let total = 0;
+  for(const rel of files){
+    const file = path.join(REPO_DIR, rel);
+    assert(fs.existsSync(file), `${rel} not found`);
+    const lines = fs.readFileSync(file, 'utf8').split('\n');
+    const open = lines.findIndex((l) => /export const [A-Z_]+ = (String\.raw)?`/.test(l));
+    assert(open >= 0, `could not find the CSS template literal in ${rel}`);
+    // String.raw keeps backslashes as written, so only a plain template eats them.
+    const raw = /String\.raw`/.test(lines[open]);
+    const close = lines.findIndex((l, i) => i > open && /^\s*`;\s*$/.test(l));
+    assert(close > open, `could not find the end of the CSS template literal in ${rel}`);
+    const ticks = [], slashes = [];
+    for(let i = open + 1; i < close; i++){
+      if(lines[i].includes('`')) ticks.push(i + 1);
+      if(!raw && lines[i].includes('\\')) slashes.push(i + 1);
+    }
+    assert(!ticks.length, `backtick inside the template at ${rel}:${ticks.join(', ')}`);
+    assert(!slashes.length, `backslash escape inside the template at ${rel}:${slashes.join(', ')}: use the literal character`);
+    total += close - open - 1;
   }
-  assert(!ticks.length, `backtick inside the template at styles.js:${ticks.join(', ')}`);
-  assert(!slashes.length,
-    `backslash escape inside the template at styles.js:${slashes.join(', ')} — use the literal character`);
-  return `${close - open - 1} lines clean`;
+  return `${total} lines clean in ${files.length} stylesheets`;
 });
 
 // ---------------------------------------------------------------------------
@@ -532,6 +539,10 @@ check('id aliases point at entries that exist', () => {
 });
 
 const sizeKB = (p) => (fs.existsSync(p) ? Math.round(fs.statSync(p).size / 1024) : 0);
-console.log(`\n  browser payload at start: atlas.json ${sizeKB(PATHS.atlas)}KB (atlas only) · topics/index.json ${sizeKB(path.join(PATHS.topics, 'index.json'))}KB`);
+{
+  const WA = path.join(path.dirname(PATHS.topics), 'web', 'atlas');
+  const at = ['meta.json', 'top.json', 'long.json'].reduce((a, f) => a + sizeKB(path.join(WA, f)), 0);
+  console.log(`\n  browser payload at start: atlas ${at}KB (web/atlas meta+top+long; buckets as you zoom) · topics/index.json ${sizeKB(path.join(PATHS.topics, 'index.json'))}KB`);
+}
 console.log(`  ${pass} passed, ${fails.length} failed\n`);
 process.exit(fails.length ? 1 : 0);

@@ -17,7 +17,7 @@
  *   - The atlas is a separate TARGET, not a frame. You must attach to it and talk
  *     to it over its own sessionId.
  *   - Persisted view prefs leak between runs and results stop being reproducible.
- *     This suite now clears `atlas:prefs:v1` itself, on the OPENER and before
+ *     This suite now clears `atlas:prefs:v2` itself, on the OPENER and before
  *     `openAtlas()` — the popup reads the prefs once at open time, so clearing
  *     them after it exists is too late. A fresh `--user-data-dir` per run also
  *     works, but then you cannot re-run against an already-open browser.
@@ -27,8 +27,13 @@
  *   - Assert on the DOM with `until`, not `evaluate`. View state changes
  *     synchronously in the event handler; the DOM catches up in `paint()`, one
  *     frame later. Snapshotting reads the pre-click DOM maybe half the time.
- *   - Count only nodes with `display !== 'none'`; the card layer keeps a hidden
- *     recycling pool attached to the DOM.
+ *
+ * What it checks (the lanes atlas, docs/ATLAS.md): sections and lanes from the
+ * topic tree, kinds in the timeline's order, no two labels overlapping in a row,
+ * round portraits, bold = famous, the timeline's own CSS, zoom adding rows,
+ * panning not re-packing, era bands, pins, folds, "more", search, the detail
+ * panel, the three time ranges, the folding toolbar, buckets loading as you
+ * zoom, the phone layout, and opening at a topic's lane.
  */
 
 import fs from 'node:fs';
@@ -175,7 +180,7 @@ if(!entry.ok) process.exit(1);
 // openAtlas() reads the prefs once at open time, so clearing afterwards is too
 // late. Without this, a previous run's collapsed/pinned nodes leak in and the
 // pin/collapse tests toggle the wrong way round.
-await evaluate(app, `localStorage.removeItem('atlas:prefs:v1')`);
+await evaluate(app, `localStorage.removeItem('atlas:prefs:v2')`);
 
 // A user gesture is required or the popup is blocked.
 const before = new Set((await send('Target.getTargets')).targetInfos.map((t) => t.targetId));
@@ -207,804 +212,170 @@ for(let i = 0; i < 60; i++){
 check('atlas booted', booted);
 if(!booted) process.exit(1);
 
-await sleep(400);
-
-// ---- what actually rendered ----------------------------------------------
-const probe = `(()=>{
-  const D = document;
-  const vis = (el) => el && el.offsetParent !== null && getComputedStyle(el).display !== 'none';
-  const cards = [...D.querySelectorAll('.cardlayer .c')].filter(el => el.style.display !== 'none');
-  const cv = D.getElementById('canvas');
-  const rows = [...D.querySelectorAll('.rrow')];
-  return {
-    count: D.getElementById('count').textContent.trim(),
-    status: D.getElementById('status').textContent.trim(),
-    ppy: D.getElementById('ppyLab').textContent.trim(),
-    canvasW: cv.width, canvasH: cv.height,
-    canvasBlank: (()=>{ const c=cv.getContext('2d'); const d=c.getImageData(0,0,cv.width,cv.height).data;
-      let seen=new Set(); for(let i=0;i<d.length;i+=4000) seen.add(d[i]+','+d[i+1]+','+d[i+2]);
-      return seen.size < 3; })(),
-    cards: cards.length,
-    poolTotal: D.querySelectorAll('.cardlayer .c').length,
-    railRows: rows.length,
-    railLabels: rows.slice(0,6).map(r=>r.querySelector('.rlabel').textContent),
-    ruler: D.querySelectorAll('#ruler .tk').length,
-    mini: !!D.getElementById('miniCanvas').width,
-    empty: D.getElementById('empty').classList.contains('on'),
-  };
-})()`;
-
-const r1 = await evaluate(atlas, probe);
-console.log('');
-check('canvas sized to viewport', r1.canvasW > 800, `${r1.canvasW}x${r1.canvasH} device px`);
-check('canvas actually painted', !r1.canvasBlank, r1.canvasBlank ? 'canvas is one flat colour' : 'multiple colours present');
-check('entry count shown', /entries|of/.test(r1.count), r1.count);
-check('rail listed clusters', r1.railRows > 3, `${r1.railRows} rows: ${r1.railLabels.join(' | ')}`);
-check('ruler drew ticks', r1.ruler > 2, `${r1.ruler} ticks`);
-check('minimap sized', r1.mini);
-check('not showing empty state', !r1.empty);
-console.log(`        status: ${r1.status}`);
-console.log(`        zoom:   ${r1.ppy}   cards: ${r1.cards}`);
-
-// ---- zoom in far enough for cards ---------------------------------------
-/*
- * Driving this with wheel events at guessed coordinates does not work: the atlas
- * is a scatter plot, so most of the canvas is empty space and a blind zoom lands
- * on nothing. Ask the atlas for its densest neighbourhood and go there.
- */
-const dense = await evaluate(atlas, `(()=>{
-  const {atlas:A} = window.__atlas;
-  // Excerpts load on demand now (web/details/, by cluster): A.hx says which points have one.
-  const has = (i) => !!A.hx[i];
-  // Densest neighbourhood, measured as the year-spread of a point's 8 nearest
-  // neighbours. Restricted to entries that HAVE an excerpt, because the densest
-  // region overall is art, and 847 of 848 art rows have no excerpt yet — aiming
-  // there would test the data gap rather than the renderer.
-  let best=-1, bestSpread=Infinity, withEx=0;
-  for(let i=0;i<A.n;i++){
-    if(!has(i)) continue;
-    withEx++;
-    const nb=A.knn[i]; if(!nb||!nb.length) continue;
-    let spread=0, n=0;
-    for(const j of nb){ if(!has(j)) continue; spread+=Math.abs(A.x0[j]-A.x0[i]); n++; }
-    if(n<5) continue;
-    spread/=n;
-    if(spread<bestSpread){bestSpread=spread; best=i;}
-  }
-  if(best<0) return {i:-1, withEx};
-  window.__atlas.goto(best, 40);
-  return {i:best, title:A.title[best], year:A.x0[best], withEx, spread:bestSpread};
-})()`, { userGesture: true });
-if(dense.i < 0){ fail('found a dense region with excerpts', `only ${dense.withEx} entries have excerpts`); process.exit(1); }
-console.log(`        ${dense.withEx} entries have excerpts; densest cluster spread ${dense.spread.toFixed(1)} yrs`);
-await sleep(700);
-
-const r2 = await evaluate(atlas, probe);
-console.log('');
-console.log(`        jumped to "${dense.title}" (${dense.year})`);
-check('zoom increased', parseFloat(r2.ppy) > parseFloat(r1.ppy), `${r1.ppy} -> ${r2.ppy}`);
-check('points are in view after the jump', /[1-9]\d* in view/.test(r2.status), r2.status);
-check('cards appear when zoomed in', r2.cards > 0, `${r2.cards} cards (pool ${r2.poolTotal})`);
-console.log(`        status: ${r2.status}`);
-
-// Detail tier: zoom further and confirm excerpts render on the cards themselves.
-const deep = await evaluate(atlas, `(()=>{ window.__atlas.goto(${dense.i}, 120);
-  return new Promise(r=>setTimeout(()=>r({tier:window.__atlas.tier,
-    withEx:[...document.querySelectorAll('.cardlayer .c.withex')].filter(e=>e.style.display!=='none').length,
-    cards:[...document.querySelectorAll('.cardlayer .c')].filter(e=>e.style.display!=='none').length}),600));})()`,
-  { userGesture: true });
-check('detail tier reached', deep.tier === 'detail', `tier=${deep.tier}`);
-check('cards carry excerpts at detail zoom', deep.withEx > 0, `${deep.withEx} of ${deep.cards} cards have prose`);
-
-// Back to card zoom for the image and edge checks.
-await evaluate(atlas, `window.__atlas.goto(${dense.i}, 40)`, { userGesture: true });
-await sleep(900);
-
-// ---- images are contained, never cropped -------------------------------
-const imgs = await evaluate(atlas, `(()=>{
-  const out=[];
-  for(const el of document.querySelectorAll('.cardlayer .c')){
-    if(el.style.display==='none') continue;
-    const img=el.querySelector('img');
-    if(!img || !img.getAttribute('src')) continue;
-    const cs=getComputedStyle(img);
-    out.push({fit:cs.objectFit, w:img.naturalWidth, h:img.naturalHeight,
-              cw:img.clientWidth, ch:img.clientHeight});
-  }
-  return out;
-})()`);
-const withImg = imgs.filter(o => o.w > 0);
-check('every card image is object-fit:contain', imgs.length > 0 && imgs.every(o => o.fit === 'contain'),
-  `${imgs.length} card images, fits: ${[...new Set(imgs.map(o=>o.fit))].join(',')}`);
-if(withImg.length){
-  // Contain means the rendered box preserves aspect within its container.
-  const bad = withImg.filter(o => {
-    const ar = o.w / o.h, br = o.cw / o.ch;
-    return Math.abs(ar - br) / ar > 0.04;
-  });
-  check('rendered images keep their aspect ratio', bad.length === 0,
-    `${withImg.length} loaded, ${bad.length} distorted`);
-}
-
-// ---- exactly one visible edge per card ---------------------------------
-const edges = await evaluate(atlas, `(()=>{
-  const out=[];
-  for(const el of document.querySelectorAll('.cardlayer .c')){
-    if(el.style.display==='none') continue;
-    const cs=getComputedStyle(el);
-    out.push({bw:cs.borderTopWidth, ow:cs.outlineWidth, os:cs.outlineStyle});
-  }
-  return out;
-})()`);
-check('no card carries a border AND an outline', edges.length>0 &&
-  !edges.some(e => parseFloat(e.bw)>0 && parseFloat(e.ow)>0 && e.os!=='none'),
-  `${edges.length} cards checked`);
-
-// ---- hover preview works at this zoom ----------------------------------
-const hov = await evaluate(atlas, `(()=>{
-  const {atlas:A, scale, visible} = window.__atlas;
-  const s=document.getElementById('surface');
-  const r=s.getBoundingClientRect();
-  // Aim at an actual visible point rather than sweeping a grid.
-  for(const i of visible.slice(0,400)){
-    const x=r.left+scale.sx(A.x0[i]), y=r.top+scale.sy(A.y[i]);
-    if(x<r.left||x>r.right||y<r.top||y>r.bottom) continue;
-    s.dispatchEvent(new PointerEvent('pointermove',{clientX:x,clientY:y,bubbles:true,pointerId:1}));
-    const tip=document.querySelector('.tip');
-    if(tip && tip.classList.contains('on')){
-      return {on:true, title:tip.querySelector('.tt').textContent,
-              year:tip.querySelector('.ty').textContent,
-              hasPic:!!tip.querySelector('.tpic img').getAttribute('src'),
-              fit:getComputedStyle(tip.querySelector('.tpic img')).objectFit};
-    }
-  }
-  return {on:false};
-})()`, { userGesture: true });
-check('hover preview shows an entry', hov.on, hov.on ? `"${hov.title}" ${hov.year}` : 'never triggered');
-if(hov.on && hov.hasPic) check('hover image is contain', hov.fit === 'contain', hov.fit);
-
-// Hover must also work at the most zoomed-out level — the user asked for it.
-/*
- * Action and probe are separate calls with the wait on the Node side. A page-side
- * `setTimeout` wrapped in an awaited promise is unreliable here: headless throttles
- * a non-foreground page, the promise never settles, and CDP reports the unhelpful
- * "Promise was collected" instead of anything diagnostic.
- */
-await evaluate(atlas, `window.__atlas.fit()`, { userGesture: true });
-await sleep(800);
-
-const hovOut = await evaluate(atlas, `(()=>{
-  const {atlas:A, scale, visible, tier} = window.__atlas;
-  const s=document.getElementById('surface'); const r=s.getBoundingClientRect();
-  for(const i of visible.slice(0,800)){
-    const x=r.left+scale.sx(A.x0[i]), y=r.top+scale.sy(A.y[i]);
-    if(x<r.left||x>r.right||y<r.top||y>r.bottom) continue;
-    s.dispatchEvent(new PointerEvent('pointermove',{clientX:x,clientY:y,bubbles:true,pointerId:1}));
-    const t=document.querySelector('.tip');
-    if(t&&t.classList.contains('on')) return {on:true,tier,title:t.querySelector('.tt').textContent};
-  }
-  return {on:false,tier};
-})()`, { userGesture: true });
-check('hover works at full zoom-out too', hovOut.on,
-  `tier=${hovOut.tier}${hovOut.on ? ` "${hovOut.title}"` : ''}`);
-
-// ---- collapse ----------------------------------------------------------
-/*
- * Collapse is tested on a node that actually HAS visible children in the rail.
- * At the broadest zoom the rail only lists depth-1 nodes, so collapsing one of
- * those correctly changes no row count — asserting on that would be asserting on
- * the wrong thing.
- */
-await evaluate(atlas, `window.__atlas.goto(${dense.i}, 8)`, { userGesture: true });
-await until(atlas, `window.__atlas.depth >= 2`, { label: 'depth >= 2' });
-
-const railBefore = await evaluate(atlas, `(()=>{
-  const rows=[...document.querySelectorAll('.rrow')];
-  // A row whose node has children AND whose children are currently listed.
-  const shown=new Set(rows.map(r=>Number(r.dataset.node)));
-  const A=window.__atlas.atlas;
-  const row=rows.find(r=>{
-    const nd=A.nodes[Number(r.dataset.node)];
-    return nd.children.length && nd.children.some(c=>shown.has(c));
-  });
-  return row ? {n:rows.length, label:row.querySelector('.rlabel').textContent,
-                node:Number(row.dataset.node),
-                kids:A.nodes[Number(row.dataset.node)].children.length} : {none:true, n:rows.length};
-})()`);
-
-if(railBefore.none){
-  fail('collapse test setup', `no expandable row at depth ${await evaluate(atlas, 'window.__atlas.depth')}`);
-} else {
-  await evaluate(atlas, `document.querySelector('.rrow[data-node="${railBefore.node}"] .twist').click()`,
-    { userGesture: true });
-
-  const collapsed = await until(atlas,
-    `window.__atlas.view.collapsed.has(${railBefore.node}) && document.querySelectorAll('.rrow').length < ${railBefore.n}`,
-    { label: 'collapse applied' });
-
-  const after = await evaluate(atlas, `(()=>({
-    n:document.querySelectorAll('.rrow').length,
-    marked:!!document.querySelector('.rrow[data-node="${railBefore.node}"]')?.classList.contains('col'),
-    status:document.getElementById('status').textContent,
-    inSet:window.__atlas.view.collapsed.has(${railBefore.node}),
-  }))()`);
-
-  check('collapsing a cluster hides its children', collapsed.ok,
-    `"${railBefore.label}" (${railBefore.kids} children): ${railBefore.n} -> ${after.n} rail rows in ${collapsed.ms}ms`);
-  check('collapsed row is marked in the rail', after.marked);
-  check('collapse is reflected in status', /collapsed/.test(after.status), after.status.trim());
-
-  // Its members must stop being drawn as individual points.
-  const drawn = await evaluate(atlas, `(()=>{
-    const {atlas:A, visible} = window.__atlas;
-    const id=${railBefore.node};
-    let inside=0, stillDrawn=0;
-    const vis=new Set(visible);
-    for(let i=0;i<A.n;i++){
-      const chain=A.chainOf.get(A.leaf[i]);
-      if(!chain||!chain.includes(id)) continue;
-      inside++;
-      if(vis.has(i)) stillDrawn++;
-    }
-    // The spatial query is collapse-agnostic; what matters is that the painter
-    // and the hit tester both skip these.
-    const skipped=[...vis].filter(i=>{
-      const chain=A.chainOf.get(A.leaf[i]);
-      return chain && chain.includes(id);
-    }).length;
-    return {inside, skipped};
-  })()`);
-  check('collapsed members are folded into one band', drawn.inside > 0,
-    `${drawn.inside} members now render as a single band`);
-
-  /*
-   * The point of collapsing: the band must stop TAKING UP SPACE, not merely stop
-   * drawing its members. It used to keep its full height and go dark, so folding a
-   * big branch bought you nothing but a tall empty stripe. The y axis is warped now,
-   * so this asserts the geometry directly: the folded band shrinks to a thin strip
-   * and its siblings get the freed pixels.
-   */
-  await until(atlas, `window.__atlas.scale.warp.n === 1`, { label: 'fold painted' });
-  const geom = await evaluate(atlas, `(()=>{
-    const X=window.__atlas, A=X.atlas, id=${railBefore.node};
-    const h=(n)=>X.scale.sy(n.y1)-X.scale.sy(n.y0);
-    const nd=A.nodes[id];
-    const sibs=(A.nodes[nd.parent]?.children||[]).filter(c=>c!==id);
-    return { strip:h(nd), sibs:sibs.map(c=>h(A.nodes[c])), H:X.view.H };
-  })()`);
-
-  check('a folded band shrinks to a thin strip',
-    geom.strip > 0 && geom.strip < 40 && geom.strip < geom.H * 0.1,
-    `${geom.strip.toFixed(1)}px tall in a ${geom.H}px viewport`);
-
-  /*
-   * Poll on the PAINTED scale, not on the view. `toggleCollapse` empties
-   * `view.folded` synchronously, but `scale` — and therefore every `sy` this check
-   * measures with — is rebuilt in `paint()` one frame later. Waiting on the view
-   * measured the folded geometry twice and read as "folding freed no space".
-   */
-  await evaluate(atlas, `window.__atlas.toggleCollapse(${railBefore.node})`);
-  await until(atlas, `window.__atlas.scale.warp.n === 0`, { label: 'unfolded and repainted' });
-  const open = await evaluate(atlas, `(()=>{
-    const X=window.__atlas, A=X.atlas, id=${railBefore.node};
-    const h=(n)=>X.scale.sy(n.y1)-X.scale.sy(n.y0);
-    const nd=A.nodes[id];
-    const sibs=(A.nodes[nd.parent]?.children||[]).filter(c=>c!==id);
-    return { band:h(nd), sibs:sibs.map(c=>h(A.nodes[c])) };
-  })()`);
-  const grew = geom.sibs.length
-    ? geom.sibs.reduce((a,b)=>a+b,0) / Math.max(1e-6, open.sibs.reduce((a,b)=>a+b,0))
-    : null;
-  check('folding gives its height to the other bands',
-    geom.sibs.length === 0 || grew > 1.05,
-    geom.sibs.length === 0
-      ? 'no siblings to compare (single-child parent)'
-      : `${geom.sibs.length} siblings grew ${grew.toFixed(2)}x; the band itself ` +
-        `${open.band.toFixed(0)}px open -> ${geom.strip.toFixed(0)}px folded`);
-  await evaluate(atlas, `window.__atlas.toggleCollapse(${railBefore.node})`);
-  await until(atlas, `window.__atlas.scale.warp.n === 1`, { label: 'refolded and repainted' });
-
-  await evaluate(atlas, `document.querySelector('.rrow[data-node="${railBefore.node}"] .twist').click()`,
-    { userGesture: true });
-  const back = await until(atlas, `document.querySelectorAll('.rrow').length === ${railBefore.n}`,
-    { label: 'rail restored' });
-  check('expanding restores the rail', back.ok, `${railBefore.n} rows in ${back.ms}ms`);
-}
-
-// ---- gestures ----------------------------------------------------------
-/*
- * A scroll must PAN and a pinch must ZOOM. Both arrive as `wheel`; the only thing
- * telling them apart is `ctrlKey`, which the browser sets synthetically on a
- * trackpad pinch. Dispatching a wheel event is meaningful here in a way that
- * dispatching one to "zoom into a dense region" is not: what is being asserted is
- * which camera field moved, not what ended up under the cursor.
- */
-const gesture = await evaluate(atlas, `(async()=>{
-  const X=window.__atlas, V=X.view;
-  const s=document.getElementById('surface');
-  const r=s.getBoundingClientRect();
-  const frame=()=>new Promise(res=>requestAnimationFrame(()=>requestAnimationFrame(res)));
-  const fire=(init)=>{ s.dispatchEvent(new WheelEvent('wheel',{
-    clientX:r.left+r.width/2, clientY:r.top+r.height/2, bubbles:true, cancelable:true, ...init })); };
-
-  X.goto(0, 6); await frame();
-  const a={ppy:V.ppy, x0:V.x0, yTop:V.yTop};
-
-  // Down, and if the view was already against the bottom edge, up. Which edge
-  // the previous step leaves us near depends on where the data sits, not on the
-  // gesture handling being tested.
-  fire({deltaY:120, deltaX:0}); await frame();
-  if(V.yTop === a.yTop){ fire({deltaY:-120, deltaX:0}); await frame(); }
-  const scrolled={ppy:V.ppy, x0:V.x0, yTop:V.yTop};
-
-  fire({deltaY:-240, deltaX:0, ctrlKey:true}); await frame();
-  const pinched={ppy:V.ppy};
-
-  X.goto(0, 6); await frame();
-  fire({deltaY:150, deltaX:0, shiftKey:true}); await frame();
-  const shifted={ppy:V.ppy, x0:V.x0, yTop:V.yTop};
-
-  return {a, scrolled, pinched, shifted};
-})()`);
-
-check('a two-finger scroll pans instead of zooming',
-  gesture.scrolled.ppy === gesture.a.ppy && gesture.scrolled.yTop !== gesture.a.yTop,
-  `ppy held at ${gesture.a.ppy.toFixed(2)}, yTop ${gesture.a.yTop.toFixed(4)} -> ${gesture.scrolled.yTop.toFixed(4)}`);
-check('a pinch zooms', gesture.pinched.ppy > gesture.scrolled.ppy * 1.1,
-  `${gesture.scrolled.ppy.toFixed(2)} -> ${gesture.pinched.ppy.toFixed(2)} px/yr`);
-check('shift+wheel pans through time',
-  gesture.shifted.x0 > gesture.a.x0 && gesture.shifted.ppy === gesture.a.ppy,
-  `x0 ${Math.round(gesture.a.x0)} -> ${Math.round(gesture.shifted.x0)}`);
-
-// ---- the sidebar folds -------------------------------------------------
-const railFold = await evaluate(atlas, `(async()=>{
-  const frame=()=>new Promise(res=>requestAnimationFrame(()=>requestAnimationFrame(res)));
-  const el=document.querySelector('.rail');
-  const open=el.getBoundingClientRect().width;
-  document.querySelector('.rail .railfold').click(); await frame();
-  const folded=el.getBoundingClientRect().width;
-  const chevron=document.querySelector('.rail .railfold');
-  const spineVisible=chevron.getBoundingClientRect().width > 0;
-  document.querySelector('.rail .railfold').click(); await frame();
-  return {open, folded, spineVisible, reopened:el.getBoundingClientRect().width};
-})()`, { userGesture: true });
-
-check('the sidebar keeps to its declared width', railFold.open > 180 && railFold.open < 240,
-  `${Math.round(railFold.open)}px (flex-basis is 216)`);
-check('the sidebar folds from its own edge', railFold.folded > 0 && railFold.folded < 40,
-  `${Math.round(railFold.open)}px -> ${Math.round(railFold.folded)}px spine`);
-check('the folded sidebar keeps a way back', railFold.spineVisible && railFold.reopened === railFold.open,
-  `chevron still hittable, reopens to ${Math.round(railFold.reopened)}px`);
-
-/*
- * ---- the ruler stays over the map --------------------------------------
- *
- * #ruler is a sibling of #mid, so it spans the full width INCLUDING the rail,
- * while tick x's come from the scale, whose origin is #surface's left edge. Ticks
- * positioned straight into #ruler were therefore offset from their entries by the
- * rail's width — and folding the rail (216px to 22px) slid every year label 194px
- * sideways against the marks it dates. They now live in #rtrack, whose left edge
- * is synced to #surface in measure().
- *
- * Asserted two ways, because the offsets can agree while the scale is wrong.
- * `trackOffset === surfaceOffset` is the layout; inverting the atlas's own scale
- * at a tick's screen x and comparing with the year the tick PRINTS is the thing
- * a reader actually cares about.
- */
-const rulerAlign = await evaluate(atlas, `(async()=>{
-  const frame=()=>new Promise(res=>requestAnimationFrame(()=>requestAnimationFrame(res)));
-  const probe=()=>{
-    const ruler=document.getElementById('ruler'), track=document.getElementById('rtrack');
-    const surf=document.getElementById('surface');
-    if(!track) return {err:'no #rtrack'};
-    const tk=[...track.querySelectorAll('.tk')];
-    if(tk.length<3) return {err:'too few ticks'};
-    const sr=surf.getBoundingClientRect(), rr=ruler.getBoundingClientRect();
-    const tr=track.getBoundingClientRect();
-    const X=window.__atlas, t=tk[Math.floor(tk.length/2)];
-    const year=X.view.x0 + (t.getBoundingClientRect().left - sr.left)/X.scale.ppy;
-    const raw=String(t.textContent).trim();
-    const mag=parseFloat(raw.replace(/[^0-9.]/g,''))||0;
-    const mult=/\\bka\\b/i.test(raw)?1e3:/\\bMa\\b/i.test(raw)?1e6:/\\bGa\\b/i.test(raw)?1e9:1;
-    const printed=/BC|ka|Ma|Ga/i.test(raw) ? -(mag*mult)
-                : /present/i.test(raw) ? new Date().getFullYear() : mag;
-    return {
-      surfaceOffset: Math.round(sr.left-rr.left),
-      trackOffset:   Math.round(tr.left-rr.left),
-      label: raw,
-      driftPx: Math.round(Math.abs(year-printed)*X.scale.ppy),
-    };
-  };
-  const open=probe();
-  document.querySelector('.rail .railfold').click(); await frame(); await frame();
-  const folded=probe();
-  document.querySelector('.rail .railfold').click(); await frame(); await frame();
-  return {open, folded};
-})()`, { userGesture: true });
-
-check('the ruler starts at the map, sidebar open',
-  rulerAlign.open.trackOffset === rulerAlign.open.surfaceOffset,
-  `track ${rulerAlign.open.trackOffset}px == map ${rulerAlign.open.surfaceOffset}px`);
-check('the ruler starts at the map, sidebar folded',
-  rulerAlign.folded.trackOffset === rulerAlign.folded.surfaceOffset,
-  `track ${rulerAlign.folded.trackOffset}px == map ${rulerAlign.folded.surfaceOffset}px`);
-check('folding the sidebar does not slide the year labels',
-  rulerAlign.open.driftPx <= 1 && rulerAlign.folded.driftPx <= 1,
-  `"${rulerAlign.open.label}" drift ${rulerAlign.open.driftPx}px open, ` +
-  `"${rulerAlign.folded.label}" ${rulerAlign.folded.driftPx}px folded ` +
-  `(map edge ${rulerAlign.open.surfaceOffset}px -> ${rulerAlign.folded.surfaceOffset}px)`);
-
-// ---- theme -------------------------------------------------------------
-/*
- * The canvas cannot read CSS variables, so a theme switch has to move BOTH halves.
- * Asserting only the attribute would pass with a black canvas under a white UI.
- */
-const themed = await evaluate(atlas, `(async()=>{
-  const frame=()=>new Promise(res=>requestAnimationFrame(()=>requestAnimationFrame(res)));
-  const cv=document.getElementById('canvas');
-  const corner=()=>{ const d=cv.getContext('2d').getImageData(cv.width-3,cv.height-3,1,1).data;
-                     return d[0]+d[1]+d[2]; };
-  const out={};
-  window.__atlas.setTheme('light'); await frame();
-  out.light={attr:document.documentElement.dataset.theme,
-             body:getComputedStyle(document.body).backgroundColor, canvas:corner()};
-  window.__atlas.setTheme('dark'); await frame();
-  out.dark={attr:document.documentElement.dataset.theme,
-            body:getComputedStyle(document.body).backgroundColor, canvas:corner()};
-  window.__atlas.setTheme('light'); await frame();
-  return out;
-})()`);
-
-check('light is the theme', themed.light.attr === 'light' && themed.light.canvas > 600,
-  `body ${themed.light.body}, canvas luma sum ${themed.light.canvas}`);
-check('the theme switch moves the canvas too, not just the CSS',
-  themed.dark.attr === 'dark' && themed.dark.canvas < themed.light.canvas - 200,
-  `canvas ${themed.light.canvas} -> ${themed.dark.canvas}, body ${themed.dark.body}`);
-
-// ---- pin ---------------------------------------------------------------
-const pinNode = await evaluate(atlas, `(()=>{
-  const r=document.querySelector('.rrow');
-  return {node:Number(r.dataset.node), label:r.querySelector('.rlabel').textContent};
-})()`);
-
-await evaluate(atlas, `document.querySelector('.rrow[data-node="${pinNode.node}"] .rpin').click()`,
-  { userGesture: true });
-
-const pinned = await until(atlas,
-  `window.__atlas.view.pinned.length === 1 && document.getElementById('pinWrap').offsetHeight > 10`,
-  { label: 'pin applied' });
-
-const pin = await evaluate(atlas, `(()=>{
-  const wrap=document.getElementById('pinWrap');
-  const cv=document.getElementById('pinCanvas');
-  return {on:wrap.classList.contains('on'), h:wrap.offsetHeight, cw:cv.width,
-    pinned:window.__atlas.view.pinned.length,
-    unpinBtns:document.querySelectorAll('#pinBar [data-unpin]').length,
-    painted:(()=>{ if(!cv.width) return false; const c=cv.getContext('2d');
-      const d=c.getImageData(0,0,cv.width,cv.height).data; const s=new Set();
-      for(let i=0;i<d.length;i+=2000) s.add(d[i]+','+d[i+1]+','+d[i+2]); return s.size>2; })()};
-})()`);
-check('pinning shows the strip', pinned.ok && pin.on,
-  `"${pinNode.label}" -> ${pin.h}px strip, ${pin.pinned} pinned, ${pinned.ms}ms`);
-check('pinned strip is painted', pin.painted, `canvas ${pin.cw}px wide`);
-check('pinned strip offers an unpin control', pin.unpinBtns === pin.pinned, `${pin.unpinBtns} buttons`);
-
-// The strip must track the map's time axis as the map pans.
-const x0Before = await evaluate(atlas, `window.__atlas.scale.x0`);
-await evaluate(atlas, `(()=>{window.__atlas.view.x0 += 300; window.__atlas.mark({paint:true});})()`,
-  { userGesture: true });
-const panned = await until(atlas, `window.__atlas.scale.x0 > ${x0Before + 250}`, { label: 'map panned' });
-const stillPinned = await evaluate(atlas, `window.__atlas.view.pinned.length`);
-check('pinned strip shares the panned time axis', panned.ok && stillPinned === 1,
-  `x0 ${Math.round(x0Before)} -> ${Math.round(panned.value ? await evaluate(atlas, 'window.__atlas.scale.x0') : 0)}, still pinned`);
-
-await evaluate(atlas, `document.querySelector('#pinBar [data-unpin]').click()`, { userGesture: true });
-const unpin = await until(atlas, `window.__atlas.view.pinned.length === 0`, { label: 'unpinned' });
-check('unpinning works', unpin.ok, `${unpin.ms}ms`);
-
-// Regression: the unpin buttons were written inside an `if(pins.rows.length)`,
-// so removing the last pin left a stale button behind. #pinWrap hides it, but
-// the DOM must still empty — the next pin would otherwise inherit it.
-// Poll: view.pinned empties synchronously in the click handler, but the bar is
-// rewritten in paint(), which is a frame later.
-const staleBar = await until(atlas, `(()=>{const b=document.getElementById('pinBar');
-  return b.querySelectorAll('[data-unpin]').length === 0
-    && !document.getElementById('pinWrap').classList.contains('on');})()`, { label: 'pin bar cleared' });
-check('the pin bar empties with the last pin', staleBar.ok, `${staleBar.ms}ms`);
-
-// ---- detail panel ------------------------------------------------------
-await evaluate(atlas, `window.__atlas.select(${dense.i}, {open:true, center:true})`,
-  { userGesture: true });
-await sleep(700);
-
-const det = await evaluate(atlas, `(()=>{
-  const p=document.querySelector('.detail');
-  const img=p.querySelector('.dpic img');
-  return {on:p.classList.contains('on'),
-    title:p.querySelector('h2')?.textContent,
-    crumbs:p.querySelectorAll('.crumb').length,
-    near:p.querySelectorAll('.near button').length,
-    chips:p.querySelectorAll('.chip').length,
-    hasEx:!!p.querySelector('.dex:not(.empty)'),
-    imgFit:img?getComputedStyle(img).objectFit:null,
-    scrolls:p.scrollHeight >= p.clientHeight};
-})()`, {});
-
-check('detail panel opens', det.on, `"${det.title}"`);
-check('detail shows the cluster path', det.crumbs > 0, `${det.crumbs} crumbs`);
-check('detail lists nearest neighbours', det.near > 0, `${det.near} neighbours`);
-check('detail shows topic chips', det.chips > 0, `${det.chips} chips`);
-check('detail excerpt rendered', det.hasEx);
-if(det.imgFit) check('detail image is contain', det.imgFit === 'contain', det.imgFit);
-
-// Clicking a neighbour must navigate, which is the "more like this" path.
-const nav = await evaluate(atlas, `(()=>{
-  const before=document.querySelector('.detail h2').textContent;
-  document.querySelector('.near button').click();
-  return {before};
-})()`, { userGesture: true });
-await sleep(600);
-const nav2 = await evaluate(atlas, `document.querySelector('.detail h2').textContent`, {});
-check('clicking a neighbour navigates', nav2 !== nav.before, `"${nav.before}" -> "${nav2}"`);
-
-// The enlarged image must also be uncropped.
-await evaluate(atlas, `(()=>{const f=document.querySelector('.dpic'); if(f) f.click();})()`,
-  { userGesture: true });
-await sleep(500);
-const box = await evaluate(atlas, `(()=>{
-  const b=document.querySelector('.lightbox');
-  const img=b.querySelector('img');
-  return {on:b.classList.contains('on'), fit:getComputedStyle(img).objectFit, src:!!img.getAttribute('src')};
-})()`, {});
-if(box.on){
-  check('enlarged image is contain', box.fit === 'contain', box.fit);
-  await evaluate(atlas, `document.querySelector('.lightbox').click()`, { userGesture: true });
-} else ok('enlarged image skipped', 'entry has no picture');
-
-await evaluate(atlas, `document.querySelector('.dclose').click()`, { userGesture: true });
-await sleep(300);
-
-// ---- search ------------------------------------------------------------
-/*
- * The corpus size, read from the atlas rather than hardcoded. Every "a filter
- * narrowed the set" check used a literal 2697 — the entry count on the day they
- * were written — so `has:image` started failing purely because the store grew past
- * it, which reads as a broken filter.
- */
-const CORPUS = await evaluate(atlas, `window.__atlas.atlas.n`, {});
-
-async function search(term){
-  await evaluate(atlas, `(()=>{const q=document.getElementById('q');q.value=${JSON.stringify(term)};
-    q.dispatchEvent(new Event('input',{bubbles:true}));})()`, { userGesture: true });
-  await sleep(500);
-  return evaluate(atlas, `(()=>({
-    count:document.getElementById('count').textContent.trim(),
-    matched:window.__atlas.filter ? window.__atlas.filter.count : null,
-    empty:document.getElementById('empty').classList.contains('on'),
-  }))()`, {});
-}
-
-const s1 = await search('cubism');
-check('free-text search narrows the set', s1.matched > 0 && s1.matched < CORPUS,
-  `"cubism" -> ${s1.count}`);
-
-const s2 = await search('1750-1800');
-check('year-range search works', s2.matched > 0 && s2.matched < CORPUS, `"1750-1800" -> ${s2.count}`);
-
-const s3 = await search('ds:film');
-check('ds: prefix filters by source', s3.matched > 0 && s3.matched < CORPUS, `"ds:film" -> ${s3.count}`);
-
-const s4 = await search('topic:surrealism');
-check('topic: prefix filters by topic', s4.matched > 0, `"topic:surrealism" -> ${s4.count}`);
-
-const s5 = await search('has:image');
-check('has:image filters to entries with pictures', s5.matched > 0 && s5.matched < CORPUS,
-  `"has:image" -> ${s5.count}`);
-
-/*
- * A nonsense query finds nothing again. The old claim here was that no
- * similarity threshold could separate "related" from "nothing better available"
- * because gibberish scored 0.58 — but that was the query being embedded WITHOUT
- * EmbeddingGemma's query prefix. With it (and 768 dims), nonsense tops out near
- * 0.34 and real queries start near 0.47, and /api/search cuts at 0.40. See
- * docs/SEARCH.md.
- */
-const s6 = await search('zzzznotathing');
-check('a nonsense free-text search finds nothing', s6.matched === 0, s6.count);
-
-const s7 = await search('ds:zzznotarealdataset');
-check('a structured filter with no matches shows the empty state', s7.matched === 0 && s7.empty, s7.count);
-
-await search('');
-
-// ---- performance -------------------------------------------------------
-const perf = await evaluate(atlas, `(()=>{
-  const s=document.getElementById('surface');
-  const r=s.getBoundingClientRect();
-  const t0=performance.now();
-  let frames=0;
-  return new Promise(res=>{
-    function step(k){
-      if(k>=40){ res({ms:performance.now()-t0, frames}); return; }
-      s.dispatchEvent(new PointerEvent('pointerdown',{clientX:r.left+800,clientY:r.top+400,bubbles:true,pointerId:9,button:0}));
-      s.dispatchEvent(new PointerEvent('pointermove',{clientX:r.left+800-k*7,clientY:r.top+400,bubbles:true,pointerId:9}));
-      s.dispatchEvent(new PointerEvent('pointerup',{clientX:r.left+800-k*7,clientY:r.top+400,bubbles:true,pointerId:9,button:0}));
-      requestAnimationFrame(()=>{frames++;step(k+1);});
-    }
-    step(0);
-  });
-})()`, { userGesture: true });
-check('pan stays interactive', perf.ms / perf.frames < 34,
-  `${perf.frames} frames in ${perf.ms.toFixed(0)}ms = ${(perf.ms/perf.frames).toFixed(1)}ms/frame`);
-
-// ---- time ranges (modes) ----------------------------------------------
-/*
- * Each mode is asserted on the thing that actually broke: that pressing Fit puts
- * the mode's entries ON SCREEN. The old fit check only matched the status line's
- * SHAPE, so when one entry at −113,000 stretched the axis past the hardcoded
- * px-per-year floor and Fit started landing on 50,000 years of empty prehistory
- * with a single point in view, the suite went on reporting 50/50.
- */
-const modeKeys = await evaluate(atlas, `window.__atlas.modes`);
-check('three time ranges offered', Array.isArray(modeKeys) && modeKeys.length === 3,
-  Array.isArray(modeKeys) ? modeKeys.join(', ') : String(modeKeys));
-check('a control exists for every range',
-  await evaluate(atlas, `document.querySelectorAll('#modeSeg button[data-mode]').length`) === 3);
-
-const modeReport = [];
-for(const key of modeKeys || []){
-  await evaluate(atlas, `window.__atlas.setMode('${key}')`, { userGesture: true });
-  await evaluate(atlas, `window.__atlas.fit()`, { userGesture: true });
-  await sleep(400);
-
-  const m = await evaluate(atlas, `(()=>{
-    const X = window.__atlas, A = X.atlas, s = X.scale, [lo, hi] = X.domain;
-    let inDomain = 0;
-    for(let i = 0; i < A.n; i++) if(A.x1[i] >= lo) inDomain++;
-    return {
-      mode: X.mode, lo, hi, ppy: s.ppy, atEdge: X.atEdge, outside: X.outside,
-      inView: X.visible.length, inDomain, n: A.n,
-      // Does the fitted viewport actually span the whole domain?
-      covers: s.x0 <= lo + 1 && s.x1 >= hi - 1,
-      ticks: document.querySelectorAll('#ruler .tk').length,
-      tickText: [...document.querySelectorAll('#ruler .tk')].map(e => e.textContent),
-      status: document.getElementById('status').textContent,
-      stops: [...document.querySelectorAll('#scaleSeg button')].map(e => e.textContent),
-      ppyLab: document.getElementById('ppyLab').textContent,
-    };
-  })()`);
-  modeReport.push(m);
-
-  // THE check the old suite was missing: fit has to show you something.
-  check(`fit shows ${key}'s entries`, m.inView > m.inDomain * 0.9,
-    `${m.inView} in view of ${m.inDomain} reachable  ·  ${m.status}`);
-  check(`fit spans the whole ${key} range`, m.covers,
-    `${m.lo} … ${m.hi} at ${m.ppy.toExponential(2)} px/yr`);
-  check(`fit is the ${key} zoom-out limit`, m.atEdge,
-    `ppy ${m.ppy.toExponential(2)}, atEdge=${m.atEdge}`);
-  check(`${key} ruler is legible`, m.ticks >= 5 && m.ticks <= 40
-    && m.tickText.every((s) => s.length > 0 && s.length < 12),
-    `${m.ticks} ticks: ${m.tickText.slice(0, 4).join(' | ')} … ${m.tickText.at(-1)}`);
-  check(`${key} zoom readout is a number`, !/^0\.00 /.test(m.ppyLab), m.ppyLab);
-  // A range that hides entries has to admit it. Silent truncation reads as
-  // "that is all there is".
-  if(m.outside > 0){
-    check(`${key} says how many entries it leaves behind`,
-      new RegExp(`${m.outside}\\s+before`).test(m.status), m.status);
-  }
-}
-
-check('narrower ranges cover less time',
-  modeReport.length === 3 && modeReport[0].hi - modeReport[0].lo < modeReport[1].hi - modeReport[1].lo
-    && modeReport[1].hi - modeReport[1].lo < modeReport[2].hi - modeReport[2].lo,
-  modeReport.map((m) => `${m.mode}:${Math.round(m.hi - m.lo)}y`).join('  '));
-
-check('each range gets its own scale ladder',
-  new Set(modeReport.map((m) => m.stops.join(','))).size === 3,
-  modeReport.map((m) => `${m.mode}: ${m.stops.join('/')}`).join('   '));
-
-// Every stop must land where its label claims, in every mode.
-const ladder = await evaluate(atlas, `(async()=>{
-  const X = window.__atlas, out = [];
-  const wait = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-  for(const mode of X.modes){
-    X.setMode(mode); await wait();
-    for(const b of document.querySelectorAll('#scaleSeg button')){
-      const key = b.dataset.stop;
-      X.gotoStop(key); await wait();
-      out.push({ mode, key, ppy: X.scale.ppy, on: b.classList.contains('on'),
-                 lit: [...document.querySelectorAll('#scaleSeg button.on')].length });
-    }
-  }
-  return out;
-})()`);
-check('every scale stop lands on itself', ladder.every((r) => r.on && r.lit === 1),
-  ladder.filter((r) => !r.on || r.lit !== 1).map((r) => `${r.mode}/${r.key}`).join(',') || `${ladder.length} stops across 3 ranges`);
-
-// The edge highlight is the only thing inviting a mode change, so it has to appear
-// exactly when you are against the edge — and never on the widest range.
-const edgeHint = await evaluate(atlas, `(async()=>{
-  const X = window.__atlas;
-  const wait = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-  const lit = () => [...document.querySelectorAll('#modeSeg button.edge')].map(b => b.dataset.mode);
-  X.setMode('${modeKeys[0]}'); X.fit(); await wait();
-  const atFit = lit();
-  X.zoom(9, 800, 400); await wait();
-  const zoomedIn = lit();
-  X.setMode('${modeKeys[2]}'); X.fit(); await wait();
-  const widest = lit();
-  return { atFit, zoomedIn, widest };
-})()`);
-check('the wider range is offered at the edge', edgeHint.atFit.length === 1
-  && edgeHint.atFit[0] === modeKeys[1], edgeHint.atFit.join(',') || 'nothing lit');
-check('no offer once you zoom in', edgeHint.zoomedIn.length === 0, edgeHint.zoomedIn.join(','));
-check('nothing to offer past the widest range', edgeHint.widest.length === 0, edgeHint.widest.join(','));
-
-// Switching ranges while parked mid-history must not teleport you.
-const keepPlace = await evaluate(atlas, `(async()=>{
-  const X = window.__atlas;
-  const wait = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-  X.setMode('civ'); await wait();
-  X.gotoStop('decades'); await wait();
-  const a = { mid: (X.scale.x0 + X.scale.x1) / 2, ppy: X.scale.ppy };
-  X.setMode('human'); await wait();
-  const b = { mid: (X.scale.x0 + X.scale.x1) / 2, ppy: X.scale.ppy };
-  return { a, b };
-})()`);
-check('switching range mid-history keeps your place',
-  Math.abs(keepPlace.b.mid - keepPlace.a.mid) < 60 && Math.abs(keepPlace.b.ppy / keepPlace.a.ppy - 1) < 0.02,
-  `${Math.round(keepPlace.a.mid)} @ ${keepPlace.a.ppy.toFixed(2)} -> ${Math.round(keepPlace.b.mid)} @ ${keepPlace.b.ppy.toFixed(2)}`);
-
-// ...but switching while zoomed out should reframe, or the toggle looks inert:
-// 5,000 years is invisible inside 4.5 billion either way.
-const reframe = await evaluate(atlas, `(async()=>{
-  const X = window.__atlas;
-  const wait = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-  X.setMode('civ'); X.fit(); await wait();
-  const a = X.scale.ppy;
-  X.setMode('earth'); await wait();
-  return { a, b: X.scale.ppy, edge: X.atEdge };
-})()`);
-check('switching range while zoomed out reframes', reframe.b < reframe.a && reframe.edge,
-  `${reframe.a.toExponential(2)} -> ${reframe.b.toExponential(2)} px/yr, atEdge=${reframe.edge}`);
-
-// The saved range has to survive a reopen, which is the one thing that silently
-// inverted the pin and collapse tests once.
-await evaluate(atlas, `window.__atlas.setMode('human')`, { userGesture: true });
-await sleep(300);
-check('the chosen range is remembered',
-  /"mode":"human"/.test(await evaluate(atlas, `localStorage.getItem('atlas:prefs:v1')`)),
-  await evaluate(atlas, `JSON.parse(localStorage.getItem('atlas:prefs:v1')).mode`));
-
-await evaluate(atlas, `window.__atlas.setMode('civ')`, { userGesture: true });
-await sleep(200);
-
-// ---- fit + no exceptions ----------------------------------------------
-await evaluate(atlas, `document.getElementById('fitBtn').click()`, { userGesture: true });
-await sleep(400);
-const r3 = await evaluate(atlas, probe);
-const fitView3 = await evaluate(atlas, `({inView: window.__atlas.visible.length,
-  reach: (()=>{const A=window.__atlas.atlas, lo=window.__atlas.domain[0];
-    let k=0; for(let i=0;i<A.n;i++) if(A.x1[i]>=lo) k++; return k;})()})`);
-check('fit returns to the whole atlas',
-  !r3.canvasBlank && fitView3.inView > fitView3.reach * 0.9,
-  `${fitView3.inView} of ${fitView3.reach} reachable in view  ·  ${r3.status}`);
+const ev = (expr) => evaluate(atlas, expr);
+const gesture = (expr) => evaluate(atlas, expr, { userGesture: true });
+const settle = () => sleep(250);
+
+// ---- structure ---------------------------------------------------------
+const st = await ev(`(()=>{const a=window.__atlas, L=a.layout; return {
+  secs: L.sections.length, lanes: L.lanes.length, marks: L.marks.length, bars: L.bars.length,
+  domSecs: document.querySelectorAll('.al-sec').length, domLanes: document.querySelectorAll('.al-lane').length,
+  domMarks: document.querySelectorAll('#world .tp-ln').length, domEras: document.querySelectorAll('#world .tp-era').length,
+  rail: !!document.querySelector('.rail'), canvas: document.querySelectorAll('canvas').length,
+  metaLanes: a.A.meta.lanes.length }})()`);
+check('sections and lanes laid out', st.secs >= 6 && st.lanes >= 40, `${st.secs} sections, ${st.lanes} lanes of ${st.metaLanes}`);
+check('entries drawn as Lanes (events, lives, era bars)', st.domMarks >= 80 && st.domEras >= 5, `${st.domMarks} marks, ${st.domEras} era bars in the DOM; ${st.marks + st.bars} laid out`);
+check('section headers and lane names in the DOM', st.domSecs >= 2 && st.domLanes >= 5, `${st.domSecs} sections, ${st.domLanes} lanes rendered near the scroll`);
+check('no sidebar, no scatter canvas', !st.rail && st.canvas === 0, `rail ${st.rail}, canvases ${st.canvas}`);
+
+const order = await ev(`(()=>{const L=window.__atlas.layout; const K=['spans','events','people','more']; const top={};
+  for(const b of L.bars){const t=top[b.lane]||(top[b.lane]={}); t.spans=Math.min(t.spans??1e9,b.y);}
+  for(const m of L.marks){const t=top[m.lane]||(top[m.lane]={}); t[m.kind]=Math.min(t[m.kind]??1e9,m.y);}
+  let bad=0, n=0; for(const t of Object.values(top)){ const ys=K.filter(k=>t[k]!=null).map(k=>t[k]); n++; for(let i=1;i<ys.length;i++) if(ys[i]<=ys[i-1]) bad++; }
+  return {bad, n}})()`);
+check('inside a lane: eras, then events, people, works and places', order.bad === 0, `${order.n} lanes, ${order.bad} out of order`);
+
+const overlap = await ev(`(()=>{const L=window.__atlas.layout; const rows=new Map(); let bad=0, ex='';
+  for(const m of L.marks){ const k=m.lane+'|'+m.kind+'|'+m.y; (rows.get(k)||rows.set(k,[]).get(k)).push(m); }
+  for(const ms of rows.values()){ ms.sort((a,b)=>a.l-b.l); for(let i=1;i<ms.length;i++) if(ms[i].l < ms[i-1].r){ bad++; ex=ms[i-1].e.t+' / '+ms[i].e.t; } }
+  return {bad, rows: rows.size, ex}})()`);
+check('no two labels overlap in a row', overlap.bad === 0, `${overlap.rows} rows${overlap.bad ? `, ${overlap.bad} overlaps e.g. ${overlap.ex}` : ''}`);
+
+const look = await ev(`(()=>{const q=(s)=>document.querySelector(s); const cs=(n,p)=>n?getComputedStyle(n)[p]:null;
+  const av=q('#world .tp-ln .av'); const key=q('#world .tp-ln.key .lb'); const ln=q('#world .tp-ln .lb'); const era=q('#world .tp-era'); const bar=q('#world .tp-ln.lasted .bar');
+  const keys=[...document.querySelectorAll('#world .tp-ln.key')].map(n=>window.__atlas.A.byId.get(n.dataset.id)).filter(Boolean);
+  return { avRadius: cs(av,'borderRadius'), avW: av?av.getBoundingClientRect().width:0, keyW: cs(key,'fontWeight'), lnSize: cs(ln,'fontSize'),
+    eraH: cs(era,'height'), barTop: cs(bar,'top'), barH: cs(bar,'height'),
+    keysFamous: keys.every(e=>e.f>=60||e.k), keys: keys.length }})()`);
+check('portraits are small and round', look.avRadius === '50%' && look.avW > 10 && look.avW < 20, `radius ${look.avRadius}, ${look.avW}px`);
+check('fame shown by weight: bold labels are famous or essential', look.keyW === '700' && look.keysFamous && look.keys > 0, `${look.keys} bold, weight ${look.keyW}`);
+check('the timeline\'s own CSS: 11.5px labels, 15px era bars, 3px duration line under the title', look.lnSize === '11.5px' && look.eraH === '15px' && look.barTop === '17px' && look.barH === '3px',
+  `label ${look.lnSize}, era ${look.eraH}, line at ${look.barTop} ${look.barH}`);
+
+// ---- zoom, pan, eras --------------------------------------------------------
+const z0 = await ev(`window.__atlas.layout.marks.length + window.__atlas.layout.bars.length`);
+const loaded0 = await ev(`window.__atlas.A.byId.size`);
+await gesture(`window.__atlas.fitYears(1200, 1300)`);
+const zoomed = await until(atlas, `window.__atlas.A.byId.size > ${loaded0} && window.__atlas.layout.marks.length > 0`, { timeout: 8000 });
+check('zooming in loads that stretch\'s buckets', zoomed.ok, `${loaded0} -> ${await ev('window.__atlas.A.byId.size')} entries loaded`);
+const z1 = await ev(`(()=>{const L=window.__atlas.layout; const vis=L.marks.filter(m=>m.x0>=window.__atlas.V.W && m.x0<=2*window.__atlas.V.W).length; return vis})()`);
+check('zooming in shows more rows of detail per stretch of time', z1 > 0, `fit: ${z0} in all of history; 1200-1300: ${z1} on screen`);
+
+const x0Before = await ev(`(()=>{window.__L0 = window.__atlas.layout; return window.__atlas.V.x0})()`);
+await gesture(`window.__atlas.panBy(60)`);
+await settle();
+const pan = await ev(`({same: window.__L0 === window.__atlas.layout, x0: window.__atlas.V.x0, tf: document.getElementById('world').style.transform})`);
+check('panning inside the window moves, does not re-pack', pan.same && pan.x0 > x0Before && /translateX/.test(pan.tf), `x0 ${x0Before.toFixed(1)} -> ${pan.x0.toFixed(1)}, ${pan.tf}`);
+
+await gesture(`window.__atlas.fitYears(-3000, 2026)`);
+await settle();
+const band = await ev(`(()=>{const b=[...document.querySelectorAll('#bands .tp-band')].find(n=>/500:1500/.test(n.dataset.fit)); if(!b) return null; b.click(); return b.dataset.fit})()`);
+await settle();
+const fitted = await ev(`(()=>{const V=window.__atlas.V; return {x0:V.x0, x1:V.x0+V.W/V.ppy}})()`);
+check('clicking an era band fits it', band && Math.abs(fitted.x0 - 500) < 60 && Math.abs(fitted.x1 - 1500) < 60, `${band}: view ${fitted.x0.toFixed(0)}..${fitted.x1.toFixed(0)}`);
+const win = await ev(`parseFloat(document.getElementById('win').style.left)`);
+check('the overview strip outlines the view', win > 40 && win < 75, `box at ${win}%`);
+
+// ---- pin, fold, more ---------------------------------------------------------
+const pinKey = await ev(`(()=>{const l=document.querySelector('#labs .tp-lanelab[data-pin]'); if(!l) return null; l.click(); return l.dataset.pin})()`);
+const pinned = await until(atlas, `document.getElementById('pins').classList.contains('on') && document.querySelectorAll('#pworld .tp-ln, #pworld .tp-era').length > 0`);
+check('clicking a lane name pins it under the header', pinKey && pinned.ok, `${pinKey}`);
+const saved = await ev(`JSON.parse(localStorage.getItem('atlas:prefs:v2')||'{}').pinned||[]`);
+check('pins are remembered', saved.includes(pinKey), JSON.stringify(saved));
+await ev(`document.querySelector('#plabs .tp-lanelab[data-pin]').click()`);
+const unpinned = await until(atlas, `!document.getElementById('pins').classList.contains('on')`);
+check('clicking it again unpins it', unpinned.ok);
+
+const fold = await ev(`(()=>{const s=document.querySelector('.al-sec[data-sec="europe"]'); const n=window.__atlas.layout.lanes.filter(l=>l.section==='europe').length; s && s.click(); return n})()`);
+const folded = await until(atlas, `window.__atlas.layout.lanes.filter(l=>l.section==='europe').length === 0`);
+check('clicking a section folds it away', fold > 3 && folded.ok, `Europe: ${fold} lanes -> 0`);
+await ev(`window.__atlas.V.folded.clear(), window.__atlas.update({layout:true})`);
+await settle();
+
+const more = await ev(`(()=>{const L=window.__atlas.layout; const l=L.lanes.find(x=>x.left>5); if(!l) return null; window.__mk=l.key; window.__mp=l.placed; window.__atlas.V.more.add(l.key); window.__atlas.update({layout:true}); return {key:l.key, placed:l.placed, left:l.left}})()`);
+await settle();
+const more2 = more ? await ev(`window.__atlas.layout.lanes.find(x=>x.key===window.__mk).placed`) : 0;
+check('"more" gives a lane more rows', more && more2 > more.placed, more ? `${more.key}: ${more.placed} -> ${more2}` : 'no lane with more to show');
+await ev(`window.__atlas.V.more.clear()`);
+
+// ---- search ------------------------------------------------------------------
+await ev(`window.__atlas.setQuery('napoleon')`);
+const found = await until(atlas, `(()=>{const a=window.__atlas; return a.V.matches && a.layout.marks.length > 0 && a.layout.marks.every(m=>a.V.matches.has(m.e.id))})()`, { timeout: 6000 });
+const s1 = await ev(`(()=>{const a=window.__atlas, L=a.layout; const all=[...L.marks.map(m=>m.e), ...L.bars.map(b=>b.e)]; return {n:a.V.matches.size, shown:all.length, onlyMatches: all.every(e=>a.V.matches.has(e.id)), lanes:L.lanes.length, noEmpty: L.lanes.every(l=>l.placed+l.left>0), hasNap: all.some(e=>/Napoleon/.test(e.t))}})()`);
+check('search shows only the matches, by lane', found.ok && s1.onlyMatches && s1.noEmpty && s1.hasNap, `${s1.n} matches, ${s1.shown} shown in ${s1.lanes} lanes`);
+await ev(`window.__atlas.setQuery('1750-1800')`);
+await settle();
+const yr = await ev(`(()=>{const V=window.__atlas.V; return {x0:V.x0, x1:V.x0+V.W/V.ppy, m:V.matches}})()`);
+check('a year range goes there', Math.abs(yr.x0 - 1750) < 10 && Math.abs(yr.x1 - 1800) < 10 && !yr.m, `${yr.x0.toFixed(0)}..${yr.x1.toFixed(0)}`);
+await ev(`window.__atlas.setQuery('')`);
+
+// ---- the detail panel --------------------------------------------------------
+await settle();
+const picked = await ev(`(()=>{const B=document.getElementById('body').getBoundingClientRect(); const ok=(n)=>{const r=n.querySelector('.lb').getBoundingClientRect(); return r.left>20 && r.right<innerWidth-20 && r.top>B.top+10 && r.bottom<B.bottom-10};
+  const all=[...document.querySelectorAll('#world .tp-ln')]; const n=all.find(n=>n.classList.contains('key')&&ok(n)) || all.find(ok); if(!n) return null; n.querySelector('.lb').click(); return window.__atlas.A.byId.get(n.dataset.id).t})()`);
+const opened = await until(atlas, `document.getElementById('detail').classList.contains('open') && !/Loading/.test(document.getElementById('dex')?.textContent||'Loading')`, { timeout: 6000 });
+const dt = await ev(`({h: document.querySelector('#detail h2')?.textContent, ex: (document.getElementById('dex')?.textContent||'').length, sel: document.querySelectorAll('#world .sel').length})`);
+check('clicking an entry opens it, with its summary', picked && opened.ok && dt.h === picked && dt.ex > 20, `${picked}: ${dt.ex} chars, highlighted ${dt.sel}`);
+const s0 = await ev(`window.__atlas.V.selected`);
+await ev(`document.querySelector('#detail [data-step="1"]')?.click()`);
+const stepped = await until(atlas, `window.__atlas.V.selected && window.__atlas.V.selected !== ${JSON.stringify(s0)}`);
+check('› steps to the next entry in its lane', stepped.ok);
+await evaluate(atlas, `document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}))`);
+const closed = await until(atlas, `!document.getElementById('detail').classList.contains('open')`);
+check('Esc closes it', closed.ok);
+
+// ---- time ranges -----------------------------------------------------------
+await gesture(`window.__atlas.setMode('earth')`);
+await ev(`document.getElementById('fitBtn').click()`);
+await settle();
+const earth = await ev(`({first: window.__atlas.layout.sections[0]?.key, dom: window.__atlas.V.domain[0], bands: document.querySelectorAll('#bands .tp-band').length})`);
+check('Earth: deep time first, the eons as era bands', earth.first === 'earth' && earth.dom <= -4.54e9 && earth.bands >= 3, JSON.stringify(earth));
+await gesture(`window.__atlas.setMode('civ')`);
+await settle();
+const civ = await ev(`({first: window.__atlas.layout.sections[0]?.key, last: window.__atlas.layout.sections.at(-1)?.key})`);
+check('Civilization: history first, deep time last', civ.first !== 'earth' && civ.last === 'earth', JSON.stringify(civ));
+
+// ---- toolbar ---------------------------------------------------------------
+await ev(`document.getElementById('foldBar').click()`);
+const fb = await until(atlas, `getComputedStyle(document.getElementById('bar')).display === 'none' && getComputedStyle(document.getElementById('unfoldBar')).display !== 'none'`);
+check('the toolbar folds away', fb.ok);
+await ev(`document.getElementById('unfoldBar').click()`);
+const ub = await until(atlas, `getComputedStyle(document.getElementById('bar')).display !== 'none'`);
+check('and comes back', ub.ok);
+const barH = await ev(`document.getElementById('bar').getBoundingClientRect().height`);
+check('the toolbar is one compact row', barH <= 46, `${barH}px`);
 
 check('no uncaught exceptions', consoleErrors.length === 0,
   consoleErrors.length ? consoleErrors.slice(0, 3).join(' | ') : 'clean');
 
+// ---- phone, and opening at a topic's lane -------------------------------------
+// The popup is reused by name (window.open('', 'atlas')), so emulate it, not just the opener.
+for(const sess of [app, atlas]) await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 2, mobile: true }, sess);
+await evaluate(app, `(localStorage.removeItem('atlas:prefs:v2'), localStorage.setItem('atlas:course','france'))`);
+await evaluate(app, `window.openAtlas()`, { userGesture: true, awaitPromise: false });
+await sleep(400);
+let phoneOk = false;
+for(let i = 0; i < 80 && !phoneOk; i++){
+  await sleep(150);
+  phoneOk = await evaluate(atlas, `!!window.__atlas && document.getElementById('boot').classList.contains('gone')`).catch(() => false);
+}
+check('reopens (phone width)', phoneOk);
+if(phoneOk){
+  await sleep(1200);
+  const ph = await ev(`(()=>{const b=document.getElementById('bar'); const last=b.querySelector('#foldBar').getBoundingClientRect();
+    const fr=window.__atlas.layout.lanes.find(l=>l.key==='france'); const top=document.getElementById('body').scrollTop;
+    return {w: innerWidth, fits: last.right <= innerWidth + 1, france: fr ? Math.abs(fr.y - top) : -1}})()`);
+  check('phone: the toolbar fits on one row', ph.fits && ph.w < 500, `${ph.w}px wide`);
+  check('opened from a topic page: at that topic\'s lane', ph.france >= 0 && ph.france < 60, `France lane ${ph.france}px from the top`);
+  const e = await ev(`(()=>{const n=document.querySelector('#world .tp-ln'); n.querySelector('.lb').click(); return true})()`);
+  const sheet = await until(atlas, `document.getElementById('detail').classList.contains('open')`);
+  const sw = await ev(`(()=>{const r=document.getElementById('detail').getBoundingClientRect(); return {w:r.width, h:r.height, H:innerHeight}})()`);
+  check('phone: the entry opens as a bottom sheet', sheet.ok && sw.w >= 380 && sw.w <= 400 && sw.h < sw.H * 0.75, `${sw.w}x${sw.h} of ${sw.H}`);
+}
+for(const sess of [app, atlas]) await send('Emulation.clearDeviceMetricsOverride', {}, sess).catch(() => {});
+
 // ---- screenshot -------------------------------------------------------
 if(SHOT){
-  // Go somewhere worth photographing. Synthetic wheel events at the centre of the
-  // canvas — what this used to do — is the exact mistake this file's header warns
-  // about: the middle of a scatter plot is usually empty, and the PNG came out as a
-  // blank grid reading "0 in view". Reuse the densest-with-excerpts entry the suite
-  // already found, at card zoom, and wait for points to actually be in view.
-  await evaluate(atlas, `window.__atlas.goto(${dense.i}, 24)`, { userGesture: true });
-  const framed = await until(atlas, `window.__atlas.visible.length > 20`,
-    { label: 'points in frame for the screenshot' });
-  if(!framed.ok) console.log('  warn  screenshot may be empty: nothing came into view');
-  await sleep(400); // let the card images decode, or they photograph as empty frames
   const shot = await send('Page.captureScreenshot', { format: 'png' }, atlas);
   fs.writeFileSync(SHOT, Buffer.from(shot.data, 'base64'));
   console.log(`\n  screenshot -> ${SHOT}`);
