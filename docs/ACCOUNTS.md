@@ -24,6 +24,8 @@ create table public.progress (
 alter table public.progress enable row level security;
 create policy "own progress" on public.progress
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+-- New projects do not expose new tables to the API by default:
+grant select, insert, update, delete on public.progress to authenticated;
 ```
 
 2. Authentication > URL Configuration: Site URL
@@ -31,7 +33,7 @@ create policy "own progress" on public.progress
    `http://localhost:8777/`.
 3. Email magic link works out of the box (Supabase's own mailer is rate-limited
    to a few emails an hour; add SMTP later if needed).
-4. Google (then set `GOOGLE_ENABLED = true` in sync.js): Authentication > Providers > Google needs a Google Cloud OAuth
+4. Google (then set `GOOGLE_ENABLED = true` in sync.js): Authentication > Sign In / Providers > Google (NOT the "OAuth Server" page, which makes Supabase itself an OAuth provider; leave it off) needs a Google Cloud OAuth
    client (Web; authorised redirect URI
    `https://oysegbcdjxkrtaokinrt.supabase.co/auth/v1/callback`), then its id
    and secret pasted in Supabase.

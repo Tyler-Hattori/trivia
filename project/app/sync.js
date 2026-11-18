@@ -20,7 +20,7 @@ export const SUPABASE_URL = 'https://oysegbcdjxkrtaokinrt.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable_oc2YjaJJ3-S-oKtrn3esCw_3jJUVS79';   // Project Settings > API > anon public key
 
 // Turn on once Authentication > Providers > Google is configured (docs/ACCOUNTS.md).
-const GOOGLE_ENABLED = false;
+const GOOGLE_ENABLED = true;
 
 let client = null, user = null;
 const listeners = new Set();
