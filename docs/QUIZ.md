@@ -25,8 +25,10 @@ page's Review button. The cross-topic quiz uses ids `<slug>|<entry id>` and
 records each answer in its own topic, so it counts there too. Records from
 before boxes existed are treated as due a day after a right answer.
 
-The cross-topic quiz and review read `datasets/topics/all.json` (every
-timeline entry of every topic, ~2 MB), not the full topic files.
+The cross-topic quiz and review read per-topic files (`datasets/web/trows/t/`):
+the topics in scope, or a sample of 12 when none is picked (what is due first,
+then what you opened). Never every topic at once; see TOPICS.md "What the
+browser loads". Answers are stored per entry (`mastery:v2`), not per topic.
 
 # The cluster quiz
 ```

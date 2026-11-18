@@ -31,7 +31,7 @@
  * `atlas.mjs` rebuilds the layout from whatever ids survive, so a rebuild after
  * this is all that is needed. Re-running `embed-all.mjs` is not.
  */
-import { readEntries, writeEntries } from '../lib/store.mjs';
+import { readEntries, writeEntries, recordAliases } from '../lib/store.mjs';
 
 const DRY = process.argv.includes('--dry');
 
@@ -82,6 +82,8 @@ if(DRY){
 
 const kept = entries.filter((e) => !drop.has(e.id));
 writeEntries(kept);
+// A learner's answers on a dropped duplicate move to the one kept.
+recordAliases(Object.fromEntries(groups.flatMap(({ keep, rest }) => rest.map((e) => [e.id, keep.id]))));
 
 console.log(`\nwrote ${kept.length} entries (was ${entries.length}).`);
 console.log('Now rebuild: node datasets/atlas.mjs');

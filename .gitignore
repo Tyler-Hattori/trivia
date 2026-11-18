@@ -18,3 +18,13 @@ datasets/*-articles.json
 datasets/review-worklist.json
 # crawl.mjs scratch lists
 datasets/.crawl-*.txt
+
+# Generated (rebuilt from datasets/store/ and the hand files; published to the
+# gh-pages branch by datasets/deploy.mjs, never committed to main). See
+# docs/PIPELINE.md "What is tracked".
+datasets/atlas/
+datasets/topics/
+datasets/web/
+datasets/web.tmp/
+datasets/site.db
+datasets/series-cache.json

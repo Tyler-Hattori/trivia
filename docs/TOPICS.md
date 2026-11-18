@@ -190,7 +190,8 @@ First run: 650 pairs judged ($0.11); the rebuild merged 254 mined duplicates, an
 ## The search page (#/search/<query>)
 
 `topics/store-lite.json` (`lib/lite.mjs`, rewritten by every topic build) is
-the whole store compressed for the browser: title, years, type, description,
+the whole store in compact rows, the input build-web.mjs cuts into web/ (the
+browser no longer fetches it): title, years, type, description,
 first sentence, image, subject, fame, topics. About 1.4 MB gzipped, loaded only
 when searching.
 - **A year or span** ("1294", "1290–1300", "1290s", "13th century", "3rd
@@ -206,13 +207,33 @@ when searching.
 
 ## What the browser loads
 
-- `topics/<slug>.json` — the topic, self-contained.
-- `topics/index.json` — the list.
-- `topics/store-lite.json` — the whole store, for the search page.
-- `topics/all.json` — every timeline entry of every topic, compact (~2 MB):
-  **Meanwhile**, the cross-topic quiz and review. Written by every build.
-- `topics/members.json` / `members-all.json` — "Also in", and the atlas's Topic
-  filter and "In topics".
+Small files only. Nothing downloads the whole store (until 2026-11-17 the
+search page fetched 18 MB, Meanwhile 14 MB and the atlas 60 MB of excerpts).
+
+- `topics/<slug>.json`: the topic, self-contained (1–4 MB).
+- `topics/index.json`: the list. `topics/members.json`: "Also in".
+- `web/` (`datasets/build-web.mjs`, rebuilt by every topic build, `--all`,
+  `--list` and `atlas.mjs`, in about 3 s; read through
+  `project/features/topic/webdata.js`):
+  - `trows/b-NNN.json`: every topic's timeline rows in ~600-row buckets by
+    anchor year. **Meanwhile** and the search page's "In your topics" fetch the
+    one or two buckets around the years.
+  - `trows/t/<slug>(.key).json`: one topic's rows (or its essentials). The
+    cross-topic **quiz** loads the topics in scope, or a sample of 12 (what is
+    due first, then what you opened); **review** loads the topics with something due.
+  - `lite/time/t-NNN.json` + `long.json`: the whole store in ~800-row time
+    buckets; a span sits in every bucket it overlaps (up to 6, else in
+    long.json). A **date page** fetches the buckets for its years (a span wider
+    than 40 buckets: the 20 at each end).
+  - `words/<pp>.json` + `lite/rows/r-NNN.json`: **word search**. An index by
+    the first two letters of each word (`lib/webindex.mjs`, shared with the
+    builder), best 400 entries per word, then the matching rows from 100-row
+    blocks numbered most important first.
+  - `details/l-NNN.json`: the **atlas**'s excerpts by cluster, fetched for the
+    cards on screen and the opened entry.
+  - `aliases.json`: id aliases, for moving answer records.
+- `atlas/atlas.json` (26 MB, 7 MB gzipped): the atlas map, loaded whole when the
+  atlas opens. The next thing to cut (by zoom level and time) when the store grows.
 
 **Meanwhile** (detail panel): entries from other topics within a window that
 grows with distance from today (±4 years in 1940, ±80 at year 0, ±200 at 3000

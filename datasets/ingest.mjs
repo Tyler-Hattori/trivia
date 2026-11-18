@@ -60,7 +60,7 @@
 import fs from 'node:fs';
 import {
   readEntries, appendEntries, readVectors, appendVectors, writeEntries,
-  readSearchVectors, writeSearchVectors, SEARCH_DIM,
+  readSearchVectors, writeSearchVectors, appendSearchVectors, SEARCH_DIM,
   makeEntry, entryId, entryText, truncateNormalize, DIM, PATHS, readJSON,
 } from './lib/store.mjs';
 import {
@@ -925,12 +925,14 @@ console.log('done');
 
 appendEntries(fresh);
 appendVectors(pairs, { model: EMBED_MODEL });
-// The full-width search copy. Rewritten rather than appended: it is small enough,
-// and rewriting keeps it consistent even if an earlier run left it partial.
+// The full-width search copy. Appended, so its full chunks stay byte-identical in
+// git (a rewrite re-quantises every row); rewritten only when it is missing,
+// unreadable or from another model.
 {
-  const sv = readSearchVectors();
-  const have = sv && sv.model === EMBED_MODEL ? sv.ids.map((id) => [id, sv.get(id)]) : [];
-  writeSearchVectors([...have, ...searchPairs], { model: EMBED_MODEL });
+  let sv = null;
+  try { sv = readSearchVectors(); } catch {}
+  if(sv && sv.model === EMBED_MODEL) appendSearchVectors(searchPairs.filter(([id]) => !sv.has(id)), { model: EMBED_MODEL });
+  else writeSearchVectors(searchPairs, { model: EMBED_MODEL });
 }
 
 // Preview where each landed, using the frozen tree — the same descent the atlas

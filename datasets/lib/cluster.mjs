@@ -52,7 +52,7 @@ export function mulberry32(seed){
 // Matrix helpers — a flat Float32Array of n*dim, row-major
 // ---------------------------------------------------------------------------
 
-const dot = (m, dim, i, v) => {
+export const dot = (m, dim, i, v) => {
   let s = 0;
   const off = i * dim;
   for(let d = 0; d < dim; d++) s += m[off + d] * v[d];

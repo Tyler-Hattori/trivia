@@ -161,12 +161,14 @@ check('#/quiz asks an Order question over every topic', cross.ok, JSON.stringify
 for(let k = 0; k < 4; k++) await evaluate(app, `[...document.querySelectorAll('.tp-q .tp-opt[data-pick]')].find((b) => b.querySelector('.num.empty'))?.click()`);
 const mem = await until(app, `
   (() => {
-    const keys = Object.keys(localStorage).filter((k) => k.startsWith('topic:mastery:'));
-    if(!keys.length) return null;
-    const recs = keys.flatMap((k) => Object.values(JSON.parse(localStorage.getItem(k))));
-    return { topics: keys.length, n: recs.length, due: recs.every((r) => r.due > Date.now() - 1000 && r.box != null) };
+    // One map per learner (mastery:v2), entry id -> record; x = the topics it was answered in.
+    const m = JSON.parse(localStorage.getItem('mastery:v2') || 'null');
+    if(!m) return null;
+    const recs = Object.values(m);
+    if(!recs.length) return null;
+    return { topics: new Set(recs.flatMap((r) => r.x || [])).size, n: recs.length, due: recs.every((r) => r.due > Date.now() - 1000 && r.box != null && (r.x || []).length) };
   })()`, { label: 'answers remembered' });
-check('answers are recorded per topic with a box and a due date', mem.ok && mem.value.n === 4 && mem.value.due, JSON.stringify(mem.value));
+check('answers are recorded per entry, with their topic, a box and a due date', mem.ok && mem.value.n === 4 && mem.value.due, JSON.stringify(mem.value));
 await evaluate(app, `location.hash = '#/review'`);
 const rev = await until(app, `
   (() => { const t = document.querySelector('.tp-quiz')?.textContent || ''; return /Review/.test(t) ? t.slice(0, 120) : null; })()`, { label: 'review page' });

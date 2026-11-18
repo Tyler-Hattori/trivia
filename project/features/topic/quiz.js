@@ -20,9 +20,15 @@
  *
  * ## Memory: spaced repetition
  *
- * Every answer is recorded per entry in localStorage (`topic:mastery:<slug>`):
- * right and wrong counts, whether the LAST answer was right, a Leitner box and
- * when it is next due. Right moves an entry up a box (due again in 1, 3, 7, 16,
+ * Every answer is recorded per ENTRY in localStorage (`mastery:v2`, one map of
+ * entry id -> record, whichever topic it was answered in): right and wrong
+ * counts, whether the LAST answer was right, a Leitner box, when it is next
+ * due, and `x`, the topics it was answered in. Napoleon learned in France is
+ * known in England too, and renaming a topic loses nothing. Entry ids are
+ * stable; when the store merges or renames one, datasets/store/id-aliases.json
+ * (served as web/aliases.json) moves its record (`migrateMastery`). The old
+ * per-topic keys (`topic:mastery:<slug>`) are merged in once and kept as a
+ * backup. When logins come, this map is what syncs to the server. Right moves an entry up a box (due again in 1, 3, 7, 16,
  * 35, then 90 days); wrong sends it back to box 0 (due in 10 minutes). Questions
  * are drawn weighted towards what is due, missed or never seen. The home page's
  * Review collects everything due across all topics. "Known" (the ticks and
@@ -50,11 +56,63 @@ let keysBound = false;
 
 // --- memory ------------------------------------------------------------------
 
-const MEM_PREFIX = 'topic:mastery:';
-const memKey = (slug) => `${MEM_PREFIX}${slug}`;
-export function loadMastery(slug){
-  try { return JSON.parse(localStorage.getItem(memKey(slug))) || {}; } catch { return {}; }
+const OLD_PREFIX = 'topic:mastery:';
+const MEM_KEY = 'mastery:v2';
+let memCache = null, memRaw = null;
+function allMastery(){
+  // Re-read when the stored text changed (another tab, a reset, a cleared storage).
+  const raw = localStorage.getItem(MEM_KEY);
+  if(memCache && raw === memRaw) return memCache;
+  try { memCache = JSON.parse(raw) || null; } catch { memCache = null; }
+  memRaw = raw;
+  if(!memCache){
+    // First run on this version: merge the per-topic maps, latest answer wins.
+    memCache = {};
+    for(let i = 0; i < localStorage.length; i++){
+      const k = localStorage.key(i);
+      if(!k?.startsWith(OLD_PREFIX)) continue;
+      const slug = k.slice(OLD_PREFIX.length);
+      let m = {};
+      try { m = JSON.parse(localStorage.getItem(k)) || {}; } catch {}
+      for(const [id, rec] of Object.entries(m)){
+        const cur = memCache[id];
+        const x = [...new Set([...(cur?.x || []), slug])];
+        memCache[id] = !cur || (rec.at || 0) > (cur.at || 0) ? { ...rec, x } : { ...cur, x };
+      }
+    }
+    saveMastery();
+  }
+  return memCache;
 }
+function saveMastery(){ try { memRaw = JSON.stringify(memCache || {}); localStorage.setItem(MEM_KEY, memRaw); } catch {} }
+
+/**
+ * Every recorded entry (id -> record), whichever topic it was answered in. The
+ * `slug` argument is kept for callers; per-topic views look up their own items.
+ */
+export function loadMastery(){ return allMastery(); }
+/** The records answered in one topic (topic list progress, due counts per topic). */
+export const masteryIn = (slug) => Object.fromEntries(Object.entries(allMastery()).filter(([, r]) => (r.x || []).includes(slug)));
+
+/**
+ * Apply id aliases (old id -> new id) from the store, once per aliases file.
+ * Called at start-up; cheap when there is nothing to move.
+ */
+export async function migrateMastery(base){
+  let A = null;
+  try { const r = await fetch(`${base}datasets/web/aliases.json`); if(r.ok) A = await r.json(); } catch {}
+  if(!A || !A.v || localStorage.getItem('mastery:aliases') === String(A.v)) return;
+  const m = allMastery();
+  let moved = 0;
+  for(const [from, to] of Object.entries(A.map || {})){
+    if(!m[from]) continue;
+    if(!m[to] || (m[from].at || 0) > (m[to].at || 0)) m[to] = { ...m[from], x: [...new Set([...(m[from].x || []), ...(m[to]?.x || [])])] };
+    delete m[from]; moved++;
+  }
+  if(moved) saveMastery();
+  localStorage.setItem('mastery:aliases', String(A.v));
+}
+
 /** Known = answered at least once, and right the last time. */
 export const isKnown = (m) => !!m && m.last === 1;
 
@@ -64,9 +122,9 @@ const INTERVALS = [10 * MIN, 1 * DAY, 3 * DAY, 7 * DAY, 16 * DAY, 35 * DAY, 90 *
 export const dueAt = (m) => (!m ? Infinity : m.due ?? (m.at || 0) + (m.last ? DAY : 10 * MIN));
 export const isDue = (m, now = Date.now()) => !!m && dueAt(m) <= now;
 
-/** Record one answer for one entry of one topic. */
+/** Record one answer for one entry, answered in topic `slug`. */
 export function recordAnswer(slug, id, ok){
-  const m = loadMastery(slug);
+  const m = allMastery();
   const x = m[id] || { r: 0, w: 0, last: 0 };
   const box = x.box ?? (x.last ? 1 : 0);
   if(ok) x.r++; else x.w++;
@@ -74,23 +132,19 @@ export function recordAnswer(slug, id, ok){
   x.box = ok ? Math.min(INTERVALS.length - 1, box + 1) : 0;
   x.at = Date.now();
   x.due = x.at + INTERVALS[x.box];
+  if(slug && !slug.startsWith('__')) x.x = [...new Set([...(x.x || []), slug])];
   m[id] = x;
-  localStorage.setItem(memKey(slug), JSON.stringify(m));
+  saveMastery();
 }
 
-/** Everything due, across every topic: { n, per: { slug: count }, next: ms until the next one }. */
+/** Everything due: { n, per: { slug: count } (by the topic it was first answered in), next: ms until the next one }. */
 export function dueSummary(now = Date.now()){
   const per = {};
   let n = 0, next = Infinity;
-  for(let i = 0; i < localStorage.length; i++){
-    const k = localStorage.key(i);
-    if(!k?.startsWith(MEM_PREFIX)) continue;
-    const slug = k.slice(MEM_PREFIX.length);
-    for(const x of Object.values(loadMastery(slug))){
-      const d = dueAt(x);
-      if(d <= now){ per[slug] = (per[slug] || 0) + 1; n++; }
-      else next = Math.min(next, d - now);
-    }
+  for(const x of Object.values(allMastery())){
+    const d = dueAt(x);
+    if(d <= now){ n++; const s = x.x?.[0]; if(s) per[s] = (per[s] || 0) + 1; }
+    else next = Math.min(next, d - now);
   }
   return { n, per, next };
 }

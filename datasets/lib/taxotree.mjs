@@ -20,7 +20,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { ATLAS_DIR } from './store.mjs';
+import { PATHS } from './store.mjs';
 import { buildTree, centroid, cosine } from './cluster.mjs';
 
 export const TOP_ORDER = ['History & Society', 'Culture', 'Science & Technology', 'Geography', 'Other'];
@@ -31,7 +31,7 @@ const MIN_SUBJECT = 25;   // Music (8), Food and drink (6)… one "Other culture
 export const taxoKey = (t) => `${t.top}|${t.mid}`;
 
 export function loadTaxonomy(){
-  const p = path.join(ATLAS_DIR, 'taxonomy.json');
+  const p = PATHS.taxonomy;
   if(!fs.existsSync(p)) return null;
   const t = JSON.parse(fs.readFileSync(p, 'utf8'));
   return t.entries && Object.keys(t.entries).length ? t : null;

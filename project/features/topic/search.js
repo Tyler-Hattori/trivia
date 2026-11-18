@@ -1,7 +1,7 @@
 /*
  * The search page: #/search/<query>. A page built on the spot from the WHOLE
- * store (topics/store-lite.json, every entry, not only those in topics) and the
- * topics (topics/all.json).
+ * store (every entry, not only those in topics) and the topics, fetched in
+ * small pieces (webdata.js: time buckets for a date, the word index for words).
  *
  *   a year        "1294", "1294 AD", "300 BC"
  *   a span        "1290-1300", "300-200 BC", "1290s", "13th century",
@@ -16,8 +16,8 @@
  * that contain it.
  */
 
-import { bm25Index } from '../../../datasets/lib/textsearch.mjs';
 import { anchorYear, fmtYear, fmtRange, summary } from './layout.js';
+import { storeRowsIn, findRows, topicRowsIn, topicsMeta } from './webdata.js';
 import { thumbUrl } from '../../utils/helpers.js';
 
 const BASE = location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '');
@@ -25,23 +25,9 @@ const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<
 const NOW = new Date().getFullYear();
 const TYPE = { event: 'Event', person: 'Person', work: 'Work', period: 'Period', place: 'Place', group: 'Group', concept: 'Idea' };
 
-let liteP = null, allP = null, idx = null, titlesP = null;
+let titlesP = null;
 const getJSON = (p) => fetch(BASE + p, { cache: 'no-store' }).then((r) => { if(!r.ok) throw new Error(`${p}: HTTP ${r.status}`); return r.json(); });
 
-function loadLite(){
-  if(!liteP) liteP = getJSON('datasets/topics/store-lite.json').then((d) => {
-    for(const r of d.items){
-      if(r.im && r.im[0] === '~') r.im = 'https://upload.wikimedia.org/wikipedia/' + r.im.slice(1);
-      r.anchor = r.i ? null : anchorYear({ type: r.ty, kind: r.k ? 'span' : 'point', start: r.s, end: r.e });
-    }
-    return d.items;
-  }).catch((e) => { liteP = null; throw e; });
-  return liteP;
-}
-function loadAll(){
-  if(!allP) allP = getJSON('datasets/topics/all.json').catch(() => ({ topics: {}, items: [] }));
-  return allP;
-}
 function loadTopicTitles(){
   if(!titlesP) titlesP = getJSON('datasets/topics/index.json').then((d) => d.topics).catch(() => []);
   return titlesP;
@@ -164,28 +150,25 @@ export async function renderSearch(root, rawQ){
   };
   if(!q){ root.querySelector('#sBody').innerHTML = '<div class="tp-empty">Type a year (1294), a span (1290–1300, 1290s, 13th century) or anything (mongol).</div>'; return; }
 
-  let items;
-  try { items = await loadLite(); }
-  catch(e){ root.querySelector('#sBody').innerHTML = `<div class="tp-empty">Could not load the store index. ${esc(e.message)}</div>`; return; }
-  const [A, topics] = await Promise.all([loadAll(), loadTopicTitles()]);
-  const byId = new Map(items.map((r) => [r.id, r]));
-  const topicTitle = new Map(topics.map((t) => [t.slug, t.title]));
   const when = parseWhen(q);
   const words = when ? when.rest : q;
-
-  // Words: BM25 over the whole store (title counts most), then the hybrid
-  // server ranking when serve.mjs is up (understands paraphrase).
-  let hits = null;
-  if(words){
-    if(!idx) idx = bm25Index(items.map((r) => ({ id: r.id, text: `${r.t} ${r.t} ${r.t} ${r.sub || ''} ${r.c || ''}` })));
-    hits = new Map(idx.search(words, { limit: 600 }).map((h, i) => [h.id, i]));
-    try {
-      const r = await fetch(`${BASE}api/search?k=200&q=${encodeURIComponent(words)}`);
-      if(r.ok){ const d = await r.json(); d.hits.forEach((h, i) => { if(!hits.has(h.id) && byId.has(h.id)) hits.set(h.id, 600 + i); }); }
-    } catch {}
-  }
+  // Only what this page needs: the date's time buckets, or the word index's
+  // best hits (then narrowed to the date when both are given).
+  let items, partial = false;
+  const hits = new Map();
+  try {
+    if(words){
+      items = await findRows(words, 600);
+      items.forEach((r, i) => hits.set(r.id, i));
+    } else ({ rows: items, partial } = await storeRowsIn(when.lo, when.hi));
+  } catch(e){ root.querySelector('#sBody').innerHTML = `<div class="tp-empty">Could not load the store index. ${esc(e.message)}</div>`; return; }
+  const [M, topics] = await Promise.all([topicsMeta().catch(() => ({ topics: {} })), loadTopicTitles()]);
+  const trows = when ? await topicRowsIn(when.lo, when.hi).catch(() => []) : [];
+  const A = { topics: M.topics, items: trows };
+  const byId = new Map(items.map((r) => [r.id, r]));
+  const topicTitle = new Map(topics.map((t) => [t.slug, t.title]));
   const S = { subject: '', sort: when ? 'date' : 'date', q, when, words };
-  const pool = () => items.filter((r) => (!hits || hits.has(r.id)) && (!S.subject || r.sj === S.subject));
+  const pool = () => items.filter((r) => (!words || hits.has(r.id)) && (!S.subject || r.sj === S.subject));
 
   const draw = () => {
     const P = pool();
@@ -212,7 +195,7 @@ export async function renderSearch(root, rawQ){
           <a class="tp-btn sm" href="#/search/${encodeURIComponent((words ? words + ' ' : '') + nav(1))}">${esc(nav(1))} →</a>
           ${wide ? `<a class="tp-btn sm" href="#/search/${encodeURIComponent((words ? words + ' ' : '') + wide)}">Widen to ${esc(wide)}</a>` : ''}</div>
         <h1>${esc(when.label)}${words ? ` <span class="tp-sw">· ${esc(words)}</span>` : ''}</h1>
-        <div class="tp-meta">${n} entries from the whole store${words ? ` matching “${esc(words)}”` : ''}</div></header>
+        <div class="tp-meta">${n} entries from the whole store${words ? ` matching “${esc(words)}”` : ''}${partial ? ' · a long span: the years around its two ends, and what lasted throughout' : ''}</div></header>
         ${chipHtml}
         ${topicsHtml}
         ${section('What happened', D.happened, 40)}

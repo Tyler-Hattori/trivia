@@ -254,18 +254,19 @@ console.log(`        zoom:   ${r1.ppy}   cards: ${r1.cards}`);
  */
 const dense = await evaluate(atlas, `(()=>{
   const {atlas:A} = window.__atlas;
-  const det = A.details || {};
+  // Excerpts load on demand now (web/details/, by cluster): A.hx says which points have one.
+  const has = (i) => !!A.hx[i];
   // Densest neighbourhood, measured as the year-spread of a point's 8 nearest
   // neighbours. Restricted to entries that HAVE an excerpt, because the densest
   // region overall is art, and 847 of 848 art rows have no excerpt yet — aiming
   // there would test the data gap rather than the renderer.
   let best=-1, bestSpread=Infinity, withEx=0;
   for(let i=0;i<A.n;i++){
-    if(!det[A.id[i]]?.excerpt) continue;
+    if(!has(i)) continue;
     withEx++;
     const nb=A.knn[i]; if(!nb||!nb.length) continue;
     let spread=0, n=0;
-    for(const j of nb){ if(!det[A.id[j]]?.excerpt) continue; spread+=Math.abs(A.x0[j]-A.x0[i]); n++; }
+    for(const j of nb){ if(!has(j)) continue; spread+=Math.abs(A.x0[j]-A.x0[i]); n++; }
     if(n<5) continue;
     spread/=n;
     if(spread<bestSpread){bestSpread=spread; best=i;}

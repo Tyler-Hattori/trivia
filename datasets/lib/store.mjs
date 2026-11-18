@@ -1,10 +1,21 @@
 /**
  * The atlas store.
  *
- * Two files hold everything:
+ * datasets/store/ is the source of truth, tracked in git; everything else under
+ * datasets/ (atlas/, topics/, site.db) is generated from it and is not:
  *
- *   atlas/entries.jsonl   one JSON object per line, append-only, git-diffable
- *   atlas/vectors.bin     one quantised embedding per entry, fixed-width rows
+ *   store/entries/entries-NNN.jsonl  one JSON object per line, in the order
+ *                                    entries were added, split into ~20 MB chunks
+ *                                    (GitHub refuses files over 100 MB; the single
+ *                                    entries.jsonl reached 83 MB). Appends go to
+ *                                    the last chunk; an edit rewrites only the
+ *                                    chunks whose bytes change.
+ *   store/vectors/map-NNN.bin        one quantised 256-dim embedding per entry,
+ *   store/vectors/search-NNN.bin     and 768-dim for search; fixed-width rows,
+ *                                    CHUNK_ROWS rows per file, ids in map.json /
+ *                                    search.json
+ *   store/layout.json, taxonomy.json, ideas.jsonl, vocab.*   caches that cost
+ *                                    network or model time to recreate
  *
  * Why JSONL and not CSV: excerpts contain commas, quotes and paragraph breaks.
  * The old CSV parser handled none of those without escaping (`%2C` for commas in
@@ -39,24 +50,48 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 
 export const DATASETS_DIR = path.dirname(HERE);
 export const REPO_DIR     = path.dirname(DATASETS_DIR);
-export const ATLAS_DIR    = path.join(DATASETS_DIR, 'atlas');
+export const ATLAS_DIR    = path.join(DATASETS_DIR, 'atlas');     // generated (gitignored)
+export const STORE_DIR    = path.join(DATASETS_DIR, 'store');     // source of truth (tracked)
 
 export const PATHS = {
-  entries: path.join(ATLAS_DIR, 'entries.jsonl'),
-  vectors: path.join(ATLAS_DIR, 'vectors.bin'),
-  vecMeta: path.join(ATLAS_DIR, 'vectors.json'),
-  layout:  path.join(ATLAS_DIR, 'layout.json'),
+  store:   STORE_DIR,
+  entries: path.join(STORE_DIR, 'entries'),                 // a directory of chunks
+  vectors: path.join(STORE_DIR, 'vectors', 'map'),          // chunk prefix: map-000.bin…
+  vecMeta: path.join(STORE_DIR, 'vectors', 'map.json'),
+  layout:  path.join(STORE_DIR, 'layout.json'),
+  taxonomy: path.join(STORE_DIR, 'taxonomy.json'),
+  ideas:   path.join(STORE_DIR, 'ideas.jsonl'),
+  vocab:     path.join(STORE_DIR, 'vocab.bin'),
+  vocabMeta: path.join(STORE_DIR, 'vocab.json'),
+  // Full-width vectors for SEARCH only. The map keeps using the 256-dim
+  // vectors (changing that would re-fit every y on the atlas); search reads
+  // these, because the Matryoshka cut costs retrieval ~5 points of R-precision.
+  searchVectors: path.join(STORE_DIR, 'vectors', 'search'),
+  searchVecMeta: path.join(STORE_DIR, 'vectors', 'search.json'),
+  // Generated.
   atlas:   path.join(ATLAS_DIR, 'atlas.json'),
   details: path.join(ATLAS_DIR, 'details.json'),
-  vocab:     path.join(ATLAS_DIR, 'vocab.bin'),
-  vocabMeta: path.join(ATLAS_DIR, 'vocab.json'),
-  // Full-width vectors for SEARCH only. The map keeps using the 256-dim
-  // `vectors.bin` (changing that would re-fit every y on the atlas); search reads
-  // these, because the Matryoshka cut costs retrieval ~5 points of R-precision.
-  searchVectors: path.join(ATLAS_DIR, 'search-vectors.bin'),
-  searchVecMeta: path.join(ATLAS_DIR, 'search-vectors.json'),
+  knnCache: path.join(ATLAS_DIR, 'knn-cache.json'),
   topics:  path.join(DATASETS_DIR, 'topics'),
+  db:      path.join(DATASETS_DIR, 'site.db'),
 };
+
+/** Entry chunks are cut at about this many bytes. */
+const ENTRY_CHUNK_BYTES = 20e6;
+/** Rows per vector chunk: 25,000 x 772 bytes = 19 MB for search, 6.5 MB for the map. */
+export const CHUNK_ROWS = 25000;
+
+const chunkName = (i) => `entries-${String(i).padStart(3, '0')}.jsonl`;
+/** The entry chunk files, in order. */
+export function entryChunks(){
+  if(!fs.existsSync(PATHS.entries)) return [];
+  return fs.readdirSync(PATHS.entries).filter((f) => /^entries-\d{3}\.jsonl$/.test(f)).sort().map((f) => path.join(PATHS.entries, f));
+}
+/** Latest modification time across the store's entries and vectors: a cache key. */
+export function storeStamp(){
+  const files = [...entryChunks(), ...vecChunks(PATHS.vectors), ...vecChunks(PATHS.searchVectors)];
+  return files.map((f) => { try { return fs.statSync(f).mtimeMs; } catch { return 0; } }).reduce((a, b) => Math.max(a, b), 0) + files.length;
+}
 
 /** Width of the search vectors: EmbeddingGemma's native output, uncut. */
 export const SEARCH_DIM = 768;
@@ -171,23 +206,24 @@ export function entryId(entry){
 }
 
 export function readEntries(){
-  if(!fs.existsSync(PATHS.entries)) return [];
   const out = [];
-  const text = fs.readFileSync(PATHS.entries, 'utf8');
-  let lineNo = 0;
-  const lines = text.split('\n');
-  for(const line of lines){
-    lineNo++;
-    const s = line.trim();
-    if(!s) continue;
-    try { out.push(JSON.parse(s)); }
-    catch(e){
-      // The last line may be half-written by an ingest running at the same
-      // moment (a topic build during a batch). Anywhere else it is corruption.
-      if(lines.slice(lineNo).every((l) => !l.trim())){ console.warn(`  (entries.jsonl: skipped a half-written last line)`); continue; }
-      throw new Error(`entries.jsonl:${lineNo} is not valid JSON — ${e.message}`);
+  const files = entryChunks();
+  files.forEach((file, fi) => {
+    const lines = fs.readFileSync(file, 'utf8').split('\n');
+    let lineNo = 0;
+    for(const line of lines){
+      lineNo++;
+      const s = line.trim();
+      if(!s) continue;
+      try { out.push(JSON.parse(s)); }
+      catch(e){
+        // The last line of the last chunk may be half-written by an ingest
+        // running at the same moment. Anywhere else it is corruption.
+        if(fi === files.length - 1 && lines.slice(lineNo).every((l) => !l.trim())){ console.warn(`  (${path.basename(file)}: skipped a half-written last line)`); continue; }
+        throw new Error(`${path.basename(file)}:${lineNo} is not valid JSON — ${e.message}`);
+      }
     }
-  }
+  });
   return out;
 }
 
@@ -201,18 +237,45 @@ export function entryLine(e){
   return JSON.stringify(ordered);
 }
 
-/** Rewrite the whole file. Atomic: write a temp file, then rename. */
+/**
+ * Rewrite the store. Lines are packed into chunks of about ENTRY_CHUNK_BYTES in
+ * order; a chunk whose bytes did not change is not touched (so git sees only the
+ * chunks an edit reached). Each chunk is written atomically (temp file, rename).
+ */
 export function writeEntries(entries){
-  fs.mkdirSync(ATLAS_DIR, { recursive: true });
-  const tmp = PATHS.entries + '.tmp';
-  fs.writeFileSync(tmp, entries.map(entryLine).join('\n') + '\n');
-  fs.renameSync(tmp, PATHS.entries);
+  fs.mkdirSync(PATHS.entries, { recursive: true });
+  const chunks = [];
+  let cur = [], bytes = 0;
+  for(const e of entries){
+    const line = entryLine(e) + '\n';
+    if(bytes + line.length > ENTRY_CHUNK_BYTES && cur.length){ chunks.push(cur.join('')); cur = []; bytes = 0; }
+    cur.push(line); bytes += Buffer.byteLength(line);
+  }
+  if(cur.length || !chunks.length) chunks.push(cur.join(''));
+  chunks.forEach((text, i) => {
+    const f = path.join(PATHS.entries, chunkName(i));
+    if(fs.existsSync(f) && fs.readFileSync(f, 'utf8') === text) return;
+    fs.writeFileSync(f + '.tmp', text);
+    fs.renameSync(f + '.tmp', f);
+  });
+  for(const f of entryChunks().slice(chunks.length)) fs.unlinkSync(f);
 }
 
 export function appendEntries(entries){
   if(!entries.length) return;
-  fs.mkdirSync(ATLAS_DIR, { recursive: true });
-  fs.appendFileSync(PATHS.entries, entries.map(entryLine).join('\n') + '\n');
+  fs.mkdirSync(PATHS.entries, { recursive: true });
+  const files = entryChunks();
+  let i = Math.max(0, files.length - 1);
+  let f = path.join(PATHS.entries, chunkName(i));
+  let size = fs.existsSync(f) ? fs.statSync(f).size : 0;
+  let buf = '';
+  const flush = () => { if(buf){ fs.appendFileSync(f, buf); buf = ''; } };
+  for(const e of entries){
+    const line = entryLine(e) + '\n';
+    if(size + line.length > ENTRY_CHUNK_BYTES && size > 0){ flush(); i++; f = path.join(PATHS.entries, chunkName(i)); size = 0; }
+    buf += line; size += Buffer.byteLength(line);
+  }
+  flush();
 }
 
 // ---------------------------------------------------------------------------
@@ -288,7 +351,7 @@ function readVecMeta(metaPath = PATHS.vecMeta, dim = DIM){
  * store built before search vectors existed simply searches at 256 dims.
  */
 export function readSearchVectors(){
-  if(!fs.existsSync(PATHS.searchVecMeta) || !fs.existsSync(PATHS.searchVectors)) return null;
+  if(!fs.existsSync(PATHS.searchVecMeta) || !vecChunks(PATHS.searchVectors).length) return null;
   return readVecFile(PATHS.searchVectors, PATHS.searchVecMeta, SEARCH_DIM);
 }
 
@@ -304,16 +367,25 @@ export function readVectors(){
   return readVecFile(PATHS.vectors, PATHS.vecMeta, DIM);
 }
 
+/** The chunk files of a vector store (prefix -> prefix-000.bin, …), in order. */
+export function vecChunks(prefix){
+  const dir = path.dirname(prefix), base = path.basename(prefix);
+  if(!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir).filter((f) => new RegExp(`^${base}-\\d{3}\\.bin$`).test(f)).sort().map((f) => path.join(dir, f));
+}
+const vecChunkName = (prefix, i) => `${prefix}-${String(i).padStart(3, '0')}.bin`;
+
 function readVecFile(binPath, metaPath, defaultDim){
   const meta = readVecMeta(metaPath, defaultDim);
   const dim = meta.dim || defaultDim;
   const rowBytes = 4 + dim;
-  const buf = fs.existsSync(binPath) ? fs.readFileSync(binPath) : Buffer.alloc(0);
+  const parts = vecChunks(binPath).map((f) => fs.readFileSync(f));
+  const buf = parts.length === 1 ? parts[0] : Buffer.concat(parts);
   const rows = Math.floor(buf.length / rowBytes);
 
   if(rows !== meta.ids.length){
     throw new Error(
-      `${path.basename(binPath)} holds ${rows} rows but ${path.basename(metaPath)} indexes ${meta.ids.length}. ` +
+      `${path.basename(binPath)}-*.bin hold ${rows} rows but ${path.basename(metaPath)} indexes ${meta.ids.length}. ` +
       `Re-run: node datasets/embed-all.mjs --force`,
     );
   }
@@ -331,6 +403,20 @@ function readVecFile(binPath, metaPath, defaultDim){
   };
 
   return { model: meta.model, dim, native: meta.native, ids: meta.ids, index, get, has: (id) => index.has(id), buf, rowBytes };
+}
+
+/** Write rows (Buffers) as chunks of CHUNK_ROWS, skipping chunks whose bytes are unchanged. */
+function writeVecChunks(prefix, rowBufs){
+  fs.mkdirSync(path.dirname(prefix), { recursive: true });
+  const n = Math.max(1, Math.ceil(rowBufs.length / CHUNK_ROWS));
+  for(let i = 0; i < n; i++){
+    const b = Buffer.concat(rowBufs.slice(i * CHUNK_ROWS, (i + 1) * CHUNK_ROWS));
+    const f = vecChunkName(prefix, i);
+    if(fs.existsSync(f) && fs.readFileSync(f).equals(b)) continue;
+    fs.writeFileSync(f + '.tmp', b);
+    fs.renameSync(f + '.tmp', f);
+  }
+  for(const f of vecChunks(prefix).slice(n)) fs.unlinkSync(f);
 }
 
 /** Quantise one float vector to a `4 + dim` byte row. */
@@ -370,26 +456,40 @@ export function writeVectors(pairs, { model, native } = {}){
 }
 
 function writeVecFile(binPath, metaPath, pairs, { model, native } = {}){
-  fs.mkdirSync(ATLAS_DIR, { recursive: true });
   const dim = pairs.length ? pairs[0][1].length : DIM;
-  const buf = Buffer.concat(pairs.map(([, v]) => packVector(v)));
-  fs.writeFileSync(binPath + '.tmp', buf);
-  fs.renameSync(binPath + '.tmp', binPath);
+  writeVecChunks(binPath, pairs.map(([, v]) => packVector(v)));
   fs.writeFileSync(metaPath, JSON.stringify({
     model, native, dim, count: pairs.length, ids: pairs.map(([id]) => id),
   }, null, 0) + '\n');
 }
 
-/** Append new vectors, keeping existing rows byte-identical. */
-export function appendVectors(pairs, { model, native } = {}){
+/** Append new map vectors, keeping existing rows (and full chunks) byte-identical. */
+export function appendVectors(pairs, opts = {}){
+  appendVecFile(PATHS.vectors, PATHS.vecMeta, DIM, pairs, opts);
+}
+/** Same for the search vectors. */
+export function appendSearchVectors(pairs, opts = {}){
+  appendVecFile(PATHS.searchVectors, PATHS.searchVecMeta, SEARCH_DIM, pairs, opts);
+}
+function appendVecFile(prefix, metaPath, defaultDim, pairs, { model, native } = {}){
   if(!pairs.length) return;
-  const meta = readVecMeta();
-  fs.mkdirSync(ATLAS_DIR, { recursive: true });
-  fs.appendFileSync(PATHS.vectors, Buffer.concat(pairs.map(([, v]) => packVector(v))));
-  fs.writeFileSync(PATHS.vecMeta, JSON.stringify({
+  const meta = readVecMeta(metaPath, defaultDim);
+  const dim = meta.dim || pairs[0][1].length;
+  const rowBytes = 4 + dim;
+  fs.mkdirSync(path.dirname(prefix), { recursive: true });
+  let row = meta.ids.length;
+  for(const [, v] of pairs){
+    const i = Math.floor(row / CHUNK_ROWS);
+    fs.appendFileSync(vecChunkName(prefix, i), packVector(v));
+    row++;
+  }
+  // Sanity: the last chunk holds exactly the rows past the full ones.
+  const last = vecChunks(prefix).at(-1);
+  if(last && fs.statSync(last).size !== ((row - 1) % CHUNK_ROWS + 1) * rowBytes) throw new Error(`${path.basename(last)}: row count drifted`);
+  fs.writeFileSync(metaPath, JSON.stringify({
     model: model || meta.model,
     native: native || meta.native,
-    dim: meta.dim || pairs[0][1].length,
+    dim,
     count: meta.ids.length + pairs.length,
     ids: [...meta.ids, ...pairs.map(([id]) => id)],
   }, null, 0) + '\n');
@@ -442,6 +542,23 @@ export function readVocab(){
     return out;
   };
   return { model: meta.model, dim, terms: meta.terms, get };
+}
+
+/**
+ * Entry ids are stable: nothing renames one. When a script MERGES entries
+ * (dedupe) or must re-id one, it records old id -> surviving id here, in
+ * store/id-aliases.json (tracked). build-web.mjs publishes it as
+ * web/aliases.json and the browser moves a learner's answer records
+ * (quiz.js migrateMastery); a server will do the same for logged-in users.
+ */
+export function recordAliases(map){
+  const f = path.join(STORE_DIR, 'id-aliases.json');
+  let cur = {};
+  try { cur = JSON.parse(fs.readFileSync(f, 'utf8')); } catch {}
+  for(const [from, to] of Object.entries(map)) if(from && to && from !== to) cur[from] = to;
+  // Chains (a -> b, b -> c) resolve to the end.
+  for(const k of Object.keys(cur)){ let t = cur[k], guard = 0; while(cur[t] && guard++ < 20) t = cur[t]; cur[k] = t; }
+  fs.writeFileSync(f, JSON.stringify(cur, null, 1) + '\n');
 }
 
 export const readJSON = (p, fallback = null) =>

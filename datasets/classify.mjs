@@ -44,9 +44,9 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { readEntries, readSearchVectors, ATLAS_DIR } from './lib/store.mjs';
+import { readEntries, readSearchVectors, ATLAS_DIR, PATHS } from './lib/store.mjs';
 
-const OUT = path.join(ATLAS_DIR, 'taxonomy.json');
+const OUT = PATHS.taxonomy;
 const UA = 'trivia-dev/0.1 (tylerwhattori@gmail.com; personal study project)';
 const LW = 'https://api.wikimedia.org/service/lw/inference/v1/models/outlink-topic-model:predict';
 const WP = 'https://en.wikipedia.org/w/api.php';

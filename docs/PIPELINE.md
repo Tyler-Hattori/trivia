@@ -11,11 +11,11 @@ vertical position means *similarity* rather than category membership.
 ```
 Wikipedia + Wikidata          ingest.mjs      free, no model
         ↓
-  entries.jsonl               the store       one JSON object per line
+  store/entries/*.jsonl       the store       one JSON object per line, ~20 MB chunks
         ↓
   EmbeddingGemma              embed-all.mjs   local, ~200MB, 768→256 dims
         ↓
-  vectors.bin                 int8 + per-row scale
+  store/vectors/*.bin         int8 + per-row scale, 25,000 rows per chunk
         ↓
   subject + region            classify.mjs    free (Wikimedia articletopic) + kNN vote
         ↓
@@ -23,8 +23,53 @@ Wikipedia + Wikidata          ingest.mjs      free, no model
         ↓
   vocab.bin + labels          atlas.mjs       term vectors, cached
         ↓
-  atlas.json / details.json                   what the browser loads
+  atlas/atlas.json + details.json  (generated)
+        ↓
+  topics/*.json               topic.mjs       (generated)
+        ↓
+  web/                        build-web.mjs   the whole-store files the browser fetches, cut small
+        ↓
+  gh-pages branch             deploy.mjs      the published site, one commit, replaced each time
 ```
+
+## What is tracked, what is generated (2026-11-17)
+
+The store grew from 13k to 70k entries in a week, and the single
+`entries.jsonl` reached 83 MB (GitHub refuses 100 MB). Every rebuild also
+committed new copies of ~300 MB of generated files.
+
+- **Tracked on main (the source of truth):** code; `datasets/store/` (entry
+  chunks, vector chunks, layout.json, taxonomy.json, ideas.jsonl, vocab, and
+  id-aliases.json); every hand file (topics.txt, topic-structure.json,
+  topic-overrides.json, topic-notes/, titles*.json, audit*.json, dupes-auto.json,
+  ingest-refused.json). Chunks are cut so an edit rewrites only the chunks it
+  reaches, and appends touch only the last one. `verify.mjs` fails if a store
+  file passes 50 MB. taxonomy.json (44 MB) is the one whole file: chunk it like
+  the entries when it nears that.
+- **Generated, ignored (`.gitignore`):** `datasets/atlas/`, `datasets/topics/`,
+  `datasets/web/`, `series-cache.json`. Rebuild from scratch:
+  `node datasets/atlas.mjs && node datasets/topic.mjs --list --force` (topics.txt
+  lists every topic; `--list` builds them in file order, then run `--all` once
+  so collections and absorbers see their subtopics), which also writes `web/`.
+- **Published:** `node datasets/deploy.mjs` assembles index.html, project/,
+  datasets/lib/, topics/*.json (minus all.json and store-lite.json),
+  atlas/atlas.json and web/ into one commit on `gh-pages` and force-pushes it.
+  GitHub Pages serves that branch (repo setting: Pages source = gh-pages). The
+  site is ~300 MB; Pages allows 1 GB. Past that, the same folder deploys to
+  Cloudflare Pages or R2 unchanged.
+
+What the browser fetches is in docs/TOPICS.md, "What the browser loads".
+Nothing there downloads the whole store any more.
+
+### Stable ids and learner records
+
+An entry id (`dataset:slug:year`) never changes once written, even when its
+date is corrected (the year in the id is then stale; nothing reads it). A
+merge (`scripts/dedupe.mjs`) records old -> kept in `store/id-aliases.json`
+(`recordAliases`); `build-web.mjs` publishes it and the browser moves answer
+records (quiz.js `migrateMastery`). Answers are kept per entry
+(`mastery:v2`), not per topic, so they survive topic renames and count in
+every topic that has the entry. That map is what a login will sync.
 
 ---
 
@@ -573,7 +618,7 @@ Two more that were added after each caught a bug already in the store:
 
 ## The data model
 
-`atlas/entries.jsonl`, one object per line:
+`store/entries/entries-NNN.jsonl`, one object per line:
 
 ```json
 {
@@ -641,7 +686,7 @@ There is no single slot to force a compound value into, which is why
 
 ### Vector storage
 
-`vectors.bin` holds one fixed-width row per entry: a float32 scale followed by
+`store/vectors/map-NNN.bin` (and `search-NNN.bin`) hold one fixed-width row per entry: a float32 scale followed by
 256 int8 components.
 
 Per-row scaling is not an optimisation, it is required. Embeddings arrive
@@ -703,7 +748,7 @@ Rewritten 2026-11-13. **`docs/SEARCH.md` is the authority**; in short:
 - A similarity floor of 0.40 now works because the prefix is there: nonsense
   tops out near 0.34 and real queries start near 0.47. The old claim that no
   threshold could separate them came from embedding the query bare.
-- Search reads `atlas/search-vectors.bin` (768-d, written by `embed-all.mjs`
+- Search reads `store/vectors/search-*.bin` (768-d, written by `embed-all.mjs`
   and `ingest.mjs` from the same embed call as the map vectors). The map keeps
   the 256-d `vectors.bin`, so nothing on the atlas moves.
 - Fails soft: without Ollama it's keyword-only and says so. `/api/embed-query`

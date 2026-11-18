@@ -482,6 +482,9 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     cardLayer.sync(A, placements, {
       filter, dimMode: V.dimMode, selected: V.selected, hover: V.hover, details: A.details,
     });
+    // Cards on screen without their excerpt yet: fetch their cluster's file, repaint when it lands.
+    A.loadDetails(placements.filter((p) => p.tier === 'card' || p.tier === 'detail').map((p) => p.i))
+      .then((got) => { if(got) mark({ paint: true }); });
 
     if(pins.rows.length){
       pinWrap.style.height = `${pins.height}px`;
@@ -730,7 +733,7 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     if(center && i >= 0) centerOn(i);
     if(open && i >= 0){
       detail.open(A, i);
-      A.detailsPromise?.then(() => detail.refresh());
+      A.loadDetails([i]).then(() => detail.refresh());
     }
     mark({ paint: true, rail: true });
   }
@@ -1235,6 +1238,8 @@ export async function openAtlas({ title = 'Atlas' } = {}){
       tip.show(A, i, e.clientX, e.clientY, {
         details: A.details, cluster: A.nodes[A.leaf[i]]?.label,
       });
+      const cx = e.clientX, cy = e.clientY;
+      A.loadDetails([i]).then((got) => { if(got && V.hover === i) tip.show(A, i, cx, cy, { details: A.details, cluster: A.nodes[A.leaf[i]]?.label }); });
     } else {
       tip.hide();
     }
@@ -1601,8 +1606,6 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     },
   };
 
-  // Repaint once excerpts land, so detail cards and previews fill in.
-  A.detailsPromise?.then(() => { detail.refresh(); mark({ paint: true }); });
 
   return { window: w, atlas: A, view: V };
 }

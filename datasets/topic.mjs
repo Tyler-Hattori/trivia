@@ -157,8 +157,9 @@ if(OPT.all){
     for(const ev of t.events || []) a.push('--events', ev);
     if(t.group) a.push('--group', t.group);
     if(OPT.ideas) a.push('--ideas');
-    spawnSync(process.execPath, a, { stdio: 'inherit' });
+    spawnSync(process.execPath, a, { stdio: 'inherit', env: { ...process.env, TOPIC_BATCH: '1' } });
   }
+  buildWeb();
   process.exit(0);
 }
 /*
@@ -276,7 +277,7 @@ function runList(file){
     if(j.key) a.push('--key', j.key);
     return a;
   };
-  const run = (a) => spawnSync(process.execPath, a, { stdio: 'inherit' }).status;
+  const run = (a) => spawnSync(process.execPath, a, { stdio: 'inherit', env: { ...process.env, TOPIC_BATCH: '1' } }).status;
   if(OPT.ingest){
     for(const [i, j] of pending.entries()){
       console.log(`\n  ── ingest ${i + 1}/${pending.length}: ${j.name || j.page}`);
@@ -298,6 +299,12 @@ function runList(file){
     if(run(argsOf(j))) failed.push(j.page);
   }
   console.log(`\n  done: ${pending.length - failed.length} built${failed.length ? `, ${failed.length} failed: ${failed.join(', ')}` : ''}`);
+  buildWeb();
+}
+
+/** datasets/web/ (build-web.mjs): the browser's whole-store files, cut small. Seconds. */
+function buildWeb(){
+  spawnSync(process.execPath, [path.join(HERE, 'build-web.mjs')], { stdio: 'inherit' });
 }
 if(!OPT.page && !OPT.site){
   console.error('usage: node datasets/topic.mjs "History of England" [--events "Timeline of English history"] [--ingest]');
@@ -1958,6 +1965,8 @@ updateIndex(topic);
 updateMembers(topic);
 updateAll(topic);
 writeLite({ entries, taxo });
+// One topic on its own: refresh web/ now. In a batch (--all, --list) the parent does it once at the end.
+if(!process.env.TOPIC_BATCH) buildWeb();
 
 // --- report ---------------------------------------------------------------------
 const n = (f) => out.filter(f).length;

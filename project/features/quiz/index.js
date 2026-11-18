@@ -6,8 +6,9 @@
  * asked you to type a paragraph of Wikipedia; what a question should be is a
  * property of the ENTRY, and `questions.js` derives it there.
  *
- * The data is `datasets/atlas/atlas.json` plus `details.json` — the same two
- * files the atlas renders, loaded through the same `loadAtlas`. That is the
+ * The data is `datasets/atlas/atlas.json` — the file the atlas renders, loaded
+ * through the same `loadAtlas` — plus `web/details/facets.json` (what to ask),
+ * with each excerpt fetched by cluster when its question comes up. That is the
  * point of sharing them rather than re-reading the CSVs: "quiz me on this
  * cluster" is only a question you can ask because the atlas already computed
  * the clusters, and any rebuild of the map is a rebuild of the quiz.
@@ -95,6 +96,8 @@ function startRun(){
 function advance(){
   const i = S.queue.shift();
   S.current = i == null ? null : entries[i];
+  // Its excerpt (shown after grading), from its cluster's details file.
+  if(i != null) A.loadDetails?.([i]);
   S.question = S.current ? questionsFor(S.current) : null;
   S.submitted = false;
   draw();
@@ -398,10 +401,9 @@ export async function openQuiz(){
     try {
       const base = location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '');
       A = await loadAtlas({ base });
-      // Facets and excerpts live in details.json, which `loadAtlas` starts but
-      // does not await. The quiz needs the facets to know what to ask, so unlike
-      // the atlas it cannot draw a first frame without them.
-      await A.detailsPromise;
+      // The quiz needs every facet to know what to ask, so unlike the atlas it
+      // waits for them (one small file); excerpts come per question.
+      A.facets = await fetch(`${base}datasets/web/details/facets.json`).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
     } catch(err){
       $('#app').innerHTML = `
         <div class="bg-white p-8 rounded-3xl border border-zinc-200">
@@ -416,10 +418,11 @@ export async function openQuiz(){
       yearText: A.yearText[i], image: A.image[i], dataset: A.dataset[i],
       topics: A.topics[i] || [], x0: A.x0[i], x1: A.x1[i],
       isSpan: Boolean(A.isSpan[i]),
-      facets: A.details?.[A.id[i]]?.facets || {},
+      facets: A.facets?.[A.id[i]] || {},
       // Never a question — see questions.js — but shown once the answers are in,
       // which is the moment it stops being a giveaway and starts being the point.
-      excerpt: A.details?.[A.id[i]]?.excerpt || '',
+      // Read live: it arrives with its cluster's details file (fetched below).
+      get excerpt(){ return A.details?.[A.id[i]]?.excerpt || ''; },
     }));
   }
 

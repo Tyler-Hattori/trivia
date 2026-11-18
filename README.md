@@ -48,15 +48,19 @@ project/
   features/atlas/             THE ATLAS renderer
   features/quiz/              THE QUIZ — questions.js derives what to ask
 datasets/
-  atlas/                      the compiled store the browser fetches
-  topics/                     one JSON per topic + index.json, all.json, members*.json
-  topics.txt                  the topics to build
+  store/                      THE STORE (tracked): entries/ chunks, vectors/ chunks,
+                              layout, taxonomy, ideas, vocab, id-aliases
+  atlas/                      generated: atlas.json (+ details.json, knn cache)
+  topics/                     generated: one JSON per topic + index.json, members*.json
+  web/                        generated: the whole-store files the browser fetches, cut small
+  topics.txt                  every topic (the registry); topic-structure.json the tree
   topic-overrides.json        hand corrections per topic (see docs/TOPICS.md)
   *.csv                       the original hand-curated sources (read by migrate)
   crawl.txt, crawl-state.json what the crawler fetches, and how far it got
   crawl.mjs ingest.mjs        the pipeline — see below
   classify.mjs embed-all.mjs
   atlas.mjs topic.mjs serve.mjs
+  build-web.mjs deploy.mjs    web/ files; publish to the gh-pages branch
   lib/                        shared code (store, cluster, wiki, years, search…)
   qa/                         verify + browser QA suites + reload
   scripts/                    one-off/maintenance scripts (own README)
@@ -71,10 +75,12 @@ Everything is free; only embedding uses the local GPU (Ollama, throttled).
 
 ```
 crawl.mjs    crawl.txt lines: category | search: articletopic:<subject> | wikidata: <type> <from>-<to>
-  → ingest.mjs     Wikipedia/Wikidata → entries.jsonl, embeds new rows (map 256-d + search 768-d)
-  → classify.mjs   subject + region per entry → atlas/taxonomy.json (Wikimedia Lift Wing + kNN vote)
-  → atlas.mjs      known top layers + clusters below → atlas.json / details.json
+  → ingest.mjs     Wikipedia/Wikidata → store/entries, embeds new rows (map 256-d + search 768-d)
+  → classify.mjs   subject + region per entry → store/taxonomy.json (Wikimedia Lift Wing + kNN vote)
+  → atlas.mjs      known top layers + clusters below → atlas/atlas.json, details.json
 topic.mjs "History of X" [--events "Timeline of X"] [--ingest]  → datasets/topics/<slug>.json
+build-web.mjs    (run by the above) → datasets/web/
+deploy.mjs       → the gh-pages branch, which GitHub Pages serves (one commit, replaced each time)
 ```
 
 The crawler is resumable and runs `classify` and an incremental `atlas` itself.

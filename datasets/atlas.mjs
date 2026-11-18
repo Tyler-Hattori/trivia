@@ -31,13 +31,14 @@
  */
 
 import fs from 'node:fs';
+import path from 'node:path';
 import {
   readEntries, readVectors, writeJSON, readJSON, readVocab, writeVocab,
   truncateNormalize, PATHS, DIM,
 } from './lib/store.mjs';
 import {
   buildTree, assignY, labelNodes, assignColors, leavesInOrder,
-  nearestLeaf, centroid, cosine, pc1Projections, knn, harvestVocabulary,
+  nearestLeaf, centroid, cosine, pc1Projections, knn, dot, harvestVocabulary,
 } from './lib/cluster.mjs';
 
 import { buildTaxonomyTree, descendFrom, disambiguateSiblings, taxoKey, loadTaxonomy } from './lib/taxotree.mjs';
@@ -313,8 +314,49 @@ const xMax = Math.max(...rows.map((e) => e.end ?? e.start));
 // Nearest neighbours, for "more like this" and the quiz's topic filter
 // ---------------------------------------------------------------------------
 
-console.log(`  computing ${KNN_K}-NN…`);
-const neighbours = rows.map((e, i) => knn(m, dim, n, e.vec, KNN_K, i).map(([j]) => j));
+/*
+ * Brute force is n x n dot products: 19 minutes at 70,000 entries, and four
+ * times that at double. Cached by id in atlas/knn-cache.json (generated, not
+ * tracked): an entry already in the cache only has to be compared with the NEW
+ * entries, and a new one with everything. Full recompute with --rebuild, or
+ * when the cache is missing or from another model.
+ */
+const t0 = Date.now();
+const idxOf = new Map(rows.map((e, i) => [e.id, i]));
+let cache = null;
+if(!REBUILD) try { cache = JSON.parse(fs.readFileSync(PATHS.knnCache, 'utf8')); if(cache.model !== vec.model || cache.k !== KNN_K) cache = null; } catch {}
+const cached = cache?.nb || {};
+const fresh = [], old = [];
+rows.forEach((e, i) => {
+  const c = cached[e.id];
+  // Stale if a neighbour left the store.
+  if(c && c.every(([id]) => idxOf.has(id))) old.push(i); else fresh.push(i);
+});
+console.log(`  computing ${KNN_K}-NN… (${fresh.length} new or stale, ${old.length} from cache)`);
+const nbs = new Array(n);
+for(const i of fresh) nbs[i] = knn(m, dim, n, rows[i].vec, KNN_K, i).map(([j, s]) => [j, s]);
+if(fresh.length){
+  // Each cached entry: does a new entry beat its current k-th neighbour?
+  for(const i of old){
+    const list = cached[rows[i].id].map(([id, s]) => [idxOf.get(id), s]);
+    const have = new Set(list.map(([j]) => j));
+    for(const j of fresh){
+      // Already a neighbour (a re-embedded or re-cached entry): listing it twice
+      // would push out a real one.
+      if(j === i || have.has(j)) continue;
+      const s = dot(m, dim, j, rows[i].vec);
+      if(list.length < KNN_K || s > list[list.length - 1][1]){
+        list.push([j, s]); have.add(j); list.sort((a, b) => b[1] - a[1]); if(list.length > KNN_K) have.delete(list.pop()[0]);
+      }
+    }
+    nbs[i] = list;
+  }
+} else for(const i of old) nbs[i] = cached[rows[i].id].map(([id, s]) => [idxOf.get(id), s]);
+const neighbours = nbs.map((l) => l.map(([j]) => j));
+fs.mkdirSync(path.dirname(PATHS.knnCache), { recursive: true });
+fs.writeFileSync(PATHS.knnCache, JSON.stringify({ model: vec.model, k: KNN_K,
+  nb: Object.fromEntries(rows.map((e, i) => [e.id, nbs[i].map(([j, s]) => [rows[j].id, +s.toFixed(5)])])) }));
+console.log(`  ${KNN_K}-NN in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
 
 // ---------------------------------------------------------------------------
 // Emit
@@ -367,6 +409,9 @@ const atlas = {
     // How well-known this entry is, [0,1], from Wikidata sitelinks. Never
     // embedded — like `dataset`, it's metadata about the entry, not the entry.
     fame:     rows.map((e) => r5(fameOf(e))),
+    // Has an excerpt: the "has:excerpt" filter, without loading every excerpt
+    // (details are fetched per cluster now: datasets/web/details/).
+    hx:       rows.map((e) => (e.excerpt ? 1 : 0)),
     knn:      neighbours,
   },
 
@@ -432,3 +477,11 @@ for(const c of nodes[0].children){
 
 const kb = (p) => Math.round(fs.statSync(p).size / 1024);
 console.log(`\n  wrote atlas.json ${kb(PATHS.atlas)}KB · details.json ${kb(PATHS.details)}KB · layout.json ${kb(PATHS.layout)}KB`);
+
+// The browser's details files are cut from atlas.json + details.json: refresh them
+// (and the rest of datasets/web/) when the topics' files exist.
+if(fs.existsSync(path.join(PATHS.topics, 'all.json'))){
+  const { spawnSync } = await import('node:child_process');
+  const { fileURLToPath } = await import('node:url');
+  spawnSync(process.execPath, [fileURLToPath(new URL('./build-web.mjs', import.meta.url))], { stdio: 'inherit' });
+}

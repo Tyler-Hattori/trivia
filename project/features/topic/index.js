@@ -29,7 +29,8 @@
 import { injectStyles } from './styles.js';
 import { GEO, BAR, LANE, makeScale, ticks, anchorYear, fmtYear, fmtRange, fmtWhen, summary, borrowedPortrait, setNarrow, layoutTimeline, layoutLanes, DEFAULT_PINNED } from './layout.js';
 import { bm25Index, docText } from '../../../datasets/lib/textsearch.mjs';
-import { renderQuiz, loadMastery, isKnown, isDue, dueSummary } from './quiz.js';
+import { renderQuiz, loadMastery, masteryIn, migrateMastery, isKnown, isDue, dueSummary } from './quiz.js';
+import { topicsMeta, topicRowsIn, topicRows } from './webdata.js';
 import { renderSearch, parseWhen } from './search.js';
 import { thumbUrl, fullUrl } from '../../utils/helpers.js';
 
@@ -50,11 +51,15 @@ let searchSeq = 0;
 
 export function isTopicRoute(){ return /^#\/(topic|topics|quiz|review|search)(\/|$)/.test(location.hash); }
 
+let migrated = null;
 export async function route(){
   const h = location.hash;
   if(!isTopicRoute()){ close(); return false; }
   injectStyles();
   open();
+  // Once per page load: move answer records whose entry ids the store has merged or renamed.
+  migrated ||= migrateMastery(BASE).catch(() => {});
+  await migrated;
   if(/^#\/(quiz|review)/.test(h)){ await showCross(h.startsWith('#/review') ? 'review' : 'quiz'); return true; }
   if(h.startsWith('#/search')){ T = null; V = null; await renderSearch(root, h.replace(/^#\/search\/?/, '')); return true; }
   const m = h.match(/^#\/topic\/([a-z0-9-]+)(?:\/(read|learn|timeline|quiz))?/);
@@ -179,19 +184,6 @@ async function loadMembers(){
 }
 let topicTitles = null;
 
-/** topics/all.json: every timeline entry of every topic, compact (topic.mjs). For Meanwhile and the cross-topic quiz. */
-let allP = null;
-function loadAll(){
-  if(!allP) allP = getJSON('datasets/topics/all.json').then((d) => {
-    for(const r of d.items){
-      r.anchor = r.i ? null : anchorYear({ type: r.ty, kind: r.k ? 'span' : 'point', start: r.s, end: r.e, dataset: r.d });
-    }
-    d.items.sort((a, b) => (a.anchor ?? Infinity) - (b.anchor ?? Infinity));
-    return d;
-  }).catch(() => { allP = null; return { topics: {}, items: [] }; });
-  return allP;
-}
-
 /*
  * Meanwhile: what the OTHER topics were doing at the same time. The window
  * grows with distance from today, because "the same time" means a few years in
@@ -206,11 +198,13 @@ function meanwhileRange(it){
   return [it.anchor - w, it.anchor + w, w];
 }
 async function meanwhile(it, slug){
-  const A = await loadAll();
   const [lo, hi, w] = meanwhileRange(it);
+  // Only the time buckets around these years (datasets/web/trows/), not every topic's rows.
+  const [M, rows] = await Promise.all([topicsMeta().catch(() => ({ topics: {} })), topicRowsIn(lo, hi).catch(() => [])]);
+  const A = { topics: M.topics };
   const mid = (lo + hi) / 2;
   const by = new Map();
-  for(const r of A.items){
+  for(const r of rows){
     if(r.i || r.anchor < lo || r.anchor > hi || r.x === slug || r.id === it.id) continue;
     (by.get(r.x) || by.set(r.x, []).get(r.x)).push(r);
   }
@@ -279,7 +273,7 @@ async function showList(){
   const nKids = new Map();
   for(const t of idx.topics) if(t.parent && !t.absorbedInto) nKids.set(t.parent, (nKids.get(t.parent) || 0) + 1);
   const all = idx.topics.filter((t) => !t.absorbedInto).map((t) => {
-    const m = loadMastery(t.slug);
+    const m = masteryIn(t.slug);
     const known = Object.values(m).filter(isKnown).length;
     const seen = Object.keys(m).length;
     const touched = Math.max(lastOpened(t.slug), ...Object.values(m).map((x) => x.at || 0));
@@ -396,43 +390,67 @@ async function showList(){
 // ---------------------------------------------------------------------------
 
 /*
- * One quiz over every topic, from topics/all.json. It is the topic quiz
- * (quiz.js) run on a synthetic topic whose "chapters" are the topics, so Order
- * asks "which came first" across subjects ("the Meiji Restoration or the Paris
- * Commune?"), and every answer is recorded in the topic the entry belongs to.
- * Review is the same with only what is due.
+ * One quiz over many topics. It is the topic quiz (quiz.js) run on a synthetic
+ * topic whose "chapters" are the topics, so Order asks "which came first"
+ * across subjects ("the Meiji Restoration or the Paris Commune?"), and every
+ * answer is recorded against its entry.
+ *
+ * It loads per-topic files (datasets/web/trows/t/), never every topic: the
+ * topics in scope, or with no scope a sample of SAMPLE topics (those with
+ * something due first, then ones you have opened, then random). Review is the
+ * same with what is due, from the topics it was answered in.
  */
 const CROSS_KEY = 'topics:cross:v1';
 const XPAL = ['#b45309', '#2563eb', '#7c3aed', '#be123c', '#15803d', '#0e7490', '#a16207', '#4f46e5', '#c2410c', '#0f766e', '#9333ea', '#475569', '#db2777', '#65a30d'];
+const SAMPLE = 12;
 
 async function showCross(kind){
   T = null; V = null;
   root.innerHTML = '<div class="tp-empty">Loading…</div>';
-  const A = await loadAll();
-  const slugs = Object.keys(A.topics).sort((a, b) => A.topics[a].title.localeCompare(A.topics[b].title));
+  const [M, idxRows] = await Promise.all([topicsMeta().catch(() => ({ topics: {} })), loadIndex().then((d) => d.topics)]);
+  const meta = new Map(idxRows.map((t) => [t.slug, t]));
+  const slugs = Object.keys(M.topics).sort((a, b) => M.topics[a].title.localeCompare(M.topics[b].title));
   const idx = new Map(slugs.map((x, i) => [x, i]));
-  const items = A.items.filter((r) => idx.has(r.x)).map((r) => ({
-    id: `${r.x}|${r.id}`, eid: r.id, x: r.x, title: r.t, yearText: r.y || '', start: r.s, end: r.e ?? null,
-    kind: r.k ? 'span' : 'point', type: r.ty, key: !!r.key, image: r.im || '', context: r.c || '',
-    chapter: idx.get(r.x), onTimeline: !r.i, anchor: r.anchor, dataset: r.d || '',
-    ...(r.i ? { isIdea: true, keyIdea: true, def: r.def || '', excerpt: r.def || '', start: null } : {}),
-  }));
-  const ST = {
-    slug: `__${kind}`, title: 'all topics', synthetic: true, reviewOnly: kind === 'review',
-    chapters: slugs.map((x, i) => ({ id: i, title: A.topics[x].title, color: XPAL[i % XPAL.length] })),
-    items, byId: new Map(items.map((it) => [it.id, it])),
-    loadMem(){
-      const m = {};
-      for(const x of slugs) for(const [id, rec] of Object.entries(loadMastery(x))) m[`${x}|${id}`] = rec;
-      return m;
-    },
-    memRef: (id) => { const k = id.indexOf('|'); return [id.slice(0, k), id.slice(k + 1)]; },
-  };
   let P = {};
   try { P = JSON.parse(localStorage.getItem(CROSS_KEY)) || {}; } catch {}
   // Review covers anything you have answered, essential or not.
   const X = { show: kind === 'review' ? 'all' : (P.show || 'key'), scope: new Set((P.scope || []).map((x) => idx.get(x)).filter((i) => i != null)) };
   const save = () => localStorage.setItem(CROSS_KEY, JSON.stringify({ show: kind === 'review' ? P.show : X.show, scope: [...X.scope].map((i) => slugs[i]) }));
+
+  const mem = () => loadMastery();
+  const due = dueSummary();
+  // Which topics to load: the scope, else a sample.
+  const pickTopics = () => {
+    if(X.scope.size) return [...X.scope].map((i) => slugs[i]);
+    if(kind === 'review') return slugs.filter((x) => due.per[x]);
+    const opened = slugs.filter((x) => lastOpened(x)).sort((a, b) => lastOpened(b) - lastOpened(a));
+    const dueFirst = slugs.filter((x) => due.per[x]).sort((a, b) => due.per[b] - due.per[a]);
+    const rest = slugs.filter((x) => !due.per[x] && !lastOpened(x)).sort(() => Math.random() - 0.5);
+    return [...new Set([...dueFirst, ...opened, ...rest])].slice(0, SAMPLE);
+  };
+  const loaded = new Map();   // slug -> rows
+  const toItem = (r) => ({
+    id: `${r.x}|${r.id}`, eid: r.id, x: r.x, title: r.t, yearText: r.y || '', start: r.s, end: r.e ?? null,
+    kind: r.k ? 'span' : 'point', type: r.ty, key: !!r.key, image: r.im || '', context: r.c || '',
+    chapter: idx.get(r.x), onTimeline: !r.i, anchor: r.anchor, dataset: r.d || '',
+    ...(r.i ? { isIdea: true, keyIdea: true, def: r.def || '', excerpt: r.def || '', start: null } : {}),
+  });
+  const ST = {
+    slug: `__${kind}`, title: 'all topics', synthetic: true, reviewOnly: kind === 'review',
+    chapters: slugs.map((x, i) => ({ id: i, title: M.topics[x].title, color: XPAL[i % XPAL.length] })),
+    items: [], byId: new Map(),
+    loadMem(){ const g = mem(), m = {}; for(const it of ST.items) if(g[it.eid]) m[it.id] = g[it.eid]; return m; },
+    memRef: (id) => { const k = id.indexOf('|'); return [id.slice(0, k), id.slice(k + 1)]; },
+  };
+  async function load(){
+    const want = pickTopics().filter((x) => !loaded.has(`${x}:${X.show}`));
+    await Promise.all(want.map(async (x) => loaded.set(`${x}:${X.show}`, await topicRows(x, X.show === 'key' && kind !== 'review'))));
+    const rows = pickTopics().flatMap((x) => loaded.get(`${x}:${X.show}`) || []);
+    ST.items = rows.filter((r) => idx.has(r.x)).map(toItem);
+    ST.byId = new Map(ST.items.map((it) => [it.id, it]));
+    ST.sampled = !X.scope.size && kind !== 'review' ? pickTopics() : null;
+  }
+  await load();
 
   root.innerHTML = `
     <div class="tp-bar">
@@ -452,31 +470,35 @@ async function showCross(kind){
     </div>`;
 
   const rail = () => {
-    const mem = ST.loadMem(), now = Date.now();
+    const g = mem(), now = Date.now();
+    // Loaded topics: exact. Others: the index's counts and what you answered there.
     const stat = (i) => {
-      const its = items.filter((it) => it.chapter === i && (X.show === 'all' || it.key));
-      return { n: its.length, known: its.filter((it) => isKnown(mem[it.id])).length, due: its.filter((it) => isDue(mem[it.id], now)).length };
+      const x = slugs[i];
+      const its = ST.items.filter((it) => it.chapter === i && (X.show === 'all' || it.key));
+      if(its.length) return { n: its.length, known: its.filter((it) => isKnown(g[it.eid])).length, due: its.filter((it) => isDue(g[it.eid], now)).length };
+      const recs = Object.values(g).filter((r) => r.x?.includes(x));
+      return { n: (X.show === 'all' ? meta.get(x)?.count : meta.get(x)?.key) || 0, known: recs.filter(isKnown).length, due: recs.filter((r) => isDue(r, now)).length };
     };
     const row = (i, label, color, s) => `<button class="tp-toc ${i === 'all' ? (X.scope.size ? '' : 'on') : X.scope.has(i) ? 'on' : ''}" data-xtoc="${i}" style="--c:${color}">
       <span class="dot"></span><span class="tx"><span class="nm">${esc(label)}</span>
-      ${s.n ? `<span class="tp-prog"><i style="width:${(100 * s.known / s.n).toFixed(0)}%"></i></span>` : ''}</span>
+      ${s.n ? `<span class="tp-prog"><i style="width:${(100 * Math.min(1, s.known / s.n)).toFixed(0)}%"></i></span>` : ''}</span>
       <span class="k">${kind === 'review' ? (s.due ? `<b class="tp-due">${s.due}</b>` : '–') : `${s.known}/${s.n}`}</span></button>`;
     const stats = ST.chapters.map((c) => stat(c.id));
     const tot = stats.reduce((a, b) => ({ n: a.n + b.n, known: a.known + b.known, due: a.due + b.due }), { n: 0, known: 0, due: 0 });
     root.querySelector('#tpRail').innerHTML = `
       <button class="tp-btn tp-mob tp-railx" data-x="toc" title="Close">✕</button>
       <div class="hd">${kind === 'review' ? 'Due in' : 'Quiz on'}</div>
-      ${row('all', 'Every topic', '#0f172a', tot)}
+      ${row('all', ST.sampled ? `A mix of ${ST.sampled.length} topics` : 'Every topic', '#0f172a', tot)}
       ${ST.chapters.map((c, i) => (kind === 'review' && !stats[i].due && !X.scope.has(i) ? '' : row(c.id, c.title, c.color, stats[i]))).join('')}
       <div class="ft tp-meta">${kind === 'review'
         ? 'Right answers come back after 1, 3, 7, 16, 35 and 90 days; misses after ten minutes.'
-        : 'Order questions mix topics: what came first, here or there? Every answer counts in its own topic.'}</div>`;
+        : `Order questions mix topics: what came first, here or there? ${ST.sampled ? 'With no topic picked, each visit mixes a dozen (what is due first). Pick topics to choose.' : ''}`}</div>`;
   };
   const quiz = () => renderQuiz(root.querySelector('#tpScroll'), ST, {
     show: X.show, chapters: X.scope,
     onAnswer: rail,
     onOpen: (id) => { const it = ST.byId.get(id); if(it){ pendingSelect = it.eid; location.hash = `#/topic/${it.x}`; } },
-    onWiden: kind === 'review' ? () => { location.hash = '#/quiz'; } : X.scope.size ? () => { X.scope.clear(); save(); rail(); quiz(); } : null,
+    onWiden: kind === 'review' ? () => { location.hash = '#/quiz'; } : X.scope.size ? () => { X.scope.clear(); save(); load().then(() => { rail(); quiz(); }); } : null,
   });
   rail(); quiz();
   root.onclick = (ev) => {
@@ -489,7 +511,8 @@ async function showCross(kind){
       if(i == null) X.scope.clear();
       else if(X.scope.has(i)) X.scope.delete(i); else X.scope.add(i);
       root.querySelector('#tpRail').classList.remove('open');
-      save(); rail(); quiz();
+      save();
+      load().then(() => { rail(); quiz(); });
     }
   };
 }

@@ -38,61 +38,38 @@ export async function loadAtlas({ base = '', onProgress = () => {} } = {}){
   const raw = await res.json();
   const A = buildModel(raw);
 
-  // Excerpts are only needed when something is opened or hovered, so they load
-  // after the atlas resolves and never block the first frame.
-  A.details = null;
-  A.detailsPromise = fetch(`${base}datasets/atlas/details.json`)
-    .then((r) => (r.ok ? r.json() : {}))
-    .then((d) => { A.details = d; return d; })
-    .catch(() => { A.details = {}; return {}; });
-
   /*
-   * Same non-fatal background-load shape as details.json, for semantic
-   * search. `vectors.bin`'s row order is NOT `atlas.json`'s point order — it's
-   * whatever order entries were embedded in, id-keyed via `vectors.json` — so
-   * `A.vecRowOf` is the join, built once here rather than per query. Absent
-   * entirely (fetch failure, or a store built before this existed) just means
-   * search stays plain substring matching; nothing above this depends on it.
+   * Excerpts load on demand, by cluster: datasets/web/details/ (build-web.mjs)
+   * holds them in files of ~200 points from neighbouring leaves, so the cards
+   * on screen need a few small files, not the whole store's 60 MB of text.
+   * `A.loadDetails(indices)` fetches what is missing and resolves true if
+   * anything new arrived (callers repaint then). The 17 MB vectors.bin the
+   * atlas used to fetch is gone: semantic search is /api/search.
    */
-  A.vecRowOf = null;
-  A.vectorsBuf = null;
-  A.vectorsDim = 0;
-  A.vectorsPromise = Promise.all([
-    fetch(`${base}datasets/atlas/vectors.bin`).then((r) => (r.ok ? r.arrayBuffer() : null)),
-    fetch(`${base}datasets/atlas/vectors.json`).then((r) => (r.ok ? r.json() : null)),
-  ]).then(([buf, meta]) => {
-    if(!buf || !meta || !meta.ids?.length) return;
-    A.vectorsBuf = buf;
-    A.vectorsDim = meta.dim;
-    A.vecRowOf = new Map(meta.ids.map((id, i) => [id, i]));
-  }).catch(() => {});
+  A.details = {};
+  const leavesP = fetch(`${base}datasets/web/details/leaves.json`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  const groupP = new Map();
+  A.loadDetails = async (indices) => {
+    const L = await leavesP;
+    if(!L) return false;
+    const need = new Set();
+    for(const i of indices){
+      if(i == null || i < 0 || A.details[A.id[i]]) continue;
+      const g = L.groups[`${A.leaf[i]}:${Math.floor(A.leafRank[i] / L.part)}`];
+      if(g != null && !groupP.has(g)) need.add(g);
+    }
+    if(!need.size) return false;
+    await Promise.all([...need].map((g) => {
+      const pr = fetch(`${base}datasets/web/details/l-${String(g).padStart(3, '0')}.json`).then((r) => (r.ok ? r.json() : {}))
+        .then((d) => { Object.assign(A.details, d); }).catch(() => { groupP.delete(g); });
+      groupP.set(g, pr);
+      return pr;
+    }));
+    return true;
+  };
 
   onProgress('indexing…');
   return A;
-}
-
-/**
- * Cosine similarity between point `i`'s stored embedding and a query vector.
- * Both sides are unit-normalised by construction (entries at embed time,
- * queries by `truncateNormalize` server-side), so a plain dot product IS the
- * cosine similarity — no separate magnitude division needed.
- *
- * Returns null when vectors haven't loaded yet, or this point has none (a
- * mined event or an entry added before `vectors.bin` existed for it) — the
- * caller treats null as "no semantic opinion", not as a mismatch.
- */
-export function cosineToQuery(A, i, queryVec){
-  if(!A.vecRowOf) return null;
-  const row = A.vecRowOf.get(A.id[i]);
-  if(row == null) return null;
-  const dim = A.vectorsDim;
-  const rowBytes = 4 + dim;
-  const dv = new DataView(A.vectorsBuf, row * rowBytes, 4);
-  const scale = dv.getFloat32(0, true);
-  const i8 = new Int8Array(A.vectorsBuf, row * rowBytes + 4, dim);
-  let dot = 0;
-  for(let d = 0; d < dim; d++) dot += i8[d] * scale * queryVec[d];
-  return dot;
 }
 
 /**
@@ -152,9 +129,17 @@ export function buildModel(raw){
     // a store built before fame existed; an all-zero fallback just means
     // nothing gets the highlight, same fallback shape as openEnded above.
     fame: Float32Array.from(P.fame || P.kind.map(() => 0)),
+    // Has an excerpt (the has:excerpt filter, before any excerpt is loaded).
+    hx: Uint8Array.from(P.hx || P.kind.map(() => 1)),
 
     nodes: raw.nodes,
   };
+  // A point's rank among its leaf's points, in point order: which details file holds it.
+  {
+    const seen = new Map();
+    A.leafRank = new Int32Array(n);
+    for(let i = 0; i < n; i++){ const l = A.leaf[i]; const r = seen.get(l) || 0; A.leafRank[i] = r; seen.set(l, r + 1); }
+  }
 
   // ---- tree helpers -------------------------------------------------------
   // Depth-first order is the vertical order, since the build assigned y by
@@ -433,7 +418,7 @@ export function runFilter(A, { query, topics, datasets, mode, semanticMatches, c
     // "subject:history" also takes "History & Society › Military and warfare".
     if(q.subjects.length && !q.subjects.every((s) => A.subject[i].toLowerCase().includes(s))) continue;
     if(q.regions.length && !q.regions.every((r) => A.region[i].toLowerCase().includes(r))) continue;
-    if(q.flags.includes('excerpt') && !A.details?.[A.id[i]]?.excerpt) continue;
+    if(q.flags.includes('excerpt') && !A.hx[i]) continue;
 
     if(q.topics.length){
       const t = A.topics[i] || [];

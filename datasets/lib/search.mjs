@@ -11,7 +11,7 @@
  */
 
 import fs from 'node:fs';
-import { readEntries, readSearchVectors, readVectors, PATHS } from './store.mjs';
+import { readEntries, readSearchVectors, readVectors, PATHS, storeStamp } from './store.mjs';
 import { embedQuery, ensureUp } from './ollama.mjs';
 import { bm25Index, docText, fuse, cutSemantic } from './textsearch.mjs';
 
@@ -23,7 +23,7 @@ const KW_SEM_MIN = 0.26;   // Norman Conquest is 0.277 to "battle of hastings"; 
 const mtime = (p) => { try { return fs.statSync(p).mtimeMs; } catch { return 0; } };
 
 function load(){
-  const key = `${mtime(PATHS.entries)}|${mtime(PATHS.searchVectors)}|${mtime(PATHS.vectors)}`;
+  const key = String(storeStamp());
   if(cache && cache.key === key) return cache;
 
   const entries = readEntries();

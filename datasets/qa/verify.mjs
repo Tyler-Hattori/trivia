@@ -497,7 +497,41 @@ check('no JS-eaten characters inside the CSS template literal', () => {
 
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Growth: what git holds and what the browser fetches
+// ---------------------------------------------------------------------------
+
+const walkFiles = (d) => (fs.existsSync(d) ? fs.readdirSync(d).flatMap((f) => { const p = path.join(d, f); return fs.statSync(p).isDirectory() ? walkFiles(p) : [p]; }) : []);
+
+check('no store file is near GitHub\'s 100 MB limit', () => {
+  // store/ is tracked; chunks are cut at ~20 MB. taxonomy.json is the one whole file.
+  const big = walkFiles(PATHS.store).filter((f) => fs.statSync(f).size > 50e6);
+  assert(!big.length, `over 50 MB: ${big.map((f) => path.relative(PATHS.store, f)).join(', ')} (chunk it like entries)`);
+  const t = fs.existsSync(PATHS.taxonomy) ? fs.statSync(PATHS.taxonomy).size : 0;
+  return `largest whole file taxonomy.json ${(t / 1e6).toFixed(0)} MB`;
+});
+
+check('web/ is built from this store and nothing in it is large', () => {
+  const W = path.join(path.dirname(PATHS.topics), 'web');
+  const man = readJSON(path.join(W, 'manifest.json'));
+  assert(man, 'no web/manifest.json: run node datasets/build-web.mjs');
+  const files = walkFiles(W);
+  const big = files.filter((f) => fs.statSync(f).size > 1.5e6);
+  assert(!big.length, `${big.length} files over 1.5 MB, e.g. ${path.relative(W, big[0] || '')}`);
+  const lite = readJSON(path.join(PATHS.topics, 'store-lite.json'));
+  assert(!lite || lite.items.length === man.N, `web/ has ${man.N} rows, store-lite ${lite?.items.length}: rebuild web/`);
+  return `${files.length} files`;
+});
+
+check('id aliases point at entries that exist', () => {
+  const A = readJSON(path.join(PATHS.store, 'id-aliases.json'), {});
+  const ids = new Set(entries.map((e) => e.id));
+  const bad = Object.entries(A).filter(([, to]) => !ids.has(to));
+  assert(!bad.length, `${bad.length} aliases to missing ids, e.g. ${bad[0]?.join(' -> ')}`);
+  return `${Object.keys(A).length} aliases`;
+});
+
 const sizeKB = (p) => (fs.existsSync(p) ? Math.round(fs.statSync(p).size / 1024) : 0);
-console.log(`\n  payload: atlas.json ${sizeKB(PATHS.atlas)}KB · details.json ${sizeKB(PATHS.details)}KB · vectors.bin ${sizeKB(PATHS.vectors)}KB`);
+console.log(`\n  browser payload at start: atlas.json ${sizeKB(PATHS.atlas)}KB (atlas only) · topics/index.json ${sizeKB(path.join(PATHS.topics, 'index.json'))}KB`);
 console.log(`  ${pass} passed, ${fails.length} failed\n`);
 process.exit(fails.length ? 1 : 0);

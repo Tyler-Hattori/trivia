@@ -184,8 +184,8 @@ export function createDetail(root, hooks = {}){
   function open(atlas, i){
     A = atlas;
     current = i;
-    // The excerpt may still be in flight on a fast first click.
-    if(!A.details) A.detailsPromise?.then(() => { if(current === i) render(); });
+    // The excerpt may not be loaded yet (details come by cluster, on demand).
+    if(!A.details?.[A.id[i]]) A.loadDetails?.([i]).then(() => { if(current === i) render(); });
     render();
   }
 

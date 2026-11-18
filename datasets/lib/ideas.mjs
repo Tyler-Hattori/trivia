@@ -5,7 +5,7 @@
  * a store of DATED entries: everything there has an x on the atlas, and
  * verify.mjs, the atlas, the cluster quiz and search all assume it.
  *
- * So ideas live beside it, in datasets/atlas/ideas.jsonl, one per line:
+ * So ideas live beside it, in datasets/store/ideas.jsonl, one per line:
  *   { id, title, subtitle, excerpt, image, wiki, qid, fetched }
  * plus a list of pages that have no usable summary (so they are not refetched):
  *   { title, missing: true, fetched }
@@ -22,7 +22,7 @@ import { PATHS, slugify } from './store.mjs';
 import { getJSON } from './wikilib.mjs';
 import { stripApparatus } from './wiki.mjs';
 
-const FILE = path.join(path.dirname(PATHS.entries || path.join(PATHS.topics, '..', 'atlas', 'entries.jsonl')), 'ideas.jsonl');
+const FILE = PATHS.ideas;
 
 export function readIdeas(){
   const byTitle = new Map();
