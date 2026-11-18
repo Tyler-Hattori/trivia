@@ -225,9 +225,14 @@ timeline; spans that cover far more than the view are dropped as umbrellas.
 4. **Logins** (when asked): Supabase auth + a `progress(user, entry_id,
    record)` table with row-level security; on first login upload `mastery:v2`;
    apply `web/aliases.json` server-side too. No server of our own.
-5. **Restyle the atlas to match the Lanes style** (the user will ask). Canvas
-   (`paint.js`); **`docs/ATLAS.md` lists decisions not to re-litigate**; ask
-   before changing any. Before/after screenshots desktop + 390px; qa-atlas.
+5. **Atlas in the Lanes style: look pass DONE (aefa973, on `restructure`)**; see
+   docs/ATLAS.md "Look: the Lanes style". The structural half waits on the
+   user's answers (each changes an ATLAS.md decision): packed rows vs
+   embedding y; retire the rail; labels + round portraits instead of image
+   cards; fame by weight only; era bands + overview strip in the header; a
+   smaller toolbar (on a phone it takes a quarter of the screen). Screenshot
+   helper for the popup: `/tmp/shots/atlas-shot.mjs out.png w h mobile js`
+   (`REOPEN=1` reopens it at the emulated width, needed to test phone boot).
 6. Lanes polish: compress empty rows in quiet stretches; slide point labels;
    less near-duplicate zoom fill.
 
