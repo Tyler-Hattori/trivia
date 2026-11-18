@@ -31,7 +31,7 @@ create policy "own progress" on public.progress
    `http://localhost:8777/`.
 3. Email magic link works out of the box (Supabase's own mailer is rate-limited
    to a few emails an hour; add SMTP later if needed).
-4. Google: Authentication > Providers > Google needs a Google Cloud OAuth
+4. Google (then set `GOOGLE_ENABLED = true` in sync.js): Authentication > Providers > Google needs a Google Cloud OAuth
    client (Web; authorised redirect URI
    `https://oysegbcdjxkrtaokinrt.supabase.co/auth/v1/callback`), then its id
    and secret pasted in Supabase.

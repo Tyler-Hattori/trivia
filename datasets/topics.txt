@@ -151,3 +151,20 @@ History of Scotland | name=Scotland | group=Countries
 History of Israel | name=Israel | group=Countries
 History of Ukraine | name=Ukraine | group=Countries
 History of Iraq | name=Iraq | group=Countries
+
+# Sports (2026-11-19): narrative from each history article (prose=), winners from
+# the lists (events=; read by the results recipes in lib/results.mjs)
+History of sport | name=Sports | prose=History of sport; Sports dynasty | group=Sports
+History of association football | name=Association football | events=Timeline of association football; List of FIFA World Cup finals; List of European Cup and UEFA Champions League finals; List of English football champions | prose=History of association football; History of the FIFA World Cup | group=Sports
+Olympic Games | events=List of Olympic Games host cities | prose=Olympic Games; Ancient Olympic Games | group=Sports
+History of baseball | name=Baseball | events=Timeline of Major League Baseball; List of World Series champions | prose=History of baseball; History of baseball in the United States | group=Sports
+History of American football | name=American football | events=List of Super Bowl champions | prose=History of American football; History of the National Football League | group=Sports
+History of basketball | name=Basketball | events=List of NBA champions | prose=History of basketball; National Basketball Association | group=Sports
+History of ice hockey | name=Ice hockey | events=List of Stanley Cup champions | prose=History of ice hockey; History of the National Hockey League | group=Sports
+History of cricket | name=Cricket | events=List of Cricket World Cup finals | prose=History of cricket | group=Sports
+History of rugby union | name=Rugby | events=List of Rugby World Cup finals | prose=History of rugby union | group=Sports
+History of tennis | name=Tennis | events=List of Grand Slam men's singles champions; List of Grand Slam women's singles champions | prose=History of tennis | group=Sports
+History of golf | name=Golf | events=List of Masters Tournament champions; List of U.S. Open (golf) champions; List of PGA Championship champions | prose=History of golf | group=Sports
+Boxing | events=List of world heavyweight boxing champions | prose=Boxing | group=Sports
+History of Formula One | name=Formula One | events=List of Formula One World Drivers' Champions | prose=History of Formula One | group=Sports
+Horse racing | events=Triple Crown of Thoroughbred Racing (United States); Kentucky Derby; Epsom Derby; Grand National | prose=Horse racing | group=Sports

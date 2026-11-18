@@ -1187,8 +1187,17 @@ export function mineEventsFrom({ title, url, body = '', html = '' }, { limit = 4
 
   // -- tables ---------------------------------------------------------------
   const heads = headings(html);
+  // A results page (lib/results.mjs): one event per winner, composed from the
+  // row's columns. Its tables are not read again by the generic pass below.
+  const results = html ? mineResults(title, url, html) : null;
+  if(results) for(const d of results){
+    const key = `${d.start}|${d.title.toLowerCase()}`;
+    if(seen.has(key)) continue;
+    seen.add(key); drafts.push(d); tally.rows++;
+  }
+  if(results) tally.tables++;
   // A year page's tables are deaths, box office and award lists, not events.
-  for(const table of /^\d{3,4} in \w/.test(String(title)) ? [] : wikitables(html)){
+  for(const table of results || /^\d{3,4} in \w/.test(String(title)) ? [] : wikitables(html)){
     const rows = tableGrid(table.html);
     const header = rows.find((r) => r.cells.length > 1 &&
       r.tags.filter((t) => t === 'th').length >= r.cells.length - 1);
@@ -1335,3 +1344,5 @@ export async function describeMany(inputs, { concurrency = 6, onEach } = {}){
     }
   });
 }
+export { wikitables, tableGrid, cellText, headings };
+import { mineResults } from './results.mjs';

@@ -138,6 +138,20 @@
   "soviet-montage": { "parent": "film-history" },
   "japanese-cinema": { "parent": "film-history" },
   "indian-cinema": { "parent": "film-history" },
-  "animation": { "parent": "film-history" }
+  "animation": { "parent": "film-history" },
+  "sports":        { "role": "collection", "series": [] },
+  "association-football": { "parent": "sports" },
+  "olympic-games": { "parent": "sports" },
+  "baseball": { "parent": "sports" },
+  "american-football": { "parent": "sports" },
+  "basketball": { "parent": "sports" },
+  "ice-hockey": { "parent": "sports" },
+  "cricket": { "parent": "sports" },
+  "rugby": { "parent": "sports" },
+  "tennis": { "parent": "sports" },
+  "golf": { "parent": "sports" },
+  "boxing": { "parent": "sports" },
+  "formula-one": { "parent": "sports" },
+  "horse-racing": { "parent": "sports" }
  }
 }

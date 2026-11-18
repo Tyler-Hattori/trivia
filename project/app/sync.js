@@ -17,7 +17,10 @@
 import { loadMastery, mergeMastery } from '../features/topic/quiz.js';
 
 export const SUPABASE_URL = 'https://oysegbcdjxkrtaokinrt.supabase.co';
-export const SUPABASE_ANON_KEY = '';   // Project Settings > API > anon public key
+export const SUPABASE_ANON_KEY = 'sb_publishable_oc2YjaJJ3-S-oKtrn3esCw_3jJUVS79';   // Project Settings > API > anon public key
+
+// Turn on once Authentication > Providers > Google is configured (docs/ACCOUNTS.md).
+const GOOGLE_ENABLED = false;
 
 let client = null, user = null;
 const listeners = new Set();
@@ -121,7 +124,7 @@ export function bindAccountBox(){
       el.innerHTML = `<span>Sign in to keep your answers on every device:</span>
         <form data-a="mail" class="flex gap-2"><input name="e" type="email" required placeholder="email" class="rounded-lg border border-zinc-200 px-2 py-1 w-48">
         <button class="rounded-lg bg-zinc-900 text-white px-3 py-1">Email me a link</button></form>
-        <button data-a="google" class="rounded-lg border border-zinc-300 px-3 py-1">Google</button>`;
+        ${GOOGLE_ENABLED ? '<button data-a="google" class="rounded-lg border border-zinc-300 px-3 py-1">Google</button>' : ''}`;
     }
   };
   draw();

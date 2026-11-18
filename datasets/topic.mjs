@@ -155,6 +155,7 @@ if(OPT.all){
          ...(t.source.hint ? ['--hint', t.source.hint] : []), ...(t.source.credit ? ['--credit', t.source.credit] : [])]
       : [path.join(HERE, 'topic.mjs'), t.source.page, '--name', t.title, '--key', String(t.keyTarget || 90)];
     for(const ev of t.events || []) a.push('--events', ev);
+    for(const p of t.prose || []) a.push('--prose', p);
     if(t.group) a.push('--group', t.group);
     if(OPT.ideas) a.push('--ideas');
     spawnSync(process.execPath, a, { stdio: 'inherit', env: { ...process.env, TOPIC_BATCH: '1' } });
@@ -1938,6 +1939,7 @@ const topic = {
     ? { kind: 'site', page: art.title, url: art.url, credit: art.credit, hint: OPT.hint || null }
     : { page: art.title, url: `${WP}/wiki/${encodeURIComponent(art.title.replace(/ /g, '_'))}` },
   events: OPT.events,
+  prose: OPT.prose.length ? OPT.prose : undefined,
   keyTarget: OPT.key,
   built: new Date().toISOString().slice(0, 10),
   chronological,
@@ -1999,7 +2001,7 @@ function updateIndex(t){
   const idx = readIndex();
   const cover = t.items.filter((it) => it.key && it.image).sort((a, b) => b.importance - a.importance)[0]?.image || '';
   const row = {
-    slug: t.slug, title: t.title, group: t.group, source: t.source, events: t.events, keyTarget: t.keyTarget,
+    slug: t.slug, title: t.title, group: t.group, source: t.source, events: t.events, prose: t.prose, keyTarget: t.keyTarget,
     blurb: t.blurb || (t.intro || '').split(/(?<=[.!?])\s/)[0].slice(0, 220),
     built: t.built, count: t.items.filter((it) => it.onTimeline).length, key: t.items.filter((it) => it.key).length,
     chapters: t.chapters.length,
