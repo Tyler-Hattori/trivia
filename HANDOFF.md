@@ -190,28 +190,36 @@ timeline; spans that cover far more than the view are dropped as umbrellas.
 
 ## 7b. Session 2026-11-19 (in progress)
 
-- **Titling pass running/ran** (`title-events.mjs`, Haiku, ~22k prose events, ~$4;
-  log /tmp/title.log). Spot-check looked good. Then `topic.mjs --all` so topics
-  and the atlas pick the titles up.
-- **Art + film batch queued**: `topic.mjs --list --ingest` (log /tmp/ingest.log,
-  hours of Wikipedia fetches). New: *Art history* (collection, events=Timeline
-  of art) with 26 period/region topics + Impressionism and Renaissance as
-  children; *Film history* (collection, series = Academy Award for Best
-  Picture, events = `1888..2025 in film`, a new range syntax in topics.txt)
-  with 10 children. `lib/wiki.mjs` now mines year pages ("1939 in film"): only
-  the Events list, each line dated by the page's year, month/day lead cut,
-  award-announcement/festival lines dropped, tables skipped.
-  After it finishes: `title-events.mjs` (new topics), audit passes
-  (`audit-entries.mjs`, `--spans --kinds --bare`), `dedupe-events.mjs`,
-  `topic.mjs --all`, key points for the new topics, QA, deploy.
-- **Accounts coded, dormant**: `project/app/sync.js` + docs/ACCOUNTS.md (SQL,
-  dashboard steps). URL set; **needs the anon key** pasted into `sync.js` and
-  the SQL run, then test sign-in locally.
-- The user's film spreadsheet (Google Sheets 1Q1oWb…): tabs = films watched by
-  year (heat map, 704), AFI lists, a canon-by-year list, personal rankings,
-  Oscars by year. Not used yet; ask whether "watched" should become a personal
-  mark (synced with the account).
-- Sports: discussed with the user, nothing built yet.
+- **Titling pass stopped half-way: Anthropic credits ran out** ($3.09 spent;
+  10.6k of 22k answered: 6.9k titled, 3.5k rejected). After a top-up, rerun
+  `node datasets/title-events.mjs` (incremental; ~$3.5 left + new topics).
+- **Batch running**: `topic.mjs --list --ingest --ingest-limit 100` (log
+  /tmp/ingest2.log; ~10 min/topic, 52 topics, so ~8 h; limit lowered from 250
+  because Wikipedia throttles). Resumable: rerun the same command.
+  - *Art history* (collection, events=Timeline of art) + 26 period/region
+    topics; Impressionism and Renaissance now its children.
+  - *Film history* (collection, series = Academy Award for Best Picture,
+    events = `1888..2025 in film`, a new range syntax) + 10 children.
+    `lib/wiki.mjs` mines year pages: Events list only, page year, month/day
+    lead cut, award-announcement/festival lines dropped, tables skipped.
+  - *Sports* (collection) + 14 sports (football, Olympics, baseball, American
+    football, basketball, ice hockey, cricket, rugby, tennis, golf, boxing,
+    F1, horse racing). Each: `prose=` its history article(s) for developments
+    (leagues, rules, eras, dynasties, records) + `events=` winners lists, read
+    by **`lib/results.mjs`** recipes ("X win the World Series, beating Y 4–3").
+    `prose` is now saved in the topic and passed on `--all`. The running batch
+    read topics.txt before Sports' line changed to `prose=History of sport;
+    Sports dynasty`: rebuild Sports with `--ingest` afterwards.
+  After the batch: titles, audits (`audit-entries.mjs`, `--spans --kinds
+  --bare`), `dedupe-events.mjs`, `topic.mjs --all`, key points, QA, deploy.
+  Expect many Haiku rejections of results/prose lines to check.
+- **Accounts**: `project/app/sync.js` live with the publishable key; home shows
+  the sign-in line (email link; Google hidden until configured). **The
+  `progress` table does not exist yet** (PGRST205): user must run the SQL in
+  docs/ACCOUNTS.md and set redirect URLs. Then test sign-in + sync.
+- The user's film spreadsheet (Google Sheets 1Q1oWb…): watched-by-year (704),
+  AFI lists, canon by year, rankings, Oscars. Unused; asked whether "watched"
+  should be a personal mark.
 
 ## 8. Next, in order
 
