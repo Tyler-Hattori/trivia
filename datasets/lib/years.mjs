@@ -118,13 +118,29 @@ export function parseAgo(v){
     .map((t) => t.trim()).filter(Boolean).slice(0, 2)
     .map((t) => ({
       n: (t.match(/\d+(?:\.\d+)?/) || [])[0],
-      u: (AGO_UNITS.find(([re]) => re.test(t)) || [])[1],
+      // "1.5 million to 300,000 years ago": the first side's scale word is its unit
+      // even without "years" (read as 1.5 years, it stored AD 1948).
+      u: (AGO_UNITS.find(([re]) => re.test(t)) || [])[1]
+        ?? (/\bbillion\b/i.test(t) ? 1e9 : /\bmillion\b/i.test(t) ? 1e6 : /\bthousand\b/i.test(t) ? 1e3 : undefined),
     }))
     .filter((p) => p.n != null);
   if(!sides.length) return null;
 
   const shared = sides.find((p) => p.u != null)?.u ?? unit[1];
-  const years = sides.map((p) => agoToYear(Number(p.n) * (p.u ?? shared)));
+  /*
+   * A side with no unit inherits the other's only when that keeps the two sides
+   * within a factor of 100 ("541 to 485 million", "1,000 to 1,500 million").
+   * "300,000 to 1.5 million years ago" is 300,000 YEARS: inheriting made it
+   * 300 billion years ago, and the atlas's earth ruler drew 313 ticks.
+   */
+  const other = sides.find((p) => p.u != null);
+  const unitOf = (p) => {
+    if(p.u != null || !other) return p.u ?? shared;
+    const ref = Number(other.n) * other.u, n = Number(p.n);
+    const ratio = (a, b) => Math.max(a, b) / Math.max(1e-9, Math.min(a, b));
+    return ratio(n * shared, ref) <= 100 || ratio(n, ref) > ratio(n * shared, ref) ? shared : 1;
+  };
+  const years = sides.map((p) => agoToYear(Number(p.n) * unitOf(p)));
 
   // A relative date counts down as it moves forward, so the larger number is the
   // earlier year. Ordering here rather than trusting the text keeps `spans run

@@ -884,11 +884,17 @@ for(const [t, h] of seriesHeading) addMember(t, 0.6, { series: h });
 if(SERIES.length) console.log(`  series: ${SERIES.map((s) => `${s.name} (${s.groups.filter((g) => !LOCAL_GROUP.test(g.heading)).flatMap((g) => g.titles).length})`).join(', ')}`);
 
 const readTopic = (s) => { try { return JSON.parse(fs.readFileSync(path.join(PATHS.topics, `${s}.json`), 'utf8')); } catch { return null; } };
+const childContext = new Map();   // canonical title -> { text, slug } from a subtopic
 if(STRUCT.role === 'collection'){
   let n = 0;
   for(const c of childrenOf(slug)){
     const t = readTopic(c);
-    for(const it of t?.items || []) if(it.key && it.canon && it.via === 'link'){ addMember(it.canon, 0.8, { fromChild: c }); n++; }
+    for(const it of t?.items || []) if(it.key && it.canon && it.via === 'link'){
+      addMember(it.canon, 0.8, { fromChild: c });
+      // The subtopic's own sentence about it, for when the collection's article has none.
+      if(it.context && !childContext.has(it.canon)) childContext.set(it.canon, { text: it.context, slug: c });
+      n++;
+    }
   }
   console.log(`  collection: ${n} essentials from ${childrenOf(slug).length} subtopics`);
 }
@@ -1742,6 +1748,12 @@ for(const it of [...out].sort((a, b) => b.importance - a.importance)){
   const pick = best((c) => c.ch === it.chapter) || best((c) => c.ch === it.chapterOfMention) || best((c) => c.ch != null) || best(() => true);
   it.context = pick?.text || '';
   if(pick){ it.sub = pick.sub || null; used.add(pick.text); }
+  // A collection's entry that its article never tells (Africa's essentials from
+  // Nigeria or Ethiopia): the subtopic's sentence, marked as from there.
+  else if(it.canon && childContext.has(it.canon) && !used.has(childContext.get(it.canon).text)){
+    const cc = childContext.get(it.canon);
+    it.context = cc.text; it.contextFrom = cc.slug; it.inIntro = false; used.add(cc.text);
+  }
   /*
    * An entry the article never puts in a sentence of its own makes a poor
    * essential: Learn can only show its generic Wikipedia lead ("A world war is
