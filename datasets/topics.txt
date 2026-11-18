@@ -23,6 +23,48 @@ Cold War | group=Wars
 Impressionism | group=Art & culture
 Renaissance | group=Art & culture
 
+# Art history (2026-11-19): History of art gathers its periods' essentials
+History of art | name=Art history | events=Timeline of art | group=Art & culture
+Prehistoric art | group=Art & culture
+Ancient Greek art | group=Art & culture
+Roman art | group=Art & culture
+Byzantine art | group=Art & culture
+Medieval art | group=Art & culture
+Gothic art | group=Art & culture
+Baroque | group=Art & culture
+Dutch Golden Age painting | group=Art & culture
+Rococo | group=Art & culture
+Neoclassicism | group=Art & culture
+Romanticism | group=Art & culture
+Realism (art movement) | name=Realism | group=Art & culture
+Post-Impressionism | group=Art & culture
+Art Nouveau | group=Art & culture
+Expressionism | group=Art & culture
+Cubism | group=Art & culture
+Surrealism | group=Art & culture
+Modern art | group=Art & culture
+Abstract expressionism | group=Art & culture
+Pop art | group=Art & culture
+Contemporary art | group=Art & culture
+Chinese art | group=Art & culture
+Japanese art | group=Art & culture
+Indian art | group=Art & culture
+Islamic art | group=Art & culture
+African art | group=Art & culture
+
+# Film (2026-11-19): every "YYYY in film" page's Events list joins Film history
+History of film | name=Film history | events=1888..2025 in film | group=Film
+Silent film | group=Film
+Classical Hollywood cinema | group=Film
+Film noir | group=Film
+Italian neorealism | group=Film
+French New Wave | group=Film
+New Hollywood | group=Film
+Soviet montage theory | name=Soviet montage | group=Film
+Cinema of Japan | name=Japanese cinema | group=Film
+Cinema of India | name=Indian cinema | group=Film
+History of animation | name=Animation | group=Film
+
 # Science
 History of science | name=Science | events=Timeline of scientific discoveries | group=Science
 History of physics | name=Physics | events=Timeline of fundamental physics discoveries; Timeline of thermodynamics; Timeline of classical mechanics; Timeline of electromagnetism and classical optics | group=Science

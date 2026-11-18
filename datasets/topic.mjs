@@ -255,7 +255,11 @@ function runList(file){
     for(const p of kv){
       const m = p.match(/^(\w+)\s*=\s*(.+)$/);
       if(!m) continue;
-      if(m[1] === 'events') o.events.push(...m[2].split(';').map((x) => x.trim()).filter(Boolean));
+      // "1888..2025 in film" = one events page per year ("1888 in film" … "2025 in film").
+      if(m[1] === 'events') o.events.push(...m[2].split(';').map((x) => x.trim()).filter(Boolean).flatMap((x) => {
+        const r = x.match(/^(\d{3,4})\.\.(\d{3,4}) (.+)$/);
+        return r ? Array.from({ length: +r[2] - +r[1] + 1 }, (_, i) => `${+r[1] + i} ${r[3]}`) : [x];
+      }));
       else if(m[1] === 'prose') (o.prose ||= []).push(...m[2].split(';').map((x) => x.trim()).filter(Boolean));
       else o[m[1]] = m[2].trim();
     }

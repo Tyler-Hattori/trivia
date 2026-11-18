@@ -7,6 +7,7 @@
  */
 
 import { dueSummary } from '../features/topic/quiz.js';
+import { accountBoxHtml } from '../app/sync.js';
 
 export function renderHome(){
   const door = (fn, title, blurb, art, accent) => `
@@ -72,7 +73,7 @@ export function renderHome(){
     </svg>`;
 
   const due = dueSummary().n;
-  return `
+  return `${accountBoxHtml()}
     <form onsubmit="event.preventDefault(); const q=this.q.value.trim(); if(q) location.hash='#/search/'+encodeURIComponent(q);"
       class="mb-6 flex gap-3">
       <input name="q" autocomplete="off" placeholder="Search a year, a span or anything: 1294 · 1290–1300 · 1290s · 13th century · mongol"

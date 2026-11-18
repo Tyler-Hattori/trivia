@@ -1187,7 +1187,8 @@ export function mineEventsFrom({ title, url, body = '', html = '' }, { limit = 4
 
   // -- tables ---------------------------------------------------------------
   const heads = headings(html);
-  for(const table of wikitables(html)){
+  // A year page's tables are deaths, box office and award lists, not events.
+  for(const table of /^\d{3,4} in \w/.test(String(title)) ? [] : wikitables(html)){
     const rows = tableGrid(table.html);
     const header = rows.find((r) => r.cells.length > 1 &&
       r.tags.filter((t) => t === 'th').length >= r.cells.length - 1);
@@ -1272,8 +1273,33 @@ export function mineEventsFrom({ title, url, body = '', html = '' }, { limit = 4
     return n;
   };
 
+  /*
+   * A year page ("1939 in film", "1975 in film") dates its Events list by month
+   * and day only: "February 15 – Stagecoach premieres", or ";January" then
+   * ":17 – …". Under Events, every line takes the page's year, and the month/day
+   * lead is cut. Award announcements and festival dates are calendar, not events.
+   */
+  const pageYear = (String(title).match(/^(\d{3,4}) in \w/) || [])[1];
+  const MONTH = '(?:January|February|March|April|May|June|July|August|September|October|November|December)';
+  const yearPageLine = (line) => {
+    if(pageYear && new RegExp(`^${pageYear} in .{2,40} is an overview`).test(line)) return '';
+    if(!pageYear || !/^events$/i.test(section)) return null;
+    if(new RegExp(`^${MONTH}$`, 'i').test(line)) return '';
+    if(/\b(winners|nominations|nominees)\b.*\b(were|are|is|was) announced|\b(was|were|is) held\b|ceremony (was|is) held/i.test(line)) return '';
+    const rest = line.replace(new RegExp(`^(?:${MONTH}\\s*)?(?:\\d{1,2}(?:\\s*(?:–|-|to)\\s*(?:${MONTH}\\s*)?\\d{1,2})?)?\\s*(?:${MONTH})?\\s*[–—:-]\\s*`, 'i'), '');
+    return `${pageYear} – ${rest}`;
+  };
+
   const anchoredOf = new Map();
   const scanned = eachLine((line, headDate) => {
+    const yp = yearPageLine(line);
+    if(yp === ''){ anchoredOf.set(line, true); return; }
+    if(yp){
+      const d = findDate(yp, { anchored: true });
+      anchoredOf.set(line, d);
+      if(d) addChunk(yp, d, 'mined-line');
+      return;
+    }
     let anchored = findDate(line, { anchored: true });
     let chunk = line;
     if(!anchored && headDate){

@@ -1,6 +1,7 @@
 import { render } from './render.js';
 import { openAtlas } from '../features/atlas/index.js';
 import { openQuiz as renderClusterQuiz } from '../features/quiz/index.js';
+import { initAccounts } from './sync.js';
 import { route as topicRoute, isTopicRoute, openTopics } from '../features/topic/index.js';
 
 /*
@@ -29,6 +30,7 @@ function routeAll(){
 
 window.addEventListener('hashchange', routeAll);
 document.addEventListener('DOMContentLoaded', () => {
+  initAccounts().catch((e) => console.warn('accounts:', e));
   try { routeAll(); console.log('RENDER OK'); }
   catch(e){ console.error('RENDER FAILED:', e); }
 });

@@ -84,7 +84,30 @@ function allMastery(){
   }
   return memCache;
 }
-function saveMastery(){ try { memRaw = JSON.stringify(memCache || {}); localStorage.setItem(MEM_KEY, memRaw); } catch {} }
+function saveMastery(ids){
+  try { memRaw = JSON.stringify(memCache || {}); localStorage.setItem(MEM_KEY, memRaw); } catch {}
+  // app/sync.js pushes these to the signed-in account (no-op when signed out).
+  if(ids?.length) window.dispatchEvent(new CustomEvent('mastery-changed', { detail: { ids } }));
+}
+
+/**
+ * Merge records from elsewhere (the account, app/sync.js): per entry the newer
+ * answer (`at`) wins; topics answered in (`x`) are unioned. `aliases` maps old
+ * entry ids to new. Returns the ids whose LOCAL record is newer (to push back).
+ */
+export function mergeMastery(remote, aliases = {}){
+  const m = allMastery();
+  const rAt = new Map();
+  let changed = false;
+  for(let [id, rec] of Object.entries(remote || {})){
+    id = aliases[id] || id;
+    rAt.set(id, Math.max(rAt.get(id) || 0, rec.at || 0));
+    const cur = m[id];
+    if(!cur || (rec.at || 0) > (cur.at || 0)){ m[id] = { ...rec, x: [...new Set([...(rec.x || []), ...(cur?.x || [])])] }; changed = true; }
+  }
+  if(changed) saveMastery();
+  return Object.keys(m).filter((id) => !rAt.has(id) || (m[id].at || 0) > rAt.get(id));
+}
 
 /**
  * Every recorded entry (id -> record), whichever topic it was answered in. The
@@ -134,7 +157,7 @@ export function recordAnswer(slug, id, ok){
   x.due = x.at + INTERVALS[x.box];
   if(slug && !slug.startsWith('__')) x.x = [...new Set([...(x.x || []), slug])];
   m[id] = x;
-  saveMastery();
+  saveMastery([id]);
 }
 
 /** Everything due: { n, per: { slug: count } (by the topic it was first answered in), next: ms until the next one }. */
