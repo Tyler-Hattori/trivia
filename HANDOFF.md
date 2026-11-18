@@ -188,6 +188,31 @@ timeline; spans that cover far more than the view are dropped as umbrellas.
   qa-topic 2370/2375 (the 5 known intro-less chapters).
 - Nothing running in the background.
 
+## 7b. Session 2026-11-19 (in progress)
+
+- **Titling pass running/ran** (`title-events.mjs`, Haiku, ~22k prose events, ~$4;
+  log /tmp/title.log). Spot-check looked good. Then `topic.mjs --all` so topics
+  and the atlas pick the titles up.
+- **Art + film batch queued**: `topic.mjs --list --ingest` (log /tmp/ingest.log,
+  hours of Wikipedia fetches). New: *Art history* (collection, events=Timeline
+  of art) with 26 period/region topics + Impressionism and Renaissance as
+  children; *Film history* (collection, series = Academy Award for Best
+  Picture, events = `1888..2025 in film`, a new range syntax in topics.txt)
+  with 10 children. `lib/wiki.mjs` now mines year pages ("1939 in film"): only
+  the Events list, each line dated by the page's year, month/day lead cut,
+  award-announcement/festival lines dropped, tables skipped.
+  After it finishes: `title-events.mjs` (new topics), audit passes
+  (`audit-entries.mjs`, `--spans --kinds --bare`), `dedupe-events.mjs`,
+  `topic.mjs --all`, key points for the new topics, QA, deploy.
+- **Accounts coded, dormant**: `project/app/sync.js` + docs/ACCOUNTS.md (SQL,
+  dashboard steps). URL set; **needs the anon key** pasted into `sync.js` and
+  the SQL run, then test sign-in locally.
+- The user's film spreadsheet (Google Sheets 1Q1oWb…): tabs = films watched by
+  year (heat map, 704), AFI lists, a canon-by-year list, personal rankings,
+  Oscars by year. Not used yet; ask whether "watched" should become a personal
+  mark (synced with the account).
+- Sports: discussed with the user, nothing built yet.
+
 ## 8. Next, in order
 
 1. **"Ready for more data"** (user, 2026-11-18). What grows with the store and
