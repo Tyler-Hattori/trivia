@@ -3,7 +3,7 @@ import { accountBoxHtml } from '../app/sync.js';
 
 export function renderHeader(){
   $('#siteHeader').innerHTML = `
-    <div class="mb-10">
+    <div>
       <h1 class="text-6xl font-bold tracking-tight">
         Trivia Hub
       </h1>
