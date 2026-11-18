@@ -111,7 +111,7 @@ export async function initAccounts(){
 /** The small account line on the home page; wired by bindAccountBox(). */
 export function accountBoxHtml(){
   if(!SUPABASE_ANON_KEY) return '';
-  return `<div id="acct" class="mb-4 flex flex-wrap items-center justify-end gap-2 text-sm text-zinc-500"></div>`;
+  return `<div id="acct" class="flex items-center justify-end gap-2 text-sm text-zinc-500 w-full md:w-auto"></div>`;
 }
 export function bindAccountBox(){
   const el = document.getElementById('acct');
@@ -121,9 +121,9 @@ export function bindAccountBox(){
       el.innerHTML = `<span>Signed in as <b class="text-zinc-700">${user.email || 'you'}</b>: answers sync across devices</span>
         <button data-a="out" class="underline">Sign out</button>`;
     } else {
-      el.innerHTML = `<span>Sign in to keep your answers on every device:</span>
-        <form data-a="mail" class="flex gap-2"><input name="e" type="email" required placeholder="email" class="rounded-lg border border-zinc-200 px-2 py-1 w-48">
-        <button class="rounded-lg bg-zinc-900 text-white px-3 py-1">Email me a link</button></form>
+      el.innerHTML = `<span class="hidden md:inline">Sign in to keep your answers on every device:</span>
+        <form data-a="mail" class="flex gap-2 flex-1 md:flex-none min-w-0"><input name="e" type="email" required placeholder="email to sign in" class="rounded-lg border border-zinc-200 px-2 py-1 min-w-0 flex-1 md:w-48">
+        <button class="rounded-lg bg-zinc-900 text-white px-3 py-1 whitespace-nowrap">Email link</button></form>
         ${GOOGLE_ENABLED ? '<button data-a="google" class="rounded-lg border border-zinc-300 px-3 py-1">Google</button>' : ''}`;
     }
   };
