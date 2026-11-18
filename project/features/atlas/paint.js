@@ -41,9 +41,14 @@ export const PALETTES = {
     chipBg: 'rgba(15,20,30,0.86)',
     chipBgDim: 'rgba(15,20,30,0.45)',
     labelBg: 'rgba(11,14,20,0.72)',
-    bandFill: 0.075,
+    bandFill: 0.045,
     bandFillFolded: 0.30,
     bandEdge: 0.30,
+    hair: 'rgba(148,163,184,0.16)',   // the lane hairline at a band's top edge
+    laneLab: '#7b8799',               // the small uppercase band name
+    labKey: '#f1f5f9',                // a famous entry's label
+    lab: '#cbd5e1',                   // any other label
+    halo: 'rgba(11,14,20,0.92)',      // keeps a label legible over marks
     ink: 0,                 // how far a cluster colour is pushed toward the
   },                        // background before it is used as text
   light: {
@@ -53,7 +58,7 @@ export const PALETTES = {
     gridMajor: 'rgba(71,85,105,0.22)',
     text: '#0f172a',
     dim: '#64748b',
-    accent: '#0369a1',
+    accent: '#0f172a',
     zeroLine: 'rgba(15,23,42,0.30)',
     hoverRing: 'rgba(15,23,42,0.62)',
     dimMark: 'rgba(100,116,139,0.28)',
@@ -62,9 +67,17 @@ export const PALETTES = {
     chipBg: 'rgba(255,255,255,0.94)',
     chipBgDim: 'rgba(255,255,255,0.66)',
     labelBg: 'rgba(255,255,255,0.86)',
-    bandFill: 0.085,
-    bandFillFolded: 0.30,
+    // Lanes style (the topic timeline): a white ground, hairlines, colour only as
+    // a faint accent. The band wash is kept (bands are filled, never stroked) but
+    // pale enough that the ground still reads as white.
+    bandFill: 0.035,
+    bandFillFolded: 0.20,
     bandEdge: 0.20,
+    hair: '#e9edf3',
+    laneLab: '#94a3b8',
+    labKey: '#0f172a',
+    lab: '#334155',
+    halo: 'rgba(255,255,255,0.92)',
     ink: 0.40,
   },
 };
@@ -199,7 +212,7 @@ const FAME_HI = 0.7;
 
 /** Card geometry per tier. Heights are worst case for the text they hold. */
 export const CARD = {
-  chip: { w: 0,   h: 20, gap: 3 },      // width is measured from the title
+  chip: { w: 0,   h: 16, gap: 2 },      // width is measured from the title
   card: { w: 132, h: 150, gap: 5 },
   detail: { w: 196, h: 250, gap: 6 },
 };
@@ -221,11 +234,18 @@ export const CARD = {
  * focus mode (which has its own y per point, see index.js) costs nothing extra
  * here beyond which array gets read.
  */
-export function packLabels(A, scale, visible, tier, { collapsed, budget = 220, measure, yArr } = {}){
+export function packLabels(A, scale, visible, tier, { collapsed, budget = 220, measure, yArr, bands = [] } = {}){
   const placements = [];
   if(tier === 'dot') return placements;
 
   occ.reset(scale.W, scale.H);
+  // The band names sit at each band's top-left; keep entry labels off them.
+  for(const nd of bands){
+    const y0 = scale.sy(nd.y0), y1 = scale.sy(nd.y1);
+    if(y1 < 2 || y0 > scale.H - 2) continue;
+    const ty = Math.max(2, Math.min(scale.H - 13, y0 + 3));
+    occ.mark(0, ty - 2, Math.min(260, 40 + nd.label.length * 8), 15);
+  }
 
   const spec = CARD[tier] || CARD.chip;
   const inSet = new Set(visible);
@@ -240,15 +260,20 @@ export function packLabels(A, scale, visible, tier, { collapsed, budget = 220, m
     const py = scale.sy(Y[i]);
 
     let w = spec.w, h = spec.h;
+    const famous = A.fame[i] > FAME_HI;
     if(tier === 'chip'){
-      w = Math.min(190, (measure ? measure(A.title[i]) : A.title[i].length * 6.1) + 16);
+      w = Math.min(220, (measure ? measure(A.title[i], famous) : A.title[i].length * 6.4) + 4);
     }
 
     // Anchor: a point's mark sits at its year, so its label goes just right of it
     // and vertically centred, which keeps the label's meaning unambiguous when
-    // two are near each other.
-    let x = px + 7;
-    let y = py - h / 2;
+    // two are near each other. A span that is visibly long gets its label ABOVE
+    // its line instead, so the line reads as the underline the topic timeline's
+    // Lanes draw under anything that lasted.
+    const spanPx = A.isSpan[i] ? scale.sx(A.x1[i]) - px : 0;
+    const underline = tier === 'chip' && spanPx > 14 && spanPx < scale.W * LONG_SPAN_FRAC;
+    let x = px + (underline ? 0 : 7);
+    let y = underline ? py - h - 1 : py - h / 2;
 
     // Nudge inside the viewport rather than dropping the label. An entry at the
     // screen edge is exactly the one you are panning toward.
@@ -260,7 +285,7 @@ export function packLabels(A, scale, visible, tier, { collapsed, budget = 220, m
     if(!occ.free(x - g, y - g, w + g * 2, h + g * 2)) continue;
     occ.mark(x - g, y - g, w + g * 2, h + g * 2);
 
-    placements.push({ i, x, y, w, h, px, py, tier, famous: A.fame[i] > FAME_HI });
+    placements.push({ i, x, y, w, h, px, py, tier, famous, underline });
   }
 
   return placements;
@@ -311,7 +336,7 @@ export function paintFrame(ctx, A, scale, opts){
 
       // A hairline at the top edge only. Two adjacent bands then share one line
       // instead of drawing two next to each other.
-      ctx.fillStyle = hexToRgba(nd.color, COLORS.bandEdge);
+      ctx.fillStyle = isCollapsed ? hexToRgba(nd.color, COLORS.bandEdge) : COLORS.hair;
       ctx.fillRect(0, y0, W, 1);
       // A folded band is a thin strip, so it gets a bottom edge too — otherwise
       // two stacked folded clusters read as one.
@@ -353,6 +378,8 @@ export function paintFrame(ctx, A, scale, opts){
    * it is shorter than that, so a narrow openEnded span still shows the taper.
    */
   ctx.lineWidth = 1;
+  const underlined = new Set();
+  for(const p of placements) if(p.underline) underlined.add(p.i);
   for(const i of visible){
     if(!A.isSpan[i]) continue;
     if(collapsed.size && isHidden(A, i, collapsed)) continue;
@@ -380,6 +407,16 @@ export function paintFrame(ctx, A, scale, opts){
     const x1 = Math.min(W + 4, xb);
     if(x1 <= x0) continue;
 
+    // A labelled span is drawn like the Lanes' duration line: 3px, with a short
+    // tick at each real end, sitting under its title.
+    if(underlined.has(i) && !A.openEnded[i]){
+      ctx.fillStyle = hexToRgba(A.color[i], matched ? 0.75 : COLORS.dimSpan);
+      ctx.fillRect(x0, y - 1, x1 - x0, 3);
+      if(xa >= -2) ctx.fillRect(xa, y - 3, 2, 7);
+      if(xb <= W + 4) ctx.fillRect(xb - 2, y - 3, 2, 7);
+      continue;
+    }
+
     if(A.openEnded[i] && x1 < W + 4){
       const fade = Math.min(40, (x1 - x0) / 3);
       const g = ctx.createLinearGradient(x1 - fade, 0, x1, 0);
@@ -400,8 +437,9 @@ export function paintFrame(ctx, A, scale, opts){
    * Radius grows with zoom so a point stays a reasonable target, but stays small
    * enough at low zoom that density reads as shading rather than a solid mass.
    *
-   * Points that got a label are drawn smaller, as an anchor: the label is the
-   * mark now, and a full-size dot beside it just looks like a duplicate.
+   * A point that got a label is drawn as the Lanes draw an event: a round dot
+   * with its title beside it, the dot a little larger than the unlabelled ones
+   * so the eye can tell which mark the text belongs to.
    */
   const labelled = new Set(placements.map((p) => p.i));
   const r = tier === 'dot'
@@ -420,7 +458,7 @@ export function paintFrame(ctx, A, scale, opts){
       const x = scale.sx(A.x0[i]);
       const y = scale.sy(Y[i]);
       const famous = matched && A.fame[i] > FAME_HI;
-      const rr = labelled.has(i) ? 1.6 : (famous ? r * 1.7 : r);
+      const rr = labelled.has(i) ? (famous ? 4 : 3.2) : (famous ? r * 1.7 : r);
 
       ctx.fillStyle = matched ? A.color[i] : COLORS.dimMark;
       // A square is materially cheaper than an arc and indistinguishable at these
@@ -443,34 +481,36 @@ export function paintFrame(ctx, A, scale, opts){
     if(collapsed.size && isHidden(A, i, collapsed)) continue;
     const x = scale.sx(A.x0[i]);
     const y = scale.sy(Y[i]);
-    const rr = (labelled.has(i) ? 1.6 : r * 1.7) + 3;
+    const rr = (labelled.has(i) ? 4 : r * 1.7) + 3;
     ring(ctx, x, y, rr, hexToRgba(A.color[i], 0.55), 1);
   }
 
   // ---- chips ------------------------------------------------------------
+  /*
+   * Labels are the Lanes' labels: bare text, no box. Importance is weight, not
+   * size: a famous entry is bold and near-black, the rest medium slate.
+   */
   if(tier === 'chip'){
-    const REGULAR = '11px ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
-    const FAMOUS = '600 11px ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
-    ctx.font = REGULAR;
     ctx.textBaseline = 'middle';
     for(const p of placements){
       const i = p.i;
       const matched = !filter || filter.flags[i];
       if(!matched && !dimMode) continue;
 
-      ctx.fillStyle = matched ? COLORS.chipBg : COLORS.chipBgDim;
-      roundRect(ctx, p.x, p.y, p.w, p.h, 4);
-      ctx.fill();
-
-      ctx.fillStyle = hexToRgba(A.color[i], matched ? 0.9 : 0.25);
-      ctx.fillRect(p.x, p.y + 3, 2, p.h - 6);
-
-      ctx.font = matched && p.famous ? FAMOUS : REGULAR;
-      ctx.fillStyle = matched ? COLORS.text : COLORS.dimText;
-      ctx.fillText(clip(ctx, A.title[i], p.w - 12), p.x + 7, p.y + p.h / 2);
+      ctx.font = labelFont(matched && p.famous);
+      ctx.fillStyle = !matched ? COLORS.dimText : p.famous ? COLORS.labKey : COLORS.lab;
+      const text = clip(ctx, A.title[i], p.w - 2);
+      const ty = p.y + p.h / 2 + 0.5;
+      // Backed by the ground colour: invisible on white, so it still reads as
+      // bare text, but the lines and dots behind it stop cutting through it.
+      const fill = ctx.fillStyle;
+      ctx.fillStyle = COLORS.halo;
+      ctx.fillRect(p.x - 1, p.y + 1, ctx.measureText(text).width + 4, p.h - 2);
+      ctx.fillStyle = fill;
+      ctx.fillText(text, p.x + 1, ty);
 
       // A leader line when the label had to move away from its point.
-      if(Math.abs(p.x - p.px) > 10 || Math.abs(p.y + p.h / 2 - p.py) > 10){
+      if(!p.underline && (Math.abs(p.x - p.px) > 10 || Math.abs(p.y + p.h / 2 - p.py) > 10)){
         ctx.strokeStyle = hexToRgba(A.color[i], matched ? 0.35 : 0.1);
         ctx.beginPath();
         ctx.moveTo(p.px, p.py);
@@ -488,8 +528,6 @@ export function paintFrame(ctx, A, scale, opts){
    * cluster you are looking at.
    */
   if(showBandFill){
-    ctx.font = '600 11px ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
-    ctx.textBaseline = 'top';
     for(const nd of bands){
       const y0 = scale.sy(nd.y0);
       const y1 = scale.sy(nd.y1);
@@ -500,16 +538,8 @@ export function paintFrame(ctx, A, scale, opts){
       // and that label is the whole affordance for getting the cluster back.
       if(!isCollapsed && y1 - y0 < 15) continue;
 
-      const label = isCollapsed ? `▸ ${nd.label}  (${nd.n})` : nd.label;
-      const ty = clampNum(y0 + (isCollapsed ? (y1 - y0 - 13) / 2 : 3), 2, H - 15);
-
-      const w = ctx.measureText(label).width + 12;
-      ctx.fillStyle = COLORS.labelBg;
-      roundRect(ctx, 4, ty - 1, w, 15, 3);
-      ctx.fill();
-
-      ctx.fillStyle = hueInk(nd.color);
-      ctx.fillText(label, 10, ty + 1);
+      const ty = clampNum(y0 + (isCollapsed ? (y1 - y0 - 11) / 2 : 3), 2, H - 13);
+      laneLabel(ctx, nd.label, 8, ty, nd.color, isCollapsed ? nd.n : null);
     }
   }
 
@@ -552,28 +582,61 @@ export function paintFocusBandFill(ctx, scale, nodes, W, H){
     if(y1 < 0 || y0 > H) continue;
     ctx.fillStyle = hexToRgba(nd.color, COLORS.bandFill);
     ctx.fillRect(0, y0, W, Math.max(1, y1 - y0));
-    ctx.fillStyle = hexToRgba(nd.color, COLORS.bandEdge);
+    ctx.fillStyle = COLORS.hair;
     ctx.fillRect(0, y0, W, 1);
   }
 }
 
 export function paintFocusBandLabels(ctx, scale, nodes, W, H){
-  ctx.font = '600 11px ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
-  ctx.textBaseline = 'top';
   for(const nd of focusBandsOf(nodes)){
     const y0 = scale.sy(nd.y0);
     const y1 = scale.sy(nd.y1);
     if(y1 < 2 || y0 > H - 2 || y1 - y0 < 15) continue;
-
-    const label = `${nd.label}  (${nd.n})`;
-    const ty = clampNum(y0 + 3, 2, H - 15);
-    const w = ctx.measureText(label).width + 12;
-    ctx.fillStyle = COLORS.labelBg;
-    roundRect(ctx, 4, ty - 1, w, 15, 3);
-    ctx.fill();
-    ctx.fillStyle = hueInk(nd.color);
-    ctx.fillText(label, 10, ty + 1);
+    laneLabel(ctx, nd.label, 8, clampNum(y0 + 3, 2, H - 13), nd.color, nd.n);
   }
+}
+
+const SANS = 'ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
+
+/** The entry-label font: Lanes' 11.5px, bold for a famous entry. */
+export const labelFont = (bold) => `${bold ? 700 : 500} 11.5px ${SANS}`;
+
+/**
+ * A band's name, drawn the way the Lanes name a lane: small grey uppercase,
+ * letter-spaced, no box, with a small swatch of the band's colour in front (the
+ * colour is the accent, not the text). A haloed ground keeps it legible over
+ * marks. `n`, when given, follows in normal case (a folded band shows its count,
+ * since the label is then the whole affordance for unfolding it).
+ */
+export function laneLabel(ctx, label, x, y, color, n = null){
+  ctx.save();
+  ctx.textBaseline = 'top';
+  ctx.font = `700 9.5px ${SANS}`;
+  if('letterSpacing' in ctx) ctx.letterSpacing = '0.08em';
+  const text = label.toUpperCase();
+  const tw = ctx.measureText(text).width;
+  let extra = '';
+  ctx.font = `500 10px ${SANS}`;
+  if('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+  if(n != null) extra = `  ${n.toLocaleString('en-US')}`;
+  const ew = extra ? ctx.measureText(extra).width : 0;
+
+  ctx.fillStyle = COLORS.halo;
+  roundRect(ctx, x - 3, y - 2, tw + ew + 16, 14, 3);
+  ctx.fill();
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y + 2.5, 6, 6);
+
+  ctx.font = `700 9.5px ${SANS}`;
+  if('letterSpacing' in ctx) ctx.letterSpacing = '0.08em';
+  ctx.fillStyle = COLORS.laneLab;
+  ctx.fillText(text, x + 10, y + 0.5);
+  if(extra){
+    ctx.font = `500 10px ${SANS}`;
+    if('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+    ctx.fillText(extra, x + 10 + tw, y);
+  }
+  ctx.restore();
 }
 
 const clampNum = (v, a, b) => (v < a ? a : v > b ? b : v);

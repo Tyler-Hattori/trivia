@@ -31,7 +31,7 @@ import {
   coupledYZoom, clamp, fmtYear, fmtTick, fmtTickRange,
 } from './scales.js';
 import {
-  sizeCanvas, paintFrame, packLabels, visibleBands, hitTest, bandAt, isHidden,
+  sizeCanvas, paintFrame, packLabels, visibleBands, hitTest, bandAt, isHidden, labelFont,
   COLORS, setCanvasTheme, paintFocusBandFill, paintFocusBandLabels,
 } from './paint.js';
 import { createCardLayer, createTip, esc } from './cards.js';
@@ -199,6 +199,8 @@ export async function openAtlas({ title = 'Atlas' } = {}){
   // comparison against the extent's left edge, which is not a state any more now
   // that the left edge depends on the mode.
   let freshCamera = true;
+  // Whether the saved prefs say anything about the rail (see the phone default at "Go").
+  let hadRailPref = false;
 
   loadPrefs();
   syncFolds();
@@ -449,14 +451,14 @@ export async function openAtlas({ title = 'Atlas' } = {}){
     tier = tierFor(scale.ppy);
 
     const ctx = sizeCanvas(canvas, V.W, V.H);
-    ctx.font = '11px ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
-    const measureText = (s) => ctx.measureText(s).width;
+    const measureText = (s, bold) => { ctx.font = labelFont(bold); return ctx.measureText(s).width; };
 
     placements = packLabels(A, scale, visible, tier, {
       collapsed: V.collapsed,
       budget: tier === 'detail' ? 90 : tier === 'card' ? 200 : 320,
       measure: measureText,
       yArr: focused ? focusY : undefined,
+      bands: focused ? [] : bands,
     });
 
     // Focus bands' fill is drawn before paintFrame (skipClear:true so it isn't
@@ -1532,6 +1534,7 @@ export async function openAtlas({ title = 'Atlas' } = {}){
         .map((id) => ({ kind: 'node', id, collapsed: false }));
       V.dimMode = p.dimMode !== false;
       V.railOpen = p.railOpen !== false;
+      hadRailPref = 'railOpen' in p;
       V.facetsOpen = !!p.facetsOpen;
     } catch { /* ignore */ }
   }
@@ -1553,6 +1556,9 @@ export async function openAtlas({ title = 'Atlas' } = {}){
   // Go
   // ---------------------------------------------------------------------------
 
+  // A phone has no width to give the rail: it starts folded to its spine there
+  // (the band names on the map do its job). Once you open it, that is remembered.
+  if(w.innerWidth < 700 && !hadRailPref) V.railOpen = false;
   rail.setFolded(!V.railOpen);
   setTheme(V.theme);
   measure();

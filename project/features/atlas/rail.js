@@ -19,7 +19,7 @@
 
 import { fmtRange, COLLAPSED_STRIP_PX } from './scales.js';
 import { esc } from './cards.js';
-import { COLORS, roundRect, isHidden, hueInk } from './paint.js';
+import { COLORS, isHidden, laneLabel } from './paint.js';
 
 /** How much of the viewport the pinned strip may take before it starts scrolling. */
 export const PIN_MAX_FRACTION = 0.42;
@@ -230,16 +230,7 @@ export function paintPinStrip(ctx, A, scale, { rows, filter, collapsed, dimMode,
       ctx.fillRect(0, row.y, W, 1);
       ctx.fillRect(0, Math.max(row.y + 1, row.y + row.h - 1), W, 1);
 
-      const label = `▸ ${geo.label}  (${geo.n})`;
-      ctx.font = '600 10.5px ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
-      ctx.textBaseline = 'top';
-      const w = ctx.measureText(label).width + 12;
-      const ty = row.y + Math.max(0, (row.h - 13) / 2);
-      ctx.fillStyle = COLORS.labelBg;
-      roundRect(ctx, 4, ty, w, 13, 3);
-      ctx.fill();
-      ctx.fillStyle = hueInk(geo.color);
-      ctx.fillText(label, 10, ty + 1.5);
+      laneLabel(ctx, geo.label, 8, row.y + Math.max(1, (row.h - 11) / 2), geo.color, geo.n);
       continue;
     }
 
@@ -250,7 +241,7 @@ export function paintPinStrip(ctx, A, scale, { rows, filter, collapsed, dimMode,
 
     ctx.fillStyle = hexA(geo.color, COLORS.bandFill + 0.03);
     ctx.fillRect(0, row.y, W, row.h);
-    ctx.fillStyle = hexA(geo.color, COLORS.bandEdge);
+    ctx.fillStyle = COLORS.hair;
     ctx.fillRect(0, row.y, W, 1);
 
     // Gridlines, so the strip reads against the same time axis as the map.
@@ -303,15 +294,7 @@ export function paintPinStrip(ctx, A, scale, { rows, filter, collapsed, dimMode,
     }
 
     // Label, stuck to the left edge for the same reason the map's band labels are.
-    const label = `${geo.label}  (${geo.n})`;
-    ctx.font = '600 10.5px ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
-    ctx.textBaseline = 'top';
-    const w = ctx.measureText(label).width + 12;
-    ctx.fillStyle = COLORS.labelBg;
-    roundRect(ctx, 4, row.y + 2, w, 13, 3);
-    ctx.fill();
-    ctx.fillStyle = hueInk(geo.color);
-    ctx.fillText(label, 10, row.y + 3.5);
+    laneLabel(ctx, geo.label, 8, row.y + 2, geo.color, geo.n);
   }
 }
 

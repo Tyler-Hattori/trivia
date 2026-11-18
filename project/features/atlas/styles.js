@@ -29,13 +29,15 @@
 
 export const CSS = `
 :root, :root[data-theme="light"]{
-  --bg:#ffffff; --bg2:#f4f6fa; --panel:#f7f8fb; --panel2:#eef1f6;
-  --line:#dde3ec; --line2:#c3ccda; --lineHi:#a9b5c7;
-  --text:#0f172a; --muted:#4f5b6d; --faint:#78849a;
-  --accent:#0369a1; --accent2:#0284c7; --onAccent:#ffffff;
-  --matte:#eceff5;
-  --raise:#e6ebf3;          /* hover fill on list rows and icon buttons */
-  --raise2:#dbe3ef;         /* selected fill */
+  /* Matches the topic timeline (Lanes): white ground, hairlines, near-black
+     for the active state, colour only as an accent. */
+  --bg:#ffffff; --bg2:#f8fafc; --panel:#ffffff; --panel2:#ffffff;
+  --line:#e5e7eb; --line2:#cbd5e1; --lineHi:#94a3b8;
+  --text:#0f172a; --muted:#475569; --faint:#94a3b8;
+  --accent:#0f172a; --accent2:#334155; --onAccent:#ffffff;
+  --matte:#f1f5f9;
+  --raise:#f1f5f9;          /* hover fill on list rows and icon buttons */
+  --raise2:#e2e8f0;         /* selected fill */
   --scroll:#c2cbd9;
   --title:#0b1220;
   --body:#333e50;           /* long-form prose */
@@ -47,7 +49,7 @@ export const CSS = `
   --shadowStrip:0 6px 16px rgba(15,23,42,.10);
   --shadowBig:0 24px 70px rgba(15,23,42,.28);
   --ringHover:rgba(15,23,42,.13);
-  --ringSel:rgba(3,105,161,.28);
+  --ringSel:rgba(15,23,42,.14);
   --id:#94a3b8;
 }
 :root[data-theme="dark"]{
@@ -114,7 +116,7 @@ a{color:var(--accent)}
 .grp{display:flex;align-items:center;gap:5px}
 
 .btn{
-  padding:4px 9px;border:1px solid var(--line);border-radius:6px;
+  padding:4px 9px;border:1px solid var(--line);border-radius:7px;
   background:var(--panel2);color:var(--muted);font-size:11.5px;white-space:nowrap;
 }
 .btn:hover{border-color:var(--lineHi);color:var(--text)}
@@ -238,9 +240,9 @@ a{color:var(--accent)}
 .rrow.cur{background:var(--raise2);border-left-color:var(--accent)}
 .rrow.muted{opacity:.38}
 .rrow .twist{width:13px;flex:0 0 13px;color:var(--faint);font-size:9px;text-align:center}
-.rrow .sw{width:8px;height:8px;flex:0 0 8px;border-radius:2px;background:var(--hue)}
+.rrow .sw{width:6px;height:6px;flex:0 0 6px;border-radius:1px;background:var(--hue)}
 .rrow .rlabel{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
-.rrow.col .rlabel{color:var(--hue);font-weight:600}
+.rrow.col .rlabel{color:var(--text);font-weight:600}
 .rrow .rn{color:var(--faint);font-size:10px;font-variant-numeric:tabular-nums}
 .rrow .rpin{width:15px;flex:0 0 15px;color:var(--line2);font-size:9px;opacity:0;text-align:center}
 .rrow:hover .rpin{opacity:.6}

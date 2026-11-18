@@ -16,6 +16,31 @@ in `project/app/init.js` as `window.openAtlas`.
 
 The data it reads is built by `datasets/atlas.mjs`; see `docs/PIPELINE.md`.
 
+## Look: the Lanes style (2026-11-17)
+
+The atlas is being brought to the look of the topic timeline's Lanes view
+(`project/features/topic/styles.js` `.tp-ln`/`.tp-lanelab`). Done, without
+touching any decision below:
+
+- white ground and panels, `#e5e7eb` hairlines, near-black (not blue) for the
+  active state; band wash kept but pale (light `bandFill` 0.035); a band's top
+  edge is a neutral hairline (`COLORS.hair`), a folded band keeps its hued edges;
+- band names drawn like lane names (`laneLabel` in `paint.js`): small grey
+  uppercase, letter-spaced, a 6px swatch of the band colour in front; also used
+  by focus bands and the pinned strip; entry labels are packed around them;
+- entry labels are bare text (no chip box or colour stripe) on a ground-coloured
+  backing; famous = 700 near-black, others 500 slate, 11.5px (`labelFont`);
+  a labelled point gets a round 3-4px dot; a labelled span that is visibly long
+  (and under `LONG_SPAN_FRAC`) has its title ABOVE its line and the line drawn
+  3px with end ticks, the Lanes' duration underline;
+- phones (< 700px) start with the rail folded to its spine unless the saved
+  prefs say otherwise.
+
+Not done, because each changes a decision below (ask the user first): packed
+rows instead of embedding y, retiring the rail for inline band names, image
+cards replaced by labels with small round portraits (crops), fame shown by
+weight only (no bigger dot/ring), era bands + overview strip in the header.
+
 ## Design decisions — do not re-litigate these
 
 - **The top two layers are KNOWN; only the layers below are learned.**
