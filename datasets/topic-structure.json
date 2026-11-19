@@ -152,6 +152,22 @@
   "golf": { "parent": "sports" },
   "boxing": { "parent": "sports" },
   "formula-one": { "parent": "sports" },
-  "horse-racing": { "parent": "sports" }
+  "horse-racing": { "parent": "sports" },
+  "history-of-the-universe": { "series": [] },
+  "solar-system": { "parent": "history-of-the-universe" },
+  "origin-of-life": { "parent": "history-of-life" },
+  "evolution-of-fish": { "parent": "history-of-life" },
+  "plant-evolution": { "parent": "history-of-life" },
+  "evolution-of-insects": { "parent": "history-of-life" },
+  "evolution-of-mammals": { "parent": "history-of-life" },
+  "evolution-of-birds": { "parent": "history-of-life" },
+  "mass-extinctions": { "parent": "history-of-life" },
+  "last-glacial-period": { "parent": "ice-ages" },
+  "prehistory": { "role": "collection", "series": [] },
+  "paleolithic": { "parent": "prehistory" },
+  "mesolithic": { "parent": "prehistory" },
+  "neolithic": { "parent": "prehistory" },
+  "early-human-migrations": { "parent": "prehistory" },
+  "spaceflight": { "parent": "astronomy" }
  }
 }

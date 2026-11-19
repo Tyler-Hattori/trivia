@@ -168,3 +168,21 @@ History of golf | name=Golf | events=List of Masters Tournament champions; List 
 Boxing | events=List of world heavyweight boxing champions | prose=Boxing | group=Sports
 History of Formula One | name=Formula One | events=List of Formula One World Drivers' Champions | prose=History of Formula One | group=Sports
 Horse racing | events=Triple Crown of Thoroughbred Racing (United States); Kentucky Derby; Epsom Derby; Grand National | prose=Horse racing | group=Sports
+
+# Deep time and prehistory (2026-11-19): content for the atlas's Humans and Earth ranges
+Chronology of the universe | name=History of the universe | group=Life & Earth
+Formation and evolution of the Solar System | name=Solar System | group=Life & Earth
+Abiogenesis | name=Origin of life | group=Life & Earth
+Evolution of fish | group=Life & Earth
+Evolutionary history of plants | name=Plant evolution | events=Timeline of plant evolution | group=Life & Earth
+Evolution of insects | group=Life & Earth
+Evolution of mammals | group=Life & Earth
+Evolution of birds | group=Life & Earth
+Extinction event | name=Mass extinctions | group=Life & Earth
+Last Glacial Period | group=Life & Earth
+Prehistory | events=Timeline of prehistory | group=Life & Earth
+Paleolithic | group=Life & Earth
+Mesolithic | group=Life & Earth
+Neolithic | group=Life & Earth
+Early human migrations | group=Life & Earth
+History of spaceflight | name=Spaceflight | events=Timeline of spaceflight; Timeline of Solar System exploration | group=Science

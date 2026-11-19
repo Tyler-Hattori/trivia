@@ -87,7 +87,15 @@ const roughWidth = (t, bold) => String(t).length * (bold ? 6.6 : 6.1);
  *   marks    [{ e, lane, kind, x0, x1, l, r, lw, bar, y, pinned, w }]   (events, people, more)
  *   bars     [{ e, lane, x0, x1, clipL, clipR, y, pinned }]              (spans)
  */
-export function layoutAtlas(entries, meta, { x0, ppy, width, view, domain, caps, folded = new Set(), pinned = new Set(), more = new Set(), hideEmpty = false, order = null, measure = roughWidth }){
+export function layoutAtlas(entries, meta, { x0, ppy, width, view, domain, caps, folded = new Set(), pinned = new Set(), more = new Set(), hideEmpty = false, order = null, measure = roughWidth, deep = null }){
+  /*
+   * deep = { from, key, min } in the Humans and Earth ranges: while the view is
+   * much wider than the narrower range (from = its left edge), entries newer than
+   * `from` (a sliver at the right edge) are left out, and so are lanes with fewer
+   * than `min` entries older than it (meta lane .dh / .de). Zoomed in near the
+   * present, everything comes back.
+   */
+  const wide = !!deep && (view[1] - view[0]) > 3 * Math.max(1, (domain?.[1] ?? 2026) - deep.from);
   const nL = meta.lanes.length;
   const X = (y) => (y - x0) * ppy;
   const cells = Math.ceil(width / GEO.CELL) + 2;
@@ -106,12 +114,13 @@ export function layoutAtlas(entries, meta, { x0, ppy, width, view, domain, caps,
   for(const e of entries){
     const li = e.ln;
     if(li == null || li < 0 || li >= nL || !laneVisible[li]) continue;
+    if(wide && e.s >= deep.from) continue;
     const kind = e.kind || (e.kind = kindOf(e));
     const end = e.o ? (domain?.[1] ?? e.e) : (e.e ?? e.s);
     let l, r, g;
     if(kind === 'spans'){
       // The context of the whole view, not a part of it (packBars' umbrellas).
-      if(e.s <= view[0] && end >= view[1] && end - e.s > 2 * vSpan) continue;
+      if(e.s <= view[0] && end >= view[1] && (wide || end - e.s > 2 * vSpan)) continue;
       const a = X(e.s), b = X(end);
       let s0 = Math.max(0, Math.min(width, a));
       let s1 = Math.max(0, Math.min(width, b));
@@ -159,7 +168,7 @@ export function layoutAtlas(entries, meta, { x0, ppy, width, view, domain, caps,
   const outSecs = [], outLanes = [];
   const kindTop = Array.from({ length: nL }, () => ({}));
   let y = 0, py = 0;
-  const inDomain = (l) => !domain || l.lo == null || (l.hi >= domain[0] && l.lo <= domain[1]);
+  const inDomain = (l) => (!domain || l.lo == null || (l.hi >= domain[0] && l.lo <= domain[1])) && (!wide || (l[deep.key] || 0) >= deep.min || pinned.has(l.key));
   // Deep time last when the range is human history, first otherwise.
   const secs = order ? order(meta.sections) : meta.sections;
   for(const s of secs){

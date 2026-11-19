@@ -264,6 +264,12 @@ const ATLAS_BUCKET = 1500, ATLAS_TOP = 5000, ATLAS_LANE_TOP = 40;
   // in Civilization) is left out rather than drawn empty.
   const ext = lanes.map(() => [Infinity, -Infinity]);
   for(const r of rows){ const x = ext[r.ln]; x[0] = Math.min(x[0], r.s); x[1] = Math.max(x[1], r.o ? NOW : r.e ?? r.s); }
+  // Deep content per lane: entries older than the Civilization range (-3000) and
+  // than the Humans range (-300,000). The wider ranges show only lanes that have
+  // some (scales.js DEEP_FROM; lanes.js), so they are not 100 lanes of history
+  // squeezed against the present.
+  const deep = lanes.map(() => [0, 0]);
+  for(const r of rows){ if(r.s < -3000) deep[r.ln][0]++; if(r.s < -300000) deep[r.ln][1]++; }
   // Top: every lane's headliners, then the most important overall.
   const byP = [...rows].sort((a, b) => b.p - a.p);
   const top = new Set();
@@ -289,7 +295,7 @@ const ATLAS_BUCKET = 1500, ATLAS_TOP = 5000, ATLAS_LANE_TOP = 40;
   put('atlas/long.json', along);
   put('atlas/meta.json', {
     built: new Date().toISOString(), n: rows.length, sections,
-    lanes: lanes.map((l, li) => ({ key: l.key, label: l.label, section: l.section, depth: l.depth, n: l.n, ...(Number.isFinite(ext[li][0]) ? { lo: ext[li][0], hi: ext[li][1] } : {}), ...(l.topic ? { topic: l.topic } : {}), ...(l.collection ? { collection: 1 } : {}), ...(l.fallback ? { fallback: 1 } : {}) })),
+    lanes: lanes.map((l, li) => ({ key: l.key, label: l.label, section: l.section, depth: l.depth, n: l.n, ...(Number.isFinite(ext[li][0]) ? { lo: ext[li][0], hi: ext[li][1] } : {}), ...(deep[li][0] ? { dh: deep[li][0] } : {}), ...(deep[li][1] ? { de: deep[li][1] } : {}), ...(l.topic ? { topic: l.topic } : {}), ...(l.collection ? { collection: 1 } : {}), ...(l.fallback ? { fallback: 1 } : {}) })),
     eras: ERAS, extent: [Math.min(...P.x0), Math.max(...P.x1)],
     buckets: ab.map((b, i) => ({ lo: b.lo, hi: Number.isFinite(b.hi) ? b.hi : null, f: `b-${pad(i)}.json`, n: b.rows.length })),
     top: top.size, long: along.length,

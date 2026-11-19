@@ -208,6 +208,7 @@ export async function openAtlas(){
       x0, ppy: V.ppy, width: 3 * V.W, view: [V.x0, V.x0 + wy], domain: V.domain,
       caps: capsFor(zoomLevel(), !!V.matches), folded: V.matches ? new Set() : V.folded,
       pinned: V.pinned, more: V.more, hideEmpty: !!V.matches, measure,
+      deep: V.matches ? null : V.mode === 'human' ? { from: -3000, key: 'dh', min: 5 } : V.mode === 'earth' ? { from: -300000, key: 'de', min: 5 } : null,
       order: (S) => (V.mode === 'civ' ? [...S.filter((x) => x.key !== 'earth'), ...S.filter((x) => x.key === 'earth')] : S),
     });
     L = { x0, ppy: V.ppy, W: V.W, res };

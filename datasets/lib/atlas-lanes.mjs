@@ -42,7 +42,7 @@ const ROOT_SECTION = {
   'oceania': 'oceania', 'science': 'science',
   'byzantine-empire': 'europe', 'renaissance': 'europe', 'impressionism': 'culture',
   'cold-war': 'world', 'world-war-ii': 'world',
-  'art-history': 'art', 'film-history': 'film', 'sports': 'sports',
+  'history-of-the-universe': 'earth', 'prehistory': 'earth', 'art-history': 'art', 'film-history': 'film', 'sports': 'sports',
 };
 
 // A category with no topic: the science topic that covers it.
