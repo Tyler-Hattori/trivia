@@ -120,7 +120,9 @@ export function layoutAtlas(entries, meta, { x0, ppy, width, view, domain, caps,
     let l, r, g;
     if(kind === 'spans'){
       // The context of the whole view, not a part of it (packBars' umbrellas).
-      if(e.s <= view[0] && end >= view[1] && (wide || end - e.s > 2 * vSpan)) continue;
+      if(e.s <= view[0] && end >= view[1] && end - e.s > 2 * vSpan) continue;
+      // Zoomed out over deep time, a bar across most of the view is context (Cenozoic in Humans).
+      if(wide && Math.min(end, view[1]) - Math.max(e.s, view[0]) > 0.8 * vSpan) continue;
       const a = X(e.s), b = X(end);
       let s0 = Math.max(0, Math.min(width, a));
       let s1 = Math.max(0, Math.min(width, b));

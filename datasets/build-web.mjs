@@ -197,7 +197,7 @@ const ATLAS_BUCKET = 1500, ATLAS_TOP = 5000, ATLAS_LANE_TOP = 40;
   const { buildLanes, ERAS } = await import('./lib/atlas-lanes.mjs');
   const struct = read(path.join(DATASETS_DIR, 'topic-structure.json')).topics;
   const absorbedInto = new Map(idx.topics.filter((t) => t.absorbedInto).map((t) => [t.slug, t.absorbedInto]));
-  const topicsLive = idx.topics.filter((t) => live.has(t.slug)).map((t) => ({ slug: t.slug, title: t.title, parent: struct[t.slug]?.parent || t.parent || null, role: struct[t.slug]?.role || t.role || null }));
+  const topicsLive = idx.topics.filter((t) => live.has(t.slug)).map((t) => ({ slug: t.slug, title: t.title, parent: struct[t.slug]?.parent || t.parent || null, role: struct[t.slug]?.role || t.role || null, from: t.from ?? null }));
   const members = new Map();
   for(const t of idx.topics){
     const home = absorbedInto.get(t.slug) || t.slug;
@@ -264,12 +264,12 @@ const ATLAS_BUCKET = 1500, ATLAS_TOP = 5000, ATLAS_LANE_TOP = 40;
   // in Civilization) is left out rather than drawn empty.
   const ext = lanes.map(() => [Infinity, -Infinity]);
   for(const r of rows){ const x = ext[r.ln]; x[0] = Math.min(x[0], r.s); x[1] = Math.max(x[1], r.o ? NOW : r.e ?? r.s); }
-  // Deep content per lane: entries older than the Civilization range (-3000) and
-  // than the Humans range (-300,000). The wider ranges show only lanes that have
+  // Deep content per lane: entries inside the Humans range but older than the
+  // Civilization range (-300,000 to -3000), and entries older than the Humans range. The wider ranges show only lanes that have
   // some (scales.js DEEP_FROM; lanes.js), so they are not 100 lanes of history
   // squeezed against the present.
   const deep = lanes.map(() => [0, 0]);
-  for(const r of rows){ if(r.s < -3000) deep[r.ln][0]++; if(r.s < -300000) deep[r.ln][1]++; }
+  for(const r of rows){ if(r.s < -3000 && r.s >= -300000) deep[r.ln][0]++; if(r.s < -300000) deep[r.ln][1]++; }
   // Top: every lane's headliners, then the most important overall.
   const byP = [...rows].sort((a, b) => b.p - a.p);
   const top = new Set();

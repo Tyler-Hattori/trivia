@@ -217,6 +217,18 @@ timeline; spans that cover far more than the view are dropped as umbrellas.
 - **Money rule** (user): run long free jobs in the background and check once;
   say what costs money before running it.
 
+- **Atlas wide ranges (2026-11-19, user: "too sparse, content should change"):**
+  Humans/Earth show only lanes with >=5 entries in that range's own stretch
+  (meta lane `dh` = -300,000..-3000, `de` = before -300,000; build-web.mjs),
+  and while zoomed out drop entries newer than the narrower range and bars
+  across >80% of the view (lanes.js `deep`). Earth & life roots sort oldest
+  first. 16 deep-time/prehistory topics added (History of the universe, Solar
+  System, Origin of life, evolution of fish/plants/insects/mammals/birds, Mass
+  extinctions, Last Glacial Period, Prehistory collection + Paleolithic,
+  Mesolithic, Neolithic, Early human migrations; Spaceflight under Astronomy):
+  151 topics. Model passes $0.76. Rough: History of the universe pulls in
+  off-topic life events (Burgess Shale, ichthyosaurs).
+
 ## 8. Next, in order
 
 1. **"Ready for more data"** (user, 2026-11-18). What grows with the store and

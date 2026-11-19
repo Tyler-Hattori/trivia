@@ -88,6 +88,8 @@ export function buildLanes(topics, members, points){
   const add = (key, label, section, extra = {}) => { laneIdx.set(key, lanes.length); lanes.push({ key, label, section, depth: 0, n: 0, ...extra }); };
   for(const [sec] of SECTIONS){
     const roots = topics.filter((t) => !(t.parent && bySlug.has(t.parent)) && sectionOfTopic(t.slug) === sec);
+    // Deep time reads oldest first: the universe, then the Earth, then prehistory.
+    if(sec === 'earth') roots.sort((a, b) => (a.from ?? 0) - (b.from ?? 0));
     const walk = (s, d) => {
       const t = bySlug.get(s);
       add(s, t.title, sec, { topic: s, depth: d, collection: t.role === 'collection' });
