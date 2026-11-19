@@ -188,38 +188,34 @@ timeline; spans that cover far more than the view are dropped as umbrellas.
   qa-topic 2370/2375 (the 5 known intro-less chapters).
 - Nothing running in the background.
 
-## 7b. Session 2026-11-19 (in progress)
+## 7b. Session 2026-11-19 (done)
 
-- **Titling pass stopped half-way: Anthropic credits ran out** ($3.09 spent;
-  10.6k of 22k answered: 6.9k titled, 3.5k rejected). After a top-up, rerun
-  `node datasets/title-events.mjs` (incremental; ~$3.5 left + new topics).
-- **Batch running**: `topic.mjs --list --ingest --ingest-limit 100` (log
-  /tmp/ingest2.log; ~10 min/topic, 52 topics, so ~8 h; limit lowered from 250
-  because Wikipedia throttles). Resumable: rerun the same command.
-  - *Art history* (collection, events=Timeline of art) + 26 period/region
-    topics; Impressionism and Renaissance now its children.
-  - *Film history* (collection, series = Academy Award for Best Picture,
-    events = `1888..2025 in film`, a new range syntax) + 10 children.
-    `lib/wiki.mjs` mines year pages: Events list only, page year, month/day
-    lead cut, award-announcement/festival lines dropped, tables skipped.
-  - *Sports* (collection) + 14 sports (football, Olympics, baseball, American
-    football, basketball, ice hockey, cricket, rugby, tennis, golf, boxing,
-    F1, horse racing). Each: `prose=` its history article(s) for developments
-    (leagues, rules, eras, dynasties, records) + `events=` winners lists, read
-    by **`lib/results.mjs`** recipes ("X win the World Series, beating Y 4–3").
-    `prose` is now saved in the topic and passed on `--all`. The running batch
-    read topics.txt before Sports' line changed to `prose=History of sport;
-    Sports dynasty`: rebuild Sports with `--ingest` afterwards.
-  After the batch: titles, audits (`audit-entries.mjs`, `--spans --kinds
-  --bare`), `dedupe-events.mjs`, `topic.mjs --all`, key points, QA, deploy.
-  Expect many Haiku rejections of results/prose lines to check.
-- **Accounts**: `project/app/sync.js` live with the publishable key; home shows
-  the sign-in line (email link; Google hidden until configured). **The
-  `progress` table does not exist yet** (PGRST205): user must run the SQL in
-  docs/ACCOUNTS.md and set redirect URLs. Then test sign-in + sync.
-- The user's film spreadsheet (Google Sheets 1Q1oWb…): watched-by-year (704),
-  AFI lists, canon by year, rankings, Oscars. Unused; asked whether "watched"
-  should be a personal mark.
+- **135 topics** (52 new): *Art history* (collection, events=Timeline of art) +
+  26 periods/regions (Impressionism, Renaissance moved under it); *Film
+  history* (collection; series Academy Award for Best Picture; events
+  `1888..2025 in film`, a range syntax in topics.txt) + 10; *Sports*
+  (collection; prose History of sport + Sports dynasty) + 14 sports, each
+  `prose=` its history article(s) + `events=` winners lists.
+- Code: `lib/wiki.mjs` mines "YYYY in X" year pages (Events list only, page
+  year); `lib/results.mjs` recipes turn winners tables into events ("X win the
+  World Series, beating Y 4–3"); `prose` saved in topics and passed on `--all`;
+  atlas sections Art / Film / Sports (`lib/atlas-lanes.mjs`).
+- Model passes (~$16 total this session): titles for all topics (22k old +
+  9k new; ~40% rejected as non-events, spot-checked OK), audit (22k), spans,
+  kinds, bare, dedupe. All incremental: next runs only ask about new things.
+- **Accounts live**: Supabase (docs/ACCOUNTS.md), email link + Google, sign-in
+  line beside the tagline. User had not yet confirmed a sign-in round-trip.
+- QA: verify 32/34 (taxonomy.json 50.4 MB, must chunk before ~100 MB; web
+  atlas/top.json > 1.5 MB), qa-topic 3815/3839 (new topics' list-like
+  chapters lack intros, e.g. "Notable artists", "Notes and citations"),
+  qa-atlas 38/38, qa-quiz 49/49. Site 507 MB of Pages' 1 GB.
+- Not done: key points for the 52 new topics (suggested Haiku drafts, ~$1,
+  instead of in-session writing); off-topic links in art lanes (Battle of the
+  Milvian Bridge in Art history); some near-duplicate events (National League
+  "founded"/"established"); the user's film spreadsheet (asked: personal
+  "watched" mark?).
+- **Money rule** (user): run long free jobs in the background and check once;
+  say what costs money before running it.
 
 ## 8. Next, in order
 
