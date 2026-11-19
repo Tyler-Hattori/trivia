@@ -5,7 +5,7 @@
  * Lanes are TOPICS (topics/<slug>.json), arranged by the topic tree
  * (topic-structure.json `parent`), in sections named after its roots:
  * Earth & life, World, Europe, Middle East, Africa, Asia, Americas, Oceania,
- * Science, Arts & ideas. An entry in several topics lives in the one where it
+ * Science, Art, Film, Sports, Arts & ideas. An entry in several topics lives in the one where it
  * matters most (an essential there, its importance, the most specific topic;
  * a collection like Europe only borrows its subtopics' entries, so it loses
  * ties). An entry in no topic falls back to its CATEGORY (the Wikimedia subject,
@@ -28,7 +28,10 @@ export const SECTIONS = [
   ['americas', 'Americas', '#059669'],
   ['oceania', 'Oceania', '#0891b2'],
   ['science', 'Science', '#7c3aed'],
-  ['culture', 'Arts & ideas', '#db2777'],
+  ['art', 'Art', '#db2777'],
+  ['film', 'Film', '#9333ea'],
+  ['sports', 'Sports', '#16a34a'],
+  ['culture', 'Arts & ideas', '#be185d'],
 ];
 
 // Roots of the topic tree that are sections of their own, and where the other
@@ -39,6 +42,7 @@ const ROOT_SECTION = {
   'oceania': 'oceania', 'science': 'science',
   'byzantine-empire': 'europe', 'renaissance': 'europe', 'impressionism': 'culture',
   'cold-war': 'world', 'world-war-ii': 'world',
+  'art-history': 'art', 'film-history': 'film', 'sports': 'sports',
 };
 
 // A category with no topic: the science topic that covers it.
