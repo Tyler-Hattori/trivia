@@ -1,0 +1,3611 @@
+{
+ "topics": [
+  {
+   "slug": "abstract-expressionism",
+   "title": "Abstract expressionism",
+   "group": "Art & culture",
+   "source": {
+    "page": "Abstract expressionism",
+    "url": "https://en.wikipedia.org/wiki/Abstract_expressionism"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Abstract expressionism in the United States emerged as a distinct art movement in the aftermath of World War II and gained mainstream acceptance in the 1950s, a shift from the American social realism of the 1930s influen",
+   "built": "2026-11-19",
+   "count": 301,
+   "key": 91,
+   "chapters": 7,
+   "from": 1816,
+   "to": 1999,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/1/1e/Jackson_Pollock_by_Hans_Namuth_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "art-history",
+   "series": [
+    "Abstract art"
+   ]
+  },
+  {
+   "slug": "africa",
+   "title": "Africa",
+   "group": "Continents & regions",
+   "source": {
+    "page": "History of Africa",
+    "url": "https://en.wikipedia.org/wiki/History_of_Africa"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Archaic humans emerged out of Africa between 0.5 and 1.8 million years ago.",
+   "built": "2026-11-19",
+   "count": 440,
+   "key": 101,
+   "chapters": 16,
+   "from": -350,
+   "to": 1993,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/d/df/Mohammad_adil-Rashidun-empire-at-its-peak-close.PNG?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "role": "collection"
+  },
+  {
+   "slug": "african-art",
+   "title": "African art",
+   "group": "Art & culture",
+   "source": {
+    "page": "African art",
+    "url": "https://en.wikipedia.org/wiki/African_art"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "African art refers to works of visual art, including works of sculpture, painting, metalwork, and pottery, originating from the various peoples of the African continent and influenced by distinct, indigenous traditions o",
+   "built": "2026-11-19",
+   "count": 197,
+   "key": 84,
+   "chapters": 17,
+   "from": -1350,
+   "to": 2020,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/c/c5/Leopard_africa.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "art-history"
+  },
+  {
+   "slug": "american-football",
+   "title": "American football",
+   "group": "Sports",
+   "source": {
+    "page": "History of American football",
+    "url": "https://en.wikipedia.org/wiki/History_of_American_football"
+   },
+   "events": [
+    "List of Super Bowl champions"
+   ],
+   "prose": [
+    "History of American football",
+    "History of the National Football League"
+   ],
+   "keyTarget": 90,
+   "blurb": "The history of American football can be traced to early versions of rugby football and association football.",
+   "built": "2026-11-19",
+   "count": 222,
+   "key": 91,
+   "chapters": 12,
+   "from": 1868,
+   "to": 2021,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/a/ad/Stoppage_in_an_AFL_game.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "sports",
+   "series": [
+    "Gridiron football concepts"
+   ]
+  },
+  {
+   "slug": "ancient-egypt",
+   "title": "Ancient Egypt",
+   "group": "Ancient world",
+   "source": {
+    "page": "Ancient Egypt",
+    "url": "https://en.wikipedia.org/wiki/Ancient_Egypt"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Ancient Egypt was a cradle of civilization concentrated along the lower reaches of the Nile River in the eastern part of North Africa.",
+   "built": "2026-11-19",
+   "count": 297,
+   "key": 103,
+   "chapters": 18,
+   "from": -4100,
+   "to": 1936,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/4/49/Alexander_Mosaic_detail_of_Alexander_the_Great_%283x4_cropped%29.jpg",
+   "parent": "egypt",
+   "series": [
+    "Periods and dynasties of ancient Egypt"
+   ]
+  },
+  {
+   "slug": "ancient-greece",
+   "title": "Ancient Greece",
+   "group": "Ancient world",
+   "source": {
+    "page": "Ancient Greece",
+    "url": "https://en.wikipedia.org/wiki/Ancient_Greece"
+   },
+   "events": [
+    "Timeline of ancient Greece"
+   ],
+   "keyTarget": 90,
+   "blurb": "Ancient Greece was an ancient civilization existing from the Greek Dark Ages of the 12th–9th centuries BC to the end of classical antiquity (c.",
+   "built": "2026-11-19",
+   "count": 289,
+   "key": 94,
+   "chapters": 9,
+   "from": -1100,
+   "to": 330,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/8/8e/Pelop_war_en.png",
+   "parent": "greece",
+   "series": [
+    "Ancient Greek wars"
+   ]
+  },
+  {
+   "slug": "ancient-greek-art",
+   "title": "Ancient Greek art",
+   "group": "Art & culture",
+   "source": {
+    "page": "Ancient Greek art",
+    "url": "https://en.wikipedia.org/wiki/Ancient_Greek_art"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Ancient Greek art is the visual and applied arts, as well as the architecture, produced by the Hellenes or Greek peoples from the start of the Iron Age to the Hellenistic period, ending with Roman conquest of Greece at t",
+   "built": "2026-11-19",
+   "count": 148,
+   "key": 90,
+   "chapters": 12,
+   "from": -1750,
+   "to": 1821,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/a/ad/Herakles_Farnese_MAN_Napoli_Inv6001_n01.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "art-history",
+   "series": [
+    "History of Greek art"
+   ]
+  },
+  {
+   "slug": "ancient-rome",
+   "title": "Ancient Rome",
+   "group": "Ancient world",
+   "source": {
+    "page": "Ancient Rome",
+    "url": "https://en.wikipedia.org/wiki/Ancient_Rome"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "In modern historiography, ancient Rome is the Roman civilization from the founding of the Italian city of Rome in the 8th century BC to the collapse of the Western Roman Empire in the 5th century AD.",
+   "built": "2026-11-19",
+   "count": 747,
+   "key": 98,
+   "chapters": 11,
+   "from": -753,
+   "to": 1205,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/e/ea/Roman_Republic_Empire_map.gif",
+   "parent": "italy",
+   "series": [
+    "Ancient Rome topics"
+   ]
+  },
+  {
+   "slug": "animation",
+   "title": "Animation",
+   "group": "Film",
+   "source": {
+    "page": "History of animation",
+    "url": "https://en.wikipedia.org/wiki/History_of_animation"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Animation, the method for creating moving pictures from still images, has an early history and a modern history that began with the advent of celluloid film in 1888.",
+   "built": "2026-11-19",
+   "count": 332,
+   "key": 93,
+   "chapters": 16,
+   "from": 1914,
+   "to": 2011,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/7/75/Winsor_McCay_1906.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "film-history",
+   "series": [
+    "Animation"
+   ]
+  },
+  {
+   "slug": "argentina",
+   "title": "Argentina",
+   "group": "Countries",
+   "source": {
+    "page": "History of Argentina",
+    "url": "https://en.wikipedia.org/wiki/History_of_Argentina"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Argentina can be divided into four main parts: the pre-Columbian time or early history (up to the sixteenth century), the colonial period, the period of nation-building, and the history of modern Argentina",
+   "built": "2026-11-19",
+   "count": 482,
+   "key": 95,
+   "chapters": 18,
+   "from": 1762,
+   "to": 2001,
+   "cover": "https://upload.wikimedia.org/wikipedia/en/5/56/Argentine_Independence_War.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "latin-america",
+   "series": [
+    "History of Argentina"
+   ]
+  },
+  {
+   "slug": "art-history",
+   "title": "Art history",
+   "group": "Art & culture",
+   "source": {
+    "page": "History of art",
+    "url": "https://en.wikipedia.org/wiki/History_of_art"
+   },
+   "events": [
+    "Timeline of art"
+   ],
+   "keyTarget": 90,
+   "blurb": "The history of art focuses on objects made by humans for any number of spiritual, narrative, philosophical, symbolic, conceptual, documentary, decorative, and even functional and other purposes, though focused on a prima",
+   "built": "2026-11-19",
+   "count": 2096,
+   "key": 99,
+   "chapters": 10,
+   "from": -1500,
+   "to": 1977,
+   "cover": "https://upload.wikimedia.org/wikipedia/en/1/1c/Pablo_Picasso%2C_1910%2C_Girl_with_a_Mandolin_%28Fanny_Tellier%29%2C_oil_on_canvas%2C_100.3_x_73.6_cm%2C_Museum_of_Modern_Art_New_York..jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "role": "collection"
+  },
+  {
+   "slug": "art-nouveau",
+   "title": "Art Nouveau",
+   "group": "Art & culture",
+   "source": {
+    "page": "Art Nouveau",
+    "url": "https://en.wikipedia.org/wiki/Art_Nouveau"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Art Nouveau is an international style of art, architecture, and applied art, especially the decorative arts.",
+   "built": "2026-11-19",
+   "count": 470,
+   "key": 94,
+   "chapters": 11,
+   "from": 1851,
+   "to": 1942,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/4/45/Victor_Horta_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "art-history"
+  },
+  {
+   "slug": "asia",
+   "title": "Asia",
+   "group": "Continents & regions",
+   "source": {
+    "page": "History of Asia",
+    "url": "https://en.wikipedia.org/wiki/History_of_Asia"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Asia can be seen as the collective history of East Asia, South Asia, Southeast Asia, Central Asia, North Asia and West Asia.",
+   "built": "2026-11-19",
+   "count": 1552,
+   "key": 98,
+   "chapters": 9,
+   "from": -6200,
+   "to": 1990,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/0/01/Yuan_Dynasty_revised.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "role": "collection"
+  },
+  {
+   "slug": "association-football",
+   "title": "Association football",
+   "group": "Sports",
+   "source": {
+    "page": "History of association football",
+    "url": "https://en.wikipedia.org/wiki/History_of_association_football"
+   },
+   "events": [
+    "Timeline of association football",
+    "List of FIFA World Cup finals",
+    "List of European Cup and UEFA Champions League finals",
+    "List of English football champions"
+   ],
+   "prose": [
+    "History of association football",
+    "History of the FIFA World Cup"
+   ],
+   "keyTarget": 90,
+   "blurb": "The history of association football, more commonly known as football or soccer, stretches back to at least medieval times.",
+   "built": "2026-11-19",
+   "count": 334,
+   "key": 90,
+   "chapters": 9,
+   "from": 1860,
+   "to": 2020,
+   "cover": "https://thumb.wikimedia.org/wikipedia/en/thumb/1/1e/Asociaci%C3%B3n_del_F%C3%BAtbol_Argentino_%28crest%29.svg/250px-Asociaci%C3%B3n_del_F%C3%BAtbol_Argentino_%28crest%29.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "sports",
+   "series": [
+    "Association football"
+   ]
+  },
+  {
+   "slug": "astronomy",
+   "title": "Astronomy",
+   "group": "Science",
+   "source": {
+    "page": "History of astronomy",
+    "url": "https://en.wikipedia.org/wiki/History_of_astronomy"
+   },
+   "events": [
+    "Timeline of astronomy"
+   ],
+   "keyTarget": 90,
+   "blurb": "The history of astronomy focuses on the efforts of civilizations to understand the universe beyond earth's atmosphere.",
+   "built": "2026-11-19",
+   "count": 232,
+   "key": 90,
+   "chapters": 5,
+   "from": -9000,
+   "to": 2019,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/3/36/William_Herschel01.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "science"
+  },
+  {
+   "slug": "australia",
+   "title": "Australia",
+   "group": "Countries",
+   "source": {
+    "page": "History of Australia",
+    "url": "https://en.wikipedia.org/wiki/History_of_Australia"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Commonwealth of Australia was proclaimed on 1 January 1901 as a federation of six self-governing former British colonies.",
+   "built": "2026-11-19",
+   "count": 1282,
+   "key": 97,
+   "chapters": 13,
+   "from": -120000,
+   "to": 2008,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e7/Van_Diemen%27s_Land_Unofficial_Merchant_Ensign_before_1875.svg/1920px-Van_Diemen%27s_Land_Unofficial_Merchant_Ensign_before_1875.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "oceania",
+   "series": [
+    "History of Australia"
+   ]
+  },
+  {
+   "slug": "aztec-empire",
+   "title": "Aztec Empire",
+   "group": "Americas",
+   "source": {
+    "page": "Aztec Empire",
+    "url": "https://en.wikipedia.org/wiki/Aztec_Empire"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Aztec Empire, also known as the Triple Alliance or historiographically as the Tenochca Empire but most accurately known as the Mexica, was an alliance of three Nahua city-states: Mexico-Tenochtitlan, Tetzcoco, and Tl",
+   "built": "2026-11-19",
+   "count": 81,
+   "key": 76,
+   "chapters": 18,
+   "from": 1299,
+   "to": 1624,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/2/20/Conquista-de-M%C3%A9xico-por-Cort%C3%A9s-Tenochtitlan-Painting.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "mexico",
+   "series": [
+    "Aztec civilization"
+   ]
+  },
+  {
+   "slug": "baroque",
+   "title": "Baroque",
+   "group": "Art & culture",
+   "source": {
+    "page": "Baroque",
+    "url": "https://en.wikipedia.org/wiki/Baroque"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Baroque is a Western style of architecture, music, dance, painting, sculpture, poetry, and other arts that flourished from the early 1600s until the 1750s.",
+   "built": "2026-11-19",
+   "count": 512,
+   "key": 102,
+   "chapters": 21,
+   "from": 1300,
+   "to": 1814,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Map_of_the_Viceroyalty_of_New_Spain.svg/3840px-Map_of_the_Viceroyalty_of_New_Spain.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "art-history",
+   "series": [
+    "Baroque architecture by country"
+   ]
+  },
+  {
+   "slug": "baseball",
+   "title": "Baseball",
+   "group": "Sports",
+   "source": {
+    "page": "History of baseball",
+    "url": "https://en.wikipedia.org/wiki/History_of_baseball"
+   },
+   "events": [
+    "Timeline of Major League Baseball",
+    "List of World Series champions"
+   ],
+   "prose": [
+    "History of baseball",
+    "History of baseball in the United States"
+   ],
+   "keyTarget": 90,
+   "blurb": "The history of baseball can be broken down into various aspects: by era, by locale, by organizational-type, game evolution, as well as by political and cultural influence.",
+   "built": "2026-11-19",
+   "count": 334,
+   "key": 90,
+   "chapters": 3,
+   "from": 1745,
+   "to": 1986,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/1/13/Babe_Ruth2.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "sports",
+   "series": [
+    "History of baseball"
+   ]
+  },
+  {
+   "slug": "basketball",
+   "title": "Basketball",
+   "group": "Sports",
+   "source": {
+    "page": "History of basketball",
+    "url": "https://en.wikipedia.org/wiki/History_of_basketball"
+   },
+   "events": [
+    "List of NBA champions"
+   ],
+   "prose": [
+    "History of basketball",
+    "National Basketball Association"
+   ],
+   "keyTarget": 90,
+   "blurb": "Basketball began with its invention in 1891 in Springfield, Massachusetts, by Canadian physical education instructor James Naismith as a less injury-prone sport than football.",
+   "built": "2026-11-19",
+   "count": 208,
+   "key": 87,
+   "chapters": 12,
+   "from": 1899,
+   "to": 2026,
+   "cover": "https://thumb.wikimedia.org/wikipedia/en/thumb/8/8f/Boston_Celtics.svg/250px-Boston_Celtics.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "sports"
+  },
+  {
+   "slug": "biology",
+   "title": "Biology",
+   "group": "Science",
+   "source": {
+    "page": "History of biology",
+    "url": "https://en.wikipedia.org/wiki/History_of_biology"
+   },
+   "events": [
+    "Timeline of biology and organic chemistry"
+   ],
+   "keyTarget": 90,
+   "blurb": "The history of biology traces the study of the living world from ancient to modern times.",
+   "built": "2026-11-19",
+   "count": 254,
+   "key": 93,
+   "chapters": 10,
+   "from": -2600000,
+   "to": 2002,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/a/ae/Aristotle_Altemps_Inv8575.jpg",
+   "parent": "science",
+   "series": [
+    "History of biology"
+   ]
+  },
+  {
+   "slug": "boxing",
+   "title": "Boxing",
+   "group": "Sports",
+   "source": {
+    "page": "Boxing",
+    "url": "https://en.wikipedia.org/wiki/Boxing"
+   },
+   "events": [
+    "List of world heavyweight boxing champions"
+   ],
+   "prose": [
+    "Boxing"
+   ],
+   "keyTarget": 90,
+   "blurb": "Boxing is a combat sport and martial art.",
+   "built": "2026-11-19",
+   "count": 193,
+   "key": 85,
+   "chapters": 16,
+   "from": -5500,
+   "to": 2011,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/2/22/Stage_actor_James_J_Corbett_%28SAYRE_22828%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "sports",
+   "series": [
+    "Boxing"
+   ]
+  },
+  {
+   "slug": "brazil",
+   "title": "Brazil",
+   "group": "Countries",
+   "source": {
+    "page": "History of Brazil",
+    "url": "https://en.wikipedia.org/wiki/History_of_Brazil"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Before the arrival of the Europeans, the lands that now constitute Brazil were inhabited and settled by diverse tribes for thousands of years.",
+   "built": "2026-11-19",
+   "count": 339,
+   "key": 92,
+   "chapters": 5,
+   "from": 1976,
+   "to": 2014,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7e/Pedro_Am%C3%A9rico_-_Independ%C3%AAncia_ou_Morte_-_Google_Art_Project.jpg/3840px-Pedro_Am%C3%A9rico_-_Independ%C3%AAncia_ou_Morte_-_Google_Art_Project.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "latin-america",
+   "series": [
+    "History of Brazil"
+   ]
+  },
+  {
+   "slug": "byzantine-art",
+   "title": "Byzantine art",
+   "group": "Art & culture",
+   "source": {
+    "page": "Byzantine art",
+    "url": "https://en.wikipedia.org/wiki/Byzantine_art"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Byzantine art comprises the body of artistic products of the Byzantine Empire, as well as the nations and states that inherited culturally from the empire.",
+   "built": "2026-11-19",
+   "count": 165,
+   "key": 85,
+   "chapters": 10,
+   "from": -29,
+   "to": 1929,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Siege_of_Constantinople_fresco%2C_Moldovi%C8%9Ba_monastery%2C_Vatra_Moldovi%C8%9Bei%2C_2017.jpg/3840px-Siege_of_Constantinople_fresco%2C_Moldovi%C8%9Ba_monastery%2C_Vatra_Moldovi%C8%9Bei%2C_2017.jpg",
+   "parent": "art-history",
+   "series": [
+    "Roman art"
+   ]
+  },
+  {
+   "slug": "byzantine-empire",
+   "title": "Byzantine Empire",
+   "group": "Empires & eras",
+   "source": {
+    "page": "Byzantine Empire",
+    "url": "https://en.wikipedia.org/wiki/Byzantine_Empire"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Byzantine Empire, also known as the Eastern Roman Empire, was the continuation of the Eastern part of the Roman Empire centred on Constantinople during late antiquity and the Middle Ages.",
+   "built": "2026-11-19",
+   "count": 402,
+   "key": 102,
+   "chapters": 14,
+   "from": 301,
+   "to": 1797,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Siege_of_Constantinople_fresco%2C_Moldovi%C8%9Ba_monastery%2C_Vatra_Moldovi%C8%9Bei%2C_2017.jpg/3840px-Siege_of_Constantinople_fresco%2C_Moldovi%C8%9Ba_monastery%2C_Vatra_Moldovi%C8%9Bei%2C_2017.jpg"
+  },
+  {
+   "slug": "cambrian-explosion",
+   "title": "Cambrian explosion",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Cambrian explosion",
+    "url": "https://en.wikipedia.org/wiki/Cambrian_explosion"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Cambrian explosion (also known as the Cambrian radiation or Cambrian diversification) is a major evolutionary radiation event of the Earth's lifeforms beginning approximately 538.8 million years ago in the early Camb",
+   "built": "2026-11-19",
+   "count": 120,
+   "key": 85,
+   "chapters": 13,
+   "from": -720000000,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/2/2e/Mollweide_Paleographic_Map_of_Earth%2C_600_Ma_%28Ediacaran_Period%29.png",
+   "parent": "history-of-life",
+   "series": [
+    "The Cambrian explosion"
+   ]
+  },
+  {
+   "slug": "canada",
+   "title": "Canada",
+   "group": "Countries",
+   "source": {
+    "page": "History of Canada",
+    "url": "https://en.wikipedia.org/wiki/History_of_Canada"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Canada covers the period from the arrival of the Paleo-Indians to North America thousands of years ago to the present day.",
+   "built": "2026-11-19",
+   "count": 628,
+   "key": 92,
+   "chapters": 9,
+   "from": -8000,
+   "to": 2007,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/0/0a/Fathers_of_Confederation_LAC_c001855.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "series": [
+    "History of Canada"
+   ]
+  },
+  {
+   "slug": "carthage",
+   "title": "Carthage",
+   "group": "Ancient world",
+   "source": {
+    "page": "Ancient Carthage",
+    "url": "https://en.wikipedia.org/wiki/Ancient_Carthage"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Ancient Carthage was an ancient civilization based in North Africa.",
+   "built": "2026-11-19",
+   "count": 247,
+   "key": 92,
+   "chapters": 15,
+   "from": -700,
+   "to": 509,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6a/Map_of_Rome_and_Carthage_at_the_start_of_the_Second_Punic_War.svg/1280px-Map_of_Rome_and_Carthage_at_the_start_of_the_Second_Punic_War.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "africa"
+  },
+  {
+   "slug": "chemistry",
+   "title": "Chemistry",
+   "group": "Science",
+   "source": {
+    "page": "History of chemistry",
+    "url": "https://en.wikipedia.org/wiki/History_of_chemistry"
+   },
+   "events": [
+    "Timeline of chemistry"
+   ],
+   "keyTarget": 90,
+   "blurb": "The history of chemistry represents a time span from ancient history to the present.",
+   "built": "2026-11-19",
+   "count": 303,
+   "key": 90,
+   "chapters": 7,
+   "from": -5400,
+   "to": 1968,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/c/c7/Josiah_Willard_Gibbs_-from_MMS-.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "science",
+   "series": [
+    "History of chemistry"
+   ]
+  },
+  {
+   "slug": "china",
+   "title": "China",
+   "group": "Countries",
+   "source": {
+    "page": "History of China",
+    "url": "https://en.wikipedia.org/wiki/History_of_China"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of China spans several millennia across a wide geographical area.",
+   "built": "2026-11-19",
+   "count": 814,
+   "key": 93,
+   "chapters": 7,
+   "from": -12000000,
+   "to": 1974,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/9/9b/Hou_Xuanxuan_The_situation_map_of_Qin%27s_war.gif?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "asia",
+   "series": [
+    "History of China"
+   ]
+  },
+  {
+   "slug": "chinese-art",
+   "title": "Chinese art",
+   "group": "Art & culture",
+   "source": {
+    "page": "Chinese art",
+    "url": "https://en.wikipedia.org/wiki/Chinese_art"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Chinese art is visual art that originated in or is practiced in China, Greater China or by Chinese artists.",
+   "built": "2026-11-19",
+   "count": 481,
+   "key": 95,
+   "chapters": 23,
+   "from": -1200,
+   "to": 1955,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/3/3f/QinShiHuang19century.jpg",
+   "parent": "art-history",
+   "series": [
+    "History of China"
+   ]
+  },
+  {
+   "slug": "classical-hollywood-cinema",
+   "title": "Classical Hollywood cinema",
+   "group": "Film",
+   "source": {
+    "page": "Classical Hollywood cinema",
+    "url": "https://en.wikipedia.org/wiki/Classical_Hollywood_cinema"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "In film criticism, classical Hollywood cinema is both a narrative and visual style of filmmaking that first developed in the 1910s to 1920s during the later years of the silent film era.",
+   "built": "2026-11-19",
+   "count": 87,
+   "key": 54,
+   "chapters": 5,
+   "from": 1896,
+   "to": 1993,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/b/b6/Bonnie_and_Clyde_%281967_teaser_poster%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "film-history",
+   "series": [
+    "Cinema of the United States"
+   ]
+  },
+  {
+   "slug": "cold-war",
+   "title": "Cold War",
+   "group": "Wars",
+   "source": {
+    "page": "Cold War",
+    "url": "https://en.wikipedia.org/wiki/Cold_War"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Cold War was a period of international geopolitical rivalry between the United States (US) and the Soviet Union (USSR) and their respective allies, the capitalist Western Bloc and communist Eastern Bloc.",
+   "built": "2026-11-19",
+   "count": 938,
+   "key": 93,
+   "chapters": 10,
+   "from": 1931,
+   "to": 2011,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/6/67/U.S._Army_UH-1H_Hueys_insert_ARVN_troops_at_Kh%C3%A2m_%C4%90%E1%BB%A9c%2C_Vietnam%2C_12_July_1970_%2879431435%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "series": [
+    "History of the Cold War"
+   ]
+  },
+  {
+   "slug": "computing",
+   "title": "Computing",
+   "group": "Science",
+   "source": {
+    "page": "History of computing",
+    "url": "https://en.wikipedia.org/wiki/History_of_computing"
+   },
+   "events": [
+    "Timeline of computing hardware before 1950",
+    "Timeline of computing 1950–1979",
+    "Timeline of computing 1990–1999",
+    "Timeline of computing 2010–2019"
+   ],
+   "keyTarget": 90,
+   "blurb": "The history of computing extends beyond the history of computing hardware and modern computing technology including earlier methods that relied on pen and paper or chalk and slate, with or without the aid of tables.",
+   "built": "2026-11-19",
+   "count": 384,
+   "key": 91,
+   "chapters": 8,
+   "from": 850,
+   "to": 1995,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/d/da/Konrad_Zuse_%281992%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "science",
+   "series": [
+    "History of computing"
+   ]
+  },
+  {
+   "slug": "contemporary-art",
+   "title": "Contemporary art",
+   "group": "Art & culture",
+   "source": {
+    "page": "Contemporary art",
+    "url": "https://en.wikipedia.org/wiki/Contemporary_art"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Contemporary art is generally art created from the 1970s onwards.",
+   "built": "2026-11-19",
+   "count": 70,
+   "key": 48,
+   "chapters": 14,
+   "from": 1875,
+   "to": 2005,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/9/98/Pablo_picasso_1.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "art-history"
+  },
+  {
+   "slug": "cricket",
+   "title": "Cricket",
+   "group": "Sports",
+   "source": {
+    "page": "History of cricket",
+    "url": "https://en.wikipedia.org/wiki/History_of_cricket"
+   },
+   "events": [
+    "List of Cricket World Cup finals"
+   ],
+   "prose": [
+    "History of cricket"
+   ],
+   "keyTarget": 90,
+   "blurb": "The sport of cricket has a known history beginning in the late 16th century England.",
+   "built": "2026-11-19",
+   "count": 196,
+   "key": 90,
+   "chapters": 5,
+   "from": 866,
+   "to": 2004,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/4/4e/Artillery_Ground_in_2008.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "sports",
+   "series": [
+    "Cricketbycountry"
+   ]
+  },
+  {
+   "slug": "cubism",
+   "title": "Cubism",
+   "group": "Art & culture",
+   "source": {
+    "page": "Cubism",
+    "url": "https://en.wikipedia.org/wiki/Cubism"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Cubism is an early-20th-century avant-garde art movement which began in Paris.",
+   "built": "2026-11-19",
+   "count": 299,
+   "key": 95,
+   "chapters": 10,
+   "from": 1876,
+   "to": 1970,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/e/e1/Georges_Braque%2C_1908%2C_photograph_published_in_Gelett_Burgess%2C_The_Wild_Men_of_Paris%2C_Architectural_Record%2C_May_1910.jpg",
+   "parent": "art-history"
+  },
+  {
+   "slug": "dinosaurs",
+   "title": "Dinosaurs",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Dinosaur",
+    "url": "https://en.wikipedia.org/wiki/Dinosaur"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Dinosaurs are a diverse group of warm-blooded reptiles of the clade Dinosauria.",
+   "built": "2026-11-19",
+   "count": 121,
+   "key": 50,
+   "chapters": 9,
+   "from": -260000000,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/c/cb/Impact_event.jpg",
+   "parent": "history-of-life"
+  },
+  {
+   "slug": "dutch-golden-age-painting",
+   "title": "Dutch Golden Age painting",
+   "group": "Art & culture",
+   "source": {
+    "page": "Dutch Golden Age painting",
+    "url": "https://en.wikipedia.org/wiki/Dutch_Golden_Age_painting"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Dutch Golden Age painting is the painting of the Dutch Golden Age, a period in Dutch history roughly spanning the 17th century, during and after the later part of the Eighty Years' War for Dutch independence.",
+   "built": "2026-11-19",
+   "count": 145,
+   "key": 71,
+   "chapters": 10,
+   "from": 1494,
+   "to": 1719,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bd/Rembrandt_van_Rijn_-_Self-Portrait_-_Google_Art_Project.jpg/3840px-Rembrandt_van_Rijn_-_Self-Portrait_-_Google_Art_Project.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "art-history",
+   "series": [
+    "Art of the Dutch Golden Age"
+   ]
+  },
+  {
+   "slug": "early-human-migrations",
+   "title": "Early human migrations",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Early human migrations",
+    "url": "https://en.wikipedia.org/wiki/Early_human_migrations"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The earliest migrations and expansions of archaic and modern humans across continents are believed to have begun approximately 2 million years ago with the early expansions out of Africa by Homo erectus.",
+   "built": "2026-11-19",
+   "count": 290,
+   "key": 92,
+   "chapters": 7,
+   "from": -780000,
+   "to": 2020,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Fertile_crescent_Neolithic_B_circa_7500_BC.svg/960px-Fertile_crescent_Neolithic_B_circa_7500_BC.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "prehistory",
+   "series": [
+    "Human evolution"
+   ]
+  },
+  {
+   "slug": "egypt",
+   "title": "Egypt",
+   "group": "Countries",
+   "source": {
+    "page": "History of Egypt",
+    "url": "https://en.wikipedia.org/wiki/History_of_Egypt"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Egypt, one of the world's oldest civilizations, was unified around 3150 BC by King Narmer.",
+   "built": "2026-11-19",
+   "count": 639,
+   "key": 93,
+   "chapters": 9,
+   "from": -40000,
+   "to": 2011,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/b/b5/Abdel_Fattah_el-Sisi.jpg",
+   "parent": "middle-east",
+   "series": [
+    "History of Egypt"
+   ]
+  },
+  {
+   "slug": "england",
+   "title": "England",
+   "group": "Countries",
+   "source": {
+    "page": "History of England",
+    "url": "https://en.wikipedia.org/wiki/History_of_England"
+   },
+   "events": [
+    "Timeline of English history"
+   ],
+   "keyTarget": 90,
+   "blurb": "The territory today known as England became inhabited more than 800,000 years ago, as the discovery of stone tools and footprints at Happisburgh in Norfolk have indicated.",
+   "built": "2026-11-19",
+   "count": 508,
+   "key": 94,
+   "chapters": 10,
+   "from": -1000000,
+   "to": 1945,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f8/Norman-conquest-1066.svg",
+   "parent": "europe",
+   "series": [
+    "History of England"
+   ]
+  },
+  {
+   "slug": "ethiopia",
+   "title": "Ethiopia",
+   "group": "Countries",
+   "source": {
+    "page": "History of Ethiopia",
+    "url": "https://en.wikipedia.org/wiki/History_of_Ethiopia"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Ethiopia is one of the oldest countries in Africa; the emergence of Ethiopian civilization dates back thousands of years.",
+   "built": "2026-11-19",
+   "count": 433,
+   "key": 91,
+   "chapters": 6,
+   "from": -4000,
+   "to": 2017,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/e/e6/Emperor-fasilides-king-of-ethiopia.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "africa",
+   "series": [
+    "History of Ethiopia"
+   ]
+  },
+  {
+   "slug": "europe",
+   "title": "Europe",
+   "group": "Continents & regions",
+   "source": {
+    "page": "History of Europe",
+    "url": "https://en.wikipedia.org/wiki/History_of_Europe"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Europe can be traced back to the appearance of the first modern humans identified as ancestors of contemporary Europeans about 37,000 years ago during the Paleolithic.",
+   "built": "2026-11-19",
+   "count": 1224,
+   "key": 99,
+   "chapters": 10,
+   "from": -7000,
+   "to": 1990,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/1/10/Bundesarchiv_Bild_101I-646-5188-17%2C_Flugzeuge_Junkers_Ju_87.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "role": "collection"
+  },
+  {
+   "slug": "evolution-of-birds",
+   "title": "Evolution of birds",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Evolution of birds",
+    "url": "https://en.wikipedia.org/wiki/Evolution_of_birds"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The evolution of birds began in the Jurassic Period, with the earliest birds derived from a clade of theropod dinosaurs named Paraves.",
+   "built": "2026-11-19",
+   "count": 45,
+   "key": 21,
+   "chapters": 5,
+   "from": -210000000,
+   "to": 2018,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/c/cb/Impact_event.jpg",
+   "parent": "history-of-life",
+   "series": [
+    "Birds"
+   ]
+  },
+  {
+   "slug": "evolution-of-fish",
+   "title": "Evolution of fish",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Evolution of fish",
+    "url": "https://en.wikipedia.org/wiki/Evolution_of_fish"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Fish began evolving about 530 million years ago during the Cambrian explosion.",
+   "built": "2026-11-19",
+   "count": 56,
+   "key": 36,
+   "chapters": 4,
+   "from": -540000000,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/b/b3/Mollweide_Paleographic_Map_of_Earth%2C_430_Ma_%28Homerian_Age%29.png",
+   "parent": "history-of-life",
+   "series": [
+    "Diversity of fish"
+   ]
+  },
+  {
+   "slug": "evolution-of-insects",
+   "title": "Evolution of insects",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Evolution of insects",
+    "url": "https://en.wikipedia.org/wiki/Evolution_of_insects"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Understanding of the evolution of insects is based on studies of the following branches of science: molecular biology, insect morphology, paleontology, insect taxonomy, evolution, embryology, bioinformatics, and scientif",
+   "built": "2026-11-19",
+   "count": 51,
+   "key": 23,
+   "chapters": 12,
+   "from": -540000000,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/0/00/Mollweide_Paleographic_Map_of_Earth%2C_330_Ma_%28Serpukhovian_Age%29.png",
+   "parent": "history-of-life",
+   "series": [
+    "Orders of Insects"
+   ]
+  },
+  {
+   "slug": "evolution-of-mammals",
+   "title": "Evolution of mammals",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Evolution of mammals",
+    "url": "https://en.wikipedia.org/wiki/Evolution_of_mammals"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The evolution of mammals has passed through many stages since the first appearance of their synapsid ancestors in the Pennsylvanian sub-period of the late Carboniferous period.",
+   "built": "2026-11-19",
+   "count": 79,
+   "key": 30,
+   "chapters": 9,
+   "from": -360000000,
+   "to": -2500000,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/3/3e/Tupaia_belangeri_68165855.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "history-of-life",
+   "series": [
+    "Evolutionary biology"
+   ]
+  },
+  {
+   "slug": "expressionism",
+   "title": "Expressionism",
+   "group": "Art & culture",
+   "source": {
+    "page": "Expressionism",
+    "url": "https://en.wikipedia.org/wiki/Expressionism"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Expressionism is a modernist movement, initially in poetry and painting, originating in Northern Europe around the beginning of the 20th century.",
+   "built": "2026-11-19",
+   "count": 220,
+   "key": 91,
+   "chapters": 5,
+   "from": 1875,
+   "to": 1985,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/a/af/Kandinsky_-_Vassily_Kandinsky_by_Adolf_Elnain_Photo_credits_-_Georges_Meguerditchian.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "art-history",
+   "series": [
+    "Expressionism"
+   ]
+  },
+  {
+   "slug": "film-history",
+   "title": "Film history",
+   "group": "Film",
+   "source": {
+    "page": "History of film",
+    "url": "https://en.wikipedia.org/wiki/History_of_film"
+   },
+   "events": [
+    "1888 in film",
+    "1889 in film",
+    "1890 in film",
+    "1891 in film",
+    "1892 in film",
+    "1893 in film",
+    "1894 in film",
+    "1895 in film",
+    "1896 in film",
+    "1897 in film",
+    "1898 in film",
+    "1899 in film",
+    "1900 in film",
+    "1901 in film",
+    "1902 in film",
+    "1903 in film",
+    "1904 in film",
+    "1905 in film",
+    "1906 in film",
+    "1907 in film",
+    "1908 in film",
+    "1909 in film",
+    "1910 in film",
+    "1911 in film",
+    "1912 in film",
+    "1913 in film",
+    "1914 in film",
+    "1915 in film",
+    "1916 in film",
+    "1917 in film",
+    "1918 in film",
+    "1919 in film",
+    "1920 in film",
+    "1921 in film",
+    "1922 in film",
+    "1923 in film",
+    "1924 in film",
+    "1925 in film",
+    "1926 in film",
+    "1927 in film",
+    "1928 in film",
+    "1929 in film",
+    "1930 in film",
+    "1931 in film",
+    "1932 in film",
+    "1933 in film",
+    "1934 in film",
+    "1935 in film",
+    "1936 in film",
+    "1937 in film",
+    "1938 in film",
+    "1939 in film",
+    "1940 in film",
+    "1941 in film",
+    "1942 in film",
+    "1943 in film",
+    "1944 in film",
+    "1945 in film",
+    "1946 in film",
+    "1947 in film",
+    "1948 in film",
+    "1949 in film",
+    "1950 in film",
+    "1951 in film",
+    "1952 in film",
+    "1953 in film",
+    "1954 in film",
+    "1955 in film",
+    "1956 in film",
+    "1957 in film",
+    "1958 in film",
+    "1959 in film",
+    "1960 in film",
+    "1961 in film",
+    "1962 in film",
+    "1963 in film",
+    "1964 in film",
+    "1965 in film",
+    "1966 in film",
+    "1967 in film",
+    "1968 in film",
+    "1969 in film",
+    "1970 in film",
+    "1971 in film",
+    "1972 in film",
+    "1973 in film",
+    "1974 in film",
+    "1975 in film",
+    "1976 in film",
+    "1977 in film",
+    "1978 in film",
+    "1979 in film",
+    "1980 in film",
+    "1981 in film",
+    "1982 in film",
+    "1983 in film",
+    "1984 in film",
+    "1985 in film",
+    "1986 in film",
+    "1987 in film",
+    "1988 in film",
+    "1989 in film",
+    "1990 in film",
+    "1991 in film",
+    "1992 in film",
+    "1993 in film",
+    "1994 in film",
+    "1995 in film",
+    "1996 in film",
+    "1997 in film",
+    "1998 in film",
+    "1999 in film",
+    "2000 in film",
+    "2001 in film",
+    "2002 in film",
+    "2003 in film",
+    "2004 in film",
+    "2005 in film",
+    "2006 in film",
+    "2007 in film",
+    "2008 in film",
+    "2009 in film",
+    "2010 in film",
+    "2011 in film",
+    "2012 in film",
+    "2013 in film",
+    "2014 in film",
+    "2015 in film",
+    "2016 in film",
+    "2017 in film",
+    "2018 in film",
+    "2019 in film",
+    "2020 in film",
+    "2021 in film",
+    "2022 in film",
+    "2023 in film",
+    "2024 in film",
+    "2025 in film"
+   ],
+   "keyTarget": 90,
+   "blurb": "The history of film chronicles the artistic and cultural development of a visual art form that uses film technologies that began in the late 19th century, influenced by the existing screen culture of magic lantern shows,",
+   "built": "2026-11-19",
+   "count": 1297,
+   "key": 100,
+   "chapters": 14,
+   "from": 1893,
+   "to": 2020,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/8/82/Charlie_Chaplin_portrait_Getty_1739411952.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "role": "collection",
+   "series": [
+    "Academy Award for Best Picture"
+   ]
+  },
+  {
+   "slug": "film-noir",
+   "title": "Film noir",
+   "group": "Film",
+   "source": {
+    "page": "Film noir",
+    "url": "https://en.wikipedia.org/wiki/Film_noir"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "A film noir is a Hollywood crime drama film that emphasizes cynical attitudes and motivations.",
+   "built": "2026-11-19",
+   "count": 147,
+   "key": 92,
+   "chapters": 9,
+   "from": 1927,
+   "to": 2003,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/0/09/Touch_of_Evil_%281958_poster%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "film-history",
+   "series": [
+    "Film genres"
+   ]
+  },
+  {
+   "slug": "formula-one",
+   "title": "Formula One",
+   "group": "Sports",
+   "source": {
+    "page": "History of Formula One",
+    "url": "https://en.wikipedia.org/wiki/History_of_Formula_One"
+   },
+   "events": [
+    "List of Formula One World Drivers' Champions"
+   ],
+   "prose": [
+    "History of Formula One"
+   ],
+   "keyTarget": 90,
+   "blurb": "Formula One automobile racing has its roots in the European Grand Prix championships of the 1920s and 1930s.",
+   "built": "2026-11-19",
+   "count": 130,
+   "key": 91,
+   "chapters": 16,
+   "from": 1940,
+   "to": 2025,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/fc/NinoFarina.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "sports"
+  },
+  {
+   "slug": "france",
+   "title": "France",
+   "group": "Countries",
+   "source": {
+    "page": "History of France",
+    "url": "https://en.wikipedia.org/wiki/History_of_France"
+   },
+   "events": [
+    "Timeline of French history"
+   ],
+   "keyTarget": 90,
+   "blurb": "The first written records for the history of France appeared in the Iron Age.",
+   "built": "2026-11-19",
+   "count": 728,
+   "key": 97,
+   "chapters": 11,
+   "from": -2600,
+   "to": 1981,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/5/57/Anonymous_-_Prise_de_la_Bastille.jpg",
+   "parent": "europe",
+   "series": [
+    "History of France"
+   ]
+  },
+  {
+   "slug": "french-new-wave",
+   "title": "French New Wave",
+   "group": "Film",
+   "source": {
+    "page": "French New Wave",
+    "url": "https://en.wikipedia.org/wiki/French_New_Wave"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The New Wave, also called the French New Wave, is a French art film movement that emerged in the late 1950s.",
+   "built": "2026-11-19",
+   "count": 87,
+   "key": 84,
+   "chapters": 10,
+   "from": 1936,
+   "to": 2025,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/e/e6/Agn%C3%A8s_Varda_%28Berlinale_2019%29_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "film-history",
+   "series": [
+    "French New Wave"
+   ]
+  },
+  {
+   "slug": "geography",
+   "title": "Geography",
+   "group": "Science",
+   "source": {
+    "page": "History of geography",
+    "url": "https://en.wikipedia.org/wiki/History_of_geography"
+   },
+   "events": [
+    "Timeline of European exploration"
+   ],
+   "keyTarget": 90,
+   "blurb": "The history of geography includes many histories of geography which have differed over time and between different cultural and political groups.",
+   "built": "2026-11-19",
+   "count": 454,
+   "key": 95,
+   "chapters": 10,
+   "from": -3500,
+   "to": 1915,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/98/Roman_Empire_-_Africa_Proconsularis_%28125_AD%29.svg/3840px-Roman_Empire_-_Africa_Proconsularis_%28125_AD%29.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "science",
+   "series": [
+    "History of geography"
+   ]
+  },
+  {
+   "slug": "geologic-time",
+   "title": "Geologic time",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Geologic time scale",
+    "url": "https://en.wikipedia.org/wiki/Geologic_time_scale"
+   },
+   "events": [
+    "Timeline of geology"
+   ],
+   "keyTarget": 90,
+   "blurb": "The geologic time scale or geological time scale describes how geologic time is divided into standardised intervals.",
+   "built": "2026-11-19",
+   "count": 120,
+   "key": 90,
+   "chapters": 11,
+   "from": -4100000000,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f3/Georges_Cuvier.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "history-of-earth"
+  },
+  {
+   "slug": "geology",
+   "title": "Geology",
+   "group": "Science",
+   "source": {
+    "page": "History of geology",
+    "url": "https://en.wikipedia.org/wiki/History_of_geology"
+   },
+   "events": [
+    "Timeline of geology"
+   ],
+   "keyTarget": 90,
+   "blurb": "The history of geology is concerned with the development of the natural science of geology.",
+   "built": "2026-11-19",
+   "count": 88,
+   "key": 77,
+   "chapters": 7,
+   "from": -1200,
+   "to": 1993,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f3/Georges_Cuvier.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "science"
+  },
+  {
+   "slug": "germany",
+   "title": "Germany",
+   "group": "Countries",
+   "source": {
+    "page": "History of Germany",
+    "url": "https://en.wikipedia.org/wiki/History_of_Germany"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The concept of Germany as a distinct region can be traced to Julius Caesar, who referred to the area east of the Rhine as Germania, meaning the land where the Germani live.",
+   "built": "2026-11-19",
+   "count": 735,
+   "key": 95,
+   "chapters": 11,
+   "from": -400000,
+   "to": 2002,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Proclamation_of_Weimar_Republic_by_Philipp_Scheidemann%2C_9_November_1918_%28cropped%29.jpg/3840px-Proclamation_of_Weimar_Republic_by_Philipp_Scheidemann%2C_9_November_1918_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "europe",
+   "series": [
+    "History of Germany"
+   ]
+  },
+  {
+   "slug": "golf",
+   "title": "Golf",
+   "group": "Sports",
+   "source": {
+    "page": "History of golf",
+    "url": "https://en.wikipedia.org/wiki/History_of_golf"
+   },
+   "events": [
+    "List of Masters Tournament champions",
+    "List of U.S. Open (golf) champions",
+    "List of PGA Championship champions"
+   ],
+   "prose": [
+    "History of golf"
+   ],
+   "keyTarget": 90,
+   "blurb": "The origins of golf are unclear and much debated.",
+   "built": "2026-11-19",
+   "count": 356,
+   "key": 91,
+   "chapters": 10,
+   "from": 651,
+   "to": 1995,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/1/10/Flag_of_Scotland.svg",
+   "parent": "sports",
+   "series": [
+    "Golf"
+   ]
+  },
+  {
+   "slug": "gothic-art",
+   "title": "Gothic art",
+   "group": "Art & culture",
+   "source": {
+    "page": "Gothic art",
+    "url": "https://en.wikipedia.org/wiki/Gothic_art"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Gothic art was a style of medieval art that developed in Northern France out of Romanesque art in the 12th century, led by the concurrent development of Gothic architecture.",
+   "built": "2026-11-19",
+   "count": 132,
+   "key": 84,
+   "chapters": 5,
+   "from": 1123,
+   "to": 1574,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/4/48/Saint-Denis_-_Fa%C3%A7ade.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "art-history"
+  },
+  {
+   "slug": "greece",
+   "title": "Greece",
+   "group": "Countries",
+   "source": {
+    "page": "History of Greece",
+    "url": "https://en.wikipedia.org/wiki/History_of_Greece"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Greece encompasses the history of the territory of the modern nation-state of Greece as well as that of the Greek people and the areas they inhabited and ruled historically.",
+   "built": "2026-11-19",
+   "count": 737,
+   "key": 91,
+   "chapters": 7,
+   "from": -4000000,
+   "to": 1952,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Flag_of_the_Ottoman_Empire_%281844%E2%80%931922%29.svg/1280px-Flag_of_the_Ottoman_Empire_%281844%E2%80%931922%29.svg.png",
+   "parent": "europe",
+   "series": [
+    "History of Greece"
+   ]
+  },
+  {
+   "slug": "history-of-earth",
+   "title": "History of Earth",
+   "group": "Life & Earth",
+   "source": {
+    "page": "History of Earth",
+    "url": "https://en.wikipedia.org/wiki/History_of_Earth"
+   },
+   "events": [
+    "Timeline of natural history"
+   ],
+   "keyTarget": 90,
+   "blurb": "The natural history of Earth concerns the development of planet Earth from its formation to the present day.",
+   "built": "2026-11-19",
+   "count": 396,
+   "key": 91,
+   "chapters": 12,
+   "from": -4600000000,
+   "to": -1800,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/8/8f/Precambrian_Evolution_of_Life.png",
+   "series": [
+    "Geological history of Earth"
+   ]
+  },
+  {
+   "slug": "history-of-life",
+   "title": "History of life",
+   "group": "Life & Earth",
+   "source": {
+    "page": "History of life",
+    "url": "https://en.wikipedia.org/wiki/History_of_life"
+   },
+   "events": [
+    "Timeline of life"
+   ],
+   "keyTarget": 90,
+   "blurb": "The history of life on Earth traces the processes by which living and extinct organisms evolved, from the earliest emergence of life to the present day.",
+   "built": "2026-11-19",
+   "count": 228,
+   "key": 92,
+   "chapters": 19,
+   "from": -4600000000,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/8/8f/Precambrian_Evolution_of_Life.png",
+   "parent": "history-of-earth",
+   "series": [
+    "Evolutionary biology"
+   ]
+  },
+  {
+   "slug": "history-of-the-universe",
+   "title": "History of the universe",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Chronology of the universe",
+    "url": "https://en.wikipedia.org/wiki/Chronology_of_the_universe"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The chronology of the universe describes the history and future of the universe according to the current understanding of physical cosmology.",
+   "built": "2026-11-19",
+   "count": 373,
+   "key": 95,
+   "chapters": 10,
+   "from": -14000000000,
+   "to": 1915,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ed/WMAP_2012.png/3840px-WMAP_2012.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+  },
+  {
+   "slug": "holy-roman-empire",
+   "title": "Holy Roman Empire",
+   "group": "Empires & eras",
+   "source": {
+    "page": "Holy Roman Empire",
+    "url": "https://en.wikipedia.org/wiki/Holy_Roman_Empire"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Holy Roman Empire, also known as the Holy Roman Empire of the German Nation after 1512, was a polity comprising and controlling much of Central Europe and Western Europe, headed by the Holy Roman Emperor and characte",
+   "built": "2026-11-19",
+   "count": 634,
+   "key": 96,
+   "chapters": 11,
+   "from": 751,
+   "to": 1871,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Albrecht_D%C3%BCrer_-_Portrait_of_Maximilian_I_-_Google_Art_Project.jpg/3840px-Albrecht_D%C3%BCrer_-_Portrait_of_Maximilian_I_-_Google_Art_Project.jpg",
+   "parent": "germany"
+  },
+  {
+   "slug": "horse-racing",
+   "title": "Horse racing",
+   "group": "Sports",
+   "source": {
+    "page": "Horse racing",
+    "url": "https://en.wikipedia.org/wiki/Horse_racing"
+   },
+   "events": [
+    "Triple Crown of Thoroughbred Racing (United States)",
+    "Kentucky Derby",
+    "Epsom Derby",
+    "Grand National"
+   ],
+   "prose": [
+    "Horse racing"
+   ],
+   "keyTarget": 90,
+   "blurb": "Horse racing is an equestrian performance activity, typically involving two or more horses ridden by jockeys (or sometimes driven without riders) over a set distance for competition.",
+   "built": "2026-11-19",
+   "count": 345,
+   "key": 92,
+   "chapters": 14,
+   "from": 1750,
+   "to": 2023,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/b/bc/2009_Hong_Kong_Derby.JPG?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "sports",
+   "series": [
+    "Racing"
+   ]
+  },
+  {
+   "slug": "human-evolution",
+   "title": "Human evolution",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Human evolution",
+    "url": "https://en.wikipedia.org/wiki/Human_evolution"
+   },
+   "events": [
+    "Timeline of human evolution"
+   ],
+   "keyTarget": 90,
+   "blurb": "Homo sapiens is a distinct species of the hominid family of primates, which includes all the great apes.",
+   "built": "2026-11-19",
+   "count": 357,
+   "key": 92,
+   "chapters": 9,
+   "from": -12000000,
+   "to": 2025,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/4/4c/Loewenmensch1.jpg",
+   "parent": "history-of-life",
+   "series": [
+    "Human evolution"
+   ]
+  },
+  {
+   "slug": "ice-ages",
+   "title": "Ice ages",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Ice age",
+    "url": "https://en.wikipedia.org/wiki/Ice_age"
+   },
+   "events": [
+    "Timeline of glaciation"
+   ],
+   "keyTarget": 90,
+   "blurb": "An ice age is a period of time when decreased temperature of Earth's surface and atmosphere results in the prolonged presence or expansion of continental alpine glaciers and polar ice caps.",
+   "built": "2026-11-19",
+   "count": 145,
+   "key": 91,
+   "chapters": 9,
+   "from": -720000000,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/3/3c/Proterozoic_collage_new.png",
+   "parent": "history-of-earth",
+   "series": [
+    "Ice ages"
+   ]
+  },
+  {
+   "slug": "ice-hockey",
+   "title": "Ice hockey",
+   "group": "Sports",
+   "source": {
+    "page": "History of ice hockey",
+    "url": "https://en.wikipedia.org/wiki/History_of_ice_hockey"
+   },
+   "events": [
+    "List of Stanley Cup champions"
+   ],
+   "prose": [
+    "History of ice hockey",
+    "History of the National Hockey League"
+   ],
+   "keyTarget": 90,
+   "blurb": "Ice hockey is believed to have evolved from simple stick and ball games played in the 18th and 19th centuries in Britain, Ireland, and elsewhere, primarily bandy, hurling, and shinty.",
+   "built": "2026-11-19",
+   "count": 186,
+   "key": 86,
+   "chapters": 4,
+   "from": 1351,
+   "to": 2007,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/0/0d/Montreal_Victorias_Hockey_Club_1881.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "sports"
+  },
+  {
+   "slug": "ideas-of-physics",
+   "title": "Ideas of Physics",
+   "group": "Science",
+   "source": {
+    "kind": "site",
+    "page": "Ideas of Physics",
+    "url": "https://faculty.wcas.northwestern.edu/infocom/Ideas/index.html",
+    "credit": "David Taylor, Northwestern University (Phyx 103, Ideas of Physics)",
+    "hint": "physics"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Astronomy has very old, prehistoric origins.",
+   "built": "2026-11-19",
+   "count": 228,
+   "key": 100,
+   "chapters": 22,
+   "from": 148,
+   "to": 1976,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f8/Sir_Ernest_Rutherford_LCCN2014716719_-_restoration1.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "absorbedInto": "physics"
+  },
+  {
+   "slug": "impressionism",
+   "title": "Impressionism",
+   "group": "Art & culture",
+   "source": {
+    "page": "Impressionism",
+    "url": "https://en.wikipedia.org/wiki/Impressionism"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Impressionism was a 19th-century art movement characterised by visible brush strokes, open composition, emphasis on accurate depiction of light in its changing qualities (often accentuating the effects of the passage of ",
+   "built": "2026-11-19",
+   "count": 379,
+   "key": 100,
+   "chapters": 12,
+   "from": 1791,
+   "to": 1942,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/a/a4/Claude_Monet_1899_Nadar_crop.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "art-history",
+   "series": [
+    "Impressionism"
+   ]
+  },
+  {
+   "slug": "inca-empire",
+   "title": "Inca Empire",
+   "group": "Americas",
+   "source": {
+    "page": "Inca Empire",
+    "url": "https://en.wikipedia.org/wiki/Inca_Empire"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Inca Empire, officially known as the Realm of the Four Parts, was the largest empire in pre-Columbian America.",
+   "built": "2026-11-19",
+   "count": 111,
+   "key": 78,
+   "chapters": 16,
+   "from": 600,
+   "to": 1616,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/e/ef/La_Captura_de_Atahualpa_-_Juan_Lepiani_1920s.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "latin-america",
+   "series": [
+    "Inca Empire topics"
+   ]
+  },
+  {
+   "slug": "india",
+   "title": "India",
+   "group": "Countries",
+   "source": {
+    "page": "History of India",
+    "url": "https://en.wikipedia.org/wiki/History_of_India"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Anatomically modern humans are estimated to have first arrived on the Indian subcontinent between 73,000 and 55,000 years ago.",
+   "built": "2026-11-19",
+   "count": 352,
+   "key": 95,
+   "chapters": 9,
+   "from": -1900000,
+   "to": 1971,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/3/36/British_Indian_Empire_1909_Imperial_Gazetteer_of_India.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "asia",
+   "series": [
+    "History of India"
+   ]
+  },
+  {
+   "slug": "indian-art",
+   "title": "Indian art",
+   "group": "Art & culture",
+   "source": {
+    "page": "Indian art",
+    "url": "https://en.wikipedia.org/wiki/Indian_art"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Indian art consists of a variety of art forms, including painting, sculpture, pottery, and textile arts such as woven silk.",
+   "built": "2026-11-19",
+   "count": 147,
+   "key": 87,
+   "chapters": 9,
+   "from": -1900,
+   "to": 1988,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/5/5e/Abanindranath_Tagore_photo.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "art-history",
+   "series": [
+    "Culture of India"
+   ]
+  },
+  {
+   "slug": "indian-cinema",
+   "title": "Indian cinema",
+   "group": "Film",
+   "source": {
+    "page": "Cinema of India",
+    "url": "https://en.wikipedia.org/wiki/Cinema_of_India"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The cinema of India, consisting of motion pictures made by the Indian film industry, has had a large effect on world cinema since the second half of the 20th century.",
+   "built": "2026-11-19",
+   "count": 503,
+   "key": 94,
+   "chapters": 14,
+   "from": 1909,
+   "to": 2022,
+   "cover": "https://thumb.wikimedia.org/wikipedia/en/thumb/d/df/Venice_Film_Festival_logo.svg/330px-Venice_Film_Festival_logo.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "film-history",
+   "series": [
+    "World cinema"
+   ]
+  },
+  {
+   "slug": "indonesia",
+   "title": "Indonesia",
+   "group": "Countries",
+   "source": {
+    "page": "History of Indonesia",
+    "url": "https://en.wikipedia.org/wiki/History_of_Indonesia"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Indonesia has been shaped by its geographic position, natural resources, a series of human migrations and contacts, wars and conquests, as well as by trade, economics and politics.",
+   "built": "2026-11-19",
+   "count": 473,
+   "key": 95,
+   "chapters": 9,
+   "from": -2100000,
+   "to": 2024,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f1/Indonesia_declaration_of_independence_17_August_1945.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "asia",
+   "series": [
+    "History of Indonesia"
+   ]
+  },
+  {
+   "slug": "indus-valley",
+   "title": "Indus Valley",
+   "group": "Ancient world",
+   "source": {
+    "page": "Indus Valley Civilisation",
+    "url": "https://en.wikipedia.org/wiki/Indus_Valley_Civilisation"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Indus Valley Civilisation (IVC), also known as the Indus Civilisation, was a Bronze Age civilisation in the northwestern regions of South Asia, lasting from 3300 BCE to 1300 BCE, and in its mature form from 2600 BCE ",
+   "built": "2026-11-19",
+   "count": 107,
+   "key": 78,
+   "chapters": 20,
+   "from": -6000,
+   "to": 2014,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Indus_seal_impression.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "india",
+   "series": [
+    "Indus Valley civilisation"
+   ]
+  },
+  {
+   "slug": "iran",
+   "title": "Iran",
+   "group": "Countries",
+   "source": {
+    "page": "History of Iran",
+    "url": "https://en.wikipedia.org/wiki/History_of_Iran"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Iran (also known as Persia) is intertwined with Greater Iran, a region encompassing all areas that have witnessed significant settlement or influence by the Iranian peoples and Iranian languages — chiefly ",
+   "built": "2026-11-19",
+   "count": 629,
+   "key": 89,
+   "chapters": 6,
+   "from": -300000,
+   "to": 1988,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/4/4a/Mass_demonstration_in_Iran%2C_date_unknown.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "middle-east",
+   "series": [
+    "History of Iran"
+   ]
+  },
+  {
+   "slug": "iraq",
+   "title": "Iraq",
+   "group": "Countries",
+   "source": {
+    "page": "History of Iraq",
+    "url": "https://en.wikipedia.org/wiki/History_of_Iraq"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Iraq, a country located in West Asia, largely coincides with the ancient region of Mesopotamia, often referred to as the cradle of civilization.",
+   "built": "2026-11-19",
+   "count": 634,
+   "key": 91,
+   "chapters": 8,
+   "from": -10000,
+   "to": 2017,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f4/Neo-Babylonian_Empire_under_Nabonidus_map.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "middle-east",
+   "series": [
+    "History of Iraq"
+   ]
+  },
+  {
+   "slug": "ireland",
+   "title": "Ireland",
+   "group": "Countries",
+   "source": {
+    "page": "History of Ireland",
+    "url": "https://en.wikipedia.org/wiki/History_of_Ireland"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The first evidence of human presence in Ireland dates to around 34,000 years ago, with further findings dating the presence of Homo sapiens to 7,000 BC.",
+   "built": "2026-11-19",
+   "count": 506,
+   "key": 95,
+   "chapters": 13,
+   "from": -4000000,
+   "to": 2009,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/6/6e/MarriageAoifeStrongbow.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "europe",
+   "series": [
+    "History of Ireland"
+   ]
+  },
+  {
+   "slug": "islamic-art",
+   "title": "Islamic art",
+   "group": "Art & culture",
+   "source": {
+    "page": "Islamic art",
+    "url": "https://en.wikipedia.org/wiki/Islamic_art"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Islamic art is a part of Islamic culture and encompasses the visual arts produced since the 7th century CE by people who lived within territories inhabited or ruled by Muslim populations.",
+   "built": "2026-11-19",
+   "count": 143,
+   "key": 88,
+   "chapters": 10,
+   "from": 670,
+   "to": 1981,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/37/Birmingham_Quran_manuscript_full.jpg/3840px-Birmingham_Quran_manuscript_full.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "art-history",
+   "series": [
+    "Islamic art"
+   ]
+  },
+  {
+   "slug": "islamic-golden-age",
+   "title": "Islamic Golden Age",
+   "group": "Empires & eras",
+   "source": {
+    "page": "Islamic Golden Age",
+    "url": "https://en.wikipedia.org/wiki/Islamic_Golden_Age"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Islamic Golden Age was a period of cultural flourishing in the history of Islam, dated from the 8th century CE to the 14th century.",
+   "built": "2026-11-19",
+   "count": 182,
+   "key": 88,
+   "chapters": 14,
+   "from": 622,
+   "to": 1406,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/8/8c/RegistanSquare_Samarkand.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "middle-east"
+  },
+  {
+   "slug": "israel",
+   "title": "Israel",
+   "group": "Countries",
+   "source": {
+    "page": "History of Israel",
+    "url": "https://en.wikipedia.org/wiki/History_of_Israel"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Israel spans the Southern Levant, from prehistoric African migrations and the Natufian culture (c.",
+   "built": "2026-11-19",
+   "count": 551,
+   "key": 99,
+   "chapters": 12,
+   "from": -3000000,
+   "to": 1984,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/0/00/Roman_Empire_Trajan_117AD.png",
+   "parent": "middle-east",
+   "series": [
+    "History of Israel"
+   ]
+  },
+  {
+   "slug": "italian-neorealism",
+   "title": "Italian neorealism",
+   "group": "Film",
+   "source": {
+    "page": "Italian neorealism",
+    "url": "https://en.wikipedia.org/wiki/Italian_neorealism"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Italian neorealism, also known as the Golden Age of Italian Cinema, was a national film movement in Italy in the aftermath of World War II.",
+   "built": "2026-11-19",
+   "count": 83,
+   "key": 32,
+   "chapters": 4,
+   "from": 1875,
+   "to": 2007,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/0/09/Roberto_Rossellini.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "film-history",
+   "series": [
+    "Cinema of Italy"
+   ]
+  },
+  {
+   "slug": "italy",
+   "title": "Italy",
+   "group": "Countries",
+   "source": {
+    "page": "History of Italy",
+    "url": "https://en.wikipedia.org/wiki/History_of_Italy"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Italy has been inhabited by humans since the Paleolithic.",
+   "built": "2026-11-19",
+   "count": 1036,
+   "key": 94,
+   "chapters": 10,
+   "from": -4000000,
+   "to": 1960,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/9/92/Episodio_delle_cinque_giornate_%28Baldassare_Verazzi%29.jpg",
+   "parent": "europe",
+   "series": [
+    "History of Italy"
+   ]
+  },
+  {
+   "slug": "japan",
+   "title": "Japan",
+   "group": "Countries",
+   "source": {
+    "page": "History of Japan",
+    "url": "https://en.wikipedia.org/wiki/History_of_Japan"
+   },
+   "events": [
+    "Timeline of Japanese history"
+   ],
+   "keyTarget": 90,
+   "blurb": "The first human inhabitants of the Japanese archipelago have been traced to the Paleolithic, around 38–39,000 years ago.",
+   "built": "2026-11-19",
+   "count": 713,
+   "key": 96,
+   "chapters": 10,
+   "from": -43000,
+   "to": 2023,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/d/de/Emperor_Meiji_by_Takahashi_Yuichi.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "asia",
+   "series": [
+    "History of Japan"
+   ]
+  },
+  {
+   "slug": "japanese-art",
+   "title": "Japanese art",
+   "group": "Art & culture",
+   "source": {
+    "page": "Japanese art",
+    "url": "https://en.wikipedia.org/wiki/Japanese_art"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Japanese art consists of a wide range of art styles and media that includes ancient pottery, sculpture, ink painting and calligraphy on silk and paper, ukiyo-e paintings and woodblock prints, ceramics, origami, bonsai, a",
+   "built": "2026-11-19",
+   "count": 208,
+   "key": 78,
+   "chapters": 14,
+   "from": -515,
+   "to": 2020,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/a/a9/Shibai_Ukie_by_Masanobu_Okumura.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "art-history",
+   "series": [
+    "Japanese art history"
+   ]
+  },
+  {
+   "slug": "japanese-cinema",
+   "title": "Japanese cinema",
+   "group": "Film",
+   "source": {
+    "page": "Cinema of Japan",
+    "url": "https://en.wikipedia.org/wiki/Cinema_of_Japan"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The cinema of Japan (日本映画, Nihon eiga), also known domestically as hōga (邦画; \"domestic cinema\"), began in the late 1890s.",
+   "built": "2026-11-19",
+   "count": 134,
+   "key": 90,
+   "chapters": 3,
+   "from": 1899,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/4/48/Akirakurosawa-onthesetof7samurai-1953-page88.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "film-history",
+   "series": [
+    "World cinema"
+   ]
+  },
+  {
+   "slug": "korea",
+   "title": "Korea",
+   "group": "Countries",
+   "source": {
+    "page": "History of Korea",
+    "url": "https://en.wikipedia.org/wiki/History_of_Korea"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Lower Paleolithic era on the Korean Peninsula and in Manchuria began roughly half a million years ago.",
+   "built": "2026-11-19",
+   "count": 406,
+   "key": 90,
+   "chapters": 7,
+   "from": -4000000,
+   "to": 1982,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/7/70/5th_century_Goguryeo.png",
+   "parent": "asia",
+   "series": [
+    "History of Korea"
+   ]
+  },
+  {
+   "slug": "kush",
+   "title": "Kush",
+   "group": "Ancient world",
+   "source": {
+    "page": "Kingdom of Kush",
+    "url": "https://en.wikipedia.org/wiki/Kingdom_of_Kush"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Kingdom of Kush, also known as the Kushite Empire, or simply Kush, was an ancient kingdom in Nubia, centered along the Nile Valley in what is now northern Sudan and southern Egypt.",
+   "built": "2026-11-19",
+   "count": 134,
+   "key": 91,
+   "chapters": 12,
+   "from": -3500,
+   "to": 1910,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/be/Map_of_the_Assyrian_diaspora_Worldwide.svg/3840px-Map_of_the_Assyrian_diaspora_Worldwide.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "africa"
+  },
+  {
+   "slug": "last-glacial-period",
+   "title": "Last Glacial Period",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Last Glacial Period",
+    "url": "https://en.wikipedia.org/wiki/Last_Glacial_Period"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Last Glacial Period (LGP), also known as the last glacial cycle, occurred from the end of the Last Interglacial to the beginning of the Holocene, from around 115,000–11,700 years ago, and thus corresponds to most of ",
+   "built": "2026-11-19",
+   "count": 35,
+   "key": 26,
+   "chapters": 4,
+   "from": -34000000,
+   "to": 2026,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3e/Flag_of_New_Zealand.svg/1280px-Flag_of_New_Zealand.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "ice-ages",
+   "series": [
+    "Continental glaciations"
+   ]
+  },
+  {
+   "slug": "latin-america",
+   "title": "Latin America",
+   "group": "Continents & regions",
+   "source": {
+    "page": "History of Latin America",
+    "url": "https://en.wikipedia.org/wiki/History_of_Latin_America"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The term Latin America originated in the 1830s, primarily through Michel Chevalier, who proposed the region could ally with \"Latin Europe\" against other European cultures.",
+   "built": "2026-11-19",
+   "count": 356,
+   "key": 92,
+   "chapters": 9,
+   "from": 1861,
+   "to": 2024,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d6/Pend%C3%B3n_real_de_Medina_del_Campo.svg/960px-Pend%C3%B3n_real_de_Medina_del_Campo.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "role": "collection"
+  },
+  {
+   "slug": "mali-empire",
+   "title": "Mali Empire",
+   "group": "Empires & eras",
+   "source": {
+    "page": "Mali Empire",
+    "url": "https://en.wikipedia.org/wiki/Mali_Empire"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Mali Empire was an empire in West Africa from c.",
+   "built": "2026-11-19",
+   "count": 98,
+   "key": 77,
+   "chapters": 11,
+   "from": 751,
+   "to": 1858,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/4/46/Catalan_Atlas_BNF_Sheet_6_Mansa_Musa_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "africa"
+  },
+  {
+   "slug": "mass-extinctions",
+   "title": "Mass extinctions",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Extinction event",
+    "url": "https://en.wikipedia.org/wiki/Extinction_event"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "An extinction event (also known as a mass extinction or biotic crisis) is a widespread and rapid decrease in the biodiversity on Earth.",
+   "built": "2026-11-19",
+   "count": 147,
+   "key": 91,
+   "chapters": 10,
+   "from": -640000000,
+   "to": 2019,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/Extinction_intensity.svg/960px-Extinction_intensity.svg.png",
+   "parent": "history-of-life",
+   "series": [
+    "Extinction"
+   ]
+  },
+  {
+   "slug": "mathematics",
+   "title": "Mathematics",
+   "group": "Science",
+   "source": {
+    "page": "History of mathematics",
+    "url": "https://en.wikipedia.org/wiki/History_of_mathematics"
+   },
+   "events": [
+    "Timeline of mathematics"
+   ],
+   "keyTarget": 90,
+   "blurb": "The history of mathematics deals with the origin of discoveries in mathematics and the mathematical methods and notation of the past.",
+   "built": "2026-11-19",
+   "count": 485,
+   "key": 98,
+   "chapters": 14,
+   "from": -18000,
+   "to": 1943,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/7/79/Hilbert.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "science",
+   "series": [
+    "History of mathematics"
+   ]
+  },
+  {
+   "slug": "maya",
+   "title": "Maya",
+   "group": "Americas",
+   "source": {
+    "page": "Maya civilization",
+    "url": "https://en.wikipedia.org/wiki/Maya_civilization"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Maya civilization was a Mesoamerican civilization that existed from antiquity to the early modern period.",
+   "built": "2026-11-19",
+   "count": 222,
+   "key": 96,
+   "chapters": 24,
+   "from": -1000,
+   "to": 2010,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/b/bb/Distribution-myn2.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "mexico",
+   "series": [
+    "Maya civilization"
+   ]
+  },
+  {
+   "slug": "medicine",
+   "title": "Medicine",
+   "group": "Science",
+   "source": {
+    "page": "History of medicine",
+    "url": "https://en.wikipedia.org/wiki/History_of_medicine"
+   },
+   "events": [
+    "Timeline of medicine and medical technology"
+   ],
+   "keyTarget": 90,
+   "blurb": "The history of medicine is both a study of medicine throughout history as well as a multidisciplinary field of study that seeks to explore and understand medical practices, both past and present, throughout human societi",
+   "built": "2026-11-19",
+   "count": 410,
+   "key": 95,
+   "chapters": 7,
+   "from": -3300,
+   "to": 2019,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/7/79/San_Stefano_Grand_Plaza.JPG",
+   "parent": "science",
+   "series": [
+    "History of medicine"
+   ]
+  },
+  {
+   "slug": "medieval-art",
+   "title": "Medieval art",
+   "group": "Art & culture",
+   "source": {
+    "page": "Medieval art",
+    "url": "https://en.wikipedia.org/wiki/Medieval_art"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The medieval art of the Western world covers a vast scope of time and place, with over 1000 years of art in Europe, and at certain periods in Western Asia and Northern Africa.",
+   "built": "2026-11-19",
+   "count": 143,
+   "key": 89,
+   "chapters": 12,
+   "from": 313,
+   "to": 1905,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/9/91/Canterbury_Cathedral%2C_window_nXV_detail_%2846220634195%29.jpg",
+   "parent": "art-history"
+  },
+  {
+   "slug": "mesolithic",
+   "title": "Mesolithic",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Mesolithic",
+    "url": "https://en.wikipedia.org/wiki/Mesolithic"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Mesolithic is the Old World archaeological period between the Upper Paleolithic and the Neolithic.",
+   "built": "2026-11-19",
+   "count": 56,
+   "key": 52,
+   "chapters": 6,
+   "from": -26000,
+   "to": 1957,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f0/Asikli_Hoyuk_sarah_c_murray_6176.jpg",
+   "parent": "prehistory",
+   "series": [
+    "The Mesolithic"
+   ]
+  },
+  {
+   "slug": "mesopotamia",
+   "title": "Mesopotamia",
+   "group": "Ancient world",
+   "source": {
+    "page": "Mesopotamia",
+    "url": "https://en.wikipedia.org/wiki/Mesopotamia"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Mesopotamia is a historical region of West Asia situated within the Tigris–Euphrates river system, in the northern part of the Fertile Crescent.",
+   "built": "2026-11-19",
+   "count": 344,
+   "key": 93,
+   "chapters": 13,
+   "from": -6200,
+   "to": 2018,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/5/5f/Achaemenid_Empire_500_BCE.jpg",
+   "parent": "iraq"
+  },
+  {
+   "slug": "mexico",
+   "title": "Mexico",
+   "group": "Countries",
+   "source": {
+    "page": "History of Mexico",
+    "url": "https://en.wikipedia.org/wiki/History_of_Mexico"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Mexico encompasses over 13,000 years between the initial migration of indigenous peoples and the modern day.",
+   "built": "2026-11-19",
+   "count": 424,
+   "key": 92,
+   "chapters": 13,
+   "from": -900,
+   "to": 2024,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7f/Nebel_Mexican_War_12_Scott_in_Mexico_City_%28cropped%29.jpg/3840px-Nebel_Mexican_War_12_Scott_in_Mexico_City_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "latin-america",
+   "series": [
+    "History of Mexico"
+   ]
+  },
+  {
+   "slug": "middle-ages",
+   "title": "Middle Ages",
+   "group": "Empires & eras",
+   "source": {
+    "page": "Middle Ages",
+    "url": "https://en.wikipedia.org/wiki/Middle_Ages"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "In the history of Europe, the Middle Ages or medieval period lasted approximately from the 5th to late 15th centuries, comparable with the post-classical period of global history.",
+   "built": "2026-11-19",
+   "count": 1004,
+   "key": 104,
+   "chapters": 17,
+   "from": 330,
+   "to": 1649,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f5/Combat_deuxi%C3%A8me_croisade.jpg",
+   "parent": "europe",
+   "series": [
+    "Middle Ages"
+   ]
+  },
+  {
+   "slug": "middle-east",
+   "title": "Middle East",
+   "group": "Continents & regions",
+   "source": {
+    "page": "History of the Middle East",
+    "url": "https://en.wikipedia.org/wiki/History_of_the_Middle_East"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Middle East, or the Near East, was one of the cradles of civilization: after the Neolithic Revolution and the adoption of agriculture, many of the world's oldest cultures and civilizations were created there.",
+   "built": "2026-11-19",
+   "count": 867,
+   "key": 103,
+   "chapters": 13,
+   "from": -1900000,
+   "to": 2002,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Siege_of_Constantinople_fresco%2C_Moldovi%C8%9Ba_monastery%2C_Vatra_Moldovi%C8%9Bei%2C_2017.jpg/3840px-Siege_of_Constantinople_fresco%2C_Moldovi%C8%9Ba_monastery%2C_Vatra_Moldovi%C8%9Bei%2C_2017.jpg",
+   "role": "collection"
+  },
+  {
+   "slug": "modern-art",
+   "title": "Modern art",
+   "group": "Art & culture",
+   "source": {
+    "page": "Modern art",
+    "url": "https://en.wikipedia.org/wiki/Modern_art"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Modern art includes artistic work produced during the period extending roughly from the 1860s to the 1970s, and denotes the styles and philosophies of the art produced during that era.",
+   "built": "2026-11-19",
+   "count": 554,
+   "key": 88,
+   "chapters": 8,
+   "from": 1837,
+   "to": 2019,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/a/af/Kandinsky_-_Vassily_Kandinsky_by_Adolf_Elnain_Photo_credits_-_Georges_Meguerditchian.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "art-history"
+  },
+  {
+   "slug": "mongol-empire",
+   "title": "Mongol Empire",
+   "group": "Empires & eras",
+   "source": {
+    "page": "Mongol Empire",
+    "url": "https://en.wikipedia.org/wiki/Mongol_Empire"
+   },
+   "events": [
+    "Timeline of the Mongol Empire"
+   ],
+   "keyTarget": 90,
+   "blurb": "The Mongol Empire was the largest contiguous empire in history.",
+   "built": "2026-11-19",
+   "count": 387,
+   "key": 97,
+   "chapters": 12,
+   "from": 1162,
+   "to": 1480,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/e/ea/Mongol_Empire_map.gif?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "asia",
+   "series": [
+    "Mongol Empire"
+   ]
+  },
+  {
+   "slug": "mughal-empire",
+   "title": "Mughal Empire",
+   "group": "Empires & eras",
+   "source": {
+    "page": "Mughal Empire",
+    "url": "https://en.wikipedia.org/wiki/Mughal_Empire"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Mughal Empire was an early modern empire in South Asia.",
+   "built": "2026-11-19",
+   "count": 453,
+   "key": 95,
+   "chapters": 11,
+   "from": 1427,
+   "to": 1876,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/3/34/Govardhan._Akbar_With_Lion_and_Calf_ca._1630%2C_Metmuseum_%28cropped%29.jpg",
+   "parent": "india",
+   "series": [
+    "Mughal Empire"
+   ]
+  },
+  {
+   "slug": "neoclassicism",
+   "title": "Neoclassicism",
+   "group": "Art & culture",
+   "source": {
+    "page": "Neoclassicism",
+    "url": "https://en.wikipedia.org/wiki/Neoclassicism"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Neoclassicism, also spelled Neo-classicism, emerged as a Western cultural movement in the decorative and visual arts, literature, theatre, music, and architecture that drew inspiration from the art and culture of classic",
+   "built": "2026-11-19",
+   "count": 280,
+   "key": 82,
+   "chapters": 8,
+   "from": -490,
+   "to": 1968,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/1/18/Gavin_hamilton.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "art-history"
+  },
+  {
+   "slug": "neolithic",
+   "title": "Neolithic",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Neolithic",
+    "url": "https://en.wikipedia.org/wiki/Neolithic"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Neolithic, or New Stone Age, is an archaeological period, the final division of the Stone Age in Asia, Europe and Africa (c.",
+   "built": "2026-11-19",
+   "count": 166,
+   "key": 93,
+   "chapters": 11,
+   "from": -40000,
+   "to": 1788,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Fertile_crescent_Neolithic_B_circa_7500_BC.svg/960px-Fertile_crescent_Neolithic_B_circa_7500_BC.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "prehistory",
+   "series": [
+    "Neolithic cultures"
+   ]
+  },
+  {
+   "slug": "netherlands",
+   "title": "Netherlands",
+   "group": "Countries",
+   "source": {
+    "page": "History of the Netherlands",
+    "url": "https://en.wikipedia.org/wiki/History_of_the_Netherlands"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of the Netherlands extends back before the founding of the modern Kingdom of the Netherlands in 1815 after the defeat of Napoleon.",
+   "built": "2026-11-19",
+   "count": 673,
+   "key": 102,
+   "chapters": 15,
+   "from": -5600,
+   "to": 1945,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/b/b9/Battle_of_Gibraltar_1607.jpg",
+   "parent": "europe",
+   "series": [
+    "History of the Netherlands"
+   ]
+  },
+  {
+   "slug": "new-hollywood",
+   "title": "New Hollywood",
+   "group": "Film",
+   "source": {
+    "page": "New Hollywood",
+    "url": "https://en.wikipedia.org/wiki/New_Hollywood"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The New Hollywood, Hollywood Renaissance, or American New Wave, was a movement in American film history from the mid-1960s to the early 1980s, when a new generation of filmmakers came to prominence.",
+   "built": "2026-11-19",
+   "count": 134,
+   "key": 87,
+   "chapters": 5,
+   "from": 1915,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/b/b6/Bonnie_and_Clyde_%281967_teaser_poster%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "film-history"
+  },
+  {
+   "slug": "nigeria",
+   "title": "Nigeria",
+   "group": "Countries",
+   "source": {
+    "page": "History of Nigeria",
+    "url": "https://en.wikipedia.org/wiki/History_of_Nigeria"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Nigeria can be traced to the earliest inhabitants from at least 9000 BC through to early civilizations such as the Nok culture which began around 1500 BC.",
+   "built": "2026-11-19",
+   "count": 296,
+   "key": 95,
+   "chapters": 14,
+   "from": -1800000,
+   "to": 2023,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/c/c5/Godwin_Alabi-Isama1.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "africa"
+  },
+  {
+   "slug": "oceania",
+   "title": "Oceania",
+   "group": "Continents & regions",
+   "source": {
+    "page": "History of Oceania",
+    "url": "https://en.wikipedia.org/wiki/History_of_Oceania"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Oceania includes the history of Australia, Easter Island, Fiji, Hawaii, New Zealand, Papua New Guinea, Western New Guinea and, other Pacific island nations.",
+   "built": "2026-11-19",
+   "count": 225,
+   "key": 93,
+   "chapters": 10,
+   "from": -65000,
+   "to": 2006,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/b/b0/Raising_the_Flag_on_Iwo_Jima%2C_larger_-_edit1.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "role": "collection"
+  },
+  {
+   "slug": "olympic-games",
+   "title": "Olympic Games",
+   "group": "Sports",
+   "source": {
+    "page": "Olympic Games",
+    "url": "https://en.wikipedia.org/wiki/Olympic_Games"
+   },
+   "events": [
+    "List of Olympic Games host cities"
+   ],
+   "prose": [
+    "Olympic Games",
+    "Ancient Olympic Games"
+   ],
+   "keyTarget": 90,
+   "blurb": "The modern Olympic Games (Olympics; French: Jeux olympiques) are a series of international multi-sport events.",
+   "built": "2026-11-19",
+   "count": 209,
+   "key": 94,
+   "chapters": 15,
+   "from": -573,
+   "to": 2026,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/35/IPC_logo_%282019%29.svg/960px-IPC_logo_%282019%29.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "sports",
+   "series": [
+    "Olympic Games results"
+   ]
+  },
+  {
+   "slug": "origin-of-life",
+   "title": "Origin of life",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Abiogenesis",
+    "url": "https://en.wikipedia.org/wiki/Abiogenesis"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Abiogenesis or the origin of life (sometimes called biopoiesis) is the natural process by which life arises from non-living matter, such as simple organic compounds.",
+   "built": "2026-11-19",
+   "count": 99,
+   "key": 86,
+   "chapters": 8,
+   "from": -4600000000,
+   "to": 2018,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/54/Miller-Urey_experiment-en.svg/960px-Miller-Urey_experiment-en.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "history-of-life"
+  },
+  {
+   "slug": "ottoman-empire",
+   "title": "Ottoman Empire",
+   "group": "Empires & eras",
+   "source": {
+    "page": "Ottoman Empire",
+    "url": "https://en.wikipedia.org/wiki/Ottoman_Empire"
+   },
+   "events": [
+    "Timeline of the Ottoman Empire"
+   ],
+   "keyTarget": 90,
+   "blurb": "The Ottoman Empire, also known historically as Turkey or the Turkish Empire, was a state that spanned much of Southeastern Europe, West Asia, and North Africa from the 14th century to the early 20th century, centred in m",
+   "built": "2026-11-19",
+   "count": 384,
+   "key": 97,
+   "chapters": 13,
+   "from": 750,
+   "to": 1923,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/e/eb/Column_of_deportees_walking_through_Harput_vilayet_during_the_Armenian_genocide_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "turkey"
+  },
+  {
+   "slug": "pakistan",
+   "title": "Pakistan",
+   "group": "Countries",
+   "source": {
+    "page": "History of Pakistan",
+    "url": "https://en.wikipedia.org/wiki/History_of_Pakistan"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Pakistan preceding the country's independence in 1947 is shared with that of neighbouring Afghanistan, India, Iran and Tibet.",
+   "built": "2026-11-19",
+   "count": 656,
+   "key": 100,
+   "chapters": 9,
+   "from": -2500000,
+   "to": 1989,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/4/4f/Lahore_Fort_view_from_Baradari.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "asia",
+   "series": [
+    "History of Pakistan"
+   ]
+  },
+  {
+   "slug": "paleolithic",
+   "title": "Paleolithic",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Paleolithic",
+    "url": "https://en.wikipedia.org/wiki/Paleolithic"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Paleolithic, or Old Stone Age, is a period in human prehistory distinguished by the original development of stone tools.",
+   "built": "2026-11-19",
+   "count": 121,
+   "key": 82,
+   "chapters": 9,
+   "from": -3000000,
+   "to": 1913,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/0/0a/Distribution_of_the_Acheulean_cultural_tradition_as_it_is_currently_understood.webp?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "prehistory",
+   "series": [
+    "The Paleolithic"
+   ]
+  },
+  {
+   "slug": "persian-empire-achaemenid",
+   "title": "Persian Empire (Achaemenid)",
+   "group": "Ancient world",
+   "source": {
+    "page": "Achaemenid Empire",
+    "url": "https://en.wikipedia.org/wiki/Achaemenid_Empire"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Achaemenid Empire was an ancient Iranian empire founded by Cyrus the Great of the Achaemenid dynasty in 550 BC.",
+   "built": "2026-11-19",
+   "count": 220,
+   "key": 94,
+   "chapters": 13,
+   "from": -750,
+   "to": 675,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/5/57/Cyrus_II_%28The_Great%29_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "iran"
+  },
+  {
+   "slug": "physics",
+   "title": "Physics",
+   "group": "Science",
+   "source": {
+    "page": "History of physics",
+    "url": "https://en.wikipedia.org/wiki/History_of_physics"
+   },
+   "events": [
+    "Timeline of fundamental physics discoveries",
+    "Timeline of thermodynamics",
+    "Timeline of classical mechanics",
+    "Timeline of electromagnetism and classical optics"
+   ],
+   "keyTarget": 90,
+   "blurb": "Physics is a branch of science in which the primary objects of study are matter and energy.",
+   "built": "2026-11-19",
+   "count": 774,
+   "key": 93,
+   "chapters": 7,
+   "from": -800,
+   "to": 2008,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/e/ee/Max_Planck_by_Hugo_Erfurth_1938cr_-_restoration1.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "science",
+   "series": [
+    "History of physics"
+   ]
+  },
+  {
+   "slug": "plant-evolution",
+   "title": "Plant evolution",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Evolutionary history of plants",
+    "url": "https://en.wikipedia.org/wiki/Evolutionary_history_of_plants"
+   },
+   "events": [
+    "Timeline of plant evolution"
+   ],
+   "keyTarget": 90,
+   "blurb": "The evolution of plants has resulted in a wide range of complexity, from the earliest algal mats of unicellular archaeplastids evolved through endosymbiosis, through multicellular marine and freshwater green algae, to sp",
+   "built": "2026-11-19",
+   "count": 45,
+   "key": 37,
+   "chapters": 14,
+   "from": -1000000000,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/7/7e/Green_algae.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "history-of-life"
+  },
+  {
+   "slug": "plate-tectonics",
+   "title": "Plate tectonics",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Plate tectonics",
+    "url": "https://en.wikipedia.org/wiki/Plate_tectonics"
+   },
+   "events": [
+    "Timeline of the development of tectonophysics (before 1954)"
+   ],
+   "keyTarget": 90,
+   "blurb": "Plate tectonics (from Latin tectonicus, from Ancient Greek τεκτονικός (tektonikós) 'pertaining to building') is the scientific theory that Earth's lithosphere comprises a number of large tectonic plates, which have been ",
+   "built": "2026-11-19",
+   "count": 66,
+   "key": 48,
+   "chapters": 13,
+   "from": -4100000000,
+   "to": 2025,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/1/10/Flag_of_Scotland.svg",
+   "parent": "history-of-earth"
+  },
+  {
+   "slug": "poland",
+   "title": "Poland",
+   "group": "Countries",
+   "source": {
+    "page": "History of Poland",
+    "url": "https://en.wikipedia.org/wiki/History_of_Poland"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Poland spans over a thousand years, from medieval tribes, Christianization and monarchy; through Poland's Golden Age, expansionism and becoming one of the largest European powers; to its collapse and parti",
+   "built": "2026-11-19",
+   "count": 885,
+   "key": 94,
+   "chapters": 9,
+   "from": -2500000,
+   "to": 2004,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/Duchy_of_Warsaw_%281812%29.svg/500px-Duchy_of_Warsaw_%281812%29.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "europe",
+   "series": [
+    "History of Poland"
+   ]
+  },
+  {
+   "slug": "pop-art",
+   "title": "Pop art",
+   "group": "Art & culture",
+   "source": {
+    "page": "Pop art",
+    "url": "https://en.wikipedia.org/wiki/Pop_art"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Pop art is an art movement that emerged in the United Kingdom and the United States during the mid-to-late 1950s.",
+   "built": "2026-11-19",
+   "count": 111,
+   "key": 68,
+   "chapters": 12,
+   "from": 1905,
+   "to": 2026,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/6/6c/Andy_Warhol_by_Bernard_Gotfryd_1980.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "art-history"
+  },
+  {
+   "slug": "post-impressionism",
+   "title": "Post-Impressionism",
+   "group": "Art & culture",
+   "source": {
+    "page": "Post-Impressionism",
+    "url": "https://en.wikipedia.org/wiki/Post-Impressionism"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Post-Impressionism (also spelled Postimpressionism) was a predominantly French art movement which developed roughly between 1886 and 1905, from the last Impressionist exhibition to the birth of Fauvism.",
+   "built": "2026-11-19",
+   "count": 289,
+   "key": 89,
+   "chapters": 5,
+   "from": 1850,
+   "to": 1947,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4c/Vincent_van_Gogh_-_Self-Portrait_-_Google_Art_Project_%28454045%29.jpg/3840px-Vincent_van_Gogh_-_Self-Portrait_-_Google_Art_Project_%28454045%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "art-history",
+   "series": [
+    "Impressionism"
+   ]
+  },
+  {
+   "slug": "prehistoric-art",
+   "title": "Prehistoric art",
+   "group": "Art & culture",
+   "source": {
+    "page": "Prehistoric art",
+    "url": "https://en.wikipedia.org/wiki/Prehistoric_art"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "In the history of art, prehistoric art is all art produced in preliterate, prehistorical cultures beginning somewhere in very late geological history, and generally continuing until that culture either develops writing o",
+   "built": "2026-11-19",
+   "count": 152,
+   "key": 91,
+   "chapters": 6,
+   "from": -300000,
+   "to": 2008,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/f/f9/Blombos.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "art-history",
+   "series": [
+    "Prehistoric caves"
+   ]
+  },
+  {
+   "slug": "prehistory",
+   "title": "Prehistory",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Prehistory",
+    "url": "https://en.wikipedia.org/wiki/Prehistory"
+   },
+   "events": [
+    "Timeline of prehistory"
+   ],
+   "keyTarget": 90,
+   "blurb": "Prehistory, sometimes referred to as pre-literary history, is the period of human history between the first known use of stone tools by hominins c.",
+   "built": "2026-11-19",
+   "count": 272,
+   "key": 91,
+   "chapters": 9,
+   "from": -5400000,
+   "to": 1957,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/e/e7/Metallurgical_diffusion.svg",
+   "role": "collection"
+  },
+  {
+   "slug": "realism",
+   "title": "Realism",
+   "group": "Art & culture",
+   "source": {
+    "page": "Realism (art movement)",
+    "url": "https://en.wikipedia.org/wiki/Realism_(art_movement)"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Realism was an artistic movement that emerged in France in the 1840s.",
+   "built": "2026-11-19",
+   "count": 132,
+   "key": 89,
+   "chapters": 8,
+   "from": 1559,
+   "to": 1929,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/7/7b/Gustave_Courbet%2C_photograph_Atelier_Nadar%2C_c._1860s.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "art-history"
+  },
+  {
+   "slug": "renaissance",
+   "title": "Renaissance",
+   "group": "Art & culture",
+   "source": {
+    "page": "Renaissance",
+    "url": "https://en.wikipedia.org/wiki/Renaissance"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Renaissance was a European period of history and cultural movement taking place at the end of the Late Middle Ages and the beginning of the early modern era.",
+   "built": "2026-11-19",
+   "count": 653,
+   "key": 100,
+   "chapters": 15,
+   "from": 1115,
+   "to": 1682,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/c/cb/Francesco_Melzi_-_Portrait_of_Leonardo.png",
+   "parent": "art-history",
+   "series": [
+    "Renaissance"
+   ]
+  },
+  {
+   "slug": "rococo",
+   "title": "Rococo",
+   "group": "Art & culture",
+   "source": {
+    "page": "Rococo",
+    "url": "https://en.wikipedia.org/wiki/Rococo"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Rococo, less commonly Roccoco, is a Western style of architecture, art, and decoration that emerged in France in the 1730s as a reaction against the Louis XIV style.",
+   "built": "2026-11-19",
+   "count": 163,
+   "key": 92,
+   "chapters": 17,
+   "from": 1526,
+   "to": 1918,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/5/5a/The_Painter_and_His_Pug_by_William_Hogarth.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "art-history"
+  },
+  {
+   "slug": "roman-art",
+   "title": "Roman art",
+   "group": "Art & culture",
+   "source": {
+    "page": "Roman art",
+    "url": "https://en.wikipedia.org/wiki/Roman_art"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The art of Ancient Rome, and the territories of its Republic and later Empire, includes architecture, painting, sculpture and mosaic work.",
+   "built": "2026-11-19",
+   "count": 91,
+   "key": 68,
+   "chapters": 5,
+   "from": -550,
+   "to": 551,
+   "cover": "https://upload.wikimedia.org/wikipedia/en/thumb/0/03/Flag_of_Italy.svg/1920px-Flag_of_Italy.svg.png",
+   "parent": "art-history",
+   "series": [
+    "Roman art"
+   ]
+  },
+  {
+   "slug": "romanticism",
+   "title": "Romanticism",
+   "group": "Art & culture",
+   "source": {
+    "page": "Romanticism",
+    "url": "https://en.wikipedia.org/wiki/Romanticism"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Romanticism (also known as the Romantic movement or Romantic era) was an artistic and intellectual movement that originated in Europe towards the end of the 18th century.",
+   "built": "2026-11-19",
+   "count": 389,
+   "key": 95,
+   "chapters": 10,
+   "from": 1512,
+   "to": 1939,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/b/bf/James_Macpherson_by_George_Romney.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "art-history"
+  },
+  {
+   "slug": "rugby",
+   "title": "Rugby",
+   "group": "Sports",
+   "source": {
+    "page": "History of rugby union",
+    "url": "https://en.wikipedia.org/wiki/History_of_rugby_union"
+   },
+   "events": [
+    "List of Rugby World Cup finals"
+   ],
+   "prose": [
+    "History of rugby union"
+   ],
+   "keyTarget": 90,
+   "blurb": "The history of rugby union follows from various football games long before the 19th century, but it was not until the middle of that century that the rules were formulated and codified.",
+   "built": "2026-11-19",
+   "count": 341,
+   "key": 97,
+   "chapters": 19,
+   "from": 1851,
+   "to": 2014,
+   "cover": "https://upload.wikimedia.org/wikipedia/en/1/11/England_rugby_logo.svg",
+   "parent": "sports",
+   "series": [
+    "Rugby football"
+   ]
+  },
+  {
+   "slug": "russia",
+   "title": "Russia",
+   "group": "Countries",
+   "source": {
+    "page": "History of Russia",
+    "url": "https://en.wikipedia.org/wiki/History_of_Russia"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Russia begins with the histories of the East Slavs.",
+   "built": "2026-11-19",
+   "count": 574,
+   "key": 94,
+   "chapters": 9,
+   "from": -2600000,
+   "to": 2012,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/d/dc/NATO_vs._Warsaw_Pact_%281949-1990%29.svg",
+   "parent": "europe",
+   "series": [
+    "History of Russia"
+   ]
+  },
+  {
+   "slug": "sasanian-empire",
+   "title": "Sasanian Empire",
+   "group": "Ancient world",
+   "source": {
+    "page": "Sasanian Empire",
+    "url": "https://en.wikipedia.org/wiki/Sasanian_Empire"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Sasanian Empire, officially Eranshahr (Middle Persian: 𐭠𐭩𐭥𐭠𐭭𐭱𐭲𐭥𐭩, romanized: Ērānšahr, lit.",
+   "built": "2026-11-19",
+   "count": 229,
+   "key": 93,
+   "chapters": 16,
+   "from": -336,
+   "to": 1020,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/93/Piero_della_Francesca_021.jpg/3840px-Piero_della_Francesca_021.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "iran"
+  },
+  {
+   "slug": "science",
+   "title": "Science",
+   "group": "Science",
+   "source": {
+    "page": "History of science",
+    "url": "https://en.wikipedia.org/wiki/History_of_science"
+   },
+   "events": [
+    "Timeline of scientific discoveries"
+   ],
+   "keyTarget": 90,
+   "blurb": "The history of science covers the development of science from ancient times to the present.",
+   "built": "2026-11-19",
+   "count": 587,
+   "key": 87,
+   "chapters": 13,
+   "from": -3000,
+   "to": 1998,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/3/35/Portrait_of_Sir_Isaac_Newton%2C_1689_%28head_shot_crop%29.jpg",
+   "series": [
+    "History of science"
+   ]
+  },
+  {
+   "slug": "scotland",
+   "title": "Scotland",
+   "group": "Countries",
+   "source": {
+    "page": "History of Scotland",
+    "url": "https://en.wikipedia.org/wiki/History_of_Scotland"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The recorded history of Scotland begins with the arrival of the Roman Empire in the 1st century, when the province of Britannia reached the Antonine Wall.",
+   "built": "2026-11-19",
+   "count": 742,
+   "key": 102,
+   "chapters": 12,
+   "from": -120000,
+   "to": 1999,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/1/13/Dalriada.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "europe",
+   "series": [
+    "History of Scotland"
+   ]
+  },
+  {
+   "slug": "silent-film",
+   "title": "Silent film",
+   "group": "Film",
+   "source": {
+    "page": "Silent film",
+    "url": "https://en.wikipedia.org/wiki/Silent_film"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "A silent film is a film without synchronized recorded sound (or more generally, no audible spoken dialogue).",
+   "built": "2026-11-19",
+   "count": 171,
+   "key": 88,
+   "chapters": 12,
+   "from": 1864,
+   "to": 2005,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/8/82/Charlie_Chaplin_portrait_Getty_1739411952.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "film-history",
+   "series": [
+    "Film genres"
+   ]
+  },
+  {
+   "slug": "solar-system",
+   "title": "Solar System",
+   "group": "Life & Earth",
+   "source": {
+    "page": "Formation and evolution of the Solar System",
+    "url": "https://en.wikipedia.org/wiki/Formation_and_evolution_of_the_Solar_System"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The formation of the Solar System began about 4.6 billion years ago with the gravitational collapse of a small part of a giant molecular cloud.",
+   "built": "2026-11-19",
+   "count": 55,
+   "key": 51,
+   "chapters": 7,
+   "from": -4600000000,
+   "to": 2025,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/8/8f/Precambrian_Evolution_of_Life.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "history-of-the-universe",
+   "series": [
+    "Solar System"
+   ]
+  },
+  {
+   "slug": "south-africa",
+   "title": "South Africa",
+   "group": "Countries",
+   "source": {
+    "page": "History of South Africa",
+    "url": "https://en.wikipedia.org/wiki/History_of_South_Africa"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The first modern humans are believed to have lived in South Africa more than 100,000 years ago.",
+   "built": "2026-11-19",
+   "count": 447,
+   "key": 92,
+   "chapters": 6,
+   "from": -2500000,
+   "to": 2007,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/8/85/Second_Boer_War_Collage.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "africa"
+  },
+  {
+   "slug": "soviet-montage",
+   "title": "Soviet montage",
+   "group": "Film",
+   "source": {
+    "page": "Soviet montage theory",
+    "url": "https://en.wikipedia.org/wiki/Soviet_montage_theory"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Soviet montage theory is an approach to understanding and creating cinema that relies heavily upon editing (montage is French for 'assembly' or 'editing').",
+   "built": "2026-11-19",
+   "count": 25,
+   "key": 15,
+   "chapters": 7,
+   "from": 1907,
+   "to": 1991,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/2/26/Sergei_Eisenstein_03.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "film-history"
+  },
+  {
+   "slug": "spaceflight",
+   "title": "Spaceflight",
+   "group": "Science",
+   "source": {
+    "page": "History of spaceflight",
+    "url": "https://en.wikipedia.org/wiki/History_of_spaceflight"
+   },
+   "events": [
+    "Timeline of spaceflight",
+    "Timeline of Solar System exploration"
+   ],
+   "keyTarget": 90,
+   "blurb": "Spaceflight began in the 20th century following theoretical and practical breakthroughs by Konstantin Tsiolkovsky, Robert H.",
+   "built": "2026-11-19",
+   "count": 294,
+   "key": 94,
+   "chapters": 15,
+   "from": 1951,
+   "to": 2023,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/b/b7/%D0%9F%D0%B5%D1%80%D0%B2%D1%8B%D0%B9_%D0%B2_%D0%BC%D0%B8%D1%80%D0%B5_%D0%B8%D1%81%D0%BA%D1%83%D1%81%D1%81%D1%82%D0%B2%D0%B5%D0%BD%D0%BD%D1%8B%D0%B9_%D1%81%D0%BF%D1%83%D1%82%D0%BD%D0%B8%D0%BA_%D0%97%D0%B5%D0%BC%D0%BB%D0%B8.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "astronomy",
+   "series": [
+    "Spaceflight"
+   ]
+  },
+  {
+   "slug": "spain",
+   "title": "Spain",
+   "group": "Countries",
+   "source": {
+    "page": "History of Spain",
+    "url": "https://en.wikipedia.org/wiki/History_of_Spain"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Spain dates to contact between the pre-Roman peoples of the Mediterranean coast of the Iberian Peninsula with the Greeks and Phoenicians.",
+   "built": "2026-11-19",
+   "count": 800,
+   "key": 118,
+   "chapters": 17,
+   "from": -26000,
+   "to": 2014,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/3/3a/Cantigas_battle.jpg",
+   "parent": "europe",
+   "series": [
+    "History of Spain"
+   ]
+  },
+  {
+   "slug": "sports",
+   "title": "Sports",
+   "group": "Sports",
+   "source": {
+    "page": "History of sport",
+    "url": "https://en.wikipedia.org/wiki/History_of_sport"
+   },
+   "events": [],
+   "prose": [
+    "History of sport",
+    "Sports dynasty"
+   ],
+   "keyTarget": 90,
+   "blurb": "The history of sports extends back to the Ancient world in 7000 BC.",
+   "built": "2026-11-19",
+   "count": 684,
+   "key": 96,
+   "chapters": 6,
+   "from": -396,
+   "to": 2024,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5c/Olympic_rings_without_rims.svg/500px-Olympic_rings_without_rims.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "role": "collection"
+  },
+  {
+   "slug": "surrealism",
+   "title": "Surrealism",
+   "group": "Art & culture",
+   "source": {
+    "page": "Surrealism",
+    "url": "https://en.wikipedia.org/wiki/Surrealism"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Surrealism is an art and cultural movement that developed in Europe in the aftermath of World War I in which artists aimed to allow the unconscious mind to express itself, often resulting in the depiction of illogical or",
+   "built": "2026-11-19",
+   "count": 209,
+   "key": 91,
+   "chapters": 7,
+   "from": 1480,
+   "to": 2002,
+   "cover": "https://commons.wikimedia.org/wiki/Special:FilePath/Edition_originale_du_Manifeste_du_surr%C3%A9alisme_%C3%A9dit%C3%A9e_le_15_octobre_1924.png",
+   "parent": "art-history",
+   "series": [
+    "Surrealism"
+   ]
+  },
+  {
+   "slug": "tennis",
+   "title": "Tennis",
+   "group": "Sports",
+   "source": {
+    "page": "History of tennis",
+    "url": "https://en.wikipedia.org/wiki/History_of_tennis"
+   },
+   "events": [
+    "List of Grand Slam men's singles champions",
+    "List of Grand Slam women's singles champions"
+   ],
+   "prose": [
+    "History of tennis"
+   ],
+   "keyTarget": 90,
+   "blurb": "The racket sport traditionally named lawn tennis was invented in Edgbaston, Birmingham, England, and is now commonly known simply as tennis.",
+   "built": "2026-11-19",
+   "count": 499,
+   "key": 91,
+   "chapters": 9,
+   "from": 1571,
+   "to": 2022,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b4/Australian_Open_Logo_2017.svg/960px-Australian_Open_Logo_2017.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "sports",
+   "series": [
+    "Tennis box"
+   ]
+  },
+  {
+   "slug": "turkey",
+   "title": "Turkey",
+   "group": "Countries",
+   "source": {
+    "page": "History of Turkey",
+    "url": "https://en.wikipedia.org/wiki/History_of_Turkey"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of Turkey, understood as the history of the area now forming the territory of the Republic of Turkey, includes the history of both Anatolia (the Asian part of Turkey) and Eastern Thrace (the European part of ",
+   "built": "2026-11-19",
+   "count": 905,
+   "key": 97,
+   "chapters": 7,
+   "from": -40000,
+   "to": 1987,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/be/Map_of_the_Assyrian_diaspora_Worldwide.svg/3840px-Map_of_the_Assyrian_diaspora_Worldwide.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "middle-east",
+   "series": [
+    "History of Turkey"
+   ]
+  },
+  {
+   "slug": "ukraine",
+   "title": "Ukraine",
+   "group": "Countries",
+   "source": {
+    "page": "History of Ukraine",
+    "url": "https://en.wikipedia.org/wiki/History_of_Ukraine"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Prehistoric Ukraine, as a part of the Pontic steppe in Eastern Europe, played an important role in Eurasian cultural events, including the spread of the Chalcolithic and Bronze Ages, Indo-European migrations, and the dom",
+   "built": "2026-11-19",
+   "count": 675,
+   "key": 95,
+   "chapters": 8,
+   "from": -1900000,
+   "to": 2026,
+   "cover": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4f/2022_Russian_invasion_of_Ukraine.svg/3840px-2022_Russian_invasion_of_Ukraine.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+   "parent": "europe",
+   "series": [
+    "History of Ukraine"
+   ]
+  },
+  {
+   "slug": "united-states",
+   "title": "United States",
+   "group": "Countries",
+   "source": {
+    "page": "History of the United States",
+    "url": "https://en.wikipedia.org/wiki/History_of_the_United_States"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The history of the United States spans tens of thousands of years of Indigenous civilization; their descendants include but may not be limited to 575 federally recognized tribes.",
+   "built": "2026-11-19",
+   "count": 1129,
+   "key": 94,
+   "chapters": 10,
+   "from": -48000,
+   "to": 2011,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/6/69/Battle_of_Gettysburg%2C_by_Currier_and_Ives.png",
+   "series": [
+    "History of the United States"
+   ]
+  },
+  {
+   "slug": "vietnam",
+   "title": "Vietnam",
+   "group": "Countries",
+   "source": {
+    "page": "History of Vietnam",
+    "url": "https://en.wikipedia.org/wiki/History_of_Vietnam"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "Vietnam, with its coastal strip, rugged mountainous interior, and two major deltas, became home to numerous cultures throughout history.",
+   "built": "2026-11-19",
+   "count": 510,
+   "key": 102,
+   "chapters": 12,
+   "from": -130000,
+   "to": 1976,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/1/1c/VietNamToanCanhDuDo.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "asia",
+   "series": [
+    "History of Vietnam"
+   ]
+  },
+  {
+   "slug": "viking-age",
+   "title": "Viking Age",
+   "group": "Empires & eras",
+   "source": {
+    "page": "Viking Age",
+    "url": "https://en.wikipedia.org/wiki/Viking_Age"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "The Viking Age was the period during the Middle Ages when Norsemen, referred to as Vikings, undertook large-scale raiding, colonising, conquest, and trading throughout Europe and reached North America.",
+   "built": "2026-11-19",
+   "count": 393,
+   "key": 102,
+   "chapters": 23,
+   "from": 651,
+   "to": 1492,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/1/1b/Flateyjarbok_Haraldr_Halfdan_2.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+   "parent": "europe",
+   "series": [
+    "Norsemen"
+   ]
+  },
+  {
+   "slug": "world-war-ii",
+   "title": "World War II",
+   "group": "Wars",
+   "source": {
+    "page": "World War II",
+    "url": "https://en.wikipedia.org/wiki/World_War_II"
+   },
+   "events": [],
+   "keyTarget": 90,
+   "blurb": "World War II, or the Second World War, was a global conflict between two coalitions: the Allies and the Axis powers.",
+   "built": "2026-11-19",
+   "count": 417,
+   "key": 97,
+   "chapters": 17,
+   "from": 1918,
+   "to": 1991,
+   "cover": "https://upload.wikimedia.org/wikipedia/commons/3/39/Japanese_Special_Naval_Landing_Forces_in_Battle_of_Shanghai_1937.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+  }
+ ]
+}
