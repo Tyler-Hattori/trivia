@@ -237,3 +237,45 @@ Napoleonic Wars | group=Wars
 Hundred Years' War | group=Wars
 Crusades | group=Wars
 Age of Discovery | group=Empires & eras
+
+# Countries and regions (2026-11-20)
+History of Southeast Asia | name=Southeast Asia | group=Continents & regions
+History of the Philippines | name=Philippines | group=Countries
+History of Thailand | name=Thailand | group=Countries
+History of Cambodia | name=Cambodia | group=Countries
+Khmer Empire | group=Empires & eras
+History of Myanmar | name=Myanmar | group=Countries
+History of Central Asia | name=Central Asia | group=Continents & regions
+Silk Road | group=Empires & eras
+History of Mongolia | name=Mongolia | group=Countries
+History of Afghanistan | name=Afghanistan | group=Countries
+History of Bangladesh | name=Bangladesh | group=Countries
+History of Sri Lanka | name=Sri Lanka | group=Countries
+History of the Soviet Union | name=Soviet Union | group=Countries
+History of Austria | name=Austria | group=Countries
+History of Portugal | name=Portugal | group=Countries
+History of Sweden | name=Sweden | group=Countries
+History of Denmark | name=Denmark | group=Countries
+History of Norway | name=Norway | group=Countries
+History of Finland | name=Finland | group=Countries
+History of Hungary | name=Hungary | group=Countries
+History of the Czech lands | name=Czech lands | group=Countries
+History of Belgium | name=Belgium | group=Countries
+History of Switzerland | name=Switzerland | group=Countries
+History of the Balkans | name=Balkans | group=Continents & regions
+History of Serbia | name=Serbia | group=Countries
+History of Romania | name=Romania | group=Countries
+History of Morocco | name=Morocco | group=Countries
+History of Algeria | name=Algeria | group=Countries
+History of Tunisia | name=Tunisia | group=Countries
+History of Sudan | name=Sudan | group=Countries
+History of West Africa | name=West Africa | group=Continents & regions
+History of Ghana | name=Ghana | group=Countries
+History of Kenya | name=Kenya | group=Countries
+History of the Democratic Republic of the Congo | name=DR Congo | group=Countries
+History of Syria | name=Syria | group=Countries
+History of Lebanon | name=Lebanon | group=Countries
+History of Saudi Arabia | name=Saudi Arabia | group=Countries
+History of Armenia | name=Armenia | group=Countries
+History of Georgia (country) | name=Georgia | group=Countries
+History of New Zealand | name=New Zealand | group=Countries
