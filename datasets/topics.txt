@@ -186,3 +186,22 @@ Mesolithic | group=Life & Earth
 Neolithic | group=Life & Earth
 Early human migrations | group=Life & Earth
 History of spaceflight | name=Spaceflight | events=Timeline of spaceflight; Timeline of Solar System exploration | group=Science
+
+# Americas (2026-11-19): History of the Americas gathers the continent
+History of the Americas | name=Americas | group=Continents & regions
+Peopling of the Americas | group=Americas
+Pre-Columbian era | group=Americas
+European colonization of the Americas | group=Americas
+Spanish American wars of independence | group=Americas
+History of the Caribbean | name=Caribbean | group=Continents & regions
+History of Central America | name=Central America | group=Continents & regions
+History of Peru | name=Peru | group=Countries
+History of Chile | name=Chile | group=Countries
+History of Colombia | name=Colombia | group=Countries
+History of Venezuela | name=Venezuela | group=Countries
+History of Bolivia | name=Bolivia | group=Countries
+History of Cuba | name=Cuba | group=Countries
+History of Haiti | name=Haiti | group=Countries
+Thirteen Colonies | group=Americas
+American Revolution | group=Americas
+American Civil War | group=Americas

@@ -38,7 +38,7 @@ export const SECTIONS = [
 // roots (topics without a parent and without children) belong.
 const ROOT_SECTION = {
   'history-of-earth': 'earth', 'europe': 'europe', 'middle-east': 'middle-east', 'africa': 'africa',
-  'asia': 'asia', 'latin-america': 'americas', 'united-states': 'americas', 'canada': 'americas',
+  'asia': 'asia', 'americas': 'americas', 'latin-america': 'americas', 'united-states': 'americas', 'canada': 'americas',
   'oceania': 'oceania', 'science': 'science',
   'byzantine-empire': 'europe', 'renaissance': 'europe', 'impressionism': 'culture',
   'cold-war': 'world', 'world-war-ii': 'world',
@@ -51,6 +51,10 @@ const SCIENCE_TOPIC = {
   'Medicine & Health': 'medicine', 'Computing': 'computing', 'Space': 'astronomy',
   'Earth and environment': 'geology',
 };
+
+// Culture subjects that have a section of their own (entries in no topic).
+const SUBJ_SECTION = { 'Visual arts': 'art', 'Films': 'film', 'Sports': 'sports' };
+const SUBJ_LABEL = { 'Visual arts': 'Other art', 'Films': 'Other films', 'Sports': 'Other sports' };
 
 /** Region ("Asia › West Asia") -> section. */
 export function regionSection(region){
@@ -118,7 +122,7 @@ export function buildLanes(topics, members, points){
   };
   const labelOf = (key) => {
     const [kind, v, sub] = key.split(':');
-    if(kind === 'subj') return v.replace(/^Other culture$/, 'Other arts & ideas');
+    if(kind === 'subj') return SUBJ_LABEL[v] || v.replace(/^Other culture$/, 'Other arts & ideas');
     if(sub) return `${sub}: other`;
     const sec = SECTIONS.find(([k]) => k === v);
     return v === 'science' ? 'Other science' : v === 'world' ? 'Other history' : `${sec ? sec[1] : v}: other`;
@@ -137,7 +141,7 @@ export function buildLanes(topics, members, points){
     } else {
       key = fallback(p);
       if(!laneIdx.has(key)){
-        const sec = key.startsWith('subj:') ? 'culture' : key.split(':')[1];
+        const sec = key.startsWith('subj:') ? (SUBJ_SECTION[key.slice(5)] || 'culture') : key.split(':')[1];
         // After the section's topic lanes.
         const at = lanes.reduce((last, l, i) => (l.section === sec ? i + 1 : last), -1);
         const lane = { key, label: labelOf(key), section: sec, depth: 0, n: 0, fallback: true };

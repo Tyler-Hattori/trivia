@@ -11,7 +11,7 @@
   "africa":        { "role": "collection", "series": [] },
   "asia":          { "role": "collection", "series": [] },
   "europe":        { "role": "collection", "series": [] },
-  "latin-america": { "role": "collection", "series": [] },
+  "latin-america": { "parent": "americas", "role": "collection", "series": [] },
   "middle-east":   { "role": "collection", "series": [] },
   "oceania":       { "role": "collection", "series": [] },
 
@@ -60,8 +60,8 @@
 
   "australia": { "parent": "oceania", "series": ["History of Australia"] },
 
-  "united-states": { "series": ["History of the United States sidebar"] },
-  "canada":        { "series": ["History of Canada sidebar"] },
+  "united-states": { "parent": "americas", "series": ["History of the United States sidebar"] },
+  "canada":        { "parent": "americas", "series": ["History of Canada sidebar"] },
 
   "ancient-rome":   { "parent": "italy", "series": ["Ancient Rome topics"], "rulers": ["Roman emperors"] },
   "ancient-greece": { "parent": "greece", "series": ["Ancient Greek wars"] },
@@ -168,6 +168,23 @@
   "mesolithic": { "parent": "prehistory" },
   "neolithic": { "parent": "prehistory" },
   "early-human-migrations": { "parent": "prehistory" },
-  "spaceflight": { "parent": "astronomy" }
+  "spaceflight": { "parent": "astronomy" },
+  "americas": { "role": "collection", "series": [] },
+  "peopling-of-the-americas": { "parent": "americas" },
+  "pre-columbian-era": { "parent": "americas" },
+  "european-colonization-of-the-americas": { "parent": "americas" },
+  "spanish-american-wars-of-independence": { "parent": "latin-america" },
+  "caribbean": { "parent": "americas" },
+  "central-america": { "parent": "latin-america" },
+  "peru": { "parent": "latin-america" },
+  "chile": { "parent": "latin-america" },
+  "colombia": { "parent": "latin-america" },
+  "venezuela": { "parent": "latin-america" },
+  "bolivia": { "parent": "latin-america" },
+  "cuba": { "parent": "caribbean" },
+  "haiti": { "parent": "caribbean" },
+  "thirteen-colonies": { "parent": "united-states" },
+  "american-revolution": { "parent": "united-states" },
+  "american-civil-war": { "parent": "united-states" }
  }
 }
