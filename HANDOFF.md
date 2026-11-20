@@ -229,6 +229,17 @@ timeline; spans that cover far more than the view are dropped as umbrellas.
   151 topics. Model passes $0.76. Rough: History of the universe pulls in
   off-topic life events (Burgess Shale, ichthyosaurs).
 
+- **Queued, running unattended (started 2026-11-19 evening, expected to take days):**
+  Americas batch (/tmp/am.log, pid 25257) -> then one `--list --ingest` run for
+  Subjects (30) + Countries (40) (/tmp/subj.log, waiter pid 25822) -> then
+  /tmp/after.sh (/tmp/after.log): titles, audits, dedupe, `topic.mjs --all`.
+  NOT deployed automatically: after it, run QA, spot-check, commit store,
+  `deploy.mjs`. If the machine restarted, rerun `node datasets/topic.mjs --list
+  --ingest --ingest-limit 100` (resumes), then the steps in /tmp/after.sh.
+  Speed fixes made mid-run: one ingest per kind (not per page), prose pages
+  capped at 10 per topic. The slow part is filling short prose sentences
+  (Wikipedia lookups, 3 at a time).
+
 ## 8. Next, in order
 
 1. **"Ready for more data"** (user, 2026-11-18). What grows with the store and
