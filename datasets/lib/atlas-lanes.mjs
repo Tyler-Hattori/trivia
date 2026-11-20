@@ -42,6 +42,8 @@ const ROOT_SECTION = {
   'oceania': 'oceania', 'science': 'science',
   'byzantine-empire': 'europe', 'renaissance': 'europe', 'impressionism': 'culture',
   'cold-war': 'world', 'world-war-ii': 'world',
+  'religion': 'culture', 'philosophy': 'culture', 'literature': 'culture', 'music': 'culture', 'architecture': 'culture', 'technology': 'science',
+  'world-war-i': 'world', 'napoleonic-wars': 'world', 'hundred-years-war': 'world', 'crusades': 'world', 'age-of-discovery': 'world',
   'history-of-the-universe': 'earth', 'prehistory': 'earth', 'art-history': 'art', 'film-history': 'film', 'sports': 'sports',
 };
 

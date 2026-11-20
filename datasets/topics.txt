@@ -205,3 +205,35 @@ History of Haiti | name=Haiti | group=Countries
 Thirteen Colonies | group=Americas
 American Revolution | group=Americas
 American Civil War | group=Americas
+
+# Subjects (2026-11-19): religion, philosophy, literature, music, architecture, technology, wars
+History of religion | name=Religion | group=Religion & philosophy
+History of Christianity | name=Christianity | events=Timeline of Christianity | group=Religion & philosophy
+History of Islam | name=Islam | group=Religion & philosophy
+Jewish history | name=Judaism | events=Timeline of Jewish history | group=Religion & philosophy
+History of Buddhism | name=Buddhism | events=Timeline of Buddhism | group=Religion & philosophy
+History of Hinduism | name=Hinduism | group=Religion & philosophy
+History of philosophy | name=Philosophy | group=Religion & philosophy
+Western philosophy | group=Religion & philosophy
+Chinese philosophy | group=Religion & philosophy
+Indian philosophy | group=Religion & philosophy
+Islamic philosophy | group=Religion & philosophy
+History of literature | name=Literature | group=Literature & music
+English literature | group=Literature & music
+Russian literature | group=Literature & music
+History of music | name=Music | group=Literature & music
+Classical music | group=Literature & music
+History of opera | name=Opera | group=Literature & music
+Jazz | group=Literature & music
+Rock music | group=Literature & music
+Hip-hop | group=Literature & music
+History of architecture | name=Architecture | events=Timeline of architecture | group=Art & culture
+Gothic architecture | group=Art & culture
+History of technology | name=Technology | events=Timeline of historic inventions | group=Science
+Industrial Revolution | group=Science
+Second Industrial Revolution | group=Science
+World War I | events=Timeline of World War I | group=Wars
+Napoleonic Wars | group=Wars
+Hundred Years' War | group=Wars
+Crusades | group=Wars
+Age of Discovery | group=Empires & eras
