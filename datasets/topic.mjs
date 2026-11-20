@@ -1069,14 +1069,18 @@ if(OPT.ingest && (missing.length || missingEvents.length || missingProse.length)
     run([`@${f}`, '--domain', domain, '--limit', String(list.length), '--no-build']);
     fs.unlinkSync(f);
   }
-  for(const p of missingEvents){
-    console.log(`\n  mining events from "${p}"…`);
-    run(['--events', p, '--domain', domain, '--no-build']);
+  // One ingest run per kind, not per page: each run loads and rewrites the whole
+  // store and embeds, so 20 prose pages one at a time cost ~2 h (Americas,
+  // 2026-11-19) where one run costs minutes.
+  if(missingEvents.length){
+    console.log(`\n  mining events from ${missingEvents.length} page${missingEvents.length === 1 ? '' : 's'}…`);
+    run([...missingEvents.flatMap((p) => ['--events', p]), '--domain', domain, '--no-build']);
+    entries = readEntries(); prosePages = prosePagesNow();
   }
-  if(missingEvents.length){ entries = readEntries(); prosePages = prosePagesNow(); }
-  for(const p of prosePages.filter((x) => !minedFrom(x))){
-    console.log(`\n  mining dated sentences from "${p}"…`);
-    run(['--events', p, '--events-prose', '--domain', domain, '--no-build']);
+  const proseTodo = prosePages.filter((x) => !minedFrom(x));
+  if(proseTodo.length){
+    console.log(`\n  mining dated sentences from ${proseTodo.length} page${proseTodo.length === 1 ? '' : 's'}…`);
+    run([...proseTodo.flatMap((p) => ['--events', p]), '--events-prose', '--domain', domain, '--no-build']);
   }
   await fetchIdeasFor();
   if(OPT.ingestOnly){ console.log('  ingest only: not placing or building'); process.exit(0); }
