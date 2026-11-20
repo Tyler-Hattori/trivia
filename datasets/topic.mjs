@@ -1036,7 +1036,7 @@ const PROSE_BELOW = 40;
  */
 const seriesNarrative = [...seriesHeading.keys()].filter((t) => { const e = findEntry(t); return e && ['period', 'event'].includes(auditType(e.id) || entryType(e)); });
 const proseCandidates = [...new Set([art.title, ...seriesNarrative.slice(0, 20),
-  ...hatTargets.filter((t) => !/^(timeline|list|lists|outline|index|glossary|bibliography) of /i.test(t))])].slice(0, 30);
+  ...hatTargets.filter((t) => !/^(timeline|list|lists|outline|index|glossary|bibliography) of /i.test(t))])].slice(0, 10);   // 10, not 30: each page means hundreds of Wikipedia lookups to fill its sentences
 const eventYield = () => { const keys = new Set(eventPages.map(pageKey)); return entries.filter((e) => e.origin?.manual && keys.has(pageKey(e.origin?.wiki))).length; };
 const prosePagesNow = () => OPT.site ? [] : [...new Set([...OPT.prose, ...(eventYield() >= PROSE_BELOW ? [] : proseCandidates)])]
   .filter((p) => !eventPages.some((q) => pageKey(q) === pageKey(p)));
